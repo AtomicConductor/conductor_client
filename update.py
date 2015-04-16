@@ -89,13 +89,15 @@ class Updater(object):
         return True
 
     def ensure_clean_working_tree(self):
-        status, stdout, stderr = self.run('git diff --exit-code')
-        if status != 0:
-            logging.error('working tree is not clean:')
+        status, stdout, stderr = self.run('git status --porcelain')
+        if stdout:
+            logging.error('working tree is dirty:')
             logging.error(stdout)
             logging.error(stderr)
             logging.error('exiting')
             exit(1)
+        else:
+            logging.debug('working tree is clean')
 
     def ensure_correct_branch(self,local_branch):
         # ensure branch is correct
