@@ -22,17 +22,10 @@ from oauth2client import client
 from oauth2client import tools
 
 import submit_settings
+import conductor_client_common
 
-if os.environ.has_key('DEVELOPMENT'):
-    logging.basicConfig(level='DEBUG')
-    CONDUCTOR_URL = "http://localhost:8080/"
-    BUCKET_NAME = 'conductor'
-else:
-    BUCKET_NAME = 'output_render'
-    CONDUCTOR_URL = "https://3-dot-atomic-light-001.appspot.com/"
-    logging.basicConfig(level='INFO')
+from conductor_client_common import CONDUCTOR_URL, BUCKET_NAME
 
-        
 class Download(object):
     def __init__(self):
         self.parser = argparse.ArgumentParser(description=self.__doc__,
