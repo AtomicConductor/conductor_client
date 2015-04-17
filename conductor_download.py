@@ -9,8 +9,6 @@ import argparse
 import httplib2
 import urllib2
 import json
-import logging
-import logging.handlers
 import hashlib
 import base64
 import multiprocessing
