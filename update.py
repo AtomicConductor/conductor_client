@@ -5,6 +5,7 @@ import urllib2
 import subprocess
 import traceback
 import logging
+import json
 import conductor_client_common
 
 from conductor_client_common import CONDUCTOR_URL
@@ -34,7 +35,7 @@ class Updater(object):
         self.update_tools(upstream_revision)
         logging.info('successfully updated client tools to ' + upstream_revision)
 
-        
+
     def enter_tools_dir(self):
         base_dir = os.path.dirname(os.path.realpath(__file__))
         logging.debug("changing into dir: " + base_dir)
@@ -47,7 +48,7 @@ class Updater(object):
             logging.debug('git is installed')
         else:
             logging.error('could not find an install of git. Please see:')
-            logging.error('\thttp://git-scm.com/book/en/v2/Getting-Started-Installing-Git') 
+            logging.error('\thttp://git-scm.com/book/en/v2/Getting-Started-Installing-Git')
             logging.error('exiting')
             exit(1)
 
@@ -65,14 +66,23 @@ class Updater(object):
         return local_rev
 
     def get_upstream_revision(self):
-        client_version_endpoint = os.path.join(CONDUCTOR_URL,'clientversion')
+        client_version_endpoint = os.path.join(CONDUCTOR_URL,'clientref')
         try:
-            upstream_rev = urllib2.urlopen(client_version_endpoint).read()
+            upstream_response = urllib2.urlopen(client_version_endpoint).read()
+            json_response = json.loads(upstream_response)
+            upstream_rev = json_response['ref']
             logging.debug("upstream_rev is '%s'" % upstream_rev)
+        except ValueError:
+            logging.error('response was not in json format. got:')
+            logging.error(upstream_response)
+            exit(1)
+        except KeyError:
+            logging.error("response did not have key 'ref':\n\t%s" % json_response)
+            exit(1)
         except Exception, e:
             logging.error('could not get client version from app at:')
             logging.error("\t" + client_version_endpoint)
-            logging.error(traceback.format_exc()) 
+            logging.error(traceback.format_exc())
             logging.error('exiting')
             exit(1)
         return upstream_rev
