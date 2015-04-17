@@ -126,6 +126,10 @@ class Download(object):
                     resp = req.execute()
                     logger.debug( "completed request. resp is %s" % resp)
                     logger.debug("resp_source is " + resp_source)
+                    if resp == {}:
+                        resp_str = "%s/%s" % (BUCKET_NAME, resp_source_path)
+                        logger.info("No Files to copy, skipping. %s", resp_str)
+                        continue
                     frame = resp_source.split('*')[1]
                     logger.debug("got frame: " + frame)
                     sources = [] 
@@ -168,10 +172,6 @@ class Download(object):
                                     logger.info('Download %d%%.' % int(status.progress() * 100))
                             f.close()
                             logger.info( 'Download Complete!')
-                            if "/publish/" in destination:
-                                os.chmod(destination, 0755)
-                            else:
-                                os.chmod(destination, 0775)
                         else:
                             logger.debug( "there is no frame in %s" % i['name'])
                     logger.debug( "done with resp loop")
