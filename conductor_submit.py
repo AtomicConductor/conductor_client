@@ -237,7 +237,7 @@ class Uploads():
         credentials = self._get_credentials()
         http = httplib2.Http()
         http = credentials.authorize(http)
-        service = discovery.build('storage', submit_settings._API_VERSION, http=http)
+        service = discovery.build('storage', submit_settings.API_VERSION, http=http)
         return service
 
     def _get_credentials(self):
@@ -530,4 +530,3 @@ class BadArgumentError(ValueError):
 if __name__ == '__main__':
     submitter = Submit()
     submitter.main()
-
