@@ -1,1 +1,7 @@
+# eclipse files
+.project
+.pydevproject
+
+# vim swap files
+*.swp
 
