@@ -5,3 +5,4 @@
 # vim swap files
 *.swp
 
+*.pyc
