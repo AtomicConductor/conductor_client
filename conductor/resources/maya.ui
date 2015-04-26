@@ -6,12 +6,9 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>210</width>
-    <height>108</height>
+    <width>167</width>
+    <height>137</height>
    </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <property name="margin">
@@ -19,6 +16,10 @@
    </property>
    <item>
     <widget class="QWidget" name="ui_render_layers_wgt" native="true">
+     <property name="toolTip">
+      <string>Select which render layers to submit.
+Only those selected will be rendered.</string>
+     </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <property name="margin">
        <number>0</number>
@@ -51,6 +52,16 @@
        </widget>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="ui_upload_only">
+     <property name="toolTip">
+      <string>Only upload dependencies. Don't submit render job</string>
+     </property>
+     <property name="text">
+      <string>Upload Only</string>
+     </property>
     </widget>
    </item>
   </layout>

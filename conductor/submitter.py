@@ -1,6 +1,7 @@
-import os, sys
+import os, sys, uuid, inspect, tempfile
 from PySide import QtGui, QtCore, QtUiTools
-# from conductor_client import conductor_submit
+from conductor.tools import conductor_submit
+
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
@@ -11,12 +12,11 @@ class ConductorSubmitter(QtGui.QMainWindow):
     '''
     Base class for PySide front-end for submitting jobs to Conductor.
     
-    Intended to be subclassed for each software context that a Conductor front
-    end is desired , e.g. subclassed for a PySide UI for Nuke, or a UI for Maya.
+    Intended to be subclassed for each software context that may need a Conductor 
+    front end e.g. for <aya or for Nuke.
     
-    The extended_widget_class class attribute acts as an opportunity for a 
-    developer to extend the UI to suit his/her needs. See the docstring for the
-    "_addExtendedWidget" method.
+    The getExtendedWidget method acts as an opportunity for a developer to extend 
+    the UI to suit his/her needs. See the getExtendedWidgetthe docstring
       
     '''
 
@@ -26,31 +26,71 @@ class ConductorSubmitter(QtGui.QMainWindow):
     # conductor icon filepath
     _conductor_icon_filepath = os.path.join(RESOURCES_DIRPATH, "conductor_logo_01_x32.png")
     _conductor_logo_filepath = os.path.join(RESOURCES_DIRPATH, "conductor_logo_red_w_title_x64.png")
-
-    extended_widget_class = None
+    _refresh_icon_filepath = os.path.join(RESOURCES_DIRPATH, "arrow_refresh_x16.png")
 
     def __init__(self, parent=None):
         super(ConductorSubmitter, self).__init__(parent=parent)
         UiLoader.loadUi(self._ui_filepath, self)
-        self._initializeUi()
+        self.initializeUi()
 
-    def _initializeUi(self):
+    def initializeUi(self):
+        '''
+        Initialize ui properties/behavior
+        '''
+        # Set the icon for the top left corner of the ui Window
         self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(self._conductor_icon_filepath)))
+
+        self.ui_refresh_tbtn.setIcon(QtGui.QIcon(QtGui.QPixmap(self._refresh_icon_filepath)))
+
+        # Set the logo image inside of the ui
         self.ui_logo_lbl.setPixmap(self._conductor_logo_filepath);
+
+        # Set the stat/end fields to be restricted to integers only
         self.ui_start_frame_lnedt.setValidator(QtGui.QIntValidator())
         self.ui_end_frame_lnedt.setValidator(QtGui.QIntValidator())
-        self._addExtendedWidget()
+
+        # Set string validation for the custom frame range field
         self._setCustomRangeValidator()
-        self.ui_custom_lnedt.textChanged.connect(self.validate_custom_text)
+        self.ui_custom_lnedt.textChanged.connect(self._validateCustomFramesText)
+
+        # Set the radio button on for the start/end frames by default
         self.on_ui_start_end_rdbtn_toggled(True)
+
+        # Hide the widget that holds advanced settings. TODO: need to come back to this.
+        self.ui_advanced_wgt.hide()
+
+        # Add the extended widget (must be implemented by the child class
+        self._addExtendedWidget()
+
+    def refreshUi(self):
+        '''
+        Override this method to repopulate the UI with fresh data from the software
+        it's running from
+        '''
+        class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
+        message = "%s not implemented. Please override method as desribed in its docstring" % class_method
+        raise NotImplementedError(message)
 
 
     def _addExtendedWidget(self):
         '''
-        Instantiate and embed the widget class (if one is assidnged to the
-        extended_widget_class attribute) into the UI. The widget 
-        will be inserted (visually) between the frame range section and the 
-        submit button. See illustration below
+        Add the extended widget to the UI
+        '''
+        self.extended_widget = self.getExtendedWidget()
+        extended_widget_layout = self.ui_extended_container_wgt.layout()
+        extended_widget_layout.addWidget(self.extended_widget)
+
+
+    def getExtendedWidget(self):
+        '''
+        This method extends the Conductor UI by providing a single PySide widget
+        that will be added to the UI. The widget may be any class object derived 
+        from QWidget. 
+         
+        In order to do so, subclass this class and override this method to 
+        return the desered widget object.  This widget will be inserted between 
+        the Frame Range area and the  Submit button. See illustration below:
+        
                  ____________________
                 |     Conductor      |
                 |--------------------|
@@ -64,26 +104,34 @@ class ConductorSubmitter(QtGui.QMainWindow):
                 |____________________|
          
         '''
-        if self.extended_widget_class:
-            self.extended_widget = self.extended_widget_class()
-            layout = QtGui.QVBoxLayout()
-            self.ui_extended_container_wgt.setLayout(layout)
-            layout.addWidget(self.extended_widget)
+
+        class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
+        message = "%s not implemented. Please override method as desribed in its docstring" % class_method
+        raise NotImplementedError(message)
+
 
     def _setCustomRangeValidator(self):
         '''
-        1001
-        1001,1004
-        1001-1004
-        1001-1004x3
+        Create a regular expression and set it as a validator on the custom frame
+        range field.
         
-        NOT 1001x3
-        NOT 1001,1004x3
+        The following text entry examples are valid:
+            1001
+            1001,1004
+            1001-1004
+            1001-1004x3
+            1001, 1004, 
+            1001, 1004, 1006-1010x3, 1007, 1008-1010x2
+            
+        The following text examples are NOT valid:
+            1001x3
+            1001,1004x3
         '''
-        rx_number = "\d+"
-        rx_step = "x\d"
-        rx_range_w_step = r"(?:%s-%s(?:%s)?)+" % (rx_number, rx_number, rx_step)
-        rx_validation = "((%s|%s), +)+" % (rx_number, rx_range_w_step)
+        # Establish regex "building blocks" to form full reg ex
+        rx_number = "\d+"  # The "number" building block, eg.  acceptes 1001, or 1, or 002
+        rx_step = "x\d"  # the "step" building block, e.g. accepts x1000, or x1, or x002
+        rx_range_w_step = r"(?:%s-%s(?:%s)?)+" % (rx_number, rx_number, rx_step)  # the "range w option step" building block, e.g 100-100, or 100-100x3, oor
+        rx_validation = "((%s|%s), +)+" % (rx_number, rx_range_w_step)  # The final regex which uses a space and comma as a delimeter between multiple frame strings
         self.frame_str_validator = QtGui.QRegExpValidator(QtCore.QRegExp(rx_validation), None)
 
 
@@ -134,6 +182,54 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return str(self.ui_custom_lnedt.text())
 
 
+    def generateConductorArgs(self):
+        '''
+        Return a dictionary which contains the expected conductor arguments and
+        their values as key/values
+        
+        TODO: flesh out the docs for each variable
+        available keys:
+            cmd: str
+            force: bool
+            frames: str
+            output_path: str
+            postcmd: str?
+            priority: int?
+            resource: ?
+            skip_time_check: bool?
+            upload_dependent: int? jobid?
+            upload_file: str
+            upload_only: bool
+            upload_paths: list of str?
+            usr: str
+        '''
+        class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
+        message = "%s not implemented. Please override method as desribed in its docstring" % class_method
+        raise NotImplementedError(message)
+
+
+    def getForceUploadBool(self):
+        '''
+        Return whether the "Force Upload" checkbox is checked on or off.
+        '''
+        return self.ui_force_upload_chkbx.isChecked()
+
+    def runConductorSubmission(self, args):
+        '''
+        Instantiate a Conductor Submit object with the given conductor_args 
+        (dict), and execute it. 
+        '''
+
+
+        conductor_args = self.generateConductorArgs()
+        for arg_name, arg_value in conductor_args.iteritems():
+            print "%s: %s" % (arg_name, arg_value)
+
+
+        submission = conductor_submit.Submit(conductor_args)
+        return submission.main()
+
+
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
     def on_ui_start_end_rdbtn_toggled(self, on):
 
@@ -143,7 +239,41 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     @QtCore.Slot(name="on_ui_submit_pbtn_clicked")
     def on_ui_submit_pbtn_clicked(self):
-        print "Frame range: %s" % self.getFrameRangeString()
+        '''
+        This gets called when the user pressed the "Submit" button in the UI.
+        
+        1. Run any presubmission processes.
+        2. Run the submission process.
+        3. Run any postsubmission processes.
+        
+        '''
+        data = self.runPreSubmission()
+        result = self.runConductorSubmission(data)
+        return self.runPostSubmission(result)
+
+
+    def runPreSubmission(self):
+        '''
+        Run any pre submission processes, returning optional data that can
+        be passed into the main runConductorSubmission method
+        '''
+        return
+
+
+    def runPostSubmission(self, result):
+        '''
+        Run any post submission processes, returning optional data that can
+        be passed into the main runConductorSubmission method.  The "result" argument
+        contains the results of the main runConductorSubmission method.
+        '''
+        return
+
+
+
+
+    @QtCore.Slot(name="on_ui_refresh_tbtn_clicked")
+    def on_ui_refresh_tbtn_clicked(self):
+        self.refreshUi()
 
 
 
@@ -154,7 +284,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             return self.getCustomFrameString()
 
 
-    def validate_custom_text(self, text):
+    def _validateCustomFramesText(self, text):
         '''
         
         '''
@@ -164,6 +294,13 @@ class ConductorSubmitter(QtGui.QMainWindow):
             style_sheet = ""
 
         self.ui_custom_lnedt.setStyleSheet(style_sheet)
+
+    def getCoreCount(self):
+        '''
+        Return the number of cores that the user has selected from the
+        "Core Count" combobox
+        '''
+        return int(self.ui_core_count_cmbx.currentText())
 
 
     @classmethod
@@ -222,6 +359,27 @@ class UiLoader(QtUiTools.QUiLoader):
         widget = loader.load(uifile)
         QtCore.QMetaObject.connectSlotsByName(widget)
         return widget
+
+
+
+def write_dependency_file(dependencies, filepath):
+    '''
+    Write the given list of depencies to the given filepath
+    '''
+    with open(filepath, 'w') as file_obj:
+        file_obj.write(", ".join(dependencies))
+    return filepath
+
+
+def generate_temporary_filepath():
+    '''
+    Generate and return a unique filepath name located in the machine's temp 
+    directory.
+    '''
+    temp_dirpath = tempfile.gettempdir()
+    filename = "conductor_dependencies_%s" % str(uuid.uuid1())
+    return os.path.join(temp_dirpath, filename)
+
 
 
 
