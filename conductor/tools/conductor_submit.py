@@ -230,7 +230,7 @@ class Submit():
 class Uploads():
     """ Manages Uploads from Local File System to Conductor """
     def __init__(self, upload_files, timeid, skip_time_check=False, force=False):
-        self._secret_key = "%s/google/atomic-light-001.p12" % _this_dir
+        self._secret_key = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/atomic-light-001.p12"))
         self._gcloud_cmd = "gcloud auth activate-service-account %s --key-file %s --project %s" % (
                                 submit_settings._SERVICE_ACCOUNT_EMAIL, self._secret_key, submit_settings._CLOUD_PROJECT)
         self._storage_cmd = "gsutil"
@@ -249,9 +249,8 @@ class Uploads():
         return service
 
     def _get_credentials(self):
-        flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
+        flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args([])
         dat_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'auth', 'conductor.dat'))
-        print dat_path
         storage = oauthfile.Storage(dat_path)
         credentials = storage.get()
         if credentials is None or credentials.invalid:
