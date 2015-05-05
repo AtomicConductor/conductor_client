@@ -6,31 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>119</width>
-    <height>137</height>
+    <width>145</width>
+    <height>149</height>
    </rect>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <layout class="QVBoxLayout" name="verticalLayout">
    <property name="margin">
     <number>0</number>
    </property>
    <item>
-    <widget class="QWidget" name="ui_write_nodes_wgt" native="true">
-     <property name="toolTip">
-      <string>Select which write nodes to submit.
-Only those selected will be rendered.</string>
+    <widget class="QGroupBox" name="ui_write_nodes_grpbx">
+     <property name="title">
+      <string>Write Nodes</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <property name="margin">
-       <number>0</number>
-      </property>
-      <item>
-       <widget class="QLabel" name="ui_write_nodes_lbl">
-        <property name="text">
-         <string>Write Nodes</string>
-        </property>
-       </widget>
-      </item>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QTreeWidget" name="ui_write_nodes_trwgt">
         <property name="selectionMode">
@@ -49,21 +38,25 @@ Only those selected will be rendered.</string>
         </column>
        </widget>
       </item>
+      <item>
+       <widget class="QCheckBox" name="ui_upload_only">
+        <property name="toolTip">
+         <string>Only upload dependencies. Don't submit render job</string>
+        </property>
+        <property name="text">
+         <string>Upload Only</string>
+        </property>
+       </widget>
+      </item>
      </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="ui_upload_only">
-     <property name="toolTip">
-      <string>Only upload dependencies. Don't submit render job</string>
-     </property>
-     <property name="text">
-      <string>Upload Only</string>
-     </property>
     </widget>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>ui_write_nodes_trwgt</tabstop>
+  <tabstop>ui_upload_only</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

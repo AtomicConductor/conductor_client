@@ -1,12 +1,20 @@
 import os, sys, uuid, inspect, tempfile
 from PySide import QtGui, QtCore, QtUiTools
 from conductor.tools import conductor_submit
+from conductor import submitter_resources  # This is required so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
 
+'''
+TODO:
+1. Create qt resource package or fix filepaths for all images to be set during code execution
+2. about menu? - provide link to studio's conductor url (via yaml config file) 
+3. Extendable vs private:  What's the line?
 
+
+'''
 
 class ConductorSubmitter(QtGui.QMainWindow):
     '''
@@ -23,10 +31,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
     # .ui designer filepath
     _ui_filepath = os.path.join(RESOURCES_DIRPATH, 'submitter.ui')
 
-    # conductor icon filepath
-    _conductor_icon_filepath = os.path.join(RESOURCES_DIRPATH, "conductor_logo_01_x32.png")
-    _conductor_logo_filepath = os.path.join(RESOURCES_DIRPATH, "conductor_logo_red_w_title_x64.png")
-    _refresh_icon_filepath = os.path.join(RESOURCES_DIRPATH, "arrow_refresh_x16.png")
+    _window_title = "Conductor"
 
     def __init__(self, parent=None):
         super(ConductorSubmitter, self).__init__(parent=parent)
@@ -37,21 +42,17 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         Initialize ui properties/behavior
         '''
-        # Set the icon for the top left corner of the ui Window
-        self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(self._conductor_icon_filepath)))
 
-        self.ui_refresh_tbtn.setIcon(QtGui.QIcon(QtGui.QPixmap(self._refresh_icon_filepath)))
-
-        # Set the logo image inside of the ui
-        self.ui_logo_lbl.setPixmap(self._conductor_logo_filepath);
-
-        # Set the stat/end fields to be restricted to integers only
+        # Set the start/end fields to be restricted to integers only
         self.ui_start_frame_lnedt.setValidator(QtGui.QIntValidator())
         self.ui_end_frame_lnedt.setValidator(QtGui.QIntValidator())
 
         # Set string validation for the custom frame range field
         self._setCustomRangeValidator()
         self.ui_custom_lnedt.textChanged.connect(self._validateCustomFramesText)
+
+        # Set the window title name
+        self.setWindowTitle(self._window_title)
 
         # Set the radio button on for the start/end frames by default
         self.on_ui_start_end_rdbtn_toggled(True)
@@ -61,6 +62,13 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Add the extended widget (must be implemented by the child class
         self._addExtendedWidget()
+
+        # shrink UI to be as small as can be
+        self.adjustSize()
+
+        # Set the keyboard focus on the frame range radio button
+        self.ui_start_end_rdbtn.setFocus()
+
 
     def refreshUi(self):
         '''
@@ -168,6 +176,19 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return str(self.ui_end_frame_lnedt.text())
 
 
+    def setStepFrame(self, step_frame):
+        '''
+        Set the UI's step frame spinbox value
+        '''
+        self.ui_step_frame_spnbx.setValue(int(step_frame))
+
+    def getStepFrame(self):
+        '''
+        Return UI's step frame spinbox value
+        '''
+        return self.ui_step_frame_spnbx.value()
+
+
     def setCustomFrameString(self, custom_frame_str):
         '''
         Set the UI's custom frame field
@@ -226,8 +247,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
             print "%s: %s" % (arg_name, arg_value)
 
 
-        submission = conductor_submit.Submit(conductor_args)
-        return submission.main()
+#         submission = conductor_submit.Submit(conductor_args)
+#         return submission.main()
 
 
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
@@ -279,7 +300,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def getFrameRangeString(self):
         if self.ui_start_end_rdbtn.isChecked():
-            return "%s-%s" % (self.getStartFrame(), self.getEndFrame())
+            return "%s-%sx%s" % (self.getStartFrame(), self.getEndFrame(), self.getStepFrame())
         else:
             return self.getCustomFrameString()
 

@@ -17,17 +17,11 @@ NODE_DEP_ATTRS = {  'Read':['file'],
 
 
 '''
+TODO:
+1. Get nuke dependencies
+4. what is the "output_path" arg for nuke render's? (in maya its the root images dir from project settings)
 2. What write nodes should be selected when launching the UI? - only those which are selected by the user in nuke
-3. Distinguish between Write and Deep Write un UI? -no
-3. Regex frame ranges for different software plugin, or uniform across all conductor plugins?- uniform across maya and nuke 
-4. Nuke logo vs maya logo?  - use title bar; no image
-5. Display render resolution? -no
-7. modal Dialog or window?  - window
-8. refresh menu  - refresh button in ui
-9. about menu? - provide link to studio's conductor url (via yaml config file) 
-6. Extendable vs private:  What's the line?
-5. render machine options
-6. implement pyside inheritance to Maya's/Nuke's window interface
+3. implement pyside inheritance for Nuke's window interface
 '''
 
 class NukeWidget(QtGui.QWidget):
@@ -83,7 +77,7 @@ class NukeWidget(QtGui.QWidget):
         Nodes widget. when the "Upload Only" checkbox is checked off, enable
         the Write Nodes widget.
         '''
-        self.ui_write_nodes_wgt.setDisabled(toggled)
+        self.ui_write_nodes_trwgt.setDisabled(toggled)
 
 
 
@@ -95,6 +89,8 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
      
     '''
 
+    _window_title = "Conductor - Nuke"
+
     @classmethod
     def runUi(cls):
         '''
@@ -105,11 +101,11 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
     def __init__(self, parent=None):
         super(NukeConductorSubmitter, self).__init__(parent=parent)
-        self.setFrameRange(None, None)
+        self.refreshUi()
 
     def initializeUi(self):
         super(NukeConductorSubmitter, self).initializeUi()
-        self.setWindowTitle("Conductor - Nuke")
+
 
     def refreshUi(self):
         start, end = get_frame_range()
@@ -203,43 +199,65 @@ def collect_dependencies(node_knobs, skip_unused=True):
     if skip_unused:
         unused = get_unused_read_nodes()
 
-    for node_type, knobs in node_knobs.iteritems():
+    for node_type, dep_knobs in node_knobs.iteritems():
 
         for node in find_all_nodes(classfilter=(node_type)):
 
             if skip_unused and node in unused:
                 continue
 
-            for knob_name in knobs:
-
-                if knob_name not in node.knobs():
-                    continue
-
-                filename = node[knob_name].getValue()
-                if not filename:
-                    continue
-
-                if '%' in filename or '#' in filename:
-                    fileobj = afpipe.utils.FileSequence(filename)
-                else:
-                    fileobj = afpipe.utils.File(filename)
-
-                fileid = fileobj.getId(resolveSymlink=True, conform_root=True)
-
-                if fileid not in deps:
-                    deps[fileid] = Dependency(fileobj, item_class)
-
-                if node[knob_name] not in deps[fileid].knobs:
-                    deps[fileid].knobs.append(node[knob_name])
-
-                if find_aovs and type(fileobj) == afpipe.utils.FileSequence:
-                    aovs = fileobj.getAOVs()
-                    for aov in aovs:
-                        if aovs[aov].getId() not in deps:
-                           deps[aovs[aov].getId(resolveSymlink=True, conform_root=True)] = Dependency(aovs[aov], item_class)
+            for knob_name in dep_knobs:
+                
+                if knob_name in node.knobs():
+                    
+                    filename = node[knob_name].getValue()
+                    
+                    if filename:
+                       
+                        if '%' in filename or '#' in filename:
+                            
+#                             fileobj = afpipe.utils.FileSequence(filename)
+                        else:
+                            fileobj = afpipe.utils.File(filename)
+        
+                        fileid = fileobj.getId(resolveSymlink=True, conform_root=True)
+        
+                        if fileid not in deps:
+                            deps[fileid] = Dependency(fileobj, item_class)
+        
+                        if node[knob_name] not in deps[fileid].knobs:
+                            deps[fileid].knobs.append(node[knob_name])
+        
+                        if find_aovs and type(fileobj) == afpipe.utils.FileSequence:
+                            aovs = fileobj.getAOVs()
+                            for aov in aovs:
+                                if aovs[aov].getId() not in deps:
+                                   deps[aovs[aov].getId(resolveSymlink=True, conform_root=True)] = Dependency(aovs[aov], item_class)
 
     return deps
 
+
+
+def get_files_from_seq_string(seq_str):
+    '''
+    From a given string that describes an image sequence, return a list of files
+    that it encompasses. Only include files which exist on disk.
+    Supports two different types of 
+    
+    seq_str: str
+        /batman/beauty_v012.%04d.jpg
+        /batman/beauty_v012.####.jpg
+        
+        /batman/beauty_v012.%04d.jpg
+        /batman/beauty_v012.####.jpg
+        
+    
+    '''
+    delimiters = [".", "#"]
+    
+    percent_reg1 = r"%[\d]+d"
+    percent_reg = r"%s(?P<filebase>[^%s\.]+)(?P<ext>\.[a-zA-Z]{1:2})" % (os.sep,os.sep)
+    
 
 def find_all_nodes(node=None, classfilter=None):
     results = []

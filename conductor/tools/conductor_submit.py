@@ -29,7 +29,6 @@ from oauth2client import client
 from oauth2client import tools
 
 
-sys.path.insert(0, "/usr/local/lschlosser/code/conductor_client")
 from conductor import submit_settings
 
 _this_dir = os.path.dirname(os.path.realpath(__file__))
@@ -250,6 +249,7 @@ class Uploads():
 
     def _get_credentials(self):
         flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args([])
+
         dat_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'auth', 'conductor.dat'))
         storage = oauthfile.Storage(dat_path)
         credentials = storage.get()

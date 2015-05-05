@@ -3,8 +3,7 @@ import os, uuid, tempfile
 from maya import cmds
 from PySide import QtGui, QtCore
 
-from conductor import submitter
-
+from conductor import submitter, submitter_maya_resources  # This is required so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 # A dict of maya node types and their attributes to query for dependency filepaths
 NODE_DEP_ATTRS = {'file':['fileTextureName'],
@@ -14,7 +13,9 @@ NODE_DEP_ATTRS = {'file':['fileTextureName'],
 
 
 '''
-TODO: When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
+TODO: 
+1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
+2. implement pyside inheritance to Maya's window interface
 '''
 
 class MayaWidget(QtGui.QWidget):
@@ -35,28 +36,37 @@ class MayaWidget(QtGui.QWidget):
     def populateRenderLayers(self, render_layers_info):
         '''
         Populate each render layer into the UI QTreeWidget.
-        If the render layer has been set to renderable in maya, then select
-        the render layer in the UI.  Only render layers that are selected in the
-        UI will be rendered
+        If the render layer has been set to renderable in maya, then check its
+        qtreewidgetitem's checkbox (on) the the render layer  UI.  Only render 
+        layers that are checked on will be rendered
         '''
         self.ui_render_layers_trwgt.clear()
         assert isinstance(render_layers_info, list), "render_layers argument must be a list. Got: %s" % type(render_layers_info)
         for render_layer_info in reversed(render_layers_info):
             tree_item = QtGui.QTreeWidgetItem([render_layer_info["layer_name"],
                                                render_layer_info["camera_shortname"]])
+
+            tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
             tree_item._camera_transform = render_layer_info["camera_transform"]
             self.ui_render_layers_trwgt.addTopLevelItem(tree_item)
 
-            # If the render layer is set to renderable, select it in the UI
+            # If the render layer is set to renderable, then check the item's checkbox on
             if render_layer_info["renderable"]:
-                self.ui_render_layers_trwgt.setItemSelected(tree_item, True)
+                tree_item.setCheckState(0, QtCore.Qt.Checked)
+            else:
+                tree_item.setCheckState(0, QtCore.Qt.Unchecked)
 
 
     def getSelectedRenderLayers(self):
         '''
-        Return the names of the render layers that are selected in the UI
+        Return the names of the render layers that have their checkboxes checked on
         '''
-        return [item.text(0) for item in self.ui_render_layers_trwgt.selectedItems()]
+        selected_layers = []
+        for row_idx in range(self.ui_render_layers_trwgt.topLevelItemCount()):
+            item = self.ui_render_layers_trwgt.topLevelItem(row_idx)
+            if item.checkState(0) == QtCore.Qt.Checked:
+                selected_layers.append(item.text(0))
+        return selected_layers
 
 
     def getUploadOnlyBool(self):
@@ -73,12 +83,11 @@ class MayaWidget(QtGui.QWidget):
         Layers widget. when the "Upload Only" checkbox is checked off, enable
         the Render Layers widget.
         '''
-        self.ui_render_layers_wgt.setDisabled(toggled)
+        self.ui_render_layers_trwgt.setDisabled(toggled)
 
 
 class MayaConductorSubmitter(submitter.ConductorSubmitter):
     '''
-    TODO: inherit from maya's interface
     
     This class inherits from the generic conductor submitter and adds an additional
     widget for maya-specific data.
@@ -87,13 +96,14 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     self.extended_widget attribute
     
     When the UI loads it will automatically populate various information:
+        1. Frame range  
+        2. Render layers (with their camera)
     
-    1. Frame range
-    
-    2. Camera
-    
-    3. Render layers
     '''
+
+
+    _window_title = "Conductor - Maya"
+
     @classmethod
     def runUi(cls):
         '''
@@ -108,7 +118,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     def initializeUi(self):
         super(MayaConductorSubmitter, self).initializeUi()
-        self.setWindowTitle("Conductor - Maya")
+
 
     def refreshUi(self):
         start, end = get_frame_range()[0]
