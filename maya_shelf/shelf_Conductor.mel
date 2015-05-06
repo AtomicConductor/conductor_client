@@ -1,0 +1,34 @@
+global proc shelf_Conductor () {
+    global string $gBuffStr;
+    global string $gBuffStr0;
+    global string $gBuffStr1;
+
+
+    shelfButton
+        -enableCommandRepeat 1
+        -enable 1
+        -width 35
+        -height 35
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Load Conductor Submitter UI" 
+        -enableBackground 0
+        -align "center" 
+        -label "Load UI" 
+        -labelOffset 0
+        -font "plainLabelFont" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.2 
+        -image "conductor_logo_01_x32.png" 
+        -image1 "conductor_logo_01_x32.png" 
+        -style "iconOnly" 
+        -marginWidth 1
+        -marginHeight 1
+        -command "from conductor import submitter_maya\nsubmitter_maya.MayaConductorSubmitter.runUi()" 
+        -sourceType "python" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+
+} 
