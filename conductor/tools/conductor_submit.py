@@ -55,6 +55,7 @@ class Submit():
         self.user = args.get('user')
         self.frames = args.get('frames')
         self.resource = args.get('resource')
+        self.cores = args.get('cores')
         self.priority = args.get('priority')
         self.upload_dep = args.get('upload_dependent')
         self.output_path = args.get('output_path')
@@ -102,6 +103,10 @@ class Submit():
         parser.add_argument("--resource",
             help="resource pool to submit jobs to, defaults to show name.",
             type=str,
+            required=False)
+        parser.add_argument("--cores",
+            help="Number of cores that this job should run on",
+            type=int,
             required=False)
         parser.add_argument("--priority",
             help="Set the priority of the submitted job. Default is 5",
@@ -157,15 +162,15 @@ class Submit():
         userpass = self.get_token()
         if self.raw_command and self.frames:
             url = "jobs/"
-            if not self.resource:
-                try:
-                    self.resource = os.environ['AF_PROJECT_NAME']
-                except KeyError, e:
-                    print "No project detected, using 'af' instead"
-                    self.resource = "af"
+            if not self.resouce:
+                self.resource = "default"
+            if not self.cores:
+                self.cores = 16
+
+            resource_tag = "%s-%s" % (self.cores, self.resource.lower())
 
             submit_dict = {'owner':self.user,
-                           'resource':self.resource.lower(),
+                           'resource':resource_tag,
                            'frame_range':self.frames,
                            'command':self.raw_command,
                            'instance_type':'n1-standard-16'}
