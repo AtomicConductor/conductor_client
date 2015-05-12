@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="images">
+    <file>resources/checkbox_off_redx_8x7.png</file>
+    <file>resources/checkbox_off_redx_disabled_8x7.png</file>
+    <file>resources/checkbox_on_greenx_8x7.png</file>
+    <file>resources/checkbox_on_greenx_disabled_8x7.png</file>
+  </qresource>
+</RCC>

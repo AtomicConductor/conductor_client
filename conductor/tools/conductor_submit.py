@@ -28,7 +28,8 @@ from oauth2client import file as oauthfile
 from oauth2client import client
 from oauth2client import tools
 
-import submit_settings
+
+from conductor import submit_settings
 
 _this_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -40,79 +41,30 @@ class Submit():
     Help: 
         $ python conductor_submit.py -h
     """
-    def __init__(self, args=None):
-        self._parseArgs(args)
+    def __init__(self, args):
         self.timeid = int(time.time())
+        self.consume_args(args)
 
-    def _parseArgs(self, args):
-        self.parser = argparse.ArgumentParser(description=self.__doc__,
-                formatter_class=argparse.RawDescriptionHelpFormatter, parents=[tools.argparser])
-        self.parser.add_argument("--cmd", 
-            help="execute this command.",
-            type=str)
-        self.parser.add_argument("--frames", 
-            help="frame range to execute over.",
-            type=str)
-        self.parser.add_argument("--user", 
-            help="Username to submit as",
-            type=str,
-            default=getpass.getuser(),
-            required=False)
-        self.parser.add_argument("--output_path",
-            help="path to copy renders to",
-            type=str,
-            required=False)
-        self.parser.add_argument("--upload_file",
-            help="The path to an upload file",
-            type=str,
-            required=False)
-        self.parser.add_argument("--upload_paths",
-            help="Paths to upload",
-            nargs="*")
-        self.parser.add_argument("--resource",
-            help="resource pool to submit jobs to, defaults to show name.",
-            type=str,
-            required=False)
-        self.parser.add_argument("--priority",
-            help="Set the priority of the submitted job. Default is 5",
-            type=str,
-            required=False)
-        self.parser.add_argument("--upload_dependent",
-            help="job id of another job that this should be upload dependent on.",
-            type=str,
-            required=False)
-        self.parser.add_argument("--upload_only",
-            help="Only upload the files, don't start the render",
-            action='store_true')
-        self.parser.add_argument("--force",
-            help="Do not check for existing uploads, force a new upload",
-            action='store_true')
-        self.parser.add_argument("--postcmd",
-            help="Run this command once the entire job is complete and downloaded",
-            type=str,
-            required=False)
-        self.parser.add_argument("--skip_time_check",
-            action='store_true',
-            default=False,
-            help="Don't perform a time check between local and cloud")
+    @classmethod
+    def from_commmand_line(cls):
+        args = cls._parseArgs()
+        return cls(vars(args))  # convert the Namespace object to a dictionary
 
-        if args is None:
-            self.args = self.parser.parse_args()
-        else:
-            self.args = self.parser.parse_args(args.split())
-        self.raw_command = self.args.cmd
-        self.user = self.args.user
-        self.frames = self.args.frames
-        self.resource = self.args.resource
-        self.priority = self.args.priority
-        self.upload_dep = self.args.upload_dependent
-        self.output_path = self.args.output_path
-        self.upload_file = self.args.upload_file
-        self.upload_paths = self.args.upload_paths
-        self.upload_only = self.args.upload_only
-        self.postcmd = self.args.postcmd
-        self.skip_time_check = self.args.skip_time_check
-        self.force = self.args.force
+    def consume_args(self, args):
+        self.raw_command = args.get('cmd')
+        self.user = args.get('user')
+        self.frames = args.get('frames')
+        self.resource = args.get('resource')
+        self.cores = args.get('cores')
+        self.priority = args.get('priority')
+        self.upload_dep = args.get('upload_dependent')
+        self.output_path = args.get('output_path')
+        self.upload_file = args.get('upload_file')
+        self.upload_paths = args.get('upload_paths')
+        self.upload_only = args.get('upload_only')
+        self.postcmd = args.get('postcmd')
+        self.skip_time_check = args.get('skip_time_check')
+        self.force = args.get('force')
 
         # TODO: switch this behavior to use file size plus md5 instead
         # For now always default nuke uploads to skip time check
@@ -121,6 +73,67 @@ class Submit():
 
         if self.upload_paths is None:
             self.upload_paths = []
+
+    @classmethod
+    def _parseArgs(cls):
+        parser = argparse.ArgumentParser(description=cls.__doc__,
+                formatter_class=argparse.RawDescriptionHelpFormatter)
+        parser.add_argument("--cmd",
+            help="execute this command.",
+            type=str)
+        parser.add_argument("--frames",
+            help="frame range to execute over.",
+            type=str)
+        parser.add_argument("--user",
+            help="Username to submit as",
+            type=str,
+            default=getpass.getuser(),
+            required=False)
+        parser.add_argument("--output_path",
+            help="path to copy renders to",
+            type=str,
+            required=False)
+        parser.add_argument("--upload_file",
+            help="The path to an upload file",
+            type=str,
+            required=False)
+        parser.add_argument("--upload_paths",
+            help="Paths to upload",
+            nargs="*")
+        parser.add_argument("--resource",
+            help="resource pool to submit jobs to, defaults to show name.",
+            type=str,
+            required=False)
+        parser.add_argument("--cores",
+            help="Number of cores that this job should run on",
+            type=int,
+            required=False)
+        parser.add_argument("--priority",
+            help="Set the priority of the submitted job. Default is 5",
+            type=str,
+            required=False)
+        parser.add_argument("--upload_dependent",
+            help="job id of another job that this should be upload dependent on.",
+            type=str,
+            required=False)
+        parser.add_argument("--upload_only",
+            help="Only upload the files, don't start the render",
+            action='store_true')
+        parser.add_argument("--force",
+            help="Do not check for existing uploads, force a new upload",
+            action='store_true')
+        parser.add_argument("--postcmd",
+            help="Run this command once the entire job is complete and downloaded",
+            type=str,
+            required=False)
+        parser.add_argument("--skip_time_check",
+            action='store_true',
+            default=False,
+            help="Don't perform a time check between local and cloud")
+
+        return parser.parse_args()
+
+
 
 
     def get_upload_files(self):
@@ -133,11 +146,11 @@ class Submit():
             with open(self.upload_file, 'r') as f:
                 contents = f.read()
             files = contents.split(',')
-        return list(set(self.upload_paths+[f.strip() for f in files]))
+        return list(set(self.upload_paths + [f.strip() for f in files]))
 
 
     def get_token(self):
-        token_path = os.path.join(os.path.dirname(__file__), 'auth/CONDUCTOR_TOKEN.pem')
+        token_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/CONDUCTOR_TOKEN.pem"))
         if not os.path.exists(token_path):
             raise IOError("Could not locate .pem file: %s" % token_path)
         with open(token_path, 'r') as f:
@@ -150,16 +163,16 @@ class Submit():
         if self.raw_command and self.frames:
             url = "jobs/"
             if not self.resource:
-                try:
-                    self.resource = os.environ['AF_PROJECT_NAME']
-                except KeyError, e:
-                    print "No project detected, using 'af' instead"
-                    self.resource = "af"
+                self.resource = "default"
+            if not self.cores:
+                self.cores = 16
+
+            resource_tag = "%s-%s" % (self.cores, self.resource.lower())
 
             submit_dict = {'owner':self.user,
-                           'resource':self.resource.lower(),
+                           'resource':resource_tag,
                            'frame_range':self.frames,
-                           'command':self.raw_command, 
+                           'command':self.raw_command,
                            'instance_type':'n1-standard-16'}
             if cloud_upload_file:
                 submit_dict['upload_file'] = cloud_upload_file
@@ -182,7 +195,7 @@ class Submit():
             raise BadArgumentError('The supplied arguments could not submit a valid request.')
 
         json_dict = json.dumps(submit_dict)
-        conductor_url = "https://3.atomic-light-001.appspot.com/%s" % url
+        conductor_url = "https://riotgames-dot-atomic-light-001.appspot.com/%s" % url
         password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
         password_manager.add_password(None, conductor_url, userpass.split(':')[0], 'unused')
         auth = urllib2.HTTPBasicAuthHandler(password_manager)
@@ -191,18 +204,18 @@ class Submit():
 
 
         req = urllib2.Request(conductor_url,
-                            headers = {'Content-Type':'application/json'},
-                            data = json_dict)
+                            headers={'Content-Type':'application/json'},
+                            data=json_dict)
         handler = urllib2.urlopen(req)
         f = handler.read()
         return f
 
     def main(self):
         upload_file = None
-        # Handle uploads 
+        # Handle uploads
         if self.upload_file or self.upload_paths:
             upload_files = self.get_upload_files()
-            uploads = Uploads(upload_files, self.parser, self.timeid, self.skip_time_check, force=self.force)
+            uploads = Uploads(upload_files, self.timeid, self.skip_time_check, force=self.force)
             upload_file = uploads.run_uploads()
             if upload_file:
                 print upload_file
@@ -220,12 +233,11 @@ class Submit():
 
 class Uploads():
     """ Manages Uploads from Local File System to Conductor """
-    def __init__(self, upload_files, parser, timeid, skip_time_check=False, force=False):
-        self._secret_key = "%s/google/atomic-light-001.p12" % _this_dir
-        self._gcloud_cmd = "gcloud auth activate-service-account %s --key-file %s --project %s" % ( 
+    def __init__(self, upload_files, timeid, skip_time_check=False, force=False):
+        self._secret_key = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/atomic-light-001.p12"))
+        self._gcloud_cmd = "gcloud auth activate-service-account %s --key-file %s --project %s" % (
                                 submit_settings._SERVICE_ACCOUNT_EMAIL, self._secret_key, submit_settings._CLOUD_PROJECT)
         self._storage_cmd = "gsutil"
-        self.parser = parser
         self.timeid = timeid
         self.service = self._auth_service()
         self.set_service_account()
@@ -241,8 +253,10 @@ class Uploads():
         return service
 
     def _get_credentials(self):
-        flags = self.parser.parse_args()
-        storage = oauthfile.Storage(os.path.join(os.path.dirname(__file__), 'auth','conductor.dat'))
+        flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args([])
+
+        dat_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'auth', 'conductor.dat'))
+        storage = oauthfile.Storage(dat_path)
         credentials = storage.get()
         if credentials is None or credentials.invalid:
             credentials = tools.run_flow(submit_settings.FLOW, storage, flags)
@@ -253,18 +267,18 @@ class Uploads():
         if results.returncode != 0:
             raise IOError("Could not authenticate using the service account! - %s \n %s" % (out, err))
 
-    def handle_stalled(error, iters):
-      if iters > submit_settings.NUM_RETRIES:
-        print('Failed to make progress for too many consecutive iterations.')
-        raise error
+    def handle_stalled(self, error, iters):
+        if iters > submit_settings.NUM_RETRIES:
+            print('Failed to make progress for too many consecutive iterations.')
+            raise error
 
-      sleeptime = random.random() * (2**iters)
-      print ('Caught exception (%s). Sleeping for %s seconds before retry #%d.'
-             % (str(error), sleeptime, iters))
-      time.sleep(sleeptime)
+        sleeptime = random.random() * (2 ** iters)
+        print ('Caught exception (%s). Sleeping for %s seconds before retry #%d.'
+               % (str(error), sleeptime, iters))
+        time.sleep(sleeptime)
 
     def chunk_request(self, req):
-        stalled_iters = 0
+        stalled_iter = 0
         resp = None
         while resp  is None:
             error = None
@@ -281,7 +295,7 @@ class Uploads():
 
             if error:
                 stalled_iter += 1
-                handle_stalled(error, stalled_iter)
+                self.handle_stalled(error, stalled_iter)
             else:
                 stalled_iter = 0
         return json.dumps(resp, indent=4)
@@ -308,7 +322,7 @@ class Uploads():
                     print "Reached maximum number of retries"
                     raise error
                 else:
-                    sleeptime = random.random() * (2**tries)
+                    sleeptime = random.random() * (2 ** tries)
                     time.sleep(sleeptime)
             else:
                 tries = 0
@@ -322,7 +336,7 @@ class Uploads():
         gs_file = "%s%s" % (submit_settings._UPLOAD_POINT, unix_file)
         req = self.service.objects().list(bucket=submit_settings._BUCKET_NAME,
                     prefix=gs_file, fields=fields_to_return)
-        
+
         resp = self.run_request(req)
 
         if resp == {}:
@@ -333,20 +347,20 @@ class Uploads():
         local_size = os.path.getsize(filename)
 
         if not self.skip_time_check:
-            cloud_time_str = resp['items'][0]['updated'] 
-            
+            cloud_time_str = resp['items'][0]['updated']
+
             cloud_time = datetime.datetime.strptime(cloud_time_str, '%Y-%m-%dT%H:%M:%S.%fZ')
             local_time = datetime.datetime.fromtimestamp(os.path.getmtime(filename))
-            local_tz = time.timezone-3600
-            
+            local_tz = time.timezone - 3600
+
             time_delta = cloud_time - local_time
-            
-            if sys.version_info < (2,7,0):
+
+            if sys.version_info < (2, 7, 0):
                 # as specified in Python docs
-                time_delta_secs = (time_delta.microseconds + (time_delta.seconds + time_delta.days * 24 * 3600) * 10**6) / 10**6
+                time_delta_secs = (time_delta.microseconds + (time_delta.seconds + time_delta.days * 24 * 3600) * 10 ** 6) / 10 ** 6
             else:
                 time_delta_secs = time_delta.total_seconds()
-                
+
             time_diff = time_delta_secs - local_tz
 
         if int(local_size) != int(cloud_size):
@@ -388,7 +402,7 @@ class Uploads():
                 tries = 5
             else:
                 tries += 1
-                time.sleep(tries*3)
+                time.sleep(tries * 3)
 
         if results.returncode != 0:
             raise IOError("Could not Upload file! \n%s\n%s" % (out, err))
@@ -420,25 +434,25 @@ class Uploads():
         else:
             print "Could not locate files on local drive: %s" % f
             return False
-        #upload_files.append(f)
+        # upload_files.append(f)
         print("Uploaded %s" % f)
         return True
 
     def run_uploads(self):
         upload_files = []
         upload_file_name = None
-        #pool = multiprocessing.Pool(processes=4)
+        # pool = multiprocessing.Pool(processes=4)
         for filename in self.upload_files:
 
             # Handle frame padding files.
             filename = re.sub("%0[0-9]d", '*', filename)
             filename = re.sub("#+", '*', filename)
-            
+
             if os.path.isdir(filename):
                 glob_files = [filename]
             else:
                 glob_files = glob.glob(filename)
-            
+
             if len(glob_files) == 0:
                 print "No files located locally, skipping. %s" % filename
 
@@ -459,10 +473,10 @@ class Uploads():
             else:
                 # Only check the first/mid/last frames
                 print "Looking at sequence, %s" % filename
-                files_to_check = [glob_files[0], glob_files[len(glob_files)/2], glob_files[-1]]
-                
+                files_to_check = [glob_files[0], glob_files[len(glob_files) / 2], glob_files[-1]]
+
                 upload_needed = False
-                
+
                 for f in files_to_check:
                     print "Checking, %s" % f
                     unix_f = self.convert_win_path(f)
@@ -470,41 +484,41 @@ class Uploads():
                         print "  Found mismatch: %s" % unix_f
                         upload_needed = True
                         break
-                    
+
                 if upload_needed:
                     f = filename
                     unix_file = self.convert_win_path(f)
                     if not unix_file.startswith('/'):
                         print('All files should be passed in as absolute linux paths!')
                         raise IOError('File does not start at root mount "/", %s' % f)
-                    
+
                     if self.submit_upload(f, unix_file):
                         upload_files.append(f)
                 else:
                     print "Skipping, upload not needed."
 
-                #pool.apply_async(self.submit_request, args=(filename, unix_dir))
+                # pool.apply_async(self.submit_request, args=(filename, unix_dir))
                 # Upload the file to cloud storage
-                #media = MediaFileUpload(filename, chunksize=submit_settings.CHUNKSIZE, resumable=True)
-                #if not media.mimetype():
+                # media = MediaFileUpload(filename, chunksize=submit_settings.CHUNKSIZE, resumable=True)
+                # if not media.mimetype():
                 #    media = MediaFileUpload(filename, submit_settings.DEFAULT_MIMETYPE, resumable=True)
-                #media = MediaFileUpload(filename, submit_settings.DEFAULT_MIMETYPE)
-                #req = self.service.objects().insert(bucket=bucket_name, name=object_name, media_body=media)
-                
-                #pool.apply_async(self.submit_request, args=(filename, bucket_name, object_name))
-                #pool.apply_async(self.run_request, args=(req,))
-                #resp = self.run_request(req)
-                #resp = self.chunk_request(req)
-                    
-        #pool.close()
-        #pool.join()
-        
+                # media = MediaFileUpload(filename, submit_settings.DEFAULT_MIMETYPE)
+                # req = self.service.objects().insert(bucket=bucket_name, name=object_name, media_body=media)
+
+                # pool.apply_async(self.submit_request, args=(filename, bucket_name, object_name))
+                # pool.apply_async(self.run_request, args=(req,))
+                # resp = self.run_request(req)
+                # resp = self.chunk_request(req)
+
+        # pool.close()
+        # pool.join()
+
         if len(upload_files) > 0:
             # Create a tmp file to keep track of what was uploaded.
             # This file gets passed to Job submission.
-            
+
             upload_file_name = "%s_upload" % int(self.timeid)
-            tmp_file = '%s/%s'%(os.environ['TEMP'], upload_file_name)
+            tmp_file = '%s/%s' % (os.environ['TEMP'], upload_file_name)
             try:
                 with open(tmp_file, 'w') as temp:
                     temp.write(",".join(upload_files))
@@ -524,10 +538,14 @@ class Uploads():
 
             return object_name
 
+
+
+
+
 class BadArgumentError(ValueError):
     pass
 
 if __name__ == '__main__':
-    submitter = Submit()
-    submitter.main()
+    submission = Submit.from_commmand_line()
+    submission.main()
 
