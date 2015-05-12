@@ -162,7 +162,7 @@ class Submit():
         userpass = self.get_token()
         if self.raw_command and self.frames:
             url = "jobs/"
-            if not self.resouce:
+            if not self.resource:
                 self.resource = "default"
             if not self.cores:
                 self.cores = 16
