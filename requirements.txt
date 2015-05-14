@@ -1,0 +1,6 @@
+apiclient
+google-api-python-client
+httplib2
+pyaml
+pyopenssl
+urllib3
