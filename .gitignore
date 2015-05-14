@@ -28,3 +28,14 @@ Thumbs.db
 
 # eclipse
 .settings
+
+
+# virtualenv
+venv
+
+
+# secrets (to be factored out)
+auth
+
+# config
+config.yml

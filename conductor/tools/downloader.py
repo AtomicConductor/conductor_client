@@ -15,7 +15,6 @@ import traceback
 import logging
 
 from apiclient import discovery
-from apiclient.http import MediaFileUpload, MediaIoBaseDownload
 from apiclient.errors import HttpError
 from oauth2client import file as oauthfile
 from oauth2client import client
@@ -24,7 +23,8 @@ from oauth2client import tools
 import submit_settings
 import conductor_client_common
 
-from conductor_client_common import CONDUCTOR_URL, BUCKET_NAME
+# TODO
+from lib.common import logging, retry, Config
 
 class Download(object):
     def __init__(self):
@@ -32,7 +32,7 @@ class Download(object):
                 formatter_class=argparse.RawDescriptionHelpFormatter, parents=[tools.argparser])
         self.userpass = self.get_token()
         self.service = self._auth_service()
-        
+
 
     def _auth_service(self):
         credentials = self._get_credentials()
@@ -68,7 +68,7 @@ class Download(object):
         urllib2.install_opener(opener)
         req = urllib2.Request(
             url,
-            headers = {'Content-Type':'application/json', 
+            headers = {'Content-Type':'application/json',
                        'Accepts':'application/json'},
             data=json_data)
         handler = urllib2.urlopen(req)
@@ -122,14 +122,14 @@ class Download(object):
                     resp_source_path = "%s/" % '/'.join(resp_source.split('/')[3:-1])
                     logging.debug("resp_source_path is: " + resp_source_path)
                     fields_to_return = "items(name)"
-                    req =self.service.objects().list(bucket=BUCKET_NAME, prefix=resp_source_path, fields=fields_to_return)
+
                     logging.debug("excuting request")
                     resp = req.execute()
                     logging.debug( "completed request. resp is %s" % resp)
                     logging.debug("resp_source is " + resp_source)
                     frame = resp_source.split('*')[1]
                     logging.debug("got frame: " + frame)
-                    sources = [] 
+                    sources = []
                     logging.debug( "entering resp loop")
                     for i in resp['items']:
                         logging.debug("in item loop. looking for frame: " + frame)
@@ -137,6 +137,7 @@ class Download(object):
                             logging.debug("found frame %s in %s" % (frame, i['name']))
                             sources.append(i['name'])
 
+                            download_url = i['download_url']
                             source = i['name']
                             file_name = source.split('/')[-1]
                             imageSrcPath = source.split(resp_source_path)[-1]
@@ -154,20 +155,52 @@ class Download(object):
                             logging.debug("Source: %s" % source)
                             logging.debug("SubDir: %s" % subDir)
                             logging.debug("Destination: %s" % destination)
-                            f = open(destination, 'w')
-                            request = self.service.objects().get_media(bucket=BUCKET_NAME, object=source)
-                            dloader = MediaIoBaseDownload(f, request, chunksize=submit_settings.CHUNKSIZE)
 
-                            done = False
-                            tick = time.time()
-                            while not done:
-                                if (time.time() - tick) > 60:
-                                    self.set_download_status(download_id,'downloading')
-                                    tick = time.time()
-                                status, done = dloader.next_chunk()
-                                if status:
-                                    logging.info('Download %d%%.' % int(status.progress() * 100))
-                            f.close()
+
+                            CHUNKSIZE = 8192
+
+                            def chunk_report(bytes_so_far, chunk_size, total_size):
+                                percent = float(bytes_so_far) / total_size
+                                percent = round(percent*100, 2)
+
+
+                                logging.info("Downloaded %d of %d bytes (%0.2f%%)\r" %
+                                    (bytes_so_far, total_size, percent))
+
+                                if bytes_so_far >= total_size:
+                                    logging.info('\n')
+
+                            def chunk_read(response, chunk_size=CHUNKSIZE, report_hook=None):
+                                total_size = response.info().getheader('Content-Length').strip()
+                                total_size = int(total_size)
+                                bytes_so_far = 0
+
+
+                                self.set_download_status(download_id,'downloading')
+                                download_file = open(destination, 'w')
+                                tick = time.time()
+                                while 1:
+                                    if (time.time() - tick) > 60:
+                                        self.set_download_status(download_id,'downloading')
+                                        tick = time.time()
+
+                                        chunk = response.read(chunk_size)
+                                        bytes_so_far += len(chunk)
+                                        download_file.write(chunk)
+
+                                    if not chunk:
+                                        break
+
+                                    if report_hook:
+                                        report_hook(bytes_so_far, chunk_size, total_size)
+
+                                return bytes_so_far
+
+
+                            response = urllib2.urlopen(download_url)
+                            chunk_read(response, report_hook=chunk_report
+
+                            download_file.close()
                             logging.info( 'Download Complete!')
                             if "/publish/" in destination:
                                 os.chmod(destination, 0755)
@@ -186,11 +219,11 @@ class Download(object):
                 # add error checking
                 if not download_id == None:
                     self.set_download_status(download_id,'pending')
-                # Please include this sleep, to ensure that the Conductor 
+                # Please include this sleep, to ensure that the Conductor
                 # does not get flooded with unnecessary requests.
                 time.sleep(4)
 
-        
+
 
 if __name__ == "__main__":
     downloader = Download()

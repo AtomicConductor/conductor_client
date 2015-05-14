@@ -8,13 +8,14 @@ import logging
 import json
 import conductor_client_common
 
-from conductor_client_common import CONDUCTOR_URL
+from conductor.lib.common import Config
 
 branch = 'master'
 
 
 class Updater(object):
     def __init__(self):
+        config = Config()
         self.main()
         exit(0)
 
@@ -66,7 +67,7 @@ class Updater(object):
         return local_rev
 
     def get_upstream_revision(self):
-        client_version_endpoint = os.path.join(CONDUCTOR_URL,'clientref')
+        client_version_endpoint = os.path.join(config.config['url'],'clientref')
         try:
             upstream_response = urllib2.urlopen(client_version_endpoint).read()
             json_response = json.loads(upstream_response)
@@ -127,6 +128,7 @@ class Updater(object):
             logging.error('exiting')
             exit(1)
 
+    # TODO: use common run func
     def run(self,cmd):
         logging.debug("about to run command: " + cmd)
         command = subprocess.Popen(
