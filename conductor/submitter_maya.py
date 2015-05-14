@@ -1,21 +1,19 @@
-import os, uuid, tempfile
+import os
 
-from maya import cmds
 from PySide import QtGui, QtCore
 
-from conductor import submitter, submitter_maya_resources  # This is required so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
+from conductor.tools import maya_utils, pyside_utils, file_utils
+from conductor import submitter
+# from conductor import submitter_maya_resources  # This is required so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
-# A dict of maya node types and their attributes to query for dependency filepaths
-NODE_DEP_ATTRS = {'file':['fileTextureName'],
-                 'AlembicNode':['abc_File'],
-                 'VRayMesh':['fileName'],
-                 'VRaySettingsNode':['ifile', 'fnm']}
 
 
 '''
 TODO: 
 1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
 2. implement pyside inheritance to Maya's window interface
+3. Implement right-clicking on tree widget
+4. Cull out unused dependencies.  Should we exclude materials that aren't assigned, etc?
 '''
 
 class MayaWidget(QtGui.QWidget):
@@ -25,11 +23,18 @@ class MayaWidget(QtGui.QWidget):
 
     def __init__(self, parent=None):
         super(MayaWidget, self).__init__(parent=parent)
-        submitter.UiLoader.loadUi(self._ui_filepath, self)
+        pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
+        self.initializeUi()
         self.refreshUi()
 
+    def initializeUi(self):
+        self.ui_render_layers_trwgt = MayaCheckBoxTreeWidget()
+        treewgt_layout = self.ui_render_layers_grpbx.layout()
+        treewgt_layout.insertWidget(0, self.ui_render_layers_trwgt)
+
+
     def refreshUi(self):
-        render_layers_info = get_render_layers_info()
+        render_layers_info = maya_utils.get_render_layers_info()
         self.populateRenderLayers(render_layers_info)
 
 
@@ -56,6 +61,8 @@ class MayaWidget(QtGui.QWidget):
             else:
                 tree_item.setCheckState(0, QtCore.Qt.Unchecked)
 
+
+        self.ui_render_layers_trwgt.resizeColumnToContents(0)
 
     def getSelectedRenderLayers(self):
         '''
@@ -121,7 +128,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
 
     def refreshUi(self):
-        start, end = get_frame_range()[0]
+        start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
 
@@ -139,22 +146,81 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         base_cmd = "maya2015Render -rd /tmp/render_output/ -s %%f -e %%f %s %s"
 
         render_layers = self.extended_widget.getSelectedRenderLayers()
-        render_layer_args = ["-fl %s" % render_layer for render_layer in render_layers]
-        maya_filepath = get_maya_scene_filepath()
+        render_layer_args = ["-rl %s" % render_layer for render_layer in render_layers]
+        maya_filepath = maya_utils.get_maya_scene_filepath()
         cmd = base_cmd % (" ".join(render_layer_args), maya_filepath)
         return cmd
 
 
-    def generateConductorArgs(self):
+    def collectDependencies(self):
+        '''
+        Generate a list of filepaths that the current maya scene is dependent on.
+        '''
+        # A dict of maya node types and their attributes to query for dependency filepaths
+        dependency_attrs = {'file':['fileTextureName'],
+                         'AlembicNode':['abc_File'],
+                         'VRayMesh':['fileName'],
+                         'VRaySettingsNode':['ifile', 'fnm']}
+
+        return maya_utils.collect_dependencies(dependency_attrs)
+
+
+    def runPreSubmission(self):
+        '''
+        Override the base class (which is an empty stub method) so that a 
+        validation pre-process can be run.  If validation fails, then indicate
+        that the the submission process should be aborted.   
+        
+        We also collect dependencies (and asdasdss) at this point and pass that
+        data along...
+        In order to validate the submission, dependencies must be collected
+        and inspected. Because we don't want to unnessarily collect dependencies
+        again (after validation succeeds), we also pass the depenencies along
+        in the returned dictionary (so that we don't need to collect them again).
+        '''
+
+        raw_dependencies = self.collectDependencies()
+        dependencies = file_utils.process_dependencies(raw_dependencies)
+        raw_data = {"dependencies":dependencies}
+
+        is_valid = self.runValidation(raw_data)
+        return {"abort":not is_valid,
+                "dependencies":dependencies}
+
+
+    def runValidation(self, raw_data):
+        '''
+        This is an added method (i.e. not a base class override), that allows
+        validation to occur when a user presses the "Submit" button. If the
+        validation fails, a notification dialog appears to the user, halting
+        the submission process. 
+        
+        Validate that the data being submitted is...valid.
+        
+        1. Dependencies
+        2. Output dir
+        '''
+
+        # ## Validate that all filepaths exist on disk
+        dependencies = raw_data["dependencies"]
+        invalid_filepaths = [path for path, is_valid in dependencies.iteritems() if not is_valid]
+        if invalid_filepaths:
+            message = "Found invalid filepaths:\n\n%s" % "\n\n".join(invalid_filepaths)
+            pyside_utils.launch_error_box("Invalid filepaths!", message, parent=self)
+            return
+
+        return True
+
+
+    def generateConductorArgs(self, data):
         '''
         Override this method from the base class to provide conductor arguments that 
         are specific for Maya.  See the base class' docstring for more details.
-        
-        
+
             cmd: str
             force: bool
             frames: str
-            output_path: str # The directory path that the render images are set to output to  
+            output_path: str # A directory path which shares a common root with all output files.  
             postcmd: str?
             priority: int?
             resource: int, core count
@@ -164,173 +230,55 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             upload_only: bool
             upload_paths: list of str?
             usr: str
-        
         '''
         conductor_args = {}
         conductor_args["cmd"] = self.generateConductorCmd()
+        conductor_args["cores"] = self.getInstanceType()
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
-        conductor_args["output_path"] = get_image_dirpath()
-        conductor_args["upload_file"] = get_dependencies()
+        conductor_args["output_path"] = maya_utils.get_image_dirpath()
+        conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
-        conductor_args["resource"] = self.getCoreCount()
+
+        # if there are any dependencies, generate a dependendency manifest and add it as an argument
+        dependency_filepaths = data["dependencies"].keys()
+        if dependency_filepaths:
+            conductor_args["upload_paths"] = dependency_filepaths
+
         return conductor_args
 
 
+    def runConductorSubmission(self, data):
 
-def get_dependencies():
-    '''
-    Generate a list of filepaths that the current maya scene is dependent on.
-    This list will be written to a text file which conductor will use to upload
-    the necessary files when executing a render.
-    If no depenencies exist, return None
-    '''
-    dependencies = collect_dependencies(NODE_DEP_ATTRS)
-    if dependencies:
-        depenency_filepath = submitter.generate_temporary_filepath()
-        return submitter.write_dependency_file(dependencies, depenency_filepath)
+        # If an "abort" key has a True value then abort submission
+        if data.get("abort"):
+            print "Conductor: Submission aborted"
+            return
+
+        super(MayaConductorSubmitter, self).runConductorSubmission(data)
 
 
 
 
-def get_maya_scene_filepath():
-    filepath = cmds.file(q=True, sceneName=True)
-    if not filepath or not os.path.isfile(filepath):
-        raise Exception("Maya scene has not been saved to a file location.  Please save file before submitting to Conductor.")
-    return str(filepath)
+
+class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):
+
+    icon_filepath_checked = os.path.join(submitter.RESOURCES_DIRPATH, 'checkbox_on_greenx_8x7.png')
+    icon_filepath_unchecked = os.path.join(submitter.RESOURCES_DIRPATH, 'checkbox_off_redx_8x7.png')
+    icon_filepath_checked_disabled = os.path.join(submitter.RESOURCES_DIRPATH, 'checkbox_on_greenx_disabled_8x7.png')
+    icon_filepath_unchecked_disabled = os.path.join(submitter.RESOURCES_DIRPATH, 'checkbox_off_redx_disabled_8x7.png')
+
+    def __init__(self, parent=None):
+        super(MayaCheckBoxTreeWidget, self).__init__(parent=parent)
 
 
-
-def get_image_dirpath():
-    workspace_root = cmds.workspace(q=True, rootDirectory=True)
-    image_dirname = cmds.workspace(fileRuleEntry="images")
-    return os.path.join(workspace_root, image_dirname)
-
-
-def get_frame_range():
-    '''
-    Return the current frame range for the current maya scene.  This consists
-    of both the "playback" start/end frames, as well as the "range" start/end frames.
-    
-    Note that only integers are currently support for frames
-    
-    return: list of two tuples, where the first tuple is the "playback" start/end 
-            frames and the second is the "range" start/end frames,
-            e.g. [(1.0, 24.0), (5.0, 10.0)]
-    '''
-    # Get the full start/end frame range
-    playback_start = cmds.playbackOptions(q=True, animationStartTime=True)
-    playback_end = cmds.playbackOptions(q=True, animationEndTime=True)
-
-    # Get the selected range start/end
-    range_start = cmds.playbackOptions(q=True, minTime=True)
-    range_end = cmds.playbackOptions(q=True, maxTime=True)
-    return [(int(playback_start), int(playback_end)), (int(range_start), int(range_end))]
-
-
-
-def get_render_layers_info():
-    '''
-    TODO: Does the default render layer name need to be augmented when passed to maya's rendering command?
-    TODO: Should the default render layer be included at all?  And should it be unselected by default?
-    Return a list of dictionaries where each dictionary represents data for 
-    a a render layer.  Each dictionar provides the following information:
-        - render layer name
-        - whether the render layer is set to renderable 
-        - the camera that the render layer uses
-    
-    Note that only one camera is allowed per render layer.  This is somewhat
-    of an arbitraty limitation, but implemented to reduce complexity.  This 
-    restriction may need to be removed.
-    
-    '''
-    render_layers = []
-    cameras = cmds.ls(type="camera", long=True)
-    for render_layer in cmds.ls(type="renderLayer"):
-        layer_info = {"layer_name": render_layer}
-        cmds.editRenderLayerGlobals(currentRenderLayer=render_layer)
-        renderable_cameras = [get_transform(camera) for camera in cameras if cmds.getAttr("%s.renderable" % camera)]
-        assert renderable_cameras, 'No Renderable camera found for render layer "%s"' % render_layer
-        assert len(renderable_cameras) == 1, 'More than one renderable camera found for render layer "%s". Cameras: %s' % (render_layer, renderable_cameras)
-
-        layer_info["camera_transform"] = renderable_cameras[0]
-        layer_info["camera_shortname"] = get_short_name(layer_info["camera_transform"])
-        layer_info["renderable"] = cmds.getAttr("%s.renderable" % render_layer)
-        render_layers.append(layer_info)
-
-    return render_layers
-
-
-def collect_dependencies(node_attrs):
-    '''
-    Return a list of filepaths that the current maya scene has dependencies on.
-    This is achieved by inspecting maya's nodes.  Use the node_attrs argument
-    to pass in a dictionary 
-
-        node_attrs = {'file':['fileTextureName'],
-                 'af_alembicDeform':['fileName'],
-                 'AlembicNode':['abc_File'],
-                 'VRayMesh':['fileName'],
-                 'VRaySettingsNode':['ifile', 'fnm'],
-                 'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
-                 'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam']
-                 }
-
-    
-    '''
-    assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
-
-    # Scene name, refs and textures
-    dependencies = cmds.file(query=True, list=True) or []
-
-    # explicit deps
-    if node_attrs is None:
-        node_attrs = {'file':['fileTextureName'],
-                     'af_alembicDeform':['fileName'],
-                     'AlembicNode':['abc_File'],
-                     'VRayMesh':['fileName'],
-                     'VRaySettingsNode':['ifile', 'fnm'],
-                     'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
-                     'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam']
-                     }
-
-    all_node_types = cmds.allNodeTypes()
-
-    for node_type, node_attrs in node_attrs.iteritems():
-
-        if node_type not in all_node_types:
-            print "Warning: skipping unknown node type: %s" % node_type
-            continue
-
-        for node in cmds.ls(type=node_type):
-            for node_attr in node_attrs:
-                plug_name = '%s.%s' % (node, node_attr)
-                if cmds.objExists(plug_name):
-                    plug_value = cmds.getAttr(plug_name)
-                    path = cmds.file(plug_value, exn=True, query=True)
-                    dependencies.append(path)
-
-    return sorted(set([os.path.normpath(path) for path in dependencies]))
+    def initializeUi(self):
+        super(MayaCheckBoxTreeWidget, self).initializeUi()
+        self.setIndentation(0)
+        self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.setHeaderItem (QtGui.QTreeWidgetItem(["Layer", "Camera"]))
 
 
 
 
-def get_transform(shape_node):
-    '''
-    Return the transform node of a given shape node
-    '''
-    relatives = cmds.listRelatives(shape_node, parent=True, type="transform", fullPath=True) or []
-    assert relatives, "Could not find parent for shape node: %s" % shape_node
-    assert len(relatives) == 1, "More than one parent found for shape node: %s" % shape_node
-    return relatives[0]
-
-
-def get_short_name(node):
-    '''
-    Return the short name of a given maya node
-    '''
-    short_name = cmds.ls(node)
-    assert short_name, "Node does not exist: %s" % node
-    assert len(short_name) == 1, "More than one object matches node name: %s" % node
-    return short_name[0]
 
