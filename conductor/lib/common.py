@@ -13,7 +13,7 @@ def setup_logger():
     Returns a general formatted logging object.
     """
     logger = logging.getLogger("ConductorClient")
-    if os.environ.has_key('DEVELOPMENT'):
+    if os.environ.has_key('CONDUCTOR_DEVELOPMENT'):
         logger.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(levelname)s -  %(message)s')
     else:
