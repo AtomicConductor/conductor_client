@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>145</width>
-    <height>149</height>
+    <height>59</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -16,47 +16,13 @@
    </property>
    <item>
     <widget class="QGroupBox" name="ui_render_layers_grpbx">
+     <property name="toolTip">
+      <string>Choose the render layers to submit for rendering (green check)</string>
+     </property>
      <property name="title">
       <string>Render Layers</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QTreeWidget" name="ui_render_layers_trwgt">
-        <property name="styleSheet">
-         <string notr="true">QTreeWidget:indicator:unchecked {
-    image: url(:/images/resources/checkbox_off_redx_8x7.png);
- }	
-
-QTreeWidget:indicator:checked {
-    image: url(:/images/resources//checkbox_on_greenx_8x7.png);	
-}
-
-
-QTreeWidget:indicator:unchecked:disabled {
-    image: url(:/images/resources/checkbox_off_redx_disabled_8x7.png);
- }	
-
-QTreeWidget:indicator:checked:disabled {
-    image: url(:/images/resources//checkbox_on_greenx_disabled_8x7.png);	
-}
-
-</string>
-        </property>
-        <property name="indentation">
-         <number>0</number>
-        </property>
-        <column>
-         <property name="text">
-          <string notr="true">Layer</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>Camera</string>
-         </property>
-        </column>
-       </widget>
-      </item>
       <item>
        <widget class="QCheckBox" name="ui_upload_only">
         <property name="toolTip">
@@ -73,7 +39,6 @@ QTreeWidget:indicator:checked:disabled {
   </layout>
  </widget>
  <tabstops>
-  <tabstop>ui_render_layers_trwgt</tabstop>
   <tabstop>ui_upload_only</tabstop>
  </tabstops>
  <resources>

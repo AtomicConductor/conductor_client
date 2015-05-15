@@ -262,6 +262,7 @@ class Submit():
         else:
             resp = self.send_job()
         print resp
+        return resp
 
 
 class Uploads():

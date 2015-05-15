@@ -1,7 +1,7 @@
 import os, sys, uuid, inspect, tempfile
-from PySide import QtGui, QtCore, QtUiTools
-from conductor.tools import conductor_submit
-from conductor import submitter_resources  # This is required so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
+from PySide import QtGui, QtCore
+from conductor.tools import conductor_submit, pyside_utils
+from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -12,8 +12,16 @@ TODO:
 1. Create qt resource package or fix filepaths for all images to be set during code execution
 2. about menu? - provide link to studio's conductor url (via yaml config file) 
 3. Extendable vs private:  What's the line?
-
-
+4. rename files to "maya.py" and "nuke.py" ??
+5. consider conforming all code to camel case (including .ui widgets). 
+6. Consider adding validation to the base class so that inheritance can be used.
+7. tool tips!  - ask greg about a tool tip for "resource"
+8. What about the advanced options? ("Force Upload" and "Dependency Job" )
+9. what are the available commands for the "cmd" arg?  These should be documented:
+    nuke-render  (what flags are available?)
+    maya2015Render  (what flags are available?)
+10: validate resource string only [a-z0-9-]
+11: Submission confirmation dialog.
 '''
 
 class ConductorSubmitter(QtGui.QMainWindow):
@@ -21,21 +29,26 @@ class ConductorSubmitter(QtGui.QMainWindow):
     Base class for PySide front-end for submitting jobs to Conductor.
     
     Intended to be subclassed for each software context that may need a Conductor 
-    front end e.g. for <aya or for Nuke.
+    front end e.g. for Maya or Nuke.
     
-    The getExtendedWidget method acts as an opportunity for a developer to extend 
+    The self.getExtendedWidget method acts as an opportunity for a developer to extend 
     the UI to suit his/her needs. See the getExtendedWidgetthe docstring
       
-    '''
+        '''
 
     # .ui designer filepath
     _ui_filepath = os.path.join(RESOURCES_DIRPATH, 'submitter.ui')
 
+    # The text in the title bar of the UI
     _window_title = "Conductor"
+
+    # The instance type that is set by default in the UI. This integer
+    # corresponds to the core count of the conductor instance type
+    default_instance_type = 16
 
     def __init__(self, parent=None):
         super(ConductorSubmitter, self).__init__(parent=parent)
-        UiLoader.loadUi(self._ui_filepath, self)
+        pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
         self.initializeUi()
 
     def initializeUi(self):
@@ -56,6 +69,12 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Set the radio button on for the start/end frames by default
         self.on_ui_start_end_rdbtn_toggled(True)
+
+        # Populate the Instance Type combobox with the available instance configs
+        self.populateInstanceTypeCmbx()
+
+        # Set the default instance type
+        self.setInstanceType(self.default_instance_type)
 
         # Hide the widget that holds advanced settings. TODO: need to come back to this.
         self.ui_advanced_wgt.hide()
@@ -142,6 +161,14 @@ class ConductorSubmitter(QtGui.QMainWindow):
         rx_validation = "((%s|%s), +)+" % (rx_number, rx_range_w_step)  # The final regex which uses a space and comma as a delimeter between multiple frame strings
         self.frame_str_validator = QtGui.QRegExpValidator(QtCore.QRegExp(rx_validation), None)
 
+    def populateInstanceTypeCmbx(self):
+        '''
+        Populate the 
+        '''
+        instance_types = get_conductor_instance_types()
+        self.ui_instance_type_cmbx.clear()
+        for core_count, instance_type in sorted(instance_types.iteritems()):
+            self.ui_instance_type_cmbx.addItem(instance_type, userData=core_count)
 
     def setFrameRange(self, start, end):
         '''
@@ -203,14 +230,69 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return str(self.ui_custom_lnedt.text())
 
 
-    def generateConductorArgs(self):
+    def setInstanceType(self, core_count):
         '''
-        Return a dictionary which contains the expected conductor arguments and
-        their values as key/values
+        Set the UI's "Instance Type" combobox.  This is done by specifying the
+        core count int.
+        '''
+
+        item_idx = self.ui_instance_type_cmbx.findData(core_count)
+        if item_idx == -1:
+            raise Exception("Could not find combobox entry for core count: %s!"
+                            "This should never happen!" % core_count)
+        return self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
+
+    def getInstanceType(self):
+        '''
+        Return the number of cores that the user has selected from the
+        "Instance Type" combobox
+        '''
+        return int(self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex()))
+
+    def setResource(self, resource_str):
+        '''
+        Set the UI's Resource field
+        '''
+        self.ui_resource_lnedt.setText(resource_str)
+
+
+    def getResource(self):
+        '''
+        Return the UI's Resurce field
+        '''
+        return str(self.ui_resource_lnedt.text())
+
+    def generateConductorArgs(self, args):
+        '''
+        Return a dictionary which contains the necessary conductor argument names
+        and their values.  This dictionary will ultimately be passed directly 
+        into a conductor Submit object when instantiating/calling it.
+        
+        Generally, the majority of the values that one would populate this dictionary
+        with would be found by quering this UI, e.g.from the "frames" section.
+         
+
+        example:  TODO: Give a real example
+           {'cmd': str,
+            'cores': int,
+            'force': bool,
+            'frames': str,
+            'output_path': str,
+            'postcmd': str?,
+            'priority': int?,
+            'resource': ?,
+            'skip_time_check': bool?,
+            'upload_dependent': int? jobid?,
+            'upload_file': str,
+            'upload_only': bool,
+            'upload_paths': list of str?,
+            'user': str}
+            
         
         TODO: flesh out the docs for each variable
         available keys:
             cmd: str
+            cores: int
             force: bool
             frames: str
             output_path: str
@@ -222,7 +304,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
             upload_file: str
             upload_only: bool
             upload_paths: list of str?
-            usr: str
+            user: str
+
         '''
         class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
         message = "%s not implemented. Please override method as desribed in its docstring" % class_method
@@ -235,20 +318,21 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         return self.ui_force_upload_chkbx.isChecked()
 
-    def runConductorSubmission(self, args):
+    def runConductorSubmission(self, data):
         '''
         Instantiate a Conductor Submit object with the given conductor_args 
         (dict), and execute it. 
         '''
+        # Generate a dictionary of arguments to feed conductor
+        conductor_args = self.generateConductorArgs(data)
 
-
-        conductor_args = self.generateConductorArgs()
+        # Print out the values for each argument
         for arg_name, arg_value in conductor_args.iteritems():
             print "%s: %s" % (arg_name, arg_value)
 
-
-#         submission = conductor_submit.Submit(conductor_args)
-#         return submission.main()
+        # Instantiate a conductor Submit object and run the submission!
+        submission = conductor_submit.Submit(conductor_args)
+        return submission.main()
 
 
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
@@ -263,9 +347,18 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         This gets called when the user pressed the "Submit" button in the UI.
         
-        1. Run any presubmission processes.
-        2. Run the submission process.
-        3. Run any postsubmission processes.
+      
+        -- Submission Control Flow ---
+        Below is the method calling order of when a user presses the "submit" 
+        button in the UI: 
+            1. self.runPreSubmission()         # Run any pre-submission processes.
+            2. self.runConductorSubmission()   # Run the submission process.
+            3. self.runPostSubmission()        # Run any post-submission processes.
+            
+        Each one of these methods has the opportunity to return data, which in turn
+        will be available to the next method that is called.  If that mechanism
+        does not meet all pre/post submission needs, then overriding those methods
+        is also an available/appropriate methodology.  
         
         '''
         data = self.runPreSubmission()
@@ -281,11 +374,11 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return
 
 
-    def runPostSubmission(self, result):
+    def runPostSubmission(self, data):
         '''
-        Run any post submission processes, returning optional data that can
-        be passed into the main runConductorSubmission method.  The "result" argument
-        contains the results of the main runConductorSubmission method.
+        Run any post submission processes.  The "data" argument contains the results 
+        of the main runConductorSubmission method, so that any results can
+        be "inspected" and acted upon if desired.
         '''
         return
 
@@ -316,13 +409,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         self.ui_custom_lnedt.setStyleSheet(style_sheet)
 
-    def getCoreCount(self):
-        '''
-        Return the number of cores that the user has selected from the
-        "Core Count" combobox
-        '''
-        return int(self.ui_core_count_cmbx.currentText())
-
 
     @classmethod
     def runUi(cls):
@@ -339,47 +425,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
 
 
-
-class UiLoader(QtUiTools.QUiLoader):
-    '''
-    #TODO: Re-write docs/comments for this class
-
-    Load a Qt Designer .ui file and returns an instance of the user interface.
-
-    This was taken almost 100% verbatim from a stack overflow example.
-    '''
-
-    def __init__(self, baseinstance):
-        super(UiLoader, self).__init__(baseinstance)
-        self.baseinstance = baseinstance
-
-    def createWidget(self, class_name, parent=None, name=''):
-        if parent is None and self.baseinstance:
-            # supposed to create the top-level widget, return the base instance
-            # instead
-            return self.baseinstance
-        else:
-            # create a new widget for child widgets
-            widget = QtUiTools.QUiLoader.createWidget(self, class_name, parent, name)
-            if self.baseinstance:
-                # set an attribute for the new child widget on the base
-                # instance, just like uic.loadUi does.
-                setattr(self.baseinstance, name, widget)
-            return widget
-
-    @classmethod
-    def loadUi(cls, uifile, baseinstance=None):
-        '''
-        Load a Qt Designer .ui file and returns an instance of the user interface.
-
-        uifile: the file name or file-like object containing the .ui file.
-        baseinstance: the optional instance of the Qt base class. If specified then the user interface is created in it. Otherwise a new instance of the base class is automatically created.
-        Return type: the QWidget sub-class that implements the user interface.
-        '''
-        loader = cls(baseinstance)
-        widget = loader.load(uifile)
-        QtCore.QMetaObject.connectSlotsByName(widget)
-        return widget
 
 
 
@@ -401,6 +446,22 @@ def generate_temporary_filepath():
     filename = "conductor_dependencies_%s" % str(uuid.uuid1())
     return os.path.join(temp_dirpath, filename)
 
+
+def get_conductor_instance_types():
+    '''
+    Return a dictionary which represents the different Conductor instance
+    types available.  They key is the "core count" (which gets fed into
+    Conductor's Submit object as an argument), and the value is the string that
+    will appear in the ui to describe the instance type.
+    
+    TODO: This information should probably be put into and read from an external
+          file (yaml, json, etc) 
+    '''
+    instances = {2: " 2 core,  7.5GB Mem",
+                 4: " 4 core, 15.0GB Mem",
+                 8: " 8 core, 30.0GB Mem",
+                16: "16 core, 60.0GB Mem"}
+    return instances
 
 
 
