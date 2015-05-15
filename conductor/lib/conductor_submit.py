@@ -381,8 +381,6 @@ class Uploader():
         if sys.platform.startswith('win'):
             exp_file = os.path.abspath(os.path.expandvars(filename))
             unix_file = os.path.normpath(exp_file).replace('\\', "/")
-            for i in submit_settings.DRIVE_MAPS:
-                unix_file = unix_file.lstrip(i)
         else:
             unix_file = filename
         return unix_file
