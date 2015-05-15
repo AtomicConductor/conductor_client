@@ -367,8 +367,8 @@ class Uploader():
 
     def run_uploads(self,file_list):
         process_count = CONFIG['thread_count']
-        uploaded_queue = Queue()
-        upload_queue = Queue()
+        uploaded_queue = multiprocessing.Queue()
+        upload_queue = multiprocessing.Queue()
         for file in file_list:
             logger.debug('adding %s to queue' % file)
             upload_queue.put(file)

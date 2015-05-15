@@ -81,7 +81,7 @@ class Download(object):
 
     def get_download(self):
         ''' get a new file to download from the server or 404 '''
-        download_url = CONDUCTOR_URL + 'downloads/next'
+        download_url = CONFIG['url'] + 'downloads/next'
         response = self.make_request(download_url)
         if response.getcode() == '201':
             logger.info("new file to download:\n" + response.read())
@@ -90,7 +90,7 @@ class Download(object):
 
     def set_download_status(self,download_id,status):
         ''' update status of download '''
-        status_url = CONDUCTOR_URL + 'downloads/status'
+        status_url = CONFIG['url'] + 'downloads/status'
         post_dic = {
             'download_id': download_id,
             'status': status
@@ -202,7 +202,7 @@ class Download(object):
 
 
                             response = urllib2.urlopen(download_url)
-                            chunk_read(response, report_hook=chunk_report
+                            chunk_read(response, report_hook=chunk_report)
 
                             download_file.close()
                             logger.info( 'Download Complete!')
