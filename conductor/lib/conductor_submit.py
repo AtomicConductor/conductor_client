@@ -237,7 +237,6 @@ class Submit():
         # TODO: remove upload_paths
         if self.upload_file or self.upload_paths:
             upload_files = self.get_upload_files()
-            uploads = Uploads(upload_files, self.timeid, self.skip_time_check, force=self.force)
 
             # TODO
             uploader = Uploader()
@@ -259,69 +258,6 @@ class Submit():
         resp = self.send_job(upload_files = uploaded_files)
         print resp
         return resp
-
-
-class Uploads():
-    """ Manages Uploads from Local File System to Conductor """
-    def __init__(self, upload_files, timeid, skip_time_check=False, force=False):
-        self._secret_key = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/atomic-light-001.p12"))
-        self._gcloud_cmd = "gcloud auth activate-service-account %s --key-file %s --project %s" % (
-                                submit_settings._SERVICE_ACCOUNT_EMAIL, self._secret_key, submit_settings._CLOUD_PROJECT)
-        self._storage_cmd = "gsutil"
-        self.timeid = timeid
-        self.upload_files = upload_files
-        self.skip_time_check = skip_time_check
-        self.force = force
-
-
-    def run_uploads(self):
-        upload_files = []
-        upload_file_name = None
-        # pool = multiprocessing.Pool(processes=4)
-        for filename in self.upload_files:
-
-            print 'filename is ' + filename
-            next
-
-            # Handle frame padding files.
-            filename = re.sub("%0[0-9]d", '*', filename)
-            filename = re.sub("#+", '*', filename)
-
-            if os.path.isdir(filename):
-                glob_files = [filename]
-            else:
-                glob_files = glob.glob(filename)
-
-
-
-
-
-
-
-        if len(upload_files) > 0:
-            # Create a tmp file to keep track of what was uploaded.
-            # This file gets passed to Job submission.
-
-            upload_file_name = "%s_upload" % int(self.timeid)
-            tmp_file = '%s/%s' % (os.environ['TEMP'], upload_file_name)
-            try:
-                with open(tmp_file, 'w') as temp:
-                    temp.write(",".join(upload_files))
-            except IOError, e:
-                print("Could not write tmp file! check permissions. %s" % tmp_file)
-                raise e
-
-            bucket_name = "%s" % submit_settings._BUCKET_NAME
-            upload_file_name = "%s_upload" % int(time.time())
-            object_name = "%s/%s" % (submit_settings._UPLOAD_FILE_POINT, upload_file_name)
-            media = MediaFileUpload(tmp_file, chunksize=submit_settings.CHUNKSIZE, resumable=True)
-            if not media.mimetype():
-                media = MediaFileUpload(tmp_file, submit_settings.DEFAULT_MIMETYPE, resumable=True)
-            req = self.service.objects().insert(bucket=bucket_name, name=object_name, media_body=media)
-            resp = self.run_request(req)
-            os.remove(tmp_file)
-
-            return object_name
 
 
 class Uploader():

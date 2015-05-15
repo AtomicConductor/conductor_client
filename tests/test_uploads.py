@@ -18,7 +18,7 @@ upload_test_helpers = os.path.join(test_dir,'upload_helpers')
 os.environ['FLASK_CONF'] = 'TEST'
 TEST = True
 
-from lib.conductor_submit import Uploads, Uploader, Submit
+from lib.conductor_submit import Uploader, Submit
 
 
 class UploaderTest(unittest.TestCase):
