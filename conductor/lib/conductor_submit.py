@@ -221,16 +221,20 @@ class Submit():
         return f
 
     def main(self):
-        upload_file = None
+        logger.debug("Entering Submit.main")
+        uploaded_files = None
         # TODO: fix/test upload_paths
         if self.upload_file or self.upload_paths:
+            logger.debug("Running upload process")
             upload_files = self.get_upload_files()
             uploader = Uploader()
             uploaded_files = uploader.run_uploads(upload_files)
+        else:
+            logger.debug("No upload files specified")
 
         # Submit the job to conductor
         resp = self.send_job(upload_files = uploaded_files)
-        print resp
+        logger.info("RESPONSE DICTIONARY: %s" % resp)
         return resp
 
 
