@@ -179,7 +179,7 @@ class Submit():
         userpass = "%s:unused" % user.rstrip()
         return userpass
 
-    def send_job(self, cloud_upload_file=None):
+    def send_job(self, upload_files=None):
         userpass = self.get_token()
         if self.raw_command and self.frames:
             url = "jobs/"
@@ -195,8 +195,8 @@ class Submit():
                            'frame_range':self.frames,
                            'command':self.raw_command,
                            'instance_type':'n1-standard-16'}
-            if cloud_upload_file:
-                submit_dict['upload_file'] = cloud_upload_file
+            if upload_files:
+                submit_dict['upload_files'] = ','.join(upload_files)
             if self.priority:
                 submit_dict['priority'] = self.priority
             if self.upload_dep:
@@ -205,9 +205,9 @@ class Submit():
                 submit_dict['postcmd'] = self.postcmd
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
-        elif self.upload_only and cloud_upload_file:
+        elif self.upload_only and upload_files:
             url = "jobs/"
-            submit_dict = {'upload_file': cloud_upload_file,
+            submit_dict = {'upload_files': ','.join(upload_files),
                            'owner': self.user,
                            'frame_range':"x",
                            'command':'upload only',
@@ -245,7 +245,7 @@ class Submit():
             # uploader_args = {'url': 'http://test.conductor.io:8080' }
             # uploader = Uploader(uploader_args)
 
-            uploader.run_uploads(upload_files)
+            uploaded_files = uploader.run_uploads(upload_files)
 
             # upload_file = uploads.run_uploads()
             # if upload_file:
@@ -256,10 +256,7 @@ class Submit():
             #         return
 
         # Submit the job to conductor
-        if upload_file:
-            resp = self.send_job(upload_file)
-        else:
-            resp = self.send_job()
+        resp = self.send_job(upload_files = uploaded_files)
         print resp
         return resp
 
@@ -472,6 +469,8 @@ class Uploader():
 
         process_count = config.config['thread_count']
 
+        uploaded_queue = Queue()
+
         upload_queue = Queue()
         for file in file_list:
             logging.debug('adding %s to queue' % file)
@@ -479,7 +478,7 @@ class Uploader():
 
         threads = []
         for n in range(process_count):
-            thread = threading.Thread(target=self.upload_file, args = (upload_queue, ))
+            thread = threading.Thread(target=self.upload_file, args = (upload_queue, uploaded_queue))
             thread.start()
             threads.append(thread)
 
@@ -487,27 +486,35 @@ class Uploader():
             thread.join()
 
 
+        uploaded_list = []
+        while not uploaded_queue.empty():
+            uploaded_list.append(uploaded_queue.get())
 
-    def upload_file(self,queue):
+        return uploaded_list
+
+
+    def upload_file(self,upload_queue, uploaded_queue):
     # def upload_file(self,filename):
         # time.sleep(random.random())
         logging.debug('entering upload_file')
-        filename = queue.get()
+        filename = upload_queue.get()
         logging.debug('trying to upload %s' % filename)
         upload_url = self.get_upload_url(filename)
         logging.debug("upload url is '%s'" % upload_url)
         if upload_url is not '':
+            uploaded_queue.put(filename)
             logging.debug('uploading file %s' % filename)
             # Add retries
             resp, content = retry(lambda: self.do_upload(upload_url,"POST", open(filename,'rb')))
             logging.debug('finished uploading %s' % filename)
 
-        if queue.empty():
-            logging.debug('queue is empty')
+        if upload_queue.empty():
+            Logging.debug('upload_queue is empty')
             return None
         else:
-            logging.debug('queue is not empty')
-            self.upload_file(queue)
+            logging.debug('upload_queue is not empty')
+            self.upload_file(upload_queue)
+
 
 
     def do_upload(self,upload_url,http_verb,buffer):
