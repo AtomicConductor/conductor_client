@@ -57,7 +57,7 @@ class Submit():
 
     def consume_args(self, args):
         self.raw_command = args.get('cmd')
-        self.user = args.get('user')
+        self.user = args.get('user') or getpass.getuser()
         self.frames = args.get('frames')
         self.resource = args.get('resource')
         self.cores = args.get('cores')
@@ -68,7 +68,7 @@ class Submit():
         self.upload_paths = args.get('upload_paths')
         self.upload_only = args.get('upload_only')
         self.postcmd = args.get('postcmd')
-        self.skip_time_check = args.get('skip_time_check')
+        self.skip_time_check = args.get('skip_time_check') or False
         self.force = args.get('force')
 
         # TODO: switch this behavior to use file size plus md5 instead
