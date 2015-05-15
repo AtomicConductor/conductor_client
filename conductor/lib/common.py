@@ -8,17 +8,31 @@ import time
 import traceback
 import yaml
 
+def setup_logger():
+    """ This function is called when this file is imported!
+    Returns a general formatted logging object.
+    """
+    logger = logging.getLogger("ConductorClient")
+    if os.environ.has_key('DEVELOPMENT'):
+        logger.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s -  %(message)s')
+    else:
+        logger.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s -  %(message)s')
+    
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    return logger
 
-if os.environ.has_key('DEVELOPMENT'):
-    logging.basicConfig(level='DEBUG')
-else:
-    logging.basicConfig(level='INFO')
-    logging.info('set DEVELOPMENT environment variable to get debug messages')
-
+# Global logger object, don't use this object directly.
+# It is preferred to use the conductor.logger in the conductor __init__.py
+LOGGER = setup_logger()
 
 ###
 # Global Functions
 ###
+
 def retry(function,retry_count=5):
     # disable retries in testing
     if os.environ['FLASK_CONF'] == 'TEST':
