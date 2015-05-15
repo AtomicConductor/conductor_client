@@ -62,10 +62,9 @@ class Config():
     required_keys = ['account']
     default_config = {
         # TODO
-        'url': 'conductorio.com',
+        'base_url': 'atomic-light-001.appspot.com',
         'thread_count': (multiprocessing.cpu_count() * 2),
     }
-
 
     def __init__(self):
         logging.debug('base dir is %s' % self.base_dir())
@@ -75,6 +74,9 @@ class Config():
 
         combined_config = self.default_config
         combined_config.update(user_config)
+        if not 'url' in combined_config:
+            combined_config['url'] = 'https://%s-dot-%s' % (combined_config['account'],
+                                                            combined_config['base_url'])
         self.config = combined_config
         logging.debug('config is:\n%s' % self.config)
 
@@ -96,14 +98,17 @@ class Config():
             with open(config_file,'r') as file:
                 config = yaml.load(file)
         except IOError, e:
-            logging.error('could not find a config file at: %s' % config_file)
-            logging.error('please either create one at %s' % default_config_file)
-            logging.error('or set the CONDUCTOR_CONFIG environment variable to a valid config file')
-            raise ValueError
+            message = 'could not find a config file at: %s' % config_file
+            message += 'please either create one at %s' % default_config_file
+            message += 'or set the CONDUCTOR_CONFIG environment variable to a valid config file'
+            message += 'see %s for an example' % os.path.join(self.base_dir(),'config.example.yml')
+            logging.error(message)
+            raise ValueError(message)
 
         if config.__class__.__name__ != 'dict':
-            logging.error('config found at %s is not in proper yaml syntax' % config_file)
-            raise ValueError
+            message = 'config found at %s is not in proper yaml syntax' % config_file
+            logging.error(message)
+            raise ValueError(message)
 
         print 'config is %s' % config
         print 'config.__class__ is %s' % config.__class__
@@ -113,7 +118,8 @@ class Config():
         print 'config is %s' % config
         for required_key in self.required_keys:
             if not required_key in config:
-                logging.error("required param '%s' is not set in the config" % required_key)
-                raise ValueError
+                message = "required param '%s' is not set in the config" % required_key
+                logging.error(message)
+                raise ValueError(message)
 class Auth:
     pass
