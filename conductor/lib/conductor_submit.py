@@ -28,15 +28,6 @@ import random
 import math
 import traceback
 
-# TODO: test removal of apiclient and oauth
-from apiclient import discovery
-from apiclient.http import MediaFileUpload
-from apiclient.errors import HttpError
-from oauth2client import file as oauthfile
-from oauth2client import client
-from oauth2client import tools
-from multiprocessing import Process, Queue
-
 
 # from conductor
 from conductor.lib.common import logging, retry, Config
