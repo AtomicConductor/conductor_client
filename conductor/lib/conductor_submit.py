@@ -39,7 +39,6 @@ from multiprocessing import Process, Queue
 
 
 # from conductor
-import submit_settings
 from lib.common import logging, retry, Config
 from httplib2 import Http
 
