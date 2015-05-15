@@ -27,6 +27,7 @@ def setup_logger():
 
 # Global logger object, don't use this object directly.
 # It is preferred to use the conductor.logger in the conductor __init__.py
+# except within this file
 LOGGER = setup_logger()
 
 ###
@@ -41,26 +42,26 @@ def retry(function,retry_count=5):
     i=0
     while True:
         try:
-            logging.debug('trying to run %s' % function)
+            LOGGER.debug('trying to run %s' % function)
             return_values = function()
         except Exception, e:
             print 'caught error'
-            logging.debug('failed due to: \n%s' % traceback.format_exc())
+            LOGGER.debug('failed due to: \n%s' % traceback.format_exc())
             if i < retry_count:
                 sleep_time = int(math.pow(2,i))
-                logging.debug('retrying after %s seconds' % sleep_time)
+                LOGGER.debug('retrying after %s seconds' % sleep_time)
                 time.sleep(sleep_time)
                 i += 1
                 continue
             else:
-                logging.debug('exceeded %s retries. throwing error...' % retry_count)
+                LOGGER.debug('exceeded %s retries. throwing error...' % retry_count)
                 raise e
         else:
-            logging.debug('ran %s ok' % function)
+            LOGGER.debug('ran %s ok' % function)
             return return_values
 
 def run(cmd):
-    logging.debug("about to run command: " + cmd)
+    LOGGER.debug("about to run command: " + cmd)
     command = subprocess.Popen(
         cmd,
         shell=True,
@@ -81,7 +82,7 @@ class Config():
     }
 
     def __init__(self):
-        logging.debug('base dir is %s' % self.base_dir())
+        LOGGER.debug('base dir is %s' % self.base_dir())
         user_config = self.get_user_config()
         self.verify_config(user_config)
 
@@ -92,7 +93,7 @@ class Config():
             combined_config['url'] = 'https://%s-dot-%s' % (combined_config['account'],
                                                             combined_config['base_url'])
         self.config = combined_config
-        logging.debug('config is:\n%s' % self.config)
+        LOGGER.debug('config is:\n%s' % self.config)
 
 
 
@@ -106,7 +107,7 @@ class Config():
             config_file = os.environ['CONDUCTOR_CONFIG']
         elif config_file is None:
             config_file = default_config_file
-        logging.debug('using config: %s' % config_file)
+        LOGGER.debug('using config: %s' % config_file)
 
         try:
             with open(config_file,'r') as file:
@@ -116,12 +117,12 @@ class Config():
             message += 'please either create one at %s' % default_config_file
             message += 'or set the CONDUCTOR_CONFIG environment variable to a valid config file'
             message += 'see %s for an example' % os.path.join(self.base_dir(),'config.example.yml')
-            logging.error(message)
+            LOGGER.error(message)
             raise ValueError(message)
 
         if config.__class__.__name__ != 'dict':
             message = 'config found at %s is not in proper yaml syntax' % config_file
-            logging.error(message)
+            LOGGER.error(message)
             raise ValueError(message)
 
         print 'config is %s' % config
@@ -133,7 +134,7 @@ class Config():
         for required_key in self.required_keys:
             if not required_key in config:
                 message = "required param '%s' is not set in the config" % required_key
-                logging.error(message)
+                LOGGER.error(message)
                 raise ValueError(message)
 class Auth:
     pass
