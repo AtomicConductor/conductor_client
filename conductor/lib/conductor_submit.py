@@ -30,10 +30,13 @@ import traceback
 
 
 # from conductor
-from conductor.lib.common import logging, retry, Config
+import conductor
+from conductor.lib.common import retry
 from httplib2 import Http
 
 _this_dir = os.path.dirname(os.path.realpath(__file__))
+logger = conductor.logger
+CONFIG = conductor.CONFIG
 
 class Submit():
     """ Conductor Submission
@@ -218,16 +221,20 @@ class Submit():
         return f
 
     def main(self):
-        upload_file = None
+        logger.debug("Entering Submit.main")
+        uploaded_files = None
         # TODO: fix/test upload_paths
         if self.upload_file or self.upload_paths:
+            logger.debug("Running upload process")
             upload_files = self.get_upload_files()
             uploader = Uploader()
             uploaded_files = uploader.run_uploads(upload_files)
+        else:
+            logger.debug("No upload files specified")
 
         # Submit the job to conductor
         resp = self.send_job(upload_files = uploaded_files)
-        print resp
+        logger.info("RESPONSE DICTIONARY: %s" % resp)
         return resp
 
 
@@ -240,29 +247,29 @@ class Uploader():
     def get_children(self,path):
         path = path.strip()
         if os.path.isfile(path):
-            logging.debug("path %s is a file" % path)
+            logger.debug("path %s is a file" % path)
             return [self.clean_filename(path)]
         if os.path.isdir(path):
-            logging.debug("path %s is a dir" % path)
+            logger.debug("path %s is a dir" % path)
             file_list = []
             for root, dirs, files in os.walk(path,followlinks=True):
                 for name in files:
                     file_list.append(self.clean_filename(os.path.join(root,name)))
             return file_list
         else:
-            logging.debug("path %s does not make sense" % path)
+            logger.debug("path %s does not make sense" % path)
             raise ValueError
 
 
     def get_upload_url(self,filename):
-        app_url = config.config['url'] + '/api/files/get_upload_url'
+        app_url = CONFIG['url'] + '/api/files/get_upload_url'
         # TODO: need to pass md5 and filename
         params = {
             'filename': filename,
             'md5': self.get_base64_md5(filename)
         }
-        logging.debug('app_url is %s' % app_url)
-        logging.debug('params are %s' % params)
+        logger.debug('app_url is %s' % app_url)
+        logger.debug('params are %s' % params)
         upload_url = self.send_job(url=app_url,params=params)
         return upload_url
 
@@ -271,7 +278,7 @@ class Uploader():
         if headers is None:
             headers = {'Content-Type':'application/json'}
 
-        conductor_url = url or config.config['url']
+        conductor_url = url or CONFIG['url']
 
         if params is not None:
             # append trailing slash if not present
@@ -285,28 +292,28 @@ class Uploader():
         submit_dict = {}
         json_dict = json.dumps(submit_dict)
 
-        logging.debug('conductor_url is %s' % conductor_url)
+        logger.debug('conductor_url is %s' % conductor_url)
         password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
         password_manager.add_password(None, conductor_url, userpass.split(':')[0], 'unused')
         auth = urllib2.HTTPBasicAuthHandler(password_manager)
         opener = urllib2.build_opener(auth)
         urllib2.install_opener(opener)
-        logging.debug('conductor_url is: %s' % conductor_url)
-        logging.debug('headers are: %s' % headers)
+        logger.debug('conductor_url is: %s' % conductor_url)
+        logger.debug('headers are: %s' % headers)
         req = urllib2.Request(conductor_url,
                             headers=headers,
                             )
-        logging.debug('request is %s' % req)
-        logging.debug('trying to connect to app')
+        logger.debug('request is %s' % req)
+        logger.debug('trying to connect to app')
         handler = retry(lambda: urllib2.urlopen(req))
         f = handler.read()
-        logging.debug('f is: %s' %f)
+        logger.debug('f is: %s' %f)
         return f
 
 
     def get_md5(self,file_path, blocksize=65536):
-        logging.debug('trying to open %s' % file_path)
-        logging.debug('file_path.__class__ %s' % file_path.__class__)
+        logger.debug('trying to open %s' % file_path)
+        logger.debug('file_path.__class__ %s' % file_path.__class__)
         hasher = hashlib.md5()
         afile = open(file_path,'rb')
         buf = afile.read(blocksize)
@@ -318,9 +325,9 @@ class Uploader():
 
     def get_base64_md5(self,*args,**kwargs):
         md5 = self.get_md5(*args)
-        # logging.debug('md5 is %s' % md5)
+        # logger.debug('md5 is %s' % md5)
         b64 = base64.b64encode(md5)
-        logging.debug('b64 is %s' % b64)
+        logger.debug('b64 is %s' % b64)
         return b64
 
 
@@ -359,11 +366,11 @@ class Uploader():
 
 
     def run_uploads(self,file_list):
-        process_count = config.config['thread_count']
-        uploaded_queue = Queue()
-        upload_queue = Queue()
+        process_count = CONFIG['thread_count']
+        uploaded_queue = multiprocessing.Queue()
+        upload_queue = multiprocessing.Queue()
         for file in file_list:
-            logging.debug('adding %s to queue' % file)
+            logger.debug('adding %s to queue' % file)
             upload_queue.put(file)
 
         threads = []
@@ -383,23 +390,23 @@ class Uploader():
 
 
     def upload_file(self,upload_queue, uploaded_queue):
-        logging.debug('entering upload_file')
+        logger.debug('entering upload_file')
         filename = upload_queue.get()
-        logging.debug('trying to upload %s' % filename)
+        logger.debug('trying to upload %s' % filename)
         upload_url = self.get_upload_url(filename)
-        logging.debug("upload url is '%s'" % upload_url)
+        logger.debug("upload url is '%s'" % upload_url)
         if upload_url is not '':
             uploaded_queue.put(filename)
-            logging.debug('uploading file %s' % filename)
+            logger.debug('uploading file %s' % filename)
             # Add retries
             resp, content = retry(lambda: self.do_upload(upload_url,"POST", open(filename,'rb')))
-            logging.debug('finished uploading %s' % filename)
+            logger.debug('finished uploading %s' % filename)
 
         if upload_queue.empty():
             Logging.debug('upload_queue is empty')
             return None
         else:
-            logging.debug('upload_queue is not empty')
+            logger.debug('upload_queue is not empty')
             self.upload_file(upload_queue)
 
 
@@ -411,8 +418,6 @@ class Uploader():
 
 class BadArgumentError(ValueError):
     pass
-
-config = Config()
 
 if __name__ == '__main__':
     submission = Submit.from_commmand_line()
