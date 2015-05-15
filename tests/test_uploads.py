@@ -11,14 +11,13 @@ from urllib2 import HTTPError
 test_dir = os.path.dirname(os.path.realpath(__file__))
 os.chdir(test_dir)
 base_dir = os.path.dirname(test_dir)
-conductor_dir = os.path.join(base_dir,'conductor')
-sys.path.append(conductor_dir)
+sys.path.append(base_dir)
 
 upload_test_helpers = os.path.join(test_dir,'upload_helpers')
 os.environ['FLASK_CONF'] = 'TEST'
 TEST = True
 
-from lib.conductor_submit import Uploader, Submit
+from conductor.lib.conductor_submit import Uploader, Submit
 
 
 class UploaderTest(unittest.TestCase):

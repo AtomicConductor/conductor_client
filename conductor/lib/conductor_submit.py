@@ -39,7 +39,7 @@ from multiprocessing import Process, Queue
 
 
 # from conductor
-from lib.common import logging, retry, Config
+from conductor.lib.common import logging, retry, Config
 from httplib2 import Http
 
 _this_dir = os.path.dirname(os.path.realpath(__file__))
