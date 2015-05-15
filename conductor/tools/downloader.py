@@ -12,7 +12,6 @@ import urllib2
 import json
 import random
 import traceback
-import logging
 
 from apiclient import discovery
 from apiclient.errors import HttpError
@@ -20,11 +19,16 @@ from oauth2client import file as oauthfile
 from oauth2client import client
 from oauth2client import tools
 
+import conductor
 import submit_settings
 import conductor_client_common
 
 # TODO
-from lib.common import logging, retry, Config
+from lib.common import retry
+
+# Global logger and config objects
+logger = conductor.logger
+CONFIG = conductor.CONFIG
 
 class Download(object):
     def __init__(self):
@@ -60,7 +64,7 @@ class Download(object):
 
 
     def make_request(self,url,json_data=None):
-        logging.debug("connecting to conductor at: " + url)
+        logger.debug("connecting to conductor at: " + url)
         password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
         password_manager.add_password(None, url, self.userpass.split(':')[0], 'unused')
         auth = urllib2.HTTPBasicAuthHandler(password_manager)
@@ -72,7 +76,7 @@ class Download(object):
                        'Accepts':'application/json'},
             data=json_data)
         handler = urllib2.urlopen(req)
-        logging.debug("response code was %s" % handler.getcode())
+        logger.debug("response code was %s" % handler.getcode())
         return handler
 
     def get_download(self):
@@ -80,7 +84,7 @@ class Download(object):
         download_url = CONDUCTOR_URL + 'downloads/next'
         response = self.make_request(download_url)
         if response.getcode() == '201':
-            logging.info("new file to download:\n" + response.read())
+            logger.info("new file to download:\n" + response.read())
 
         return response
 
@@ -92,7 +96,7 @@ class Download(object):
             'status': status
         }
         response = self.make_request(status_url,json.dumps(post_dic))
-        logging.info("updated status:\n" + response.read())
+        logger.info("updated status:\n" + response.read())
         return response
 
     def main(self):
@@ -101,40 +105,40 @@ class Download(object):
             try:
                 response = self.get_download()
             except Exception, e:
-                logging.error("Failed to get download! %s" % e)
-                logging.error(traceback.format_exc())
+                logger.error("Failed to get download! %s" % e)
+                logger.error(traceback.format_exc())
                 time.sleep(30)
                 continue
             try:
-                logging.debug("beginging download loop")
+                logger.debug("beginging download loop")
                 if response.getcode() == 201:
                     try:
                         resp_data = json.loads(response.read())
-                        logging.debug("response data is:\n" + str(resp_data))
+                        logger.debug("response data is:\n" + str(resp_data))
                     except Exception, e:
-                        logging.error("Response from server was not json! %s" % e)
-                        logging.error(traceback.format_exc())
+                        logger.error("Response from server was not json! %s" % e)
+                        logger.error(traceback.format_exc())
                         time.sleep(15)
                         continue
                     resp_source = resp_data['source']
                     download_id = resp_data['download_id']
-                    logging.debug("resp_source is " +  resp_source)
+                    logger.debug("resp_source is " +  resp_source)
                     resp_source_path = "%s/" % '/'.join(resp_source.split('/')[3:-1])
-                    logging.debug("resp_source_path is: " + resp_source_path)
+                    logger.debug("resp_source_path is: " + resp_source_path)
                     fields_to_return = "items(name)"
 
-                    logging.debug("excuting request")
+                    logger.debug("excuting request")
                     resp = req.execute()
-                    logging.debug( "completed request. resp is %s" % resp)
-                    logging.debug("resp_source is " + resp_source)
+                    logger.debug( "completed request. resp is %s" % resp)
+                    logger.debug("resp_source is " + resp_source)
                     frame = resp_source.split('*')[1]
-                    logging.debug("got frame: " + frame)
+                    logger.debug("got frame: " + frame)
                     sources = []
-                    logging.debug( "entering resp loop")
+                    logger.debug( "entering resp loop")
                     for i in resp['items']:
-                        logging.debug("in item loop. looking for frame: " + frame)
+                        logger.debug("in item loop. looking for frame: " + frame)
                         if frame in i['name']:
-                            logging.debug("found frame %s in %s" % (frame, i['name']))
+                            logger.debug("found frame %s in %s" % (frame, i['name']))
                             sources.append(i['name'])
 
                             download_url = i['download_url']
@@ -148,13 +152,13 @@ class Download(object):
                             resp_dest = resp_data['destination']
                             destination_dir = os.path.join(resp_dest, subDir)
                             destination = os.path.join(destination_dir, file_name)
-                            logging.debug( "destination is: " + destination)
+                            logger.debug( "destination is: " + destination)
 
                             if not os.path.exists(os.path.dirname(destination)):
                                 os.makedirs(os.path.dirname(destination), 0775)
-                            logging.debug("Source: %s" % source)
-                            logging.debug("SubDir: %s" % subDir)
-                            logging.debug("Destination: %s" % destination)
+                            logger.debug("Source: %s" % source)
+                            logger.debug("SubDir: %s" % subDir)
+                            logger.debug("Destination: %s" % destination)
 
 
                             CHUNKSIZE = 8192
@@ -164,11 +168,11 @@ class Download(object):
                                 percent = round(percent*100, 2)
 
 
-                                logging.info("Downloaded %d of %d bytes (%0.2f%%)\r" %
+                                logger.info("Downloaded %d of %d bytes (%0.2f%%)\r" %
                                     (bytes_so_far, total_size, percent))
 
                                 if bytes_so_far >= total_size:
-                                    logging.info('\n')
+                                    logger.info('\n')
 
                             def chunk_read(response, chunk_size=CHUNKSIZE, report_hook=None):
                                 total_size = response.info().getheader('Content-Length').strip()
@@ -201,21 +205,21 @@ class Download(object):
                             chunk_read(response, report_hook=chunk_report
 
                             download_file.close()
-                            logging.info( 'Download Complete!')
+                            logger.info( 'Download Complete!')
                             if "/publish/" in destination:
                                 os.chmod(destination, 0755)
                             else:
                                 os.chmod(destination, 0775)
                         else:
-                            logging.debug( "there is no frame in %s" % i['name'])
-                    logging.debug( "done with resp loop")
+                            logger.debug( "there is no frame in %s" % i['name'])
+                    logger.debug( "done with resp loop")
                     self.set_download_status(download_id,'downloaded')
                 else:
-                    logging.debug("nothing to download. sleeping...")
+                    logger.debug("nothing to download. sleeping...")
                     time.sleep(5)
             except Exception, e:
-                logging.error( "caught exception %s" % e)
-                logging.error(traceback.format_exc())
+                logger.error( "caught exception %s" % e)
+                logger.error(traceback.format_exc())
                 # add error checking
                 if not download_id == None:
                     self.set_download_status(download_id,'pending')
