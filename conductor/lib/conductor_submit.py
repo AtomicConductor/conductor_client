@@ -145,8 +145,6 @@ class Submit():
         return parser.parse_args()
 
 
-
-
     def get_upload_files(self):
         """ When given an upload file, return a list of files.
             Expects a file containing string absolute file paths,
@@ -154,7 +152,6 @@ class Submit():
         """
         files = []
         if self.upload_file:
-            print "self.upload_file is " + self.upload_file
             with open(self.upload_file, 'r') as f:
                 print 'opening file'
                 contents = f.read()
@@ -164,8 +161,6 @@ class Submit():
                 print "file_name is '%s'" % str(file_name)
                 # TODO:
                 files.extend(Uploader().get_children(file_name))
-                # uploader_args = {'url': 'http://test.conductor.io:8080' }
-                # files.extend(Uploader(uploader_args).get_children(file_name))
 
         return files
 
@@ -233,26 +228,11 @@ class Submit():
 
     def main(self):
         upload_file = None
-        # Handle uploads
-        # TODO: remove upload_paths
+        # TODO: fix/test upload_paths
         if self.upload_file or self.upload_paths:
             upload_files = self.get_upload_files()
-
-            # TODO
             uploader = Uploader()
-
-            # uploader_args = {'url': 'http://test.conductor.io:8080' }
-            # uploader = Uploader(uploader_args)
-
             uploaded_files = uploader.run_uploads(upload_files)
-
-            # upload_file = uploads.run_uploads()
-            # if upload_file:
-            #     print upload_file
-            # else:
-            #     print "Upload Not Needed."
-            #     if self.upload_only:
-            #         return
 
         # Submit the job to conductor
         resp = self.send_job(upload_files = uploaded_files)
@@ -262,10 +242,9 @@ class Submit():
 
 class Uploader():
     def __init__(self,args=None):
-
-        print 'creating new iploader'
         self.userpass = None
         self.get_token()
+
 
     def get_children(self,path):
         path = path.strip()
@@ -282,6 +261,7 @@ class Uploader():
         else:
             logging.debug("path %s does not make sense" % path)
             raise ValueError
+
 
     def get_upload_url(self,filename):
         app_url = config.config['url'] + '/api/files/get_upload_url'
@@ -300,11 +280,7 @@ class Uploader():
         if headers is None:
             headers = {'Content-Type':'application/json'}
 
-
-        if url is None:
-            conductor_url = config.config['url']
-        else:
-            conductor_url = url
+        conductor_url = url or config.config['url']
 
         if params is not None:
             # append trailing slash if not present
@@ -315,36 +291,27 @@ class Uploader():
 
 
         userpass = self.get_token()
-
         submit_dict = {}
         json_dict = json.dumps(submit_dict)
 
-
-        # conductor_url = url
         logging.debug('conductor_url is %s' % conductor_url)
         password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
         password_manager.add_password(None, conductor_url, userpass.split(':')[0], 'unused')
         auth = urllib2.HTTPBasicAuthHandler(password_manager)
         opener = urllib2.build_opener(auth)
         urllib2.install_opener(opener)
-
-
         logging.debug('conductor_url is: %s' % conductor_url)
         logging.debug('headers are: %s' % headers)
         req = urllib2.Request(conductor_url,
                             headers=headers,
                             )
-                            # data=json_dict)
         logging.debug('request is %s' % req)
-
-
-
         logging.debug('trying to connect to app')
         handler = retry(lambda: urllib2.urlopen(req))
-
         f = handler.read()
         logging.debug('f is: %s' %f)
         return f
+
 
     def get_md5(self,file_path, blocksize=65536):
         logging.debug('trying to open %s' % file_path)
@@ -377,6 +344,7 @@ class Uploader():
             raise IOError('File does not start at root mount "/", %s' % filename)
         return filename
 
+
     def convert_win_path(self, filename):
         if sys.platform.startswith('win'):
             exp_file = os.path.abspath(os.path.expandvars(filename))
@@ -400,11 +368,8 @@ class Uploader():
 
 
     def run_uploads(self,file_list):
-
         process_count = config.config['thread_count']
-
         uploaded_queue = Queue()
-
         upload_queue = Queue()
         for file in file_list:
             logging.debug('adding %s to queue' % file)
@@ -419,7 +384,6 @@ class Uploader():
         for thread in threads:
             thread.join()
 
-
         uploaded_list = []
         while not uploaded_queue.empty():
             uploaded_list.append(uploaded_queue.get())
@@ -428,8 +392,6 @@ class Uploader():
 
 
     def upload_file(self,upload_queue, uploaded_queue):
-    # def upload_file(self,filename):
-        # time.sleep(random.random())
         logging.debug('entering upload_file')
         filename = upload_queue.get()
         logging.debug('trying to upload %s' % filename)
@@ -450,12 +412,10 @@ class Uploader():
             self.upload_file(upload_queue)
 
 
-
     def do_upload(self,upload_url,http_verb,buffer):
         h = Http()
         resp, content = h.request(upload_url,http_verb, buffer)
         return resp, content
-
 
 
 class BadArgumentError(ValueError):
