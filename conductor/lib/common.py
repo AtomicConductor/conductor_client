@@ -19,7 +19,7 @@ def setup_logger():
     else:
         logger.setLevel(logging.INFO)
         formatter = logging.Formatter('%(asctime)s -  %(message)s')
-    
+
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
@@ -30,16 +30,17 @@ def setup_logger():
 # except within this file
 LOGGER = setup_logger()
 
-###
+# ##
 # Global Functions
-###
+# ##
 
-def retry(function,retry_count=5):
+def retry(function, retry_count=5):
+
     # disable retries in testing
-    if os.environ['FLASK_CONF'] == 'TEST':
+    if os.environ.get('FLASK_CONF') == 'TEST':
         retry_count = 0
 
-    i=0
+    i = 0
     while True:
         try:
             LOGGER.debug('trying to run %s' % function)
@@ -48,8 +49,9 @@ def retry(function,retry_count=5):
             print 'caught error'
             LOGGER.debug('failed due to: \n%s' % traceback.format_exc())
             if i < retry_count:
-                sleep_time = int(math.pow(2,i))
+                sleep_time = int(math.pow(2, i))
                 LOGGER.debug('retrying after %s seconds' % sleep_time)
+
                 time.sleep(sleep_time)
                 i += 1
                 continue
@@ -100,8 +102,8 @@ class Config():
     def base_dir(self):
         return os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
-    def get_user_config(self,config_file=None):
-        default_config_file = os.path.join(self.base_dir(),'config.yml')
+    def get_user_config(self, config_file=None):
+        default_config_file = os.path.join(self.base_dir(), 'config.yml')
 
         if os.environ.has_key('CONDUCTOR_CONFIG'):
             config_file = os.environ['CONDUCTOR_CONFIG']
@@ -110,14 +112,15 @@ class Config():
         LOGGER.debug('using config: %s' % config_file)
 
         try:
-            with open(config_file,'r') as file:
+            with open(config_file, 'r') as file:
                 config = yaml.load(file)
         except IOError, e:
             message = 'could not find a config file at: %s' % config_file
             message += 'please either create one at %s' % default_config_file
             message += 'or set the CONDUCTOR_CONFIG environment variable to a valid config file'
-            message += 'see %s for an example' % os.path.join(self.base_dir(),'config.example.yml')
+            message += 'see %s for an example' % os.path.join(self.base_dir(), 'config.example.yml')
             LOGGER.error(message)
+
             raise ValueError(message)
 
         if config.__class__.__name__ != 'dict':
@@ -129,7 +132,7 @@ class Config():
         print 'config.__class__ is %s' % config.__class__
         return config
 
-    def verify_config(self,config):
+    def verify_config(self, config):
         print 'config is %s' % config
         for required_key in self.required_keys:
             if not required_key in config:

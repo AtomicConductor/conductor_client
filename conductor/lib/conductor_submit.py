@@ -9,30 +9,32 @@ import base64
 import os
 import sys
 import re
-import glob
 import time
 import argparse
+import itertools
 import hashlib
-import httplib2
 import urllib
 import urllib2
 import json
-import random
-import datetime
-import tempfile
 import getpass
-import subprocess
-import multiprocessing
 import threading
-import random
-import math
-import traceback
-
+import multiprocessing
+import Queue as queue_exception
 
 # from conductor
 import conductor
+
 from conductor.lib.common import retry
 from httplib2 import Http
+
+import logging
+if os.environ.has_key('DEVELOPMENT'):
+    logging.basicConfig(level='DEBUG')
+else:
+    logging.basicConfig(level='INFO')
+    logging.info('set DEVELOPMENT environment variable to get debug messages')
+
+
 
 _this_dir = os.path.dirname(os.path.realpath(__file__))
 logger = conductor.logger
@@ -47,8 +49,11 @@ class Submit():
         $ python conductor_submit.py -h
     """
     def __init__(self, args):
+        print "itit Submit"
         self.timeid = int(time.time())
         self.consume_args(args)
+        self.validate_args()
+        print "Consumed args"
 
     @classmethod
     def from_commmand_line(cls):
@@ -59,25 +64,43 @@ class Submit():
         self.raw_command = args.get('cmd')
         self.user = args.get('user') or getpass.getuser()
         self.frames = args.get('frames')
-        self.resource = args.get('resource')
-        self.cores = args.get('cores')
-        self.priority = args.get('priority')
         self.upload_dep = args.get('upload_dependent')
         self.output_path = args.get('output_path')
         self.upload_file = args.get('upload_file')
-        self.upload_paths = args.get('upload_paths')
         self.upload_only = args.get('upload_only')
         self.postcmd = args.get('postcmd')
         self.skip_time_check = args.get('skip_time_check') or False
         self.force = args.get('force')
+
+        # Apply client config values in cases where arguments have not been passed in
+        self.cores = args.get('cores', CONFIG["instance_cores"])
+        self.resource = args.get('resource', CONFIG["resource"])
+        self.priority = args.get('priority', CONFIG["priority"])
+        self.upload_paths = args.get('upload_paths', [])
+
 
         # TODO: switch this behavior to use file size plus md5 instead
         # For now always default nuke uploads to skip time check
         if self.upload_only or "nuke-render" in self.raw_command:
             self.skip_time_check = True
 
-        if self.upload_paths is None:
-            self.upload_paths = []
+
+
+    def validate_args(self):
+        '''
+        Ensure that the combination of arugments don't result in an invalid job/request
+        '''
+        # TODO: Clean this shit up
+        if self.raw_command and self.frames:
+            pass
+
+        elif self.upload_only and (self.upload_file or self.upload_paths):
+            pass
+
+        else:
+            raise BadArgumentError('The supplied arguments could not submit a valid request.')
+
+
 
     @classmethod
     def _parseArgs(cls):
@@ -104,7 +127,7 @@ class Submit():
             required=False)
         parser.add_argument("--upload_paths",
             help="Paths to upload",
-            nargs="*")
+            nargs="*")  # TODO(lws): ensure that this return an empty list if not specified
         parser.add_argument("--resource",
             help="resource pool to submit jobs to, defaults to show name.",
             type=str,
@@ -138,54 +161,54 @@ class Submit():
 
         return parser.parse_args()
 
-
-    def get_upload_files(self):
-        """ When given an upload file, return a list of files.
-            Expects a file containing string absolute file paths,
-            seperated by commas.
-        """
-        files = []
-        if self.upload_file:
-            with open(self.upload_file, 'r') as f:
-                print 'opening file'
-                contents = f.read()
-                print "contents is '%s'" % contents
-            print "contents is '%s'" % contents
-            for file_name in contents.split(','):
-                print "file_name is '%s'" % str(file_name)
-                # TODO:
-                files.extend(Uploader().get_children(file_name))
-
-        return files
+#
+#     def get_upload_files(self):
+#         """ When given an upload file, return a list of files.
+#             Expects a file containing string absolute file paths,
+#             seperated by commas.
+#         """
+#         files = []
+#
+#         for file_name in self.upload_paths:
+#             print "file_name is '%s'" % str(file_name)
+#             # TODO:
+#             files.extend(Uploader().get_children(file_name))
+#
+#         return files
 
 
-    def get_token(self):
-        token_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/CONDUCTOR_TOKEN.pem"))
-        if not os.path.exists(token_path):
-            raise IOError("Could not locate .pem file: %s" % token_path)
-        with open(token_path, 'r') as f:
-            user = f.read()
-        userpass = "%s:unused" % user.rstrip()
-        return userpass
+#     def get_token(self):
+#         token_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/CONDUCTOR_TOKEN.pem"))
+#         if not os.path.exists(token_path):
+#             raise IOError("Could not locate .pem file: %s" % token_path)
+#         with open(token_path, 'r') as f:
+#             user = f.read()
+#         userpass = "%s:unused" % user.rstrip()
+#         return userpass
 
     def send_job(self, upload_files=None):
-        userpass = self.get_token()
-        if self.raw_command and self.frames:
-            url = "jobs/"
-            if not self.resource:
-                self.resource = "default"
-            if not self.cores:
-                self.cores = 16
+        '''
+        Construct args for two different cases.
+        
+        If upload_only or running an actual command
+        
+        '''
+        submit_dict = {'owner':self.user}
+        if upload_files:
+            submit_dict['upload_files'] = ','.join(upload_files)
 
-            resource_tag = "%s-%s" % (self.cores, self.resource.lower())
+        if self.upload_only and upload_files:
+            submit_dict.update({'frame_range':"x",
+                                'command':'upload only',
+                                'instance_type':'n1-standard-1'})
 
-            submit_dict = {'owner':self.user,
-                           'resource':resource_tag,
-                           'frame_range':self.frames,
-                           'command':self.raw_command,
-                           'instance_type':'n1-standard-16'}
-            if upload_files:
-                submit_dict['upload_files'] = ','.join(upload_files)
+        else:
+
+            submit_dict.update({'resource':self.resource,
+                                'frame_range':self.frames,
+                                'command':self.raw_command,
+                                'cores':self.cores})
+
             if self.priority:
                 submit_dict['priority'] = self.priority
             if self.upload_dep:
@@ -194,74 +217,68 @@ class Submit():
                 submit_dict['postcmd'] = self.postcmd
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
-        elif self.upload_only and upload_files:
-            url = "jobs/"
-            submit_dict = {'upload_files': ','.join(upload_files),
-                           'owner': self.user,
-                           'frame_range':"x",
-                           'command':'upload only',
-                           'instance_type':'n1-standard-1'}
-        else:
-            raise BadArgumentError('The supplied arguments could not submit a valid request.')
-
-        json_dict = json.dumps(submit_dict)
-        conductor_url = "https://riotgames-dot-atomic-light-001.appspot.com/%s" % url
-        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        password_manager.add_password(None, conductor_url, userpass.split(':')[0], 'unused')
-        auth = urllib2.HTTPBasicAuthHandler(password_manager)
-        opener = urllib2.build_opener(auth)
-        urllib2.install_opener(opener)
 
 
-        req = urllib2.Request(conductor_url,
-                            headers={'Content-Type':'application/json'},
-                            data=json_dict)
-        handler = urllib2.urlopen(req)
-        f = handler.read()
-        return f
+        make_request(uri_path="jobs/", data=submit_dict)
+
 
     def main(self):
-        logger.debug("Entering Submit.main")
-        uploaded_files = None
-        # TODO: fix/test upload_paths
-        if self.upload_file or self.upload_paths:
-            logger.debug("Running upload process")
-            upload_files = self.get_upload_files()
-            uploader = Uploader()
-            uploaded_files = uploader.run_uploads(upload_files)
-        else:
-            logger.debug("No upload files specified")
+        upload_files = self.get_upload_files()
+
+        uploader = Uploader()
+        uploaded_files = uploader.run_uploads(upload_files)
 
         # Submit the job to conductor
-        resp = self.send_job(upload_files = uploaded_files)
-        logger.info("RESPONSE DICTIONARY: %s" % resp)
-        return resp
+        return  self.send_job(upload_files=uploaded_files)
 
+
+    def get_upload_files(self):
+        '''
+        Resolve the upload_paths and upload_file arguments to return a single list
+        of paths to upload
+        '''
+        filepaths = []
+        if self.upload_file:
+
+            # ## Resolve the "upload_file" arg
+            logger.debug("self.upload_file is %s", self.upload_file)
+
+            with open(self.upload_file, 'r') as file_:
+                logger.debug('opening file')
+                contents = file_.read()
+                file_list = contents.split(",")
+
+            # call get_children for each file in the file list
+            filepaths = itertools.chain(list([Uploader().get_children(filepath) for filepath in file_list]))
+
+        # merge the paths from both upload file arguments
+        return filepaths + self.upload_paths
 
 class Uploader():
-    def __init__(self,args=None):
-        self.userpass = None
-        self.get_token()
+    def __init__(self, args=None):
+        logging.debug("Uploader.__init__")
+        authorize_urllib()
 
-
-    def get_children(self,path):
+    def get_children(self, path):
         path = path.strip()
         if os.path.isfile(path):
             logger.debug("path %s is a file" % path)
             return [self.clean_filename(path)]
         if os.path.isdir(path):
             logger.debug("path %s is a dir" % path)
+
             file_list = []
-            for root, dirs, files in os.walk(path,followlinks=True):
+            for root, _, files in os.walk(path, followlinks=True):
                 for name in files:
-                    file_list.append(self.clean_filename(os.path.join(root,name)))
+                    file_list.append(self.clean_filename(os.path.join(root, name)))
             return file_list
         else:
             logger.debug("path %s does not make sense" % path)
             raise ValueError
 
 
-    def get_upload_url(self,filename):
+    def get_upload_url(self, filename):
+
         app_url = CONFIG['url'] + '/api/files/get_upload_url'
         # TODO: need to pass md5 and filename
         params = {
@@ -270,52 +287,16 @@ class Uploader():
         }
         logger.debug('app_url is %s' % app_url)
         logger.debug('params are %s' % params)
-        upload_url = self.send_job(url=app_url,params=params)
+        upload_url = self.send_job(url=app_url, params=params)
+
         return upload_url
 
-
-    def send_job(self,headers=None,url=None,params=None):
-        if headers is None:
-            headers = {'Content-Type':'application/json'}
-
-        conductor_url = url or CONFIG['url']
-
-        if params is not None:
-            # append trailing slash if not present
-            # if url[-1] != '/':
-            #     url += '/'
-            conductor_url += '?'
-            conductor_url += urllib.urlencode(params)
-
-
-        userpass = self.get_token()
-        submit_dict = {}
-        json_dict = json.dumps(submit_dict)
-
-        logger.debug('conductor_url is %s' % conductor_url)
-        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        password_manager.add_password(None, conductor_url, userpass.split(':')[0], 'unused')
-        auth = urllib2.HTTPBasicAuthHandler(password_manager)
-        opener = urllib2.build_opener(auth)
-        urllib2.install_opener(opener)
-        logger.debug('conductor_url is: %s' % conductor_url)
-        logger.debug('headers are: %s' % headers)
-        req = urllib2.Request(conductor_url,
-                            headers=headers,
-                            )
-        logger.debug('request is %s' % req)
-        logger.debug('trying to connect to app')
-        handler = retry(lambda: urllib2.urlopen(req))
-        f = handler.read()
-        logger.debug('f is: %s' %f)
-        return f
-
-
-    def get_md5(self,file_path, blocksize=65536):
+    def get_md5(self, file_path, blocksize=65536):
         logger.debug('trying to open %s' % file_path)
         logger.debug('file_path.__class__ %s' % file_path.__class__)
+
         hasher = hashlib.md5()
-        afile = open(file_path,'rb')
+        afile = open(file_path, 'rb')
         buf = afile.read(blocksize)
         while len(buf) > 0:
             hasher.update(buf)
@@ -323,15 +304,14 @@ class Uploader():
         return hasher.digest()
 
 
-    def get_base64_md5(self,*args,**kwargs):
+    def get_base64_md5(self, *args, **kwargs):
         md5 = self.get_md5(*args)
-        # logger.debug('md5 is %s' % md5)
         b64 = base64.b64encode(md5)
         logger.debug('b64 is %s' % b64)
         return b64
 
 
-    def clean_filename(self,filename):
+    def clean_filename(self, filename):
         # Handle frame padding files.
         filename = re.sub("%0[0-9]d", '*', filename)
         filename = re.sub("#+", '*', filename)
@@ -352,36 +332,44 @@ class Uploader():
         return unix_file
 
 
-    def get_token(self):
-        if self.userpass != None:
-            return self.userpass
-        token_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/CONDUCTOR_TOKEN.pem"))
-        if not os.path.exists(token_path):
-            raise IOError("Could not locate .pem file: %s" % token_path)
-        with open(token_path, 'r') as f:
-            user = f.read()
-        userpass = "%s:unused" % user.rstrip()
-        self.userpass = userpass
-        return userpass
+#     def get_token(self):
+#         if self.userpass != None:
+#             return self.userpass
+#         token_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/CONDUCTOR_TOKEN.pem"))
+#         if not os.path.exists(token_path):
+#             raise IOError("Could not locate .pem file: %s" % token_path)
+#         with open(token_path, 'r') as f:
+#             user = f.read()
+#         userpass = "%s:unused" % user.rstrip()
+#         self.userpass = userpass
+#         return userpass
 
 
-    def run_uploads(self,file_list):
+    def run_uploads(self, file_list):
+        if not file_list:
+            logger.debug("No files to upload. Skipping run_uploads")
+            return []
+
         process_count = CONFIG['thread_count']
         uploaded_queue = multiprocessing.Queue()
         upload_queue = multiprocessing.Queue()
-        for file in file_list:
-            logger.debug('adding %s to queue' % file)
-            upload_queue.put(file)
+        for upload_file in file_list:
+            logger.debug('adding %s to queue' % upload_file)
+            upload_queue.put(upload_file)
 
         threads = []
         for n in range(process_count):
-            thread = threading.Thread(target=self.upload_file, args = (upload_queue, uploaded_queue))
+
+            thread = threading.Thread(target=self.upload_file, args=(upload_queue, uploaded_queue))
+
             thread.start()
             threads.append(thread)
 
-        for thread in threads:
+        for idx, thread in enumerate(threads):
+            print 'waiting for thread: %s' % idx
             thread.join()
 
+        print 'done with threading stuff'
         uploaded_list = []
         while not uploaded_queue.empty():
             uploaded_list.append(uploaded_queue.get())
@@ -389,9 +377,14 @@ class Uploader():
         return uploaded_list
 
 
-    def upload_file(self,upload_queue, uploaded_queue):
+    def upload_file(self, upload_queue, uploaded_queue):
         logger.debug('entering upload_file')
-        filename = upload_queue.get()
+        try:
+            filename = upload_queue.get(block=False)
+        except queue_exception.Empty:
+            print 'queue is empty, caught EMPTY'
+            return
+
         logger.debug('trying to upload %s' % filename)
         upload_url = self.get_upload_url(filename)
         logger.debug("upload url is '%s'" % upload_url)
@@ -399,25 +392,80 @@ class Uploader():
             uploaded_queue.put(filename)
             logger.debug('uploading file %s' % filename)
             # Add retries
-            resp, content = retry(lambda: self.do_upload(upload_url,"POST", open(filename,'rb')))
+            resp, content = retry(lambda: self.do_upload(upload_url, "POST", open(filename, 'rb')))
             logger.debug('finished uploading %s' % filename)
 
         if upload_queue.empty():
-            Logging.debug('upload_queue is empty')
+            print('upload_queue is empty')
             return None
         else:
             logger.debug('upload_queue is not empty')
+
             self.upload_file(upload_queue)
 
 
-    def do_upload(self,upload_url,http_verb,buffer):
+        return
+
+
+    def do_upload(self, upload_url, http_verb, upload_buffer):
         h = Http()
-        resp, content = h.request(upload_url,http_verb, buffer)
+        resp, content = h.request(upload_url, http_verb, upload_buffer)
         return resp, content
+
+
+def get_token():
+    # TODO: Take CONDUCTOR_TOKEN.pem from config
+    token_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/CONDUCTOR_TOKEN.pem"))
+    if not os.path.exists(token_path):
+        raise IOError("Could not locate .pem file: %s" % token_path)
+    with open(token_path, 'r') as f:
+        user = f.read()
+    userpass = "%s:unused" % user.rstrip()
+    return userpass
+
+def authorize_urllib():
+    '''
+    This is crazy magic that's apparently ok
+    '''
+    token = get_token()
+    password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+    password_manager.add_password(None, CONFIG['url'], token.split(':')[0], 'unused')
+    auth = urllib2.HTTPBasicAuthHandler(password_manager)
+    opener = urllib2.build_opener(auth)
+    urllib2.install_opener(opener)
+
+
+def make_request(uri_path="/", headers=None, params=None, data=None, verb=None):
+    '''
+    verb: PUT, POST, GET, DELETE, HEAD
+    '''
+    # TODO: set Content Type to json if data arg
+    if not headers:
+        headers = {'Content-Type':'application/json'}
+    logging.debug('headers are: %s' % headers)
+
+    # Construct URL
+    conductor_url = CONFIG['url'] + uri_path
+    if params:
+        conductor_url += '?'
+        conductor_url += urllib.urlencode(params)
+    logging.debug('conductor_url is %s', conductor_url)
+
+    req = urllib2.Request(conductor_url, headers=headers, data=data)
+    if verb:
+        req.get_method = lambda: verb
+    logging.debug('request is %s' % req)
+
+    logging.debug('trying to connect to app')
+    handler = retry(lambda: urllib2.urlopen(req))
+    response_string = handler.read()
+    logging.debug('response_string is: %s' % response_string)
+    return response_string
 
 
 class BadArgumentError(ValueError):
     pass
+
 
 if __name__ == '__main__':
     submission = Submit.from_commmand_line()
