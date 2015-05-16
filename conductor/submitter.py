@@ -1,6 +1,6 @@
 import os, sys, uuid, inspect, tempfile
 from PySide import QtGui, QtCore
-from conductor.tools import conductor_submit, pyside_utils
+from conductor.lib import  conductor_submit, pyside_utils
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 
@@ -22,6 +22,7 @@ TODO:
     maya2015Render  (what flags are available?)
 10: validate resource string only [a-z0-9-]
 11: Submission confirmation dialog.
+12: Conductor instance types should be queried from config file (or the web?)
 '''
 
 class ConductorSubmitter(QtGui.QMainWindow):
@@ -328,11 +329,27 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Print out the values for each argument
         for arg_name, arg_value in conductor_args.iteritems():
-            print "%s: %s" % (arg_name, arg_value)
+            sys.stderr.write("%s: %s" % (arg_name, arg_value))
 
         # Instantiate a conductor Submit object and run the submission!
         submission = conductor_submit.Submit(conductor_args)
-        return submission.main()
+        response, response_code = submission.main()
+#         response, response_code = {"jobid": "00239102"}, 404
+
+        if response_code == 201:  # Success
+            jobid = response.get("jobid")
+            title = "Job Submitted"
+            message = "Job submitted: %s" % jobid
+            pyside_utils.launch_message_box(title, message, self)
+        else:
+            title = "Job Submission Failure"
+            message = "Job submission failed: error %s" % response_code
+            pyside_utils.launch_error_box(title, message, self)
+
+
+
+
+
 
 
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
