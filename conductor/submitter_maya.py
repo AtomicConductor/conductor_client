@@ -2,7 +2,7 @@ import os
 
 from PySide import QtGui, QtCore
 
-from conductor.tools import maya_utils, pyside_utils, file_utils
+from conductor.lib import maya_utils, pyside_utils, file_utils
 from conductor import submitter
 # from conductor import submitter_maya_resources  # This is required so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
@@ -14,6 +14,7 @@ TODO:
 2. implement pyside inheritance to Maya's window interface
 3. Implement right-clicking on tree widget
 4. Cull out unused dependencies.  Should we exclude materials that aren't assigned, etc?
+5. Validate the maya file has been saved
 '''
 
 class MayaWidget(QtGui.QWidget):

@@ -1,7 +1,7 @@
 import os
 from PySide import QtGui, QtCore
 import nuke
-from conductor.tools import file_utils, nuke_utils, pyside_utils
+from conductor.lib import file_utils, nuke_utils, pyside_utils
 from conductor import submitter
 
 
