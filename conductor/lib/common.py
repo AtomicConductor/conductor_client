@@ -79,6 +79,10 @@ class Config():
         # TODO
         'base_url': 'atomic-light-001.appspot.com',
         'thread_count': (multiprocessing.cpu_count() * 2),
+        'instance_cores': 16,
+        'resource': 'default',
+        'priority': 5,
+
     }
 
     def __init__(self):
