@@ -10,12 +10,13 @@ import os
 import sys
 import re
 import time
+import json
 import argparse
 import itertools
 import hashlib
 import urllib
 import urllib2
-import json
+import urlparse
 import getpass
 import threading
 import multiprocessing
@@ -27,16 +28,7 @@ import conductor
 from conductor.lib.common import retry
 from httplib2 import Http
 
-import logging
-if os.environ.has_key('DEVELOPMENT'):
-    logging.basicConfig(level='DEBUG')
-else:
-    logging.basicConfig(level='INFO')
-    logging.info('set DEVELOPMENT environment variable to get debug messages')
 
-
-
-_this_dir = os.path.dirname(os.path.realpath(__file__))
 logger = conductor.logger
 CONFIG = conductor.CONFIG
 
@@ -188,20 +180,27 @@ class Submit():
 
     def send_job(self, upload_files=None):
         '''
-        Construct args for two different cases.
-        
-        If upload_only or running an actual command
-        
+        Construct args for two different cases: 
+            - upload_only
+            - running an actual command (cmd)
         '''
+        logger.debug("upload_files: %s", upload_files)
+
         submit_dict = {'owner':self.user}
         if upload_files:
             submit_dict['upload_files'] = ','.join(upload_files)
 
-        if self.upload_only and upload_files:
+        if self.upload_only:
+            # If there are not files to upload, then simulate a response dictrioary
+            # and return a "no work to do" message
+            if not upload_files:
+                response_dict = {"message": "No files to upload"}
+                response_code = 204
+                return response_dict, response_code
+
             submit_dict.update({'frame_range':"x",
                                 'command':'upload only',
                                 'instance_type':'n1-standard-1'})
-
         else:
 
             submit_dict.update({'resource':self.resource,
@@ -218,8 +217,14 @@ class Submit():
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
 
+        logger.debug("send_job JOB ARGS:")
+        for arg_name, arg_value in sorted(submit_dict.iteritems()):
+            logger.debug("%s: %s", arg_name, arg_value)
 
-        make_request(uri_path="jobs/", data=submit_dict)
+
+        # TODO: verify that the response request is valid
+        response_dict, response_code = make_request(uri_path="jobs/", data=json.dumps(submit_dict))
+        return response_dict, response_code
 
 
     def main(self):
@@ -229,7 +234,8 @@ class Submit():
         uploaded_files = uploader.run_uploads(upload_files)
 
         # Submit the job to conductor
-        return  self.send_job(upload_files=uploaded_files)
+        response_string, response_code = self.send_job(upload_files=uploaded_files)
+        return json.loads(response_string), response_code
 
 
     def get_upload_files(self):
@@ -256,7 +262,7 @@ class Submit():
 
 class Uploader():
     def __init__(self, args=None):
-        logging.debug("Uploader.__init__")
+        logger.debug("Uploader.__init__")
         authorize_urllib()
 
     def get_children(self, path):
@@ -279,17 +285,16 @@ class Uploader():
 
     def get_upload_url(self, filename):
 
-        app_url = CONFIG['url'] + '/api/files/get_upload_url'
+        uri_path = '/api/files/get_upload_url'
         # TODO: need to pass md5 and filename
         params = {
             'filename': filename,
             'md5': self.get_base64_md5(filename)
         }
-        logger.debug('app_url is %s' % app_url)
         logger.debug('params are %s' % params)
-        upload_url = self.send_job(url=app_url, params=params)
-
-        return upload_url
+        response_string, response_code = make_request(uri_path=uri_path, params=params)
+        # TODO: validate that no error occured via error code
+        return response_string
 
     def get_md5(self, file_path, blocksize=65536):
         logger.debug('trying to open %s' % file_path)
@@ -401,7 +406,7 @@ class Uploader():
         else:
             logger.debug('upload_queue is not empty')
 
-            self.upload_file(upload_queue)
+            self.upload_file(upload_queue, uploaded_queue)
 
 
         return
@@ -442,25 +447,28 @@ def make_request(uri_path="/", headers=None, params=None, data=None, verb=None):
     # TODO: set Content Type to json if data arg
     if not headers:
         headers = {'Content-Type':'application/json'}
-    logging.debug('headers are: %s' % headers)
+    logger.debug('headers are: %s' % headers)
 
     # Construct URL
-    conductor_url = CONFIG['url'] + uri_path
+    conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
+    print 'conductor_url', conductor_url, type(conductor_url)
     if params:
         conductor_url += '?'
         conductor_url += urllib.urlencode(params)
-    logging.debug('conductor_url is %s', conductor_url)
+    logger.debug('conductor_url is %s', conductor_url)
 
     req = urllib2.Request(conductor_url, headers=headers, data=data)
     if verb:
         req.get_method = lambda: verb
-    logging.debug('request is %s' % req)
+    logger.debug('request is %s' % req)
 
-    logging.debug('trying to connect to app')
+    logger.debug('trying to connect to app')
     handler = retry(lambda: urllib2.urlopen(req))
     response_string = handler.read()
-    logging.debug('response_string is: %s' % response_string)
-    return response_string
+    response_code = handler.getcode()
+    logger.debug('response_code: %s', response_code)
+    logger.debug('response_string is: %s' % response_string)
+    return response_string, response_code
 
 
 class BadArgumentError(ValueError):

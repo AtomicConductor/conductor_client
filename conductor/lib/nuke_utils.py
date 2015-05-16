@@ -1,6 +1,7 @@
 import os
 import nuke
-from conductor.tools import file_utils
+
+
 def get_image_dirpath():
     pass
 
