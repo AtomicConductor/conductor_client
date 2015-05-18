@@ -258,8 +258,14 @@ class Submit():
             for filepath in file_list:
                 filepaths += Uploader().get_children(filepath)
 
+        if self.upload_paths:
+            for filepath in self.upload_paths:
+                children = Uploader().get_children(filepath)
+                filepaths += children
+
+
         # merge the paths from both upload file arguments
-        return filepaths + self.upload_paths
+        return filepaths
 
 class Uploader():
     def __init__(self, args=None):

@@ -111,12 +111,53 @@ class UploaderTest(unittest.TestCase):
             '%s/one_symlink/many_subdirs/a_subdir/another_subdir/even_another_subdir/ppp' % upload_test_helpers])
 
 
+        # test upload_paths
+        args = {'cmd': 'some command',
+                'upload_only': True,
+                'upload_paths': ['%s/single_file' % upload_test_helpers,
+                                 '%s/one_symlink' % upload_test_helpers]}
+
+        self.assertEqual(Submit(args).get_upload_files(),[
+            '%s/single_file/foo' % upload_test_helpers,
+            '%s/one_symlink/nnn' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/bar' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/one' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/adsf' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/three' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/two' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/another_subdir/oimsdf' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/another_subdir/even_another_subdir/ppp' % upload_test_helpers])
+
+
+        # test upload_file and upload_paths together
+        upload_file = open(upload_file_path, 'w')
+        upload_file.write('%s/single_file' % upload_test_helpers)
+        upload_file.close()
+        args = {'cmd': 'some command',
+                'upload_only': True,
+                'upload_file': upload_file_path,
+                'upload_paths': ['%s/one_symlink' % upload_test_helpers]}
+
+        self.assertEqual(Submit(args).get_upload_files(),[
+            '%s/single_file/foo' % upload_test_helpers,
+            '%s/one_symlink/nnn' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/bar' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/one' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/adsf' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/three' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/two' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/another_subdir/oimsdf' % upload_test_helpers,
+            '%s/one_symlink/many_subdirs/a_subdir/another_subdir/even_another_subdir/ppp' % upload_test_helpers])
+
+
+
+
+
     def test_make_request(self):
-        """
-        This test depends on an object in :
-          gs://conductor-test/accounts/testing/files/myObject
-        with content:
-         'hi'
+        """This test depends on an object in :
+        gs://conductor-test/accounts/testing/files/myObject with
+        content: 'hi'
+
         """
         base_url = 'http://test.conductor.io:8080'
 
