@@ -259,8 +259,6 @@ class Submit():
                 filepaths += Uploader().get_children(filepath)
 
         # merge the paths from both upload file arguments
-        print 'filepaths is %s' % filepaths
-        print 'self.upload_paths is %s' % self.upload_paths
         return filepaths + self.upload_paths
 
 class Uploader():
