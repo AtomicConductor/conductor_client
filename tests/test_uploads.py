@@ -15,9 +15,10 @@ sys.path.append(base_dir)
 
 upload_test_helpers = os.path.join(test_dir,'upload_helpers')
 os.environ['FLASK_CONF'] = 'TEST'
+# os.environ['CONDUCTOR_DEVELOPMENT'] = '1'
 TEST = True
 
-from conductor.lib.conductor_submit import Uploader, Submit
+from conductor.lib.conductor_submit import Uploader, Submit, make_request
 
 
 class UploaderTest(unittest.TestCase):
@@ -78,10 +79,11 @@ class UploaderTest(unittest.TestCase):
         upload_file.close()
 
 
-
         # test most basic case
         args = {'cmd': 'some command',
-                'upload_file': upload_file_path}
+                'upload_file': upload_file_path,
+                'upload_only': True,
+                }
         print "args is %s" % args
         s1 = '%s/single_file/foo' % upload_test_helpers
         print "s1 is %s" % s1
@@ -95,7 +97,8 @@ class UploaderTest(unittest.TestCase):
         upload_file.write('%s/single_file,%s/one_symlink' % (upload_test_helpers,upload_test_helpers))
         upload_file.close()
         args = {'cmd': 'some command',
-                'upload_file': upload_file_path}
+                'upload_file': upload_file_path,
+                'upload_only': True}
         self.assertEqual(Submit(args).get_upload_files(),[
             '%s/single_file/foo' % upload_test_helpers,
             '%s/one_symlink/nnn' % upload_test_helpers,
@@ -108,12 +111,18 @@ class UploaderTest(unittest.TestCase):
             '%s/one_symlink/many_subdirs/a_subdir/another_subdir/even_another_subdir/ppp' % upload_test_helpers])
 
 
-    def test_send_job(self):
+    def test_make_request(self):
+        """
+        This test depends on an object in :
+          gs://conductor-test/accounts/testing/files/myObject
+        with content:
+         'hi'
+        """
         base_url = 'http://test.conductor.io:8080'
 
         try:
-            url = base_url + '/api/files/ping'
-            job = Uploader().send_job(url=url)
+            uri_path = '/api/files/ping'
+            job = make_request(uri_path)
         except Exception:
             message = str(traceback.print_exc())
             message += "could not connect to app. are you running a dev env?"
@@ -121,15 +130,15 @@ class UploaderTest(unittest.TestCase):
 
 
         # this should produce a 400
-        url = base_url + '/api/files/stat'
+        uri_path = '/api/files/stat'
         with self.assertRaises(HTTPError):
         # with self.assertRaises(HttpError):
-            job = Uploader().send_job(url=url)
+            job = make_request(uri_path=uri_path)
 
 
-        url = base_url + '/api/files/stat'
+        uri_path = '/api/files/stat'
         params = {'filename':'myObject'}
-        job = Uploader().send_job(url=url,params=params)
+        job = make_request(uri_path=uri_path,params=params)
 
 
     def test_get_upload_url(self):

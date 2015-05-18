@@ -180,7 +180,7 @@ class Submit():
 
     def send_job(self, upload_files=None):
         '''
-        Construct args for two different cases: 
+        Construct args for two different cases:
             - upload_only
             - running an actual command (cmd)
         '''
@@ -255,9 +255,12 @@ class Submit():
                 file_list = contents.split(",")
 
             # call get_children for each file in the file list
-            filepaths = itertools.chain(list([Uploader().get_children(filepath) for filepath in file_list]))
+            for filepath in file_list:
+                filepaths += Uploader().get_children(filepath)
 
         # merge the paths from both upload file arguments
+        print 'filepaths is %s' % filepaths
+        print 'self.upload_paths is %s' % self.upload_paths
         return filepaths + self.upload_paths
 
 class Uploader():
