@@ -15,10 +15,11 @@ def setup_logger():
     logger = logging.getLogger("ConductorClient")
     if os.environ.has_key('CONDUCTOR_DEVELOPMENT'):
         logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s -  %(message)s')
+        formatter = logging.Formatter('%(levelname)s - %(lineno)d - %(filename)s.%(funcName)s\n    %(message)s')
     else:
         logger.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s -  %(message)s')
+        formatter = logging.Formatter('%(asctime)s -  %(message)s',
+            "%Y-%m-%d %H:%M:%S")
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
