@@ -332,9 +332,10 @@ class ConductorSubmitter(QtGui.QMainWindow):
             sys.stderr.write("%s: %s" % (arg_name, arg_value))
 
         # Instantiate a conductor Submit object and run the submission!
+        # try: TODO: wrap in try/except because who knows what will happen when submitting
         submission = conductor_submit.Submit(conductor_args)
         response, response_code = submission.main()
-#         response, response_code = {"jobid": "00239102"}, 404
+
 
         if response_code == 201:  # Success
             jobid = response.get("jobid")

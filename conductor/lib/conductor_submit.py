@@ -25,7 +25,7 @@ import Queue as queue_exception
 # from conductor
 import conductor
 
-from conductor.lib.common import retry
+from conductor.lib import common, file_utils
 from httplib2 import Http
 
 
@@ -153,30 +153,6 @@ class Submit():
 
         return parser.parse_args()
 
-#
-#     def get_upload_files(self):
-#         """ When given an upload file, return a list of files.
-#             Expects a file containing string absolute file paths,
-#             seperated by commas.
-#         """
-#         files = []
-#
-#         for file_name in self.upload_paths:
-#             logger.debug("file_name is '%s'" % str(file_name))
-#             # TODO:
-#             files.extend(Uploader().get_children(file_name))
-#
-#         return files
-
-
-#     def get_token(self):
-#         token_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/CONDUCTOR_TOKEN.pem"))
-#         if not os.path.exists(token_path):
-#             raise IOError("Could not locate .pem file: %s" % token_path)
-#         with open(token_path, 'r') as f:
-#             user = f.read()
-#         userpass = "%s:unused" % user.rstrip()
-#         return userpass
 
     def send_job(self, upload_files=None):
         '''
@@ -240,55 +216,25 @@ class Submit():
 
     def get_upload_files(self):
         '''
-        Resolve the upload_paths and upload_file arguments to return a single list
-        of paths to upload
+        Resolve the "upload_paths" and "upload_file" arguments to return a single list
+        of paths that will get uploaded to the cloud.
         '''
-        filepaths = []
+        # begin a list of "raw" filepaths that will need to be processed (starting with the self.upload_paths)
+        raw_filepaths = list(self.upload_paths)
+
+        # if an upload file as been provided, parse it and add it's paths to the "raw" filepaths
         if self.upload_file:
-
-            # ## Resolve the "upload_file" arg
             logger.debug("self.upload_file is %s", self.upload_file)
+            upload_files = parse_upload_file(self.upload_file)
+            raw_filepaths.extend(upload_files)
 
-            with open(self.upload_file, 'r') as file_:
-                logger.debug('opening file')
-                contents = file_.read()
-                file_list = contents.split(",")
-
-            # call get_children for each file in the file list
-            for filepath in file_list:
-                filepaths += Uploader().get_children(filepath)
-
-        if self.upload_paths:
-            for filepath in self.upload_paths:
-                children = Uploader().get_children(filepath)
-                filepaths += children
-
-
-        # merge the paths from both upload file arguments
-        return filepaths
+        # Process the raw filepaths (to account for directories, image sequences, formatting, etc)
+        return file_utils.process_upload_filepaths(raw_filepaths)
 
 class Uploader():
     def __init__(self, args=None):
         logger.debug("Uploader.__init__")
         authorize_urllib()
-
-    def get_children(self, path):
-        path = path.strip()
-        if os.path.isfile(path):
-            logger.debug("path %s is a file" % path)
-            return [self.clean_filename(path)]
-        if os.path.isdir(path):
-            logger.debug("path %s is a dir" % path)
-
-            file_list = []
-            for root, _, files in os.walk(path, followlinks=True):
-                for name in files:
-                    file_list.append(self.clean_filename(os.path.join(root, name)))
-            return file_list
-        else:
-            logger.debug("path %s does not make sense" % path)
-            raise ValueError
-
 
     def get_upload_url(self, filename):
 
@@ -321,40 +267,6 @@ class Uploader():
         b64 = base64.b64encode(md5)
         logger.debug('b64 is %s' % b64)
         return b64
-
-
-    def clean_filename(self, filename):
-        # Handle frame padding files.
-        filename = re.sub("%0[0-9]d", '*', filename)
-        filename = re.sub("#+", '*', filename)
-        filename = self.convert_win_path(filename)
-        logger.debug("filename is " + filename)
-        if not filename.startswith('/'):
-            logger.debug('All files should be passed in as absolute linux paths!')
-            raise IOError('File does not start at root mount "/", %s' % filename)
-        return filename
-
-
-    def convert_win_path(self, filename):
-        if sys.platform.startswith('win'):
-            exp_file = os.path.abspath(os.path.expandvars(filename))
-            unix_file = os.path.normpath(exp_file).replace('\\', "/")
-        else:
-            unix_file = filename
-        return unix_file
-
-
-#     def get_token(self):
-#         if self.userpass != None:
-#             return self.userpass
-#         token_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/CONDUCTOR_TOKEN.pem"))
-#         if not os.path.exists(token_path):
-#             raise IOError("Could not locate .pem file: %s" % token_path)
-#         with open(token_path, 'r') as f:
-#             user = f.read()
-#         userpass = "%s:unused" % user.rstrip()
-#         self.userpass = userpass
-#         return userpass
 
 
     def run_uploads(self, file_list):
@@ -404,7 +316,7 @@ class Uploader():
             uploaded_queue.put(filename)
             logger.debug('uploading file %s' % filename)
             # Add retries
-            resp, content = retry(lambda: self.do_upload(upload_url, "POST", open(filename, 'rb')))
+            resp, content = common.retry(lambda: self.do_upload(upload_url, "POST", open(filename, 'rb')))
             logger.debug('finished uploading %s' % filename)
 
         if upload_queue.empty():
@@ -423,6 +335,18 @@ class Uploader():
         h = Http()
         resp, content = h.request(upload_url, http_verb, upload_buffer)
         return resp, content
+
+
+def parse_upload_file(upload_filepath):
+    '''
+    Parse the given filepath for paths that are separated by commas, returning
+    a list of these paths
+    '''
+    with open(upload_filepath, 'r') as file_:
+        logger.debug('opening file')
+        contents = file_.read()
+        return [path.strip() for path in contents.split(",")]
+
 
 
 def get_token():
@@ -470,7 +394,7 @@ def make_request(uri_path="/", headers=None, params=None, data=None, verb=None):
     logger.debug('request is %s' % req)
 
     logger.debug('trying to connect to app')
-    handler = retry(lambda: urllib2.urlopen(req))
+    handler = common.retry(lambda: urllib2.urlopen(req))
     response_string = handler.read()
     response_code = handler.getcode()
     logger.debug('response_code: %s', response_code)
