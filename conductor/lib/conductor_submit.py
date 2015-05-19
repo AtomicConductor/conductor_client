@@ -244,14 +244,14 @@ class Uploader():
             'filename': filename,
             'md5': self.get_base64_md5(filename)
         }
-        logger.debug('params are %s' % params)
+        logger.debug('params are %s', params)
         response_string, response_code = make_request(uri_path=uri_path, params=params)
         # TODO: validate that no error occured via error code
         return response_string
 
     def get_md5(self, file_path, blocksize=65536):
-        logger.debug('trying to open %s' % file_path)
-        logger.debug('file_path.__class__ %s' % file_path.__class__)
+        logger.debug('trying to open %s', file_path)
+        logger.debug('file_path.__class__ %s', file_path.__class__)
 
         hasher = hashlib.md5()
         afile = open(file_path, 'rb')
@@ -265,7 +265,7 @@ class Uploader():
     def get_base64_md5(self, *args, **kwargs):
         md5 = self.get_md5(*args)
         b64 = base64.b64encode(md5)
-        logger.debug('b64 is %s' % b64)
+        logger.debug('b64 is %s', b64)
         return b64
 
 
@@ -278,7 +278,7 @@ class Uploader():
         uploaded_queue = multiprocessing.Queue()
         upload_queue = multiprocessing.Queue()
         for upload_file in file_list:
-            logger.debug('adding %s to queue' % upload_file)
+            logger.debug('adding %s to queue', upload_file)
             upload_queue.put(upload_file)
 
         threads = []
@@ -290,7 +290,7 @@ class Uploader():
             threads.append(thread)
 
         for idx, thread in enumerate(threads):
-            logger.debug('waiting for thread: %s' % idx)
+            logger.debug('waiting for thread: %s', idx)
             thread.join()
 
         logger.debug('done with threading stuff')
@@ -309,15 +309,15 @@ class Uploader():
             logger.debug('queue is empty, caught EMPTY')
             return
 
-        logger.debug('trying to upload %s' % filename)
+        logger.debug('trying to upload %s', filename)
         upload_url = self.get_upload_url(filename)
-        logger.debug("upload url is '%s'" % upload_url)
+        logger.debug("upload url is '%s'", upload_url)
         if upload_url is not '':
             uploaded_queue.put(filename)
-            logger.debug('uploading file %s' % filename)
+            logger.debug('uploading file %s', filename)
             # Add retries
             resp, content = common.retry(lambda: self.do_upload(upload_url, "POST", open(filename, 'rb')))
-            logger.debug('finished uploading %s' % filename)
+            logger.debug('finished uploading %s', filename)
 
         if upload_queue.empty():
             logger.debug('upload_queue is empty')
@@ -378,11 +378,11 @@ def make_request(uri_path="/", headers=None, params=None, data=None, verb=None):
     # TODO: set Content Type to json if data arg
     if not headers:
         headers = {'Content-Type':'application/json'}
-    logger.debug('headers are: %s' % headers)
+    logger.debug('headers are: %s', headers)
 
     # Construct URL
     conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
-    logger.debug('conductor_url', conductor_url, type(conductor_url))
+    logger.debug('conductor_url: %s', conductor_url)
     if params:
         conductor_url += '?'
         conductor_url += urllib.urlencode(params)
@@ -391,14 +391,14 @@ def make_request(uri_path="/", headers=None, params=None, data=None, verb=None):
     req = urllib2.Request(conductor_url, headers=headers, data=data)
     if verb:
         req.get_method = lambda: verb
-    logger.debug('request is %s' % req)
+    logger.debug('request is %s', req)
 
     logger.debug('trying to connect to app')
     handler = common.retry(lambda: urllib2.urlopen(req))
     response_string = handler.read()
     response_code = handler.getcode()
     logger.debug('response_code: %s', response_code)
-    logger.debug('response_string is: %s' % response_string)
+    logger.debug('response_string is: %s', response_string)
     return response_string, response_code
 
 
