@@ -2,20 +2,20 @@ import os
 
 from PySide import QtGui, QtCore
 
+import conductor
 from conductor.lib import maya_utils, pyside_utils, file_utils
 from conductor import submitter
-# from conductor import submitter_maya_resources  # This is required so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
-
 
 
 '''
 TODO: 
 1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
 2. implement pyside inheritance to Maya's window interface
-3. Implement right-clicking on tree widget
-4. Cull out unused dependencies.  Should we exclude materials that aren't assigned, etc?
+3. Cull out unused maya dependencies.  Should we exclude materials that aren't assigned, etc?
 5. Validate the maya file has been saved
 '''
+
+logger = conductor.logger
 
 class MayaWidget(QtGui.QWidget):
 
@@ -253,7 +253,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         # If an "abort" key has a True value then abort submission
         if data.get("abort"):
-            print "Conductor: Submission aborted"
+            logger.info("Conductor: Submission aborted")
             return
 
         super(MayaConductorSubmitter, self).runConductorSubmission(data)
