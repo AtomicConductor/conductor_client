@@ -1,17 +1,20 @@
-import os, sys, uuid, inspect, tempfile
+import os
+import sys
+import inspect
+import traceback
 from PySide import QtGui, QtCore
+import conductor
 from conductor.lib import  conductor_submit, pyside_utils
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
-
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
+logger = conductor.logger
 
 '''
 TODO:
 1. Create qt resource package or fix filepaths for all images to be set during code execution
 2. about menu? - provide link to studio's conductor url (via yaml config file) 
-3. Extendable vs private:  What's the line?
 4. rename files to "maya.py" and "nuke.py" ??
 5. consider conforming all code to camel case (including .ui widgets). 
 6. Consider adding validation to the base class so that inheritance can be used.
@@ -21,8 +24,7 @@ TODO:
     nuke-render  (what flags are available?)
     maya2015Render  (what flags are available?)
 10: validate resource string only [a-z0-9-]
-11: Submission confirmation dialog.
-12: Conductor instance types should be queried from config file (or the web?)
+11: Conductor instance types should be queried from config file (or the web?)
 '''
 
 class ConductorSubmitter(QtGui.QMainWindow):
@@ -328,20 +330,28 @@ class ConductorSubmitter(QtGui.QMainWindow):
         conductor_args = self.generateConductorArgs(data)
 
         # Print out the values for each argument
+        logger.debug("runConductorSubmission ARGS:")
         for arg_name, arg_value in conductor_args.iteritems():
-            sys.stderr.write("%s: %s" % (arg_name, arg_value))
+            logger.debug("%s: %s", arg_name, arg_value)
 
         # Instantiate a conductor Submit object and run the submission!
-        # try: TODO: wrap in try/except because who knows what will happen when submitting
-        submission = conductor_submit.Submit(conductor_args)
-        response, response_code = submission.main()
+        try:
+            submission = conductor_submit.Submit(conductor_args)
+            response, response_code = submission.main()
 
+        except:
+            title = "Job submission failure"
+            message = "".join(traceback.format_exception(*sys.exc_info()))
+            pyside_utils.launch_error_box(title, message, self)
+            raise
 
-        if response_code == 201:  # Success
+        # If the job submitted successfully (201)
+        if response_code == 201:
             jobid = response.get("jobid")
             title = "Job Submitted"
             message = "Job submitted: %s" % jobid
             pyside_utils.launch_message_box(title, message, self)
+        # All other response codes (anython other than 201) indicate a submission failue.
         else:
             title = "Job Submission Failure"
             message = "Job submission failed: error %s" % response_code
@@ -441,28 +451,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         ui.show()
         app.exec_()
 
-
-
-
-
-
-def write_dependency_file(dependencies, filepath):
-    '''
-    Write the given list of depencies to the given filepath
-    '''
-    with open(filepath, 'w') as file_obj:
-        file_obj.write(", ".join(dependencies))
-    return filepath
-
-
-def generate_temporary_filepath():
-    '''
-    Generate and return a unique filepath name located in the machine's temp 
-    directory.
-    '''
-    temp_dirpath = tempfile.gettempdir()
-    filename = "conductor_dependencies_%s" % str(uuid.uuid1())
-    return os.path.join(temp_dirpath, filename)
 
 
 def get_conductor_instance_types():
