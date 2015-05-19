@@ -7,14 +7,9 @@ from conductor import submitter
 
 '''
 TODO:
-1. Get nuke dependencies
-4. what is the "output_path" arg for nuke render's? (in maya its the root images dir from project settings)
-2. What write nodes should be selected when launching the UI? - only those which are selected by the user in nuke
-3. implement pyside inheritance for Nuke's window interface
-4. Delete dependency manifest after submission?
-5. Kevin feedback?
-6. Validate that at least one write node is selected
-7. Test file pathing on Windows!! especially file_utils manipulations.
+1. implement pyside inheritance for Nuke's window interface
+2. Validate that at least one write node is selected
+3. Test file pathing on Windows. Especially file_utils manipulations.
 '''
 
 class NukeWidget(QtGui.QWidget):
@@ -132,18 +127,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         return cmd
 
 
-
-    def generateDependencyManifest(self, dependency_filepaths):
-        '''
-        From a given list of filepaths (files which the current Nuke script is 
-        dependent upon) generate to a text file which conductor will use to 
-        upload the necessary files when executing a render.
-        '''
-
-        manifest_filepath = submitter.generate_temporary_filepath()
-        return submitter.write_dependency_file(dependency_filepaths, manifest_filepath)
-
-
     def collectDependencies(self):
         '''
         Return a list of filepaths that the currently selected Write nodes
@@ -198,9 +181,9 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
         raw_dependencies = self.collectDependencies()
         dependencies = file_utils.process_dependencies(raw_dependencies)
-        output_path = self.getOutputPath()
+        output_path, write_paths = self.getOutputPath()
         raw_data = {"dependencies":dependencies,
-                    "output_path":output_path}
+                    "output_path":[output_path, write_paths]}
 
         is_valid = self.runValidation(raw_data)
         return {"abort":not is_valid,
