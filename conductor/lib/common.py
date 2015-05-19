@@ -47,7 +47,7 @@ def retry(function, retry_count=5):
             LOGGER.debug('trying to run %s' % function)
             return_values = function()
         except Exception, e:
-            print 'caught error'
+            LOGGER.debug('caught error')
             LOGGER.debug('failed due to: \n%s' % traceback.format_exc())
             if i < retry_count:
                 sleep_time = int(math.pow(2, i))
@@ -133,12 +133,12 @@ class Config():
             LOGGER.error(message)
             raise ValueError(message)
 
-        print 'config is %s' % config
-        print 'config.__class__ is %s' % config.__class__
+        LOGGER.debug('config is %s' % config)
+        LOGGER.debug('config.__class__ is %s' % config.__class__)
         return config
 
     def verify_config(self, config):
-        print 'config is %s' % config
+        LOGGER.debug('config is %s' % config)
         for required_key in self.required_keys:
             if not required_key in config:
                 message = "required param '%s' is not set in the config" % required_key

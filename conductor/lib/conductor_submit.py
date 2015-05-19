@@ -41,11 +41,11 @@ class Submit():
         $ python conductor_submit.py -h
     """
     def __init__(self, args):
-        print "itit Submit"
+        logger.debug("itit Submit")
         self.timeid = int(time.time())
         self.consume_args(args)
         self.validate_args()
-        print "Consumed args"
+        logger.debug("Consumed args")
 
     @classmethod
     def from_commmand_line(cls):
@@ -162,7 +162,7 @@ class Submit():
 #         files = []
 #
 #         for file_name in self.upload_paths:
-#             print "file_name is '%s'" % str(file_name)
+#             logger.debug("file_name is '%s'" % str(file_name))
 #             # TODO:
 #             files.extend(Uploader().get_children(file_name))
 #
@@ -328,9 +328,9 @@ class Uploader():
         filename = re.sub("%0[0-9]d", '*', filename)
         filename = re.sub("#+", '*', filename)
         filename = self.convert_win_path(filename)
-        print "filename is " + filename
+        logger.debug("filename is " + filename)
         if not filename.startswith('/'):
-            print('All files should be passed in as absolute linux paths!')
+            logger.debug('All files should be passed in as absolute linux paths!')
             raise IOError('File does not start at root mount "/", %s' % filename)
         return filename
 
@@ -378,10 +378,10 @@ class Uploader():
             threads.append(thread)
 
         for idx, thread in enumerate(threads):
-            print 'waiting for thread: %s' % idx
+            logger.debug('waiting for thread: %s' % idx)
             thread.join()
 
-        print 'done with threading stuff'
+        logger.debug('done with threading stuff')
         uploaded_list = []
         while not uploaded_queue.empty():
             uploaded_list.append(uploaded_queue.get())
@@ -394,7 +394,7 @@ class Uploader():
         try:
             filename = upload_queue.get(block=False)
         except queue_exception.Empty:
-            print 'queue is empty, caught EMPTY'
+            logger.debug('queue is empty, caught EMPTY')
             return
 
         logger.debug('trying to upload %s' % filename)
@@ -408,7 +408,7 @@ class Uploader():
             logger.debug('finished uploading %s' % filename)
 
         if upload_queue.empty():
-            print('upload_queue is empty')
+            logger.debug('upload_queue is empty')
             return None
         else:
             logger.debug('upload_queue is not empty')
@@ -458,7 +458,7 @@ def make_request(uri_path="/", headers=None, params=None, data=None, verb=None):
 
     # Construct URL
     conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
-    print 'conductor_url', conductor_url, type(conductor_url)
+    logger.debug('conductor_url', conductor_url, type(conductor_url))
     if params:
         conductor_url += '?'
         conductor_url += urllib.urlencode(params)
