@@ -9,154 +9,6 @@ RX_HOUDINI = r"\$F\d*"
 PATH_EXPRESSIONS = [RX_HASH, RX_PERCENT, RX_UDIM, RX_HOUDINI]
 
 
-
-
-# def get_seq_parts(basename, no_extension=False):
-#     '''
-#     split a given basename (string) into three parts:
-#         - The characters before the frames notation
-#         - The characters of the frame notation
-#         - The characters after the frames notation
-#
-#     basename: a filename stripped of it's directory path and it's extension, e.g.
-#                 "image.####" or
-#                 "image.10" or
-#                 "image.%0d" or
-#                 "image.10.rattlename"
-#
-#
-#     For example, given this basename: "image.####",
-#         return "image.", "####", ""
-#
-#     or given this string: "image.####.rattlesnake",
-#         return "image.", "####", ".rattlesnake"
-#
-#     '''
-#     for rx in [RX_HASH, RX_PERCENT]:
-#         match = re.match(rx, basename)
-#         if match:
-#             frame_padding = derive_frame_padding(match.group("frames"), rx)
-#             return match.group("pre_frames"), frame_padding, match.group("post_frames")
-
-
-# def derive_frame_padding(frames_str, rx):
-#     '''
-#     From a given frames notation, e.g. "%05d" or "###", derive the frame padding
-#     count, e.g. 5, or 3 respectively.
-#     '''
-#     if rx == RX_HASH:
-#         return len(frames_str)
-#     elif rx == RX_PERCENT:
-#         return int(frames_str[1:-1])
-#     else:
-#         raise Exception("This shouldn't happen")
-
-
-# def is_image_seq_notation(path_string):
-#     '''
-#     Return True if the given filepath (string) uses image sequence notation.
-#
-#     e.g.  if the path string is similar to:
-#               "/batman/cape_v001.%04d.jpg" or
-#               "/batman/cape_v001.####.jpg"
-#           return True
-#
-#           If the path string is similar to:
-#               "/batman/cape_v001.001.jpg" or
-#               "/batman/cape_v001_special.jpg"
-#           return False
-#
-#     '''
-#     dirpath, basename, extension = separate_path(path_string)
-#     return bool(get_seq_parts(basename))
-
-
-# def is_hash_notation(path_string, no_extension=False):
-#     '''
-#     Return True if the given filepath (string) uses hash image sequence notation.
-#
-#     e.g.  if the path string is similar to:
-#               "/batman/cape_v001.####.jpg"
-#           return True
-#
-#
-#     '''
-#     dirpath, basename, extension = separate_path(path_string, no_extension=no_extension)
-#     if re.match(RX_HASH, basename, re.IGNORECASE):
-#         return True
-#
-# def get_files_from_hash_string(path_string, no_extension=False):
-#     dirpath, basename, extension = separate_path(path_string, no_extension=no_extension)
-#     basename = re.sub(RX_HASH, '*', basename, re.IGNORECASE)
-#     glob_str = os.path.join(dirpath, basename + extension)
-#     return glob_str
-#
-#
-# def is_percent_notation(path_string, no_extension=False):
-#     '''
-#     Return True if the given filepath (string) uses hash image sequence notation.
-#
-#     e.g.  if the path string is similar to:
-#               "/batman/cape_v001.%04d.jpg" or
-#           return True
-#
-#
-#     '''
-#     dirpath, basename, extension = separate_path(path_string, no_extension=no_extension)
-#     if re.match(RX_PERCENT, basename, re.IGNORECASE):
-#         return True
-#
-# def get_files_from_percent_string(path_string, no_extension=True):
-#     dirpath, basename, extension = separate_path(path_string, no_extension=no_extension)
-#     basename = re.sub(RX_PERCENT, '*', basename, re.IGNORECASE)
-#     glob_str = os.path.join(dirpath, basename + extension)
-#     return glob_str
-#
-#
-# def is_udim_notation(path_string, no_extension=False):
-#     '''
-#     Return True if the given filepath (string) uses a UDIM notation.
-#
-#
-#
-#     e.g.  if the path string is similar to:
-#               "/batman/cape_v001.<udim>.jpg" or
-#           return True
-#     '''
-#     dirpath, basename, extension = separate_path(path_string, no_extension=no_extension)
-#     if re.match(RX_UDIM, basename, re.IGNORECASE):
-#         return True
-#
-#
-# def get_files_from_udim_string(udim_string, no_extension=True):
-#     dirpath, basename, extension = separate_path(udim_string, no_extension=no_extension)
-#     basename = re.sub(RX_UDIM, '*', basename)
-#     glob_str = os.path.join(dirpath, basename + extension)
-#     return glob_str
-#
-#
-# def is_houdini_frame_notation(path_string, no_extension=False):
-#     '''
-#     Return True if the given filepath (string) uses a houdini frame notation.
-#
-#     e.g.  if the path string is similar to:
-#               "/batman/cape_v001.F.jpg" or
-#           return True
-#     '''
-#     dirpath, basename, extension = separate_path(path_string, no_extension=no_extension)
-#     if re.match(RX_HOUDINI, basename, re.IGNORECASE):
-#         return True
-#
-#
-# def get_files_from_houdini_string(path_string, no_extension=True):
-#     dirpath, basename, extension = separate_path(path_string, no_extension=no_extension)
-#     basename = re.sub(RX_HOUDINI, '*', basename)
-#     glob_str = os.path.join(dirpath, basename + extension)
-#     return glob_str
-
-
-
-
 def separate_path(path, no_extension=False):
     '''
     Seperate the given path into three pieces:
@@ -503,7 +355,6 @@ def get_rx_match(path_expression, expressions):
 
 
 
-
 def get_matching_files(glob_str, dev=False):
     if dev:
         return ['/TMP/foo.bar.0101.testa.101.exr', '/tmp/FOO.bar.0102.testa.102.exr']
@@ -511,14 +362,3 @@ def get_matching_files(glob_str, dev=False):
         return glob.glob(glob_str)
 
 
-
-
-
-
-
-
-#
-# PATH_EXPRESSIONS = {RX_HASH: get_files_from_hash_string
-#                     RX_PERCENT: get_files_from_percent_string,
-#                     RX_UDIM:get_files_from_udim_string,
-#                     RX_HOUDINI: get_files_from_houdini_string]
