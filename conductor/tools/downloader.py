@@ -33,12 +33,7 @@ class Download(object):
 
 
     def get_token(self):
-        token_path = os.path.join(os.path.dirname(__file__), 'auth/CONDUCTOR_TOKEN.pem')
-        if not os.path.exists(token_path):
-            raise IOError("Could not locate .pem file: %s" % token_path)
-        with open(token_path, 'r') as f:
-            user = f.read()
-        userpass = "%s:unused" % user.rstrip()
+        userpass = "%s:unused" % CONFIG['conductor_token']
         return userpass
 
 

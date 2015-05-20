@@ -85,13 +85,13 @@ class Config():
         'instance_cores': 16,
         'resource': 'default',
         'priority': 5,
-
     }
+
 
     def __init__(self):
         LOGGER.debug('base dir is %s' % self.base_dir())
         user_config = self.get_user_config()
-        self.verify_config(user_config)
+        self.verify_required_params(user_config)
 
 
         combined_config = self.default_config
@@ -99,9 +99,28 @@ class Config():
         if not 'url' in combined_config:
             combined_config['url'] = 'https://%s-dot-%s' % (combined_config['account'],
                                                             combined_config['base_url'])
+
+        self.validate_client_token(combined_config)
+
         self.config = combined_config
         LOGGER.debug('config is:\n%s' % self.config)
 
+
+    def validate_client_token(self,config):
+        """
+        load conductor config. default to base_dir/auth/CONDUCTOR_TOKEN.pem
+        if conductor_token_path is not specified in config
+        """
+        if not 'conductor_token_path' in config:
+            config['conductor_token_path'] = os.path.join(self.base_dir(),'auth/CONDUCTOR_TOKEN.pem')
+        conductor_token_path = config['conductor_token_path']
+        try:
+            with open(conductor_token_path,'r') as f:
+                conductor_token = f.read().rstrip()
+        except IOError, e:
+            logging.error('could not open client token file in %s', conductor_token_path)
+            raise e
+        config['conductor_token'] = conductor_token
 
 
     def base_dir(self):
@@ -137,7 +156,7 @@ class Config():
         LOGGER.debug('config.__class__ is %s' % config.__class__)
         return config
 
-    def verify_config(self, config):
+    def verify_required_params(self, config):
         LOGGER.debug('config is %s' % config)
         for required_key in self.required_keys:
             if not required_key in config:

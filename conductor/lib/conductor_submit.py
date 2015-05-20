@@ -350,13 +350,7 @@ def parse_upload_file(upload_filepath):
 
 
 def get_token():
-    # TODO: Take CONDUCTOR_TOKEN.pem from config
-    token_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "auth/CONDUCTOR_TOKEN.pem"))
-    if not os.path.exists(token_path):
-        raise IOError("Could not locate .pem file: %s" % token_path)
-    with open(token_path, 'r') as f:
-        user = f.read()
-    userpass = "%s:unused" % user.rstrip()
+    userpass = "%s:unused" % CONFIG['conductor_token']
     return userpass
 
 def authorize_urllib():
