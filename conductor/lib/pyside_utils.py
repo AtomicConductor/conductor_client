@@ -165,8 +165,6 @@ class CheckBoxTreeWidget(QtGui.QTreeWidget):
         '''
 
         for item in self.selectedItems():
-            print "check", check
-            print "self.checkbox_column_idx", self.checkbox_column_idx
             item.setCheckState(self.checkbox_column_idx, get_qt_check_flag(check))
 
 
@@ -194,7 +192,7 @@ class CheckBoxTreeWidget(QtGui.QTreeWidget):
         stylesheet = ""
 
         for indicator, filepath in indicator_filepaths.iteritems():
-            stylesheet += "%s { image: url(%s);}" % (indicator, filepath)
+            stylesheet += "%s { image: url(%s);}" % (indicator, filepath.replace("\\", "/"))  # The filepaths must always use forward slashes (regardless of platform)
 
         self.setStyleSheet(stylesheet)
 
