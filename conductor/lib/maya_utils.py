@@ -140,6 +140,6 @@ def collect_dependencies(node_attrs):
                     path = cmds.file(plug_value, exn=True, query=True)
                     dependencies.append(path)
 
-    return sorted(set([os.path.normpath(path) for path in dependencies]))
+    return sorted(set(dependencies))
 
 
