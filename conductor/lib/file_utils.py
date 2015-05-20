@@ -278,11 +278,6 @@ def conform_platform_filepath(filepath):
     else:
         filepath = conform_unix_path(filepath)
 
-    # Regardless of platform, do a check to ensure that absolute paths are being used
-    if not filepath.startswith('/'):
-        print('All files should be passed in as absolute linux paths!')
-        raise IOError('File does not start at root mount "/", %s' % filepath)
-
     return filepath
 
 
@@ -296,13 +291,14 @@ def conform_win_path(filepath):
 
 def conform_unix_path(filepath):
     '''
-    For the given filepath, resolve any environment variables in the path
-    and convert all backlashes to forward slashes 
+    For the given filepath, resolve any environment variables and ensure that
+    absolute filepaths are being used
     '''
-    exp_file = os.path.abspath(os.path.expandvars(filepath))
-    return os.path.normpath(exp_file).replace('\\', "/")
-
-
+    filepath = os.path.abspath(os.path.expandvars(filepath))
+    if not filepath.startswith('/'):
+        raise IOError('All files should be passed in as absolute linux paths!\n'
+                      'File does not start at root mount "/", %s' % filepath)
+    return filepath
 
 def reconstruct_filename(matched, file_pieces):
     full_file_string = ""
