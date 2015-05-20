@@ -144,7 +144,9 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                             'AudioRead':['file']}
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
-        return nuke_utils.collect_dependencies(write_nodes, dependency_knobs)
+        dependencies = nuke_utils.collect_dependencies(write_nodes, dependency_knobs)
+        dependencies.append(nuke_utils.get_nuke_script_path())
+        return dependencies
 
 
     def getOutputPath(self):
