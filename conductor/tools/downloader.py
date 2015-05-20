@@ -12,19 +12,14 @@ import urllib2
 import json
 import random
 import traceback
+import time
 
-from apiclient import discovery
-from apiclient.errors import HttpError
-from oauth2client import file as oauthfile
-from oauth2client import client
-from oauth2client import tools
 
 import conductor
-import submit_settings
-import conductor_client_common
+import conductor.lib.common
 
 # TODO
-from lib.common import retry
+from conductor.lib.common import retry
 
 # Global logger and config objects
 logger = conductor.logger
@@ -33,25 +28,9 @@ CONFIG = conductor.CONFIG
 class Download(object):
     def __init__(self):
         self.parser = argparse.ArgumentParser(description=self.__doc__,
-                formatter_class=argparse.RawDescriptionHelpFormatter, parents=[tools.argparser])
+                formatter_class=argparse.RawDescriptionHelpFormatter)
         self.userpass = self.get_token()
-        self.service = self._auth_service()
 
-
-    def _auth_service(self):
-        credentials = self._get_credentials()
-        http = httplib2.Http()
-        http = credentials.authorize(http)
-        service = discovery.build('storage', submit_settings._API_VERSION, http=http)
-        return service
-
-    def _get_credentials(self):
-        flags = self.parser.parse_args()
-        storage = oauthfile.Storage(os.path.join(os.path.dirname(__file__), 'auth','conductor.dat'))
-        credentials = storage.get()
-        if credentials is None or credentials.invalid:
-            credentials = tools.run_flow(submit_settings.FLOW, storage, flags)
-        return credentials
 
     def get_token(self):
         token_path = os.path.join(os.path.dirname(__file__), 'auth/CONDUCTOR_TOKEN.pem')
@@ -81,7 +60,7 @@ class Download(object):
 
     def get_download(self):
         ''' get a new file to download from the server or 404 '''
-        download_url = CONFIG['url'] + 'downloads/next'
+        download_url = CONFIG['url'] + '/downloads/next'
         response = self.make_request(download_url)
         if response.getcode() == '201':
             logger.info("new file to download:\n" + response.read())
@@ -90,7 +69,7 @@ class Download(object):
 
     def set_download_status(self,download_id,status):
         ''' update status of download '''
-        status_url = CONFIG['url'] + 'downloads/status'
+        status_url = CONFIG['url'] + '/downloads/status'
         post_dic = {
             'download_id': download_id,
             'status': status
@@ -120,103 +99,62 @@ class Download(object):
                         logger.error(traceback.format_exc())
                         time.sleep(15)
                         continue
-                    resp_source = resp_data['source']
                     download_id = resp_data['download_id']
-                    logger.debug("resp_source is " +  resp_source)
-                    resp_source_path = "%s/" % '/'.join(resp_source.split('/')[3:-1])
-                    logger.debug("resp_source_path is: " + resp_source_path)
-                    fields_to_return = "items(name)"
+                    for download_url,local_path in resp_data['download_urls'].iteritems():
+                        logger.debug("downloading: %s to %s", download_url, local_path)
+                        if not os.path.exists(os.path.dirname(local_path)):
+                            os.makedirs(os.path.dirname(local_path), 0775)
+                        CHUNKSIZE = 8192
 
-                    logger.debug("excuting request")
-                    resp = req.execute()
-                    logger.debug( "completed request. resp is %s" % resp)
-                    logger.debug("resp_source is " + resp_source)
-                    frame = resp_source.split('*')[1]
-                    logger.debug("got frame: " + frame)
-                    sources = []
-                    logger.debug( "entering resp loop")
-                    for i in resp['items']:
-                        logger.debug("in item loop. looking for frame: " + frame)
-                        if frame in i['name']:
-                            logger.debug("found frame %s in %s" % (frame, i['name']))
-                            sources.append(i['name'])
-
-                            download_url = i['download_url']
-                            source = i['name']
-                            file_name = source.split('/')[-1]
-                            imageSrcPath = source.split(resp_source_path)[-1]
-                            if "/" in imageSrcPath:
-                                subDir = "/".join(imageSrcPath.split('/')[:-1])
-                            else:
-                                subDir = ""
-                            resp_dest = resp_data['destination']
-                            destination_dir = os.path.join(resp_dest, subDir)
-                            destination = os.path.join(destination_dir, file_name)
-                            logger.debug( "destination is: " + destination)
-
-                            if not os.path.exists(os.path.dirname(destination)):
-                                os.makedirs(os.path.dirname(destination), 0775)
-                            logger.debug("Source: %s" % source)
-                            logger.debug("SubDir: %s" % subDir)
-                            logger.debug("Destination: %s" % destination)
+                        def chunk_report(bytes_so_far, chunk_size, total_size):
+                            percent = float(bytes_so_far) / total_size
+                            percent = round(percent*100, 2)
 
 
-                            CHUNKSIZE = 8192
+                            logger.info("Downloaded %d of %d bytes (%0.2f%%)\r" %
+                                (bytes_so_far, total_size, percent))
 
-                            def chunk_report(bytes_so_far, chunk_size, total_size):
-                                percent = float(bytes_so_far) / total_size
-                                percent = round(percent*100, 2)
+                            if bytes_so_far >= total_size:
+                                logger.info('\n')
 
-
-                                logger.info("Downloaded %d of %d bytes (%0.2f%%)\r" %
-                                    (bytes_so_far, total_size, percent))
-
-                                if bytes_so_far >= total_size:
-                                    logger.info('\n')
-
-                            def chunk_read(response, chunk_size=CHUNKSIZE, report_hook=None):
-                                total_size = response.info().getheader('Content-Length').strip()
-                                total_size = int(total_size)
-                                bytes_so_far = 0
+                        def chunk_read(response, chunk_size=CHUNKSIZE, report_hook=None):
+                            logger.debug('chunk_size is %s', chunk_size)
+                            total_size = response.info().getheader('Content-Length').strip()
+                            total_size = int(total_size)
+                            bytes_so_far = 0
 
 
-                                self.set_download_status(download_id,'downloading')
-                                download_file = open(destination, 'w')
-                                tick = time.time()
-                                while 1:
-                                    if (time.time() - tick) > 60:
-                                        self.set_download_status(download_id,'downloading')
-                                        tick = time.time()
+                            self.set_download_status(download_id,'downloading')
+                            download_file = open(local_path, 'w')
+                            tick = time.time()
+                            while 1:
+                                if (time.time() - tick) > 60:
+                                    self.set_download_status(download_id,'downloading')
+                                    tick = time.time()
 
-                                        chunk = response.read(chunk_size)
-                                        bytes_so_far += len(chunk)
-                                        download_file.write(chunk)
+                                chunk = response.read(chunk_size)
+                                bytes_so_far += len(chunk)
+                                download_file.write(chunk)
 
-                                    if not chunk:
-                                        break
+                                if not chunk:
+                                    download_file.close()
+                                    break
 
-                                    if report_hook:
-                                        report_hook(bytes_so_far, chunk_size, total_size)
+                                if report_hook:
+                                    report_hook(bytes_so_far, chunk_size, total_size)
 
-                                return bytes_so_far
+                            return bytes_so_far
 
 
-                            response = urllib2.urlopen(download_url)
-                            chunk_read(response, report_hook=chunk_report)
+                        response = urllib2.urlopen(download_url)
+                        chunk_read(response, report_hook=chunk_report)
 
-                            download_file.close()
-                            logger.info( 'Download Complete!')
-                            if "/publish/" in destination:
-                                os.chmod(destination, 0755)
-                            else:
-                                os.chmod(destination, 0775)
-                        else:
-                            logger.debug( "there is no frame in %s" % i['name'])
-                    logger.debug( "done with resp loop")
+                        logger.info( 'downloaded %s', local_path)
+                    logger.debug( "done downloading files")
                     self.set_download_status(download_id,'downloaded')
                 else:
                     logger.debug("nothing to download. sleeping...")
-                    time.sleep(5)
+                    time.sleep(10)
             except Exception, e:
                 logger.error( "caught exception %s" % e)
                 logger.error(traceback.format_exc())
@@ -225,7 +163,7 @@ class Download(object):
                     self.set_download_status(download_id,'pending')
                 # Please include this sleep, to ensure that the Conductor
                 # does not get flooded with unnecessary requests.
-                time.sleep(4)
+                time.sleep(10)
 
 
 
