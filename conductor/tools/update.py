@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import urllib2
 import subprocess
 import traceback

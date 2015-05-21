@@ -1,4 +1,5 @@
 import os
+import sys
 from PySide import QtGui, QtCore
 import nuke
 import imp
