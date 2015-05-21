@@ -7,7 +7,7 @@ import imp
 try:
     imp.find_module('conductor')
 except ImportError, e:
-    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import conductor
 from conductor.lib import file_utils, nuke_utils, pyside_utils
