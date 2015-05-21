@@ -22,15 +22,21 @@ import threading
 import multiprocessing
 import Queue as queue_exception
 
-# from conductor
-import conductor
+import imp
 
+try:
+    imp.find_module('conductor')
+except ImportError, e:
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+import conductor
+import conductor.setup
 from conductor.lib import common, file_utils
 from httplib2 import Http
 
 
-logger = conductor.logger
-CONFIG = conductor.CONFIG
+logger = conductor.setup.logger
+CONFIG = conductor.setup.CONFIG
 
 class Submit():
     """ Conductor Submission

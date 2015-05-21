@@ -3,13 +3,21 @@ import sys
 import inspect
 import traceback
 from PySide import QtGui, QtCore
+import imp
+
+try:
+    imp.find_module('conductor')
+except ImportError, e:
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 import conductor
+import conductor.setup
 from conductor.lib import  conductor_submit, pyside_utils
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
-logger = conductor.logger
+logger = conductor.setup.logger
 
 '''
 TODO:

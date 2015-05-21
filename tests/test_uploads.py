@@ -5,6 +5,14 @@ import traceback
 import urllib2
 
 from urllib2 import HTTPError
+import imp
+
+try:
+    imp.find_module('conductor')
+except ImportError, e:
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+import conductor
 
 # add ../conductor to path
 test_dir = os.path.dirname(os.path.realpath(__file__))

@@ -6,11 +6,17 @@ import subprocess
 import traceback
 import logging
 import json
-import conductor_client_common
+import imp
+
+try:
+    imp.find_module('conductor')
+except ImportError, e:
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 import conductor
+import conductor.setup
 
-CONFIG = conductor.CONFIG
+CONFIG = conductor.setup.CONFIG
 branch = 'master'
 
 

@@ -1,6 +1,14 @@
 import os
 from PySide import QtGui, QtCore
 import nuke
+import imp
+
+try:
+    imp.find_module('conductor')
+except ImportError, e:
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+import conductor
 from conductor.lib import file_utils, nuke_utils, pyside_utils
 from conductor import submitter
 

@@ -13,17 +13,20 @@ import json
 import random
 import traceback
 import time
+import imp
 
+try:
+    imp.find_module('conductor')
+except ImportError, e:
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 import conductor
+import conductor.setup
 import conductor.lib.common
 
-# TODO
-from conductor.lib.common import retry
-
 # Global logger and config objects
-logger = conductor.logger
-CONFIG = conductor.CONFIG
+logger = conductor.setup.logger
+CONFIG = conductor.setup.CONFIG
 
 class Download(object):
     def __init__(self):

@@ -1,8 +1,15 @@
 import os
-
 from PySide import QtGui, QtCore
 
+import imp
+
+try:
+    imp.find_module('conductor')
+except ImportError, e:
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 import conductor
+import conductor.setup
 from conductor.lib import maya_utils, pyside_utils, file_utils
 from conductor import submitter
 
@@ -15,7 +22,7 @@ TODO:
 5. Validate the maya file has been saved
 '''
 
-logger = conductor.logger
+logger = conductor.setup.logger
 
 class MayaWidget(QtGui.QWidget):
 
