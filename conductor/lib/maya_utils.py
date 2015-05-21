@@ -78,7 +78,10 @@ def get_render_layers_info():
     cameras = cmds.ls(type="camera", long=True)
     for render_layer in cmds.ls(type="renderLayer"):
         layer_info = {"layer_name": render_layer}
-        cmds.editRenderLayerGlobals(currentRenderLayer=render_layer)
+        try:
+            cmds.editRenderLayerGlobals(currentRenderLayer=render_layer)
+        except RuntimeError, e:
+            continue
         renderable_cameras = [get_transform(camera) for camera in cameras if cmds.getAttr("%s.renderable" % camera)]
         assert renderable_cameras, 'No Renderable camera found for render layer "%s"' % render_layer
         assert len(renderable_cameras) == 1, 'More than one renderable camera found for render layer "%s". Cameras: %s' % (render_layer, renderable_cameras)
