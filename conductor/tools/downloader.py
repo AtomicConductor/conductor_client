@@ -123,7 +123,7 @@ class Download(object):
 
 
                             self.set_download_status(download_id,'downloading')
-                            download_file = open(local_path, 'w')
+                            download_file = open(local_path, 'wb')
                             tick = time.time()
                             while 1:
                                 if (time.time() - tick) > 60:
