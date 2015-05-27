@@ -38,8 +38,6 @@ class ApiClient():
         logger.debug('headers are: %s', headers)
 
         # Construct URL
-        print "CONFIG['url'] is %s" % CONFIG['url']
-        print "uri_path is %s" % uri_path
         conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
         logger.debug('conductor_url: %s', conductor_url)
         if params:
