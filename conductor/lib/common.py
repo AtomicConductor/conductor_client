@@ -85,6 +85,7 @@ class Config():
         'instance_cores': 16,
         'resource': 'default',
         'priority': 5,
+        'local_upload': True,
     }
 
 

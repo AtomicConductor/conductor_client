@@ -60,9 +60,9 @@ class Submit():
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
         self.upload_paths = args.get('upload_paths', [])
+        self.local_upload = args.get('local_upload', CONFIG['local_upload'])
 
 
-        # TODO: switch this behavior to use file size plus md5 instead
         # For now always default nuke uploads to skip time check
         if self.upload_only or "nuke-render" in self.raw_command:
             self.skip_time_check = True
@@ -126,6 +126,8 @@ class Submit():
                 submit_dict['postcmd'] = self.postcmd
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
+            if self.local_upload:
+                submit_dict['local_upload'] = True
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
@@ -141,7 +143,10 @@ class Submit():
         upload_files = self.get_upload_files()
 
         uploader = conductor.lib.uploader.Uploader()
-        uploaded_files = uploader.run_uploads(upload_files)
+        if self.local_upload:
+            uploaded_files = uploader.run_uploads(upload_files)
+        else:
+            uploaded_files = upload_files
 
         # Submit the job to conductor
         response_string, response_code = self.send_job(upload_files=uploaded_files)
