@@ -61,10 +61,16 @@ while True:
 
 
         logger.info('uploading files for upload task %s: \n\t%s', upload_id, "\n\t".join(upload_files))
-        uploader.run_uploads(upload_files)
+        uploaded_files = uploader.run_uploads(upload_files)
         logger.info('done uploading files')
 
-        finish_dict = {'upload_id':upload_id, 'status':'server_pending'}
+        finish_dict = {'upload_id':upload_id}
+
+        if uploaded_files:
+            finish_dict['upload_files'] = uploaded_files
+            finish_dict['status'] = 'server_pending'
+        else:
+            finish_dict['status'] = 'success'
         response_string, response_code = api_client.make_request(
             '/uploads/%s/finish' % upload_id,
             data=json.dumps(finish_dict),
