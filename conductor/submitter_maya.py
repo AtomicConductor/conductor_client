@@ -158,7 +158,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + " ".join(render_layers)
         maya_filepath = maya_utils.get_maya_scene_filepath()
-        cmd = base_cmd % (" ".join(render_layer_args), maya_filepath)
+        cmd = base_cmd % (render_layer_args, maya_filepath)
         return cmd
 
 
