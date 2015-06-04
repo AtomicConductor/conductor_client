@@ -113,17 +113,21 @@ class Config():
     def validate_client_token(self,config):
         """
         load conductor config. default to base_dir/auth/CONDUCTOR_TOKEN.pem
-        if conductor_token_path is not specified in config
+        if token_path is not specified in config
         """
-        if not 'conductor_token_path' in config:
-            config['conductor_token_path'] = os.path.join(self.base_dir(),'auth/CONDUCTOR_TOKEN.pem')
-        conductor_token_path = config['conductor_token_path']
+        if not 'token_path' in config:
+            config['token_path'] = os.path.join(self.base_dir(),'auth/CONDUCTOR_TOKEN.pem')
+        token_path = config['token_path']
         try:
-            with open(conductor_token_path,'r') as f:
+            with open(token_path,'r') as f:
                 conductor_token = f.read().rstrip()
         except IOError, e:
-            logging.error('could not open client token file in %s', conductor_token_path)
-            raise e
+            message = 'could not open client token file in %s\n' % token_path
+            message += 'either insert one there, set token_path to a valid token,\n'
+            message += 'or set the CONDUCTOR_TOKEN_PATH env variable to point to a valid token\n'
+            message += 'refusing to continue'
+            LOGGER.error(message)
+            raise ValueError(message)
         config['conductor_token'] = conductor_token
 
 
