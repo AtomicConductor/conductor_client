@@ -140,32 +140,46 @@ class Config():
         environment_config = {}
         for env in os.environ:
             if env.startswith('CONDUCTOR_'):
+                # skip these options
+                if env in ['CONDUCTOR_DEVELOPMENT','CONDUCTOR_CONFIG']:
+                    continue
                 # if we find a match, strip the conductor_ prefix and downcase it
                 config_name = env[10:].lower()
                 environment_config[config_name] = os.environ[env]
 
         return environment_config
 
-    def get_user_config(self, config_file=None):
+    def get_config_file_path(self, config_file=None):
         default_config_file = os.path.join(self.base_dir(), 'config.yml')
-
         if os.environ.has_key('CONDUCTOR_CONFIG'):
             config_file = os.environ['CONDUCTOR_CONFIG']
-        elif config_file is None:
+        else:
             config_file = default_config_file
+
+        return config_file
+
+    def get_user_config(self):
+        config_file = self.get_config_file_path()
         LOGGER.debug('using config: %s' % config_file)
 
-        try:
-            with open(config_file, 'r') as file:
-                config = yaml.load(file)
-        except IOError, e:
-            message = 'could not find a config file at: %s' % config_file
-            message += 'please either create one at %s' % default_config_file
-            message += 'or set the CONDUCTOR_CONFIG environment variable to a valid config file'
-            message += 'see %s for an example' % os.path.join(self.base_dir(), 'config.example.yml')
-            LOGGER.error(message)
 
-            raise ValueError(message)
+        if os.path.isfile(config_file):
+            LOGGER.debug('loadinf config from: %s', config_file)
+            try:
+                with open(config_file, 'r') as file:
+                    config = yaml.load(file)
+            except IOError, e:
+                message = "could't open config file: %s\n" % config_file
+                message += 'please either create one or set the CONDUCTOR_CONFIG\n'
+                message += 'environment variable to a valid config file\n'
+                message += 'see %s for an example' % os.path.join(self.base_dir(), 'config.example.yml')
+                LOGGER.error(message)
+
+                raise ValueError(message)
+        else:
+            LOGGER.warn('config file %s does not exist', config_file)
+            return {}
+
 
         if config.__class__.__name__ != 'dict':
             message = 'config found at %s is not in proper yaml syntax' % config_file
@@ -180,7 +194,8 @@ class Config():
         LOGGER.debug('config is %s' % config)
         for required_key in self.required_keys:
             if not required_key in config:
-                message = "required param '%s' is not set in the config" % required_key
+                message = "required param '%s' is not set in the config\n" % required_key
+                message += "please either set it or export CONDUCTOR_%s to the proper value" % required_key.upper()
                 LOGGER.error(message)
                 raise ValueError(message)
 class Auth:
