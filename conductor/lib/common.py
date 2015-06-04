@@ -91,18 +91,21 @@ class Config():
 
     def __init__(self):
         LOGGER.debug('base dir is %s' % self.base_dir())
-        user_config = self.get_user_config()
-        self.verify_required_params(user_config)
 
+        # create config. precedence is ENV, CLI, default
+        combined_config     = self.default_config
+        combined_config.update(self.get_user_config())
+        combined_config.update(self.get_environment_config())
 
-        combined_config = self.default_config
-        combined_config.update(user_config)
+        # verify that we have the required params
+        self.verify_required_params(combined_config)
+
+        # set the url based on account (unless one was already provided)
         if not 'url' in combined_config:
             combined_config['url'] = 'https://%s-dot-%s' % (combined_config['account'],
                                                             combined_config['base_url'])
 
         self.validate_client_token(combined_config)
-
         self.config = combined_config
         LOGGER.debug('config is:\n%s' % self.config)
 
@@ -126,6 +129,18 @@ class Config():
 
     def base_dir(self):
         return os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+
+    # look for any environment settings that start with CONDUCTOR_
+    def get_environment_config(self):
+        environment_config = {}
+        for env in os.environ:
+            if env.startswith('CONDUCTOR_'):
+                # if we find a match, strip the conductor_ prefix and downcase it
+                config_name = env[10:].lower()
+                environment_config[config_name] = os.environ[env]
+
+        return environment_config
 
     def get_user_config(self, config_file=None):
         default_config_file = os.path.join(self.base_dir(), 'config.yml')
