@@ -47,9 +47,9 @@ account: your_account_name
 
 ##### Uploader
 
-    ./bin/uploader
+    ./bin/uploader.py
 
 
 ##### Downloader
 
-    ./conductor/tools/downloader.py
+    ./bin/downloader.py
