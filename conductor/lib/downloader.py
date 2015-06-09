@@ -225,3 +225,7 @@ class Download(object):
     def nap(self):
         if not conductor.lib.common.EXIT:
             time.sleep(self.naptime)
+
+def run_downloader():
+    downloader_object = downloader.Download()
+    downloader_object.main()

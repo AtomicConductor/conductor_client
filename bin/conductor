@@ -1,12 +1,20 @@
 #!/usr/bin/env python
 
-import getpass
 import argparse
+import getpass
+import imp
+import os
+import sys
+
+try:
+    imp.find_module('conductor')
+
+except:
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import conductor
 from conductor.setup import *
-from conductor.lib import conductor_submit, uploader
-from conductor.tools import downloader
+from conductor.lib import conductor_submit, downloader, uploader
 
 
 def parse_args():
@@ -145,8 +153,6 @@ def run_uploader(args):
 
 def run_downloader(args):
     downloader.run_downloader()
-
-
 
 
 
