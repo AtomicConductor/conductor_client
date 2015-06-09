@@ -1,0 +1,155 @@
+#!/usr/bin/env python
+
+import getpass
+import argparse
+
+import conductor
+from conductor.setup import *
+from conductor.lib import conductor_submit, uploader
+from conductor.tools import downloader
+
+
+def parse_args():
+
+
+    # Create a parent parser. Arguments that are common across all subparsers can be added to this parser
+    parent_parser = argparse.ArgumentParser(add_help=False)
+
+    # create the main parser. Not sure why this parser is required, but got parsing tracebacks when excluding it (it gets confused about the arguments provided)
+    parser = argparse.ArgumentParser(description="description")
+    subparsers = parser.add_subparsers(title="actions")
+
+
+    #############################
+    # SUBMIT PARSER
+    #############################
+    submit_parser_desciption = "parse submitter arguments"
+    submit_parser_help = ""
+    submit_parser = subparsers.add_parser("submit",
+                                          parents=[parent_parser],
+                                          help=submit_parser_help,
+                                          description=submit_parser_desciption,
+                                          formatter_class=argparse.RawTextHelpFormatter)
+
+    submit_parser.add_argument("--cmd",
+                               help="execute this command.",
+                               type=str)
+
+    submit_parser.add_argument("--frames",
+                               help="frame range to execute over.",
+                               type=str)
+
+    submit_parser.add_argument("--user",
+                               help="Username to submit as",
+                               type=str,
+                               default=getpass.getuser(),
+                               required=False)
+
+    submit_parser.add_argument("--output_path",
+                               help="path to copy renders to",
+                               type=str,
+                               required=False)
+
+    submit_parser.add_argument("--upload_file",
+                               help="The path to an upload file",
+                               type=str,
+                               required=False)
+
+    submit_parser.add_argument("--upload_paths",
+                               help="Paths to upload",
+                               nargs="*")
+
+    submit_parser.add_argument("--resource", help="resource pool to submit jobs to, defaults to show name.",
+                               type=str,
+                               required=False)
+
+    submit_parser.add_argument("--cores",
+                               help="Number of cores that this job should run on",
+                               type=int,
+                               required=False)
+
+    submit_parser.add_argument("--priority",
+                               help="Set the priority of the submitted job. Default is 5",
+                               type=str,
+                               required=False)
+
+    submit_parser.add_argument("--upload_dependent",
+                               help="job id of another job that this should be upload dependent on.",
+                               type=str,
+                               required=False)
+
+    submit_parser.add_argument("--upload_only",
+                               help="Only upload the files, don't start the render",
+                               action='store_true')
+
+    submit_parser.add_argument("--force",
+                               help="Do not check for existing uploads, force a new upload",
+                               action='store_true')
+
+    submit_parser.add_argument("--postcmd",
+                               help="Run this command once the entire job is complete and downloaded",
+                               type=str,
+                               required=False)
+
+    submit_parser.add_argument("--skip_time_check",
+                               action='store_true',
+                               default=False,
+                               help="Don't perform a time check between local and cloud")
+
+    submit_parser.add_argument("--local_upload",
+                               help="Trigger files to be uploaded localy",
+                               action='store_true',
+                               required=False)
+
+    submit_parser.set_defaults(func=run_submit)
+
+
+    #############################
+    # UPLOADER PARSER
+    #############################
+    uploader_parser_desciption = "parse uploader arguments"
+    uploader_parser_help = ""
+    uploader_parser = subparsers.add_parser("uploader", parents=[parent_parser],
+                                      help=uploader_parser_help,
+                                      description=uploader_parser_desciption,
+                                      formatter_class=argparse.RawTextHelpFormatter)
+
+    uploader_parser.set_defaults(func=run_uploader)
+
+
+
+    #############################
+    # DOWNLOADER PARSER
+    #############################
+
+    downloader_parser_desciption = "parse downloader arguments"
+    downloader_parser_help = ""
+    downloader_parser = subparsers.add_parser("downloader", parents=[parent_parser],
+                                      help=downloader_parser_help,
+                                      description=downloader_parser_desciption,
+                                      formatter_class=argparse.RawTextHelpFormatter)
+
+    downloader_parser.set_defaults(func=run_downloader)
+
+    return parser.parse_args()
+
+
+
+def run_submit(args):
+    conductor_submit.run_submit(args)
+
+
+def run_uploader(args):
+    uploader.run_uploader()
+
+
+def run_downloader(args):
+    downloader.run_downloader()
+
+
+
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    args.func(args)

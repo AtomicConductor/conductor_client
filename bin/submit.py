@@ -81,12 +81,17 @@ def parseArgs():
         action='store_true',
         required=False)
 
-    args_dict = vars(parser.parse_args())
+    return parser.parse_args()
+
+
+def run_submit(args):
+    # convert the Namespace object to a dictionary
+    args_dict = vars(args)
     logger.debug('args_dict is %s', args_dict)
-    return args_dict # convert the Namespace object to a dictionary
+    submitter = conductor_submit.Submit(args_dict)
+    submitter.main()
 
 
 if __name__ == '__main__':
     args = parseArgs()
-    submitter = conductor_submit.Submit(args)
-    submitter.main()
+    run_submit(args)

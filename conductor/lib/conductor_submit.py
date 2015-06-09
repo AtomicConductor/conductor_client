@@ -171,7 +171,7 @@ class Submit():
         return file_utils.process_upload_filepaths(raw_filepaths)
 
 
-    def parse_upload_file(self,upload_filepath):
+    def parse_upload_file(self, upload_filepath):
         '''
         Parse the given filepath for paths that are separated by commas, returning
         a list of these paths
@@ -184,3 +184,14 @@ class Submit():
 
 class BadArgumentError(ValueError):
     pass
+
+
+def run_submit(args):
+    # convert the Namespace object to a dictionary
+    args_dict = vars(args)
+    logger.debug('args_dict is %s', args_dict)
+    submitter = Submit(args_dict)
+    submitter.main()
+
+
+
