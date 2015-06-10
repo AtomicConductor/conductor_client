@@ -14,8 +14,6 @@ import conductor, conductor.setup
 from conductor.setup import *
 from conductor.lib import api_client, common
 
-
-
 class Uploader():
     def __init__(self, args=None):
         logger.debug("Uploader.__init__")
@@ -107,6 +105,10 @@ class Uploader():
                 logger.error(traceback.format_exc())
                 raise e
 
+        if common.EXIT:
+            logger.debug("Exiting Upload thread")
+            return
+
         if upload_queue.empty():
             logger.debug('upload_queue is empty')
             return None
@@ -139,7 +141,7 @@ def run_uploader():
     api_util = api_client.ApiClient()
 
     logger.info('launching uploader')
-    while True:
+    while not common.EXIT:
         try:
             response_string, response_code = api_util.make_request(
                 '/uploads/client/next',
