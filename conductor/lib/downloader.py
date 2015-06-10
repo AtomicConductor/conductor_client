@@ -47,24 +47,24 @@ class DownloadStatus(object):
     def finish_download(self, job_id, download_url):
         self.jobs[job_id]['download_urls'].pop(download_url)
         if not self.jobs[job_id]['download_urls']:
-            self.set_download_status(job_id,'downloaded')
-            self.jobs.pop(job_id,None)
+            self.set_download_status(job_id, 'downloaded')
+            self.jobs.pop(job_id, None)
 
     # if we haven't upated in 60 seconds (or at all), update status
-    def mark_in_progress(self,job_id):
+    def mark_in_progress(self, job_id):
         last_mark = self.jobs[job_id].get('last_mark')
         tick = time.time()
         if not last_mark or (tick - last_mark) > 60:
-            self.set_download_status(job_id,'downloading')
+            self.set_download_status(job_id, 'downloading')
             self.jobs[job_id]['last_mark'] = tick
 
-    def set_download_status(self,job_id,status):
+    def set_download_status(self, job_id, status):
         ''' update status of download '''
         post_dic = {
             'download_id': job_id,
             'status': status
         }
-        response_string, response_code = self.api_helper.make_request('/downloads/status',data=json.dumps(post_dic))
+        response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
         logger.info("updated status: %s\n%s", response_code, response_string)
         return response_string, response_code
 
@@ -123,9 +123,9 @@ class Download(object):
                         continue
 
                     download_id = resp_data['download_id']
-                    self.DownloadStatus.add_job(download_id,resp_data['download_urls'])
-                    for download_url,local_path in resp_data['download_urls'].iteritems():
-                        download_info = [download_url,local_path,download_id]
+                    self.DownloadStatus.add_job(download_id, resp_data['download_urls'])
+                    for download_url, local_path in resp_data['download_urls'].iteritems():
+                        download_info = [download_url, local_path, download_id]
                         logger.debug("adding %s to download queue", download_info)
                         self.download_queue.put(download_info)
 
@@ -134,7 +134,7 @@ class Download(object):
                     sys.stdout.write('.')
                     self.nap()
             except Exception, e:
-                logger.error( "caught exception %s" % e)
+                logger.error("caught exception %s" % e)
                 logger.error(traceback.format_exc())
                 # Please include this sleep, to ensure that the Conductor
                 # does not get flooded with unnecessary requests.
@@ -157,15 +157,15 @@ class Download(object):
 
         return response_string, response_code
 
-    def download_item(self,download_url,local_path,download_id):
+    def download_item(self, download_url, local_path, download_id):
         logger.debug("downloading: %s to %s", download_url, local_path)
         if not os.path.exists(os.path.dirname(local_path)):
             os.makedirs(os.path.dirname(local_path), 0775)
-        CHUNKSIZE = 10485760 # 10MB
+        CHUNKSIZE = 10485760  # 10MB
 
         def chunk_report(bytes_so_far, chunk_size, total_size):
             percent = float(bytes_so_far) / total_size
-            percent = round(percent*100, 2)
+            percent = round(percent * 100, 2)
 
 
             logger.info("Downloaded %d of %d bytes (%0.2f%%)\r" %
@@ -200,8 +200,8 @@ class Download(object):
 
         response = urllib2.urlopen(download_url)
         chunk_read(response, report_hook=chunk_report)
-        logger.info( 'downloaded %s', local_path)
-        self.DownloadStatus.finish_download(download_id,download_url)
+        logger.info('downloaded %s', local_path)
+        self.DownloadStatus.finish_download(download_id, download_url)
 
     # worker loop
     def download_thread_loop(self):
@@ -227,5 +227,12 @@ class Download(object):
             time.sleep(self.naptime)
 
 def run_downloader():
-    downloader_object = downloader.Download()
-    downloader_object.main()
+    '''
+    Start the downloader process. This process will run indefinitely, polling
+    the Conductor cloud app for files that need to be downloaded. 
+    '''
+    downloader = Download()
+    downloader.main()
+
+if __name__ == "__main__":
+    run_downloader()
