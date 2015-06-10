@@ -354,7 +354,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             raise
 
         # If the job submitted successfully (201)
-        if response_code == 201:
+        if response_code in [201, 204]:
             jobid = response.get("jobid")
             title = "Job Submitted"
             message = "Job submitted: %s" % jobid
