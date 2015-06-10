@@ -5,12 +5,12 @@
 """
 
 
+import getpass
+import imp
+import json
 import os
 import sys
 import time
-import json
-import itertools
-import imp
 
 try:
     imp.find_module('conductor')
@@ -100,12 +100,12 @@ class Submit():
             submit_dict['upload_files'] = ','.join(upload_files)
 
         if self.upload_only:
-            # If there are not files to upload, then simulate a response dictrioary
+            # If there are not files to upload, then simulate a response string
             # and return a "no work to do" message
             if not upload_files:
-                response_dict = {"message": "No files to upload"}
+                response = json.dumps({"message": "No files to upload", "jobid":None})
                 response_code = 204
-                return response_dict, response_code
+                return response, response_code
 
             submit_dict.update({'frame_range':"x",
                                 'command':'upload only',
@@ -135,8 +135,8 @@ class Submit():
 
 
         # TODO: verify that the response request is valid
-        response_dict, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
-        return response_dict, response_code
+        response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
+        return response, response_code
 
 
     def main(self):
@@ -149,8 +149,8 @@ class Submit():
             uploaded_files = upload_files
 
         # Submit the job to conductor
-        response_string, response_code = self.send_job(upload_files=uploaded_files)
-        return json.loads(response_string), response_code
+        response, response_code = self.send_job(upload_files=uploaded_files)
+        return json.loads(response), response_code
 
 
     def get_upload_files(self):
@@ -191,7 +191,16 @@ def run_submit(args):
     args_dict = vars(args)
     logger.debug('args_dict is %s', args_dict)
     submitter = Submit(args_dict)
-    submitter.main()
+    response, response_code = submitter.main()
+    logger.debug("Response Code: %s", response_code)
+    logger.debug("Response: %s", response)
+    if response_code in [201, 204]:
+        logger.info("Submission Complete")
+    else:
+        logger.error("Submission Failure. Response code: %s", response_code)
+        sys.exit(1)
+
+        
 
 
 
