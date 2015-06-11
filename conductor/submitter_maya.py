@@ -16,6 +16,7 @@ from conductor.lib import maya_utils, pyside_utils, file_utils
 from conductor import submitter
 
 
+
 '''
 TODO: 
 1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
@@ -152,8 +153,20 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         
         example:
             "maya2015Render -rd /tmp/render_output/ -s %f -e %f -rl render_layer1_name render_layer2_name maya_maya_filepath.ma"
+        
+        The command can be overriden in the client's yaml config, example:
+            maya: 
+                cmd: "my command"
+        If no command is found in the yaml config, use the docker maya 2015 command.
         '''
-        base_cmd = "maya2015Render -rd /tmp/render_output/ -s %%f -e %%f %s %s"
+        
+        # Query the yaml config for a maya command
+        base_cmd = conductor.setup.CONFIG.get("maya", {}).get("cmd")
+        # ifno command is found, default to using the docker command
+        if not base_cmd:
+            base_cmd = "docker run conductor/maya2015"
+
+        base_cmd += " -rd /tmp/render_output/ -s %%f -e %%f %s %s"
 
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + " ".join(render_layers)
