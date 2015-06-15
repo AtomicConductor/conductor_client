@@ -59,7 +59,7 @@ class Submit():
         self.cores = args.get('cores', CONFIG["instance_cores"])
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
-        self.upload_paths = args.get('upload_paths', [])
+        self.upload_paths = args.get('upload_paths') or []
         self.local_upload = args.get('local_upload', CONFIG['local_upload'])
 
 
@@ -200,7 +200,7 @@ def run_submit(args):
         logger.error("Submission Failure. Response code: %s", response_code)
         sys.exit(1)
 
-        
+
 
 
 
