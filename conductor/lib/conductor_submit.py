@@ -60,8 +60,7 @@ class Submit():
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
         self.upload_paths = args.get('upload_paths') or []
-        self.local_upload = args.get('local_upload', CONFIG['local_upload'])
-
+        self.local_upload = args.get('local_upload') or CONFIG['local_upload']
 
         # For now always default nuke uploads to skip time check
         if self.upload_only or "nuke-render" in self.raw_command:
@@ -127,7 +126,7 @@ class Submit():
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
             if self.local_upload:
-                submit_dict['local_upload'] = True
+                submit_dict['local_upload'] = self.local_upload
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
