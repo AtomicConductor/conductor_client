@@ -153,20 +153,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         
         example:
             "maya2015Render -rd /tmp/render_output/ -s %f -e %f -rl render_layer1_name render_layer2_name maya_maya_filepath.ma"
-        
-        The command can be overriden in the client's yaml config, example:
-            maya: 
-                cmd: "my command"
-        If no command is found in the yaml config, use the docker maya 2015 command.
         '''
-        
-        # Query the yaml config for a maya command
-        base_cmd = conductor.setup.CONFIG.get("maya", {}).get("cmd")
-        # ifno command is found, default to using the docker command
-        if not base_cmd:
-            base_cmd = "docker run conductor/maya2015"
-
-        base_cmd += " -rd /tmp/render_output/ -s %%f -e %%f %s %s"
+        base_cmd = "maya2015Render -rd /tmp/render_output/ -s %%f -e %%f %s %s"
 
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + " ".join(render_layers)
