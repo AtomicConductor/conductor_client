@@ -3,6 +3,7 @@ import math
 import multiprocessing
 import os
 import platform
+import signal
 import subprocess
 import time
 import traceback
@@ -26,16 +27,33 @@ def setup_logger():
     logger.addHandler(stream_handler)
     return logger
 
+
 # Global logger object, don't use this object directly.
 # It is preferred to use the conductor.logger in the conductor __init__.py
 # except within this file
 LOGGER = setup_logger()
 
+
+# Create trap for SIGINT that sets common.EXIT to true
+EXIT = False
+def signal_handler(sig_number,stack_frame):
+    LOGGER.debug('in signal_handler. setting common.EXIT to True')
+    global EXIT
+    EXIT = True
+signal.signal(signal.SIGINT, signal_handler)
+
+
 # ##
 # Global Functions
 # ##
 
+
 def retry(function, retry_count=5):
+    def check_for_early_release(error):
+        LOGGER.debug('checking for early_release. EXIT is %s' % EXIT)
+        if EXIT:
+            LOGGER.debug('releasing in retry')
+            raise error
 
     # disable retries in testing
     if os.environ.get('FLASK_CONF') == 'TEST':
@@ -50,11 +68,12 @@ def retry(function, retry_count=5):
             LOGGER.debug('caught error')
             LOGGER.debug('failed due to: \n%s' % traceback.format_exc())
             if i < retry_count:
+                check_for_early_release(e)
                 sleep_time = int(math.pow(2, i))
                 LOGGER.debug('retrying after %s seconds' % sleep_time)
-
                 time.sleep(sleep_time)
                 i += 1
+                check_for_early_release(e)
                 continue
             else:
                 LOGGER.debug('exceeded %s retries. throwing error...' % retry_count)

@@ -5,12 +5,12 @@
 """
 
 
+import getpass
+import imp
+import json
 import os
 import sys
 import time
-import json
-import itertools
-import imp
 
 try:
     imp.find_module('conductor')
@@ -59,9 +59,15 @@ class Submit():
         self.cores = args.get('cores', CONFIG["instance_cores"])
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
-        self.upload_paths = args.get('upload_paths', [])
-        self.local_upload = args.get('local_upload', CONFIG['local_upload'])
+        self.upload_paths = args.get('upload_paths') or []
 
+        local_upload = args.get('local_upload')
+        # If the local_upload arge was specified by the user (i.e if it's not None), the use it
+        if local_upload != None:
+            self.local_upload = local_upload
+        # Otherwise use the value in the config
+        else:
+            self.local_upload = CONFIG['local_upload']
 
         # For now always default nuke uploads to skip time check
         if self.upload_only or "nuke-render" in self.raw_command:
@@ -100,12 +106,12 @@ class Submit():
             submit_dict['upload_files'] = ','.join(upload_files)
 
         if self.upload_only:
-            # If there are not files to upload, then simulate a response dictrioary
+            # If there are not files to upload, then simulate a response string
             # and return a "no work to do" message
             if not upload_files:
-                response_dict = {"message": "No files to upload"}
+                response = json.dumps({"message": "No files to upload", "jobid":None})
                 response_code = 204
-                return response_dict, response_code
+                return response, response_code
 
             submit_dict.update({'frame_range':"x",
                                 'command':'upload only',
@@ -126,8 +132,8 @@ class Submit():
                 submit_dict['postcmd'] = self.postcmd
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
-            if self.local_upload:
-                submit_dict['local_upload'] = True
+
+            submit_dict['local_upload'] = self.local_upload
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
@@ -135,8 +141,8 @@ class Submit():
 
 
         # TODO: verify that the response request is valid
-        response_dict, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
-        return response_dict, response_code
+        response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
+        return response, response_code
 
 
     def main(self):
@@ -149,8 +155,8 @@ class Submit():
             uploaded_files = upload_files
 
         # Submit the job to conductor
-        response_string, response_code = self.send_job(upload_files=uploaded_files)
-        return json.loads(response_string), response_code
+        response, response_code = self.send_job(upload_files=uploaded_files)
+        return json.loads(response), response_code
 
 
     def get_upload_files(self):
@@ -171,7 +177,7 @@ class Submit():
         return file_utils.process_upload_filepaths(raw_filepaths)
 
 
-    def parse_upload_file(self,upload_filepath):
+    def parse_upload_file(self, upload_filepath):
         '''
         Parse the given filepath for paths that are separated by commas, returning
         a list of these paths
@@ -184,3 +190,23 @@ class Submit():
 
 class BadArgumentError(ValueError):
     pass
+
+
+def run_submit(args):
+    # convert the Namespace object to a dictionary
+    args_dict = vars(args)
+    logger.debug('parsed_args is %s', args_dict)
+    submitter = Submit(args_dict)
+    response, response_code = submitter.main()
+    logger.debug("Response Code: %s", response_code)
+    logger.debug("Response: %s", response)
+    if response_code in [201, 204]:
+        logger.info("Submission Complete")
+    else:
+        logger.error("Submission Failure. Response code: %s", response_code)
+        sys.exit(1)
+
+
+
+
+
