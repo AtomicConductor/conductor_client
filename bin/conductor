@@ -106,7 +106,9 @@ def parse_args():
 
     submit_parser.add_argument("--local_upload",
                                help="Trigger files to be uploaded localy",
-                               action='store_true',
+                               choices=[False, True],
+                               type=cast_to_bool,
+                               default=None,
                                required=False)
 
     submit_parser.set_defaults(func=run_submit)
@@ -141,6 +143,18 @@ def parse_args():
 
     return parser.parse_args()
 
+
+def cast_to_bool(string):
+    '''
+    Ensure that the argument provided is either "True" or "False (or "true" or 
+    "false") and that argument into an actual bool True or False value
+    '''
+    string_lower = string.lower()
+    if string_lower == "true":
+        return True
+    elif string_lower == "false":
+        return False
+    raise argparse.ArgumentTypeError('Argument must be True or False')
 
 
 def run_submit(args):

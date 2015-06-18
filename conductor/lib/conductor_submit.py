@@ -60,7 +60,14 @@ class Submit():
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
         self.upload_paths = args.get('upload_paths') or []
-        self.local_upload = args.get('local_upload') or CONFIG['local_upload']
+
+        local_upload = args.get('local_upload')
+        # If the local_upload arge was specified by the user (i.e if it's not None), the use it
+        if local_upload != None:
+            self.local_upload = local_upload
+        # Otherwise use the value in the config
+        else:
+            self.local_upload = CONFIG['local_upload']
 
         # For now always default nuke uploads to skip time check
         if self.upload_only or "nuke-render" in self.raw_command:
@@ -125,8 +132,8 @@ class Submit():
                 submit_dict['postcmd'] = self.postcmd
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
-            if self.local_upload:
-                submit_dict['local_upload'] = self.local_upload
+
+            submit_dict['local_upload'] = self.local_upload
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
@@ -188,7 +195,7 @@ class BadArgumentError(ValueError):
 def run_submit(args):
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
-    logger.debug('args_dict is %s', args_dict)
+    logger.debug('parsed_args is %s', args_dict)
     submitter = Submit(args_dict)
     response, response_code = submitter.main()
     logger.debug("Response Code: %s", response_code)
