@@ -2,11 +2,12 @@ import os, re, sys, glob
 
 
 # Regular expressions for different path expressions that are supported
-RX_HASH = r"#+"
-RX_PERCENT = r"%0\d+d"
-RX_UDIM = r"<udim>"
-RX_HOUDINI = r"\$F\d*"
-PATH_EXPRESSIONS = [RX_HASH, RX_PERCENT, RX_UDIM, RX_HOUDINI]
+RX_HASH = r"#+"  # image.####.exr
+RX_PERCENT = r"%0\d+d"  # image.%04d.exr
+RX_UDIM = r"<udim>"  # image.<udim>.exr
+RX_HOUDINI = r"\$F\d*"  # image.$F.exr
+RX_ASTERISK = r"\*+"  # image.*.exr
+PATH_EXPRESSIONS = [RX_HASH, RX_PERCENT, RX_UDIM, RX_HOUDINI, RX_ASTERISK]
 
 
 def separate_path(path, no_extension=False):
@@ -111,39 +112,29 @@ def process_upload_filepath(path):
 
     paths = []
 
+    if path:
 
-    # Skip the path if its empty/None
-    if not path:
-        return paths
+        # If the path is a file
+        if os.path.isfile(path):
+            # Condition the path to conform to Conductor's expectations
+            paths.append(conform_platform_filepath(path))
 
-    # If the path is a file
-    if os.path.isfile(path):
-        # Condition the path to conform to Conductor's expectations
-        paths.append(conform_platform_filepath(path))
+        # If the path is a directory
+        elif os.path.isdir(path):
+            for filepath in get_files(path, recurse=True):
+                paths.extend(process_upload_filepath(filepath))
 
-    # If the path is a directory
-    elif os.path.isdir(path):
-        for filepath in get_files(path, recurse=True):
-            paths.extend(process_upload_filepath(filepath))
-
-    else:
-        # If the path is not a file and not a directory then see if it's path exrpess
-        filepaths = get_files_from_path_expression(path)
-
-        # if there are no actual frames on disk for the given image
-        # sequence then raise an exception
-        if not filepaths:
-            _, basename, __ = separate_path(path)
-            if get_rx_match(basename, PATH_EXPRESSIONS):
-                raise Exception("No files found for path expression: %s", path)
-            # If the the path isn't an expression (and it's also not a file or
-            # a directory, then what the hell is it? raise an Exception
-            raise Exception("Path does not exist: %s" % path)
-
-
-        # Otherwise treat each frame as a dependency (adding it to the
-        # dependency dictionary and running it through validation
+        # If the path is not a file and not a directory then see if it's a path expression
         else:
+            filepaths = get_files_from_path_expression(path)
+
+            # if there are no matching frames/files found on disk for the given
+            # path expression(e.g image sequence) then raise an exception
+            if not filepaths:
+                raise Exception("No files found for path expression: %s", path)
+
+            # Otherwise treat each frame as a dependency (adding it to the
+            # dependency dictionary and running it through validation)
             for filepath in filepaths:
                 paths.extend(process_upload_filepath(filepath))
 
