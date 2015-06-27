@@ -97,6 +97,7 @@ class Uploader():
         if upload_url is not '':
             logger.debug('uploading file %s', filename)
             try:
+                logger.info("Uploading file: %s", filename)
                 resp, content = common.retry(lambda: self.do_upload(upload_url, "POST", open(filename, 'rb')))
                 uploaded_queue.put(filename)
                 logger.debug('finished uploading %s', filename)
