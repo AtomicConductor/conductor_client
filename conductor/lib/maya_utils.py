@@ -100,21 +100,21 @@ def collect_dependencies(node_attrs):
     This is achieved by inspecting maya's nodes.  Use the node_attrs argument
     to pass in a dictionary 
 
-        node_attrs = {'file':['fileTextureName'],
-                 'af_alembicDeform':['fileName'],
-                 'AlembicNode':['abc_File'],
-                 'VRayMesh':['fileName'],
-                 'VRaySettingsNode':['ifile', 'fnm'],
-                 'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
-                 'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam']
-                 }
+    node_attrs = {'file':['fileTextureName'],
+             'af_alembicDeform':['fileName'],
+             'AlembicNode':['abc_File'],
+             'VRayMesh':['fileName'],
+             'VRaySettingsNode':['ifile', 'fnm'],
+             'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
+             'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam']
+             }
 
     
     '''
     assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
 
-    # Scene name, refs and textures
-    dependencies = cmds.file(query=True, list=True) or []
+    # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
+    dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
 
     # explicit deps
     if node_attrs is None:
@@ -136,13 +136,17 @@ def collect_dependencies(node_attrs):
             continue
 
         for node in cmds.ls(type=node_type):
+            print "node", node
             for node_attr in node_attrs:
                 plug_name = '%s.%s' % (node, node_attr)
                 if cmds.objExists(plug_name):
                     plug_value = cmds.getAttr(plug_name)
-                    path = cmds.file(plug_value, exn=True, query=True)
+                    # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
+                    path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
+                    print "path", path
                     dependencies.append(path)
 
-    return sorted(set(dependencies))
+    # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
+    return sorted(set([path.rstrip("/\\") for path in dependencies]))
 
 
