@@ -1,6 +1,10 @@
 import os
 from maya import cmds
 
+import conductor.setup
+
+logger = conductor.setup.logger
+
 
 def get_transform(shape_node):
     '''
@@ -132,18 +136,16 @@ def collect_dependencies(node_attrs):
     for node_type, node_attrs in node_attrs.iteritems():
 
         if node_type not in all_node_types:
-            print "Warning: skipping unknown node type: %s" % node_type
+            logger.warning("skipping unknown node type: %s", node_type)
             continue
 
         for node in cmds.ls(type=node_type):
-            print "node", node
             for node_attr in node_attrs:
                 plug_name = '%s.%s' % (node, node_attr)
                 if cmds.objExists(plug_name):
                     plug_value = cmds.getAttr(plug_name)
                     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
-                    print "path", path
                     dependencies.append(path)
 
     # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
