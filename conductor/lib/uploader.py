@@ -91,6 +91,7 @@ class Uploader():
         if response_code == 200:
             logger.debug('uploading file %s', filename)
             try:
+                logger.info("Uploading file: %s", filename)
                 resp, content = common.retry(lambda: self.do_upload(upload_url, "POST", open(filename, 'rb')))
                 logger.debug('finished uploading %s', filename)
             except Exception, e:
