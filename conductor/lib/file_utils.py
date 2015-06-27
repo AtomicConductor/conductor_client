@@ -1,13 +1,24 @@
 import os, re, sys, glob
+import conductor.setup
 
 
 # Regular expressions for different path expressions that are supported
 RX_HASH = r"#+"  # image.####.exr
 RX_PERCENT = r"%0\d+d"  # image.%04d.exr
-RX_UDIM = r"<udim>"  # image.<udim>.exr
+RX_UDIM_MARI = r"<UDIM>"  # image.<UDIM>.exr
+RX_UDIM_MUDBOX_L = r"<UVTILE>"  # image.<UVTILE>.exr
+RX_UDIM_MUDBOX_U = r"<uvtile>"  # image.<uvtile>.exr
+RX_UDIM_VRAY_L = r"\$\d*U.*\$\d*V"  # image.u$2U_v$2V.exr or image.u$Uv$V.exr, etc
+RX_UDIM_VRAY_U = r"\$\d*v.*\$\d*v"  # image.u$2u_v$2v.exr or image.u$uv$v.exr, etc
 RX_HOUDINI = r"\$F\d*"  # image.$F.exr
 RX_ASTERISK = r"\*+"  # image.*.exr
-PATH_EXPRESSIONS = [RX_HASH, RX_PERCENT, RX_UDIM, RX_HOUDINI, RX_ASTERISK]
+
+# List of  regular expressions that a filename may be represented as (in maya, nuke, mari, or listed in text file, etc)
+PATH_EXPRESSIONS = [RX_HASH, RX_PERCENT, RX_UDIM_MARI, RX_UDIM_MUDBOX_L,
+                    RX_UDIM_MUDBOX_U, RX_UDIM_VRAY_L, RX_UDIM_VRAY_U, RX_HOUDINI,
+                    RX_ASTERISK]
+
+logger = conductor.setup.logger
 
 
 def separate_path(path, no_extension=False):
@@ -46,7 +57,6 @@ def separate_path(path, no_extension=False):
         extension = ""
     else:
         basename, extension = os.path.splitext(filename)
-
     return dirpath, basename, extension
 
 
@@ -320,18 +330,21 @@ def get_files_from_path_expression(path_expression, no_extension=False, dev=Fals
         "image.####.exr"   # Hash syntax
         "image.####"       # no extension  - if there is no extension for the file then that must be specified by the no_extension argument
         "image.%04d.exr"   # printf format
-        "image<udim>.exr   # Udim
+        "image<UDIM>.exr   # Udim
         "image.$F.exr      # Houdini  
     '''
     dirpath, basename, extension = separate_path(path_expression, no_extension=no_extension)
+    logger.debug("Evaluating path expression: %s", path_expression)
 
     rx = get_rx_match(basename, PATH_EXPRESSIONS)
     if rx:
+        logger.debug("Matched path regular expression: %s", rx)
         glob_basename = re.sub(rx, "*", basename)
         glob_filepath = os.path.join(dirpath, glob_basename + extension)
         file_pieces = glob_filepath.split("*")
         files_that_match = get_matching_files(glob_filepath, dev)
         return [reconstruct_filename(matched, file_pieces) for matched in files_that_match]
+    logger.debug("Path expression not recognized: %s", path_expression)
     return []
 
 
