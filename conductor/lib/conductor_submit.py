@@ -147,15 +147,11 @@ class Submit():
 
     def main(self):
         upload_files = self.get_upload_files()
-
         uploader = conductor.lib.uploader.Uploader()
         if self.local_upload:
-            uploaded_files = uploader.run_uploads(upload_files)
-        else:
-            uploaded_files = upload_files
-
+            uploader.run_uploads(upload_files)
         # Submit the job to conductor
-        response, response_code = self.send_job(upload_files=uploaded_files)
+        response, response_code = self.send_job(upload_files=upload_files)
         return json.loads(response), response_code
 
 
@@ -205,8 +201,3 @@ def run_submit(args):
     else:
         logger.error("Submission Failure. Response code: %s", response_code)
         sys.exit(1)
-
-
-
-
-

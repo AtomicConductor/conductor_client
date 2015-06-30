@@ -134,7 +134,7 @@ class Uploader():
 def run_uploader():
     '''
     Start the uploader process. This process will run indefinitely, polling
-    the Conductor cloud app for files that need to be uploaded. 
+    the Conductor cloud app for files that need to be uploaded.
     '''
 
     sleep_time = 10
@@ -179,13 +179,12 @@ def run_uploader():
 
 
             logger.info('uploading files for upload task %s: \n\t%s', upload_id, "\n\t".join(upload_files))
-            uploaded_files = uploader.run_uploads(upload_files)
+            uploader.run_uploads(upload_files)
             logger.info('done uploading files')
 
             finish_dict = {'upload_id':upload_id}
 
-            if uploaded_files:
-                finish_dict['upload_files'] = uploaded_files
+            if upload_files:
                 finish_dict['status'] = 'server_pending'
             else:
                 finish_dict['status'] = 'success'
@@ -201,7 +200,3 @@ def run_uploader():
             continue
 
     logger.info('exiting uploader')
-
-
-
-
