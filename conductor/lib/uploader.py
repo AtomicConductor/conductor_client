@@ -29,7 +29,7 @@ class Uploader():
         logger.debug('params are %s', params)
         response_string, response_code = self.api_client.make_request(uri_path=uri_path, params=params)
         # TODO: validate that no error occured via error code
-        return response_string
+        return response_string, response_code
 
     def get_md5(self, file_path, blocksize=65536):
         logger.debug('trying to open %s', file_path)
@@ -92,9 +92,9 @@ class Uploader():
             return
 
         logger.debug('trying to upload %s', filename)
-        upload_url = self.get_upload_url(filename)
+        upload_url, response_code = self.get_upload_url(filename)
         logger.debug("upload url is '%s'", upload_url)
-        if upload_url is not '':
+        if response_code == 200:
             logger.debug('uploading file %s', filename)
             try:
                 resp, content = common.retry(lambda: self.do_upload(upload_url, "POST", open(filename, 'rb')))
@@ -104,6 +104,9 @@ class Uploader():
                 logger.error('could not do upload for %s', filename)
                 logger.error(traceback.format_exc())
                 raise e
+        elif response_code == 204:
+            logger.debug("File exists on GCS, still signaling an upload to sync with gluster...")
+            uploaded_queue.put(filename)
 
         if common.EXIT:
             logger.debug("Exiting Upload thread")
