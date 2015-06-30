@@ -29,7 +29,7 @@ class Uploader():
         logger.debug('params are %s', params)
         response_string, response_code = self.api_client.make_request(uri_path=uri_path, params=params)
         # TODO: validate that no error occured via error code
-        return response_string
+        return response_string, response_code
 
     def get_md5(self, file_path, blocksize=65536):
         logger.debug('trying to open %s', file_path)
@@ -92,9 +92,9 @@ class Uploader():
             return
 
         logger.debug('trying to upload %s', filename)
-        upload_url = self.get_upload_url(filename)
+        upload_url, response_code = self.get_upload_url(filename)
         logger.debug("upload url is '%s'", upload_url)
-        if upload_url is not '':
+        if response_code == 200:
             logger.debug('uploading file %s', filename)
             try:
                 logger.info("Uploading file: %s", filename)
@@ -105,6 +105,9 @@ class Uploader():
                 logger.error('could not do upload for %s', filename)
                 logger.error(traceback.format_exc())
                 raise e
+        elif response_code == 204:
+            logger.debug("File exists on GCS, still signaling an upload to sync with gluster...")
+            uploaded_queue.put(filename)
 
         if common.EXIT:
             logger.debug("Exiting Upload thread")
@@ -132,7 +135,7 @@ class Uploader():
 def run_uploader():
     '''
     Start the uploader process. This process will run indefinitely, polling
-    the Conductor cloud app for files that need to be uploaded. 
+    the Conductor cloud app for files that need to be uploaded.
     '''
 
     sleep_time = 10
@@ -177,13 +180,12 @@ def run_uploader():
 
 
             logger.info('uploading files for upload task %s: \n\t%s', upload_id, "\n\t".join(upload_files))
-            uploaded_files = uploader.run_uploads(upload_files)
+            uploader.run_uploads(upload_files)
             logger.info('done uploading files')
 
             finish_dict = {'upload_id':upload_id}
 
-            if uploaded_files:
-                finish_dict['upload_files'] = uploaded_files
+            if upload_files:
                 finish_dict['status'] = 'server_pending'
             else:
                 finish_dict['status'] = 'success'
@@ -199,7 +201,3 @@ def run_uploader():
             continue
 
     logger.info('exiting uploader')
-
-
-
-
