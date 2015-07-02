@@ -57,7 +57,6 @@ class Uploader():
             return []
 
         process_count = CONFIG['thread_count']
-        uploaded_queue = multiprocessing.Queue()
         upload_queue = multiprocessing.Queue()
         for upload_file in file_list:
             logger.debug('adding %s to queue', upload_file)
@@ -66,7 +65,7 @@ class Uploader():
         threads = []
         for n in range(process_count):
 
-            thread = threading.Thread(target=self.upload_file, args=(upload_queue, uploaded_queue))
+            thread = threading.Thread(target=self.upload_file, args=(upload_queue,))
 
             thread.start()
             threads.append(thread)
@@ -76,14 +75,9 @@ class Uploader():
             thread.join()
 
         logger.debug('done with threading stuff')
-        uploaded_list = []
-        while not uploaded_queue.empty():
-            uploaded_list.append(uploaded_queue.get())
-
-        return uploaded_list
 
 
-    def upload_file(self, upload_queue, uploaded_queue):
+    def upload_file(self, upload_queue):
         logger.debug('entering upload_file')
         try:
             filename = upload_queue.get(block=False)
@@ -99,16 +93,12 @@ class Uploader():
             try:
                 logger.info("Uploading file: %s", filename)
                 resp, content = common.retry(lambda: self.do_upload(upload_url, "POST", open(filename, 'rb')))
-                uploaded_queue.put(filename)
                 logger.debug('finished uploading %s', filename)
             except Exception, e:
                 logger.error('could not do upload for %s', filename)
                 logger.error(traceback.format_exc())
                 raise e
-        elif response_code == 204:
-            logger.debug("File exists on GCS, still signaling an upload to sync with gluster...")
-            uploaded_queue.put(filename)
-
+        
         if common.EXIT:
             logger.debug("Exiting Upload thread")
             return
@@ -119,8 +109,7 @@ class Uploader():
         else:
             logger.debug('upload_queue is not empty')
 
-            self.upload_file(upload_queue, uploaded_queue)
-
+            self.upload_file(upload_queue)
 
         return
 
