@@ -135,9 +135,17 @@ def parse_args():
     downloader_parser_desciption = "parse downloader arguments"
     downloader_parser_help = ""
     downloader_parser = subparsers.add_parser("downloader", parents=[parent_parser],
-                                      help=downloader_parser_help,
-                                      description=downloader_parser_desciption,
-                                      formatter_class=argparse.RawTextHelpFormatter)
+                                  help=downloader_parser_help,
+                                  description=downloader_parser_desciption,
+                                  formatter_class=argparse.RawTextHelpFormatter)
+    downloader_parser.add_argument("--job_id",
+                                  help="Manually download output for this job",
+                                  required=False)
+    downloader_parser.add_argument("--task_id",
+                                  help="Manually download output for this task",
+                                  required=False)
+    downloader_parser.add_argument("--output",
+                                   help="Override for the output directory")
 
     downloader_parser.set_defaults(func=run_downloader)
 
@@ -166,7 +174,7 @@ def run_uploader(args):
 
 
 def run_downloader(args):
-    downloader.run_downloader()
+    downloader.run_downloader(args)
 
 
 
