@@ -77,9 +77,10 @@ class Download(object):
         self.naptime = 15
         self.DownloadStatus = DownloadStatus()
         self.job_id = args.get('job_id')
+        self.task_id = args.get('task_id')
         self.output_path = args.get('output')
-        print("jid = %s, output = %s" % (self.job_id, self.output_path))
-
+        logger.info("output path=%s, job_id=%s, task_id=%s" % \
+            (self.output_path, self.job_id, self.task_id))
 
     def main(self):
         logger.info('starting downloader...')
@@ -178,8 +179,15 @@ class Download(object):
     def get_download(self):
         ''' get a new file to download from the server or 404 '''
         if self.job_id:
-            response_string, response_code = \
-                self.api_helper.make_request('/downloads/%s' % (self.job_id))
+            if self.task_id:
+                params = {"tid":self.task_id}
+                response_string, response_code = \
+                    self.api_helper.make_request('/downloads/%s' % (self.job_id), 
+                                                 params=params)
+            else:
+                response_string, response_code = \
+                    self.api_helper.make_request('/downloads/%s' % (self.job_id))
+
         else:
             response_string, response_code = self.api_helper.make_request('/downloads/next')
     

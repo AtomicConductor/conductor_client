@@ -141,6 +141,9 @@ def parse_args():
     downloader_parser.add_argument("--job_id",
                                   help="Manually download output for this job",
                                   required=False)
+    downloader_parser.add_argument("--task_id",
+                                  help="Manually download output for this task",
+                                  required=False)
     downloader_parser.add_argument("--output",
                                    help="Override for the output directory")
 
