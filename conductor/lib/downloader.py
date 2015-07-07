@@ -17,6 +17,7 @@ import threading
 import time
 import traceback
 import urllib2
+import ntpath
 
 try:
     imp.find_module('conductor')
@@ -70,11 +71,14 @@ class DownloadStatus(object):
 
 
 class Download(object):
-    def __init__(self):
+    def __init__(self, args):
         self.parser = argparse.ArgumentParser(description=self.__doc__,
                 formatter_class=argparse.RawDescriptionHelpFormatter)
         self.naptime = 15
         self.DownloadStatus = DownloadStatus()
+        self.job_id = args.get('job_id')
+        self.output_path = args.get('output')
+        print("jid = %s, output = %s" % (self.job_id, self.output_path))
 
 
     def main(self):
@@ -122,13 +126,35 @@ class Download(object):
                         self.nap()
                         continue
 
-                    download_id = resp_data['download_id']
-                    self.DownloadStatus.add_job(download_id, resp_data['download_urls'])
+                    #  If an individual job id was specified, don't do any 
+                    #  status update type things
+                    if not self.job_id:
+                        download_id = resp_data['download_id']
+                        self.DownloadStatus.add_job(download_id, resp_data['download_urls'])
+                    
                     for download_url, local_path in resp_data['download_urls'].iteritems():
-                        download_info = [download_url, local_path, download_id]
+                        file_path = local_path
+
+                        #  Add support for overriding the output path
+                        if self.output_path:
+                            dirname, filename = ntpath.split(local_path)
+                            if not filename:
+                                filename = ntpath.basename(dirname)
+                            file_path = os.path.join(self.output_path, filename)
+
+                        #  If a job id was specified on the command line, this
+                        #  a manual download. Do not update the database object
+                        #  status...
+                        update_status = True
+                        if self.job_id:
+                            update_status = False
+                        download_info = [download_url, file_path, download_id, update_status]
                         logger.debug("adding %s to download queue", download_info)
                         self.download_queue.put(download_info)
 
+                    #  Do not run as a daemon if self.job_id was specified...
+                    if self.job_id:
+                        conductor.lib.common.EXIT = True
                 else:
                     logger.debug("nothing to download. sleeping...")
                     sys.stdout.write('.')
@@ -151,13 +177,18 @@ class Download(object):
 
     def get_download(self):
         ''' get a new file to download from the server or 404 '''
-        response_string, response_code = self.api_helper.make_request('/downloads/next')
+        if self.job_id:
+            response_string, response_code = \
+                self.api_helper.make_request('/downloads/%s' % (self.job_id))
+        else:
+            response_string, response_code = self.api_helper.make_request('/downloads/next')
+    
         if response_code == '201':
             logger.info("new file to download:\n" + response_string)
 
         return response_string, response_code
 
-    def download_item(self, download_url, local_path, download_id):
+    def download_item(self, download_url, local_path, download_id, update_status):
         logger.debug("downloading: %s to %s", download_url, local_path)
         if not os.path.exists(os.path.dirname(local_path)):
             os.makedirs(os.path.dirname(local_path), 0775)
@@ -174,7 +205,7 @@ class Download(object):
             if bytes_so_far >= total_size:
                 logger.info('\n')
 
-        def chunk_read(response, chunk_size=CHUNKSIZE, report_hook=None):
+        def chunk_read(response, update_status, chunk_size=CHUNKSIZE, report_hook=None):
             logger.debug('chunk_size is %s', chunk_size)
             total_size = response.info().getheader('Content-Length').strip()
             total_size = int(total_size)
@@ -182,7 +213,8 @@ class Download(object):
 
             download_file = open(local_path, 'wb')
             while 1:
-                self.DownloadStatus.mark_in_progress(download_id)
+                if update_status:
+                    self.DownloadStatus.mark_in_progress(download_id)
                 chunk = response.read(chunk_size)
                 chunk_size = len(chunk)
                 bytes_so_far += chunk_size
@@ -199,9 +231,10 @@ class Download(object):
 
 
         response = urllib2.urlopen(download_url)
-        chunk_read(response, report_hook=chunk_report)
+        chunk_read(response, update_status, report_hook=chunk_report)
         logger.info('downloaded %s', local_path)
-        self.DownloadStatus.finish_download(download_id, download_url)
+        if update_status:
+            self.DownloadStatus.finish_download(download_id, download_url)
 
     # worker loop
     def download_thread_loop(self):
@@ -210,13 +243,14 @@ class Download(object):
             download_task = self.download_queue.get()
             if not download_task:
                 continue
-            download_url, local_path, download_id = download_task
+            download_url, local_path, download_id, update_status = download_task
             # do download
             conductor.lib.common.retry(
                 lambda: self.download_item(
                     download_url,
                     local_path,
                     download_id,
+                    update_status,
                 ),
             )
         return
@@ -226,12 +260,13 @@ class Download(object):
         if not conductor.lib.common.EXIT:
             time.sleep(self.naptime)
 
-def run_downloader():
+def run_downloader(args):
     '''
     Start the downloader process. This process will run indefinitely, polling
     the Conductor cloud app for files that need to be downloaded. 
     '''
-    downloader = Download()
+    args_dict = vars(args)
+    downloader = Download(args_dict)
     downloader.main()
 
 if __name__ == "__main__":
