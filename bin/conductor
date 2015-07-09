@@ -111,6 +111,16 @@ def parse_args():
                                default=None,
                                required=False)
 
+    submit_parser.add_argument("--env",
+                               help="Anything to add/change with environment variables",
+                               nargs="*",
+                               required=False)
+
+    submit_parser.add_argument("--plugins",
+                               help="Any plugin files to upload",
+                               nargs="*",
+                               required=False)
+
     submit_parser.set_defaults(func=run_submit)
 
 

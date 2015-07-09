@@ -61,6 +61,17 @@ class Submit():
         self.priority = args.get('priority', CONFIG["priority"])
         self.upload_paths = args.get('upload_paths') or []
 
+        #  Get any environment variable settings from config.yml
+        arg_envirs = args.get('env', None)
+        self.envirs = self.merge_config_envirs(arg_envirs)
+
+        #  Also get any plugins...
+        arg_plugins = args.get('plugins', None)
+        self.plugins = self.merge_config_plugins(arg_plugins)
+
+        logger.debug("Got envirs: %s" % (self.envirs))
+        logger.debug("Got plugins: %s" % (self.plugins)) 
+
         local_upload = args.get('local_upload')
         # If the local_upload arge was specified by the user (i.e if it's not None), the use it
         if local_upload != None:
@@ -73,7 +84,37 @@ class Submit():
         if self.upload_only or "nuke-render" in self.raw_command:
             self.skip_time_check = True
 
+    #  Merge any new or modified envirs from the config yaml file
+    def merge_config_envirs(self, arg_envirs):
+        envirs = {}
 
+        #  First populate our output dictionary with anything specified in config
+        if 'envir' in CONFIG:
+            for key, value in CONFIG['envir'].iteritems():
+                envirs[key] = value
+
+        #  Override any config settings with command line ones
+        if arg_envirs:
+            for env in arg_envirs:
+                key, value = env.split(':')
+                envirs[key] = value
+        return envirs
+
+    #  Get any plugins and store them in a dict with the format <src>:<dest>
+    def merge_config_plugins(self, arg_plugins):
+        plugins = []
+
+        #  First grab any specified in the config
+        if 'plugins' in CONFIG:
+            for file_path in CONFIG['plugins']:
+                plugins.append(file_path)
+
+        #  If anything was specified on the command line, tack it on
+        if arg_plugins:
+            for plugin in arg_plugins:
+                plugins.append(plugin)
+
+        return plugins
 
     def validate_args(self):
         '''
@@ -88,10 +129,6 @@ class Submit():
 
         else:
             raise BadArgumentError('The supplied arguments could not submit a valid request.')
-
-
-
-
 
     def send_job(self, upload_files=None):
         '''
@@ -123,7 +160,6 @@ class Submit():
                                 'command':self.raw_command,
                                 'cores':self.cores})
 
-
             if self.priority:
                 submit_dict['priority'] = self.priority
             if self.upload_dep:
@@ -132,6 +168,8 @@ class Submit():
                 submit_dict['postcmd'] = self.postcmd
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
+            if self.envirs:
+                submit_dict['envirs'] = self.envirs
 
             submit_dict['local_upload'] = self.local_upload
 
@@ -157,8 +195,8 @@ class Submit():
 
     def get_upload_files(self):
         '''
-        Resolve the "upload_paths" and "upload_file" arguments to return a single list
-        of paths that will get uploaded to the cloud.
+        Resolve the "upload_paths", "upload_file", and plugin arguments to return a single list
+        of paths that will get uploaded to the cloud. 
         '''
         # begin a list of "raw" filepaths that will need to be processed (starting with the self.upload_paths)
         raw_filepaths = list(self.upload_paths)
@@ -166,8 +204,10 @@ class Submit():
         # if an upload file as been provided, parse it and add it's paths to the "raw" filepaths
         if self.upload_file:
             logger.debug("self.upload_file is %s", self.upload_file)
-            upload_files = self. parse_upload_file(self.upload_file)
+            upload_files = self.parse_upload_file(self.upload_file)
             raw_filepaths.extend(upload_files)
+        if self.plugins:
+            raw_filepaths.extend(self.plugins)
 
         # Process the raw filepaths (to account for directories, image sequences, formatting, etc)
         return file_utils.process_upload_filepaths(raw_filepaths)
