@@ -121,6 +121,11 @@ def parse_args():
                                nargs="*",
                                required=False)
 
+    submit_parser.add_argument("--location",
+                                 help=('An optional string to indicate which location this submitted job should be registered as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader running (for downloading completed renders). This location string allows each conductor downloader to target only files that match the appropriate location. This is potentially useful when you have multiple downloaders running but each have differing file systems available to them (e.g. downloader1 has /filesystem1 available to it, but downloader2 only has /filesystem2 available to it).  In this case downloader1 should only download files that exist on /filesystem1 and downloader2 should only download files that exist on /filesystem2.  This is achieved by including a location string (such as "location1" or "location2") when submitting jobs (and when running a downloader or uploader command).'),
+                                 type=str)
+
+
     submit_parser.set_defaults(func=run_submit)
 
 
@@ -133,6 +138,10 @@ def parse_args():
                                       help=uploader_parser_help,
                                       description=uploader_parser_desciption,
                                       formatter_class=argparse.RawTextHelpFormatter)
+
+    uploader_parser.add_argument("--location",
+                                 help=('An optional string to indicate which location this uploader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor uploader process running. This location string allows each uploader to target specific upload jobs (files to upload) that are appropriate for it. This is potentially useful as each location may have differing file systems available to it (e.g. uploader1 has /filesystem1 available to it, but uploader2 only has /filesystem2 available to it).  In this case uploader1 should only upload files that exist on /filesystem1 and uploader2 should only upload files that exist on /filesystem2.  This is achieved by including a location argument (such as "location1" or "location2") when submitting jobs, as well as when launching this uploader command.'),
+                                 type=str)
 
     uploader_parser.set_defaults(func=run_uploader)
 
@@ -156,6 +165,10 @@ def parse_args():
                                   required=False)
     downloader_parser.add_argument("--output",
                                    help="Override for the output directory")
+    downloader_parser.add_argument("--location",
+                                   help=('An optional string to indicate which location this downloader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader process running. This location argument allows each downloader to target specific jobs (to download upon job-completion) that match its appropriate location.  Essentially this allows the location of which a job was submitted from to also be the destination in which to deliver completed renders to (which would typically be the desired behavior).'),
+                                   type=str)
+
 
     downloader_parser.set_defaults(func=run_downloader)
 
@@ -180,7 +193,7 @@ def run_submit(args):
 
 
 def run_uploader(args):
-    uploader.run_uploader()
+    uploader.run_uploader(args)
 
 
 def run_downloader(args):

@@ -17,10 +17,9 @@ try:
 except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-import conductor
+
 import conductor.setup
-from conductor.lib import common, file_utils, api_client, uploader
-from httplib2 import Http
+from conductor.lib import file_utils, api_client, uploader
 
 
 logger = conductor.setup.logger
@@ -40,7 +39,7 @@ class Submit():
         self.consume_args(args)
         self.validate_args()
         logger.debug("Consumed args")
-        self.api_client = conductor.lib.api_client.ApiClient()
+        self.api_client = api_client.ApiClient()
 
 
     def consume_args(self, args):
@@ -62,15 +61,18 @@ class Submit():
         self.upload_paths = args.get('upload_paths') or []
 
         #  Get any environment variable settings from config.yml
-        arg_envirs = args.get('env', None)
-        self.envirs = self.merge_config_envirs(arg_envirs)
+        self.envirs = CONFIG.get("envir", {})
+        # Then override any that were specified in the command line
+        self.envirs.update(args.get('env', {}))
 
-        #  Also get any plugins...
-        arg_plugins = args.get('plugins', None)
-        self.plugins = self.merge_config_plugins(arg_plugins)
+        #  Also get any plugins listed in the config.yml
+        self.plugins = CONFIG.get('plugins', [])
+        # Add any additional plugins specified from the command line
+        self.plugins.extend(args.get('plugins', []))
+
 
         logger.debug("Got envirs: %s" % (self.envirs))
-        logger.debug("Got plugins: %s" % (self.plugins)) 
+        logger.debug("Got plugins: %s" % (self.plugins))
 
         local_upload = args.get('local_upload')
         # If the local_upload arge was specified by the user (i.e if it's not None), the use it
@@ -84,37 +86,9 @@ class Submit():
         if self.upload_only or "nuke-render" in self.raw_command:
             self.skip_time_check = True
 
-    #  Merge any new or modified envirs from the config yaml file
-    def merge_config_envirs(self, arg_envirs):
-        envirs = {}
+        self.location = args.get('location') or CONFIG.get("location")
 
-        #  First populate our output dictionary with anything specified in config
-        if 'envir' in CONFIG:
-            for key, value in CONFIG['envir'].iteritems():
-                envirs[key] = value
 
-        #  Override any config settings with command line ones
-        if arg_envirs:
-            for env in arg_envirs:
-                key, value = env.split(':')
-                envirs[key] = value
-        return envirs
-
-    #  Get any plugins and store them in a dict with the format <src>:<dest>
-    def merge_config_plugins(self, arg_plugins):
-        plugins = []
-
-        #  First grab any specified in the config
-        if 'plugins' in CONFIG:
-            for file_path in CONFIG['plugins']:
-                plugins.append(file_path)
-
-        #  If anything was specified on the command line, tack it on
-        if arg_plugins:
-            for plugin in arg_plugins:
-                plugins.append(plugin)
-
-        return plugins
 
     def validate_args(self):
         '''
@@ -172,6 +146,7 @@ class Submit():
                 submit_dict['envirs'] = self.envirs
 
             submit_dict['local_upload'] = self.local_upload
+            submit_dict['location'] = self.location
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
@@ -185,9 +160,9 @@ class Submit():
 
     def main(self):
         upload_files = self.get_upload_files()
-        uploader = conductor.lib.uploader.Uploader()
+        uploader_ = uploader.Uploader()
         if self.local_upload:
-            uploader.run_uploads(upload_files)
+            uploader_.run_uploads(upload_files)
         # Submit the job to conductor
         response, response_code = self.send_job(upload_files=upload_files)
         return json.loads(response), response_code
