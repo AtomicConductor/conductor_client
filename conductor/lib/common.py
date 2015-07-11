@@ -51,6 +51,12 @@ def register_sigint_signal_handler(signal_handler=signal_handler):
 # Global Functions
 # ##
 
+def on_windows():
+    '''
+    Return True if the current system is a Windows platform
+    '''
+    return platform.system() == "Windows"
+
 
 def retry(function, retry_count=5):
     def check_for_early_release(error):
