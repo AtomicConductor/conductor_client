@@ -34,11 +34,10 @@ class Submit():
         $ python conductor_submit.py -h
     """
     def __init__(self, args):
-        logger.debug("itit Submit")
+        logger.debug("Init Submit")
         self.timeid = int(time.time())
         self.consume_args(args)
         self.validate_args()
-        logger.debug("Consumed args")
         self.api_client = api_client.ApiClient()
 
 
@@ -58,21 +57,22 @@ class Submit():
         self.cores = args.get('cores', CONFIG["instance_cores"])
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
-        self.upload_paths = args.get('upload_paths') or []
+
+        # Get any upload files/dirs listed in the config.yml
+        self.upload_paths = CONFIG.get('upload_paths', [])
+        assert isinstance(self.upload_paths, list), "Not a list: %s" % self.upload_paths
+        # Append any upload files/dirs specified via the command line
+        self.upload_paths.extend(args.get('upload_paths'))
+        logger.debug("Got upload_paths: %s" % (self.upload_paths))
 
         #  Get any environment variable settings from config.yml
         self.envirs = CONFIG.get("envir", {})
+        assert isinstance(self.envirs, dict), "Not a dictionary: %s" % self.envirs
         # Then override any that were specified in the command line
         self.envirs.update(args.get('env', {}))
-
-        #  Also get any plugins listed in the config.yml
-        self.plugins = CONFIG.get('plugins', [])
-        # Add any additional plugins specified from the command line
-        self.plugins.extend(args.get('plugins', []))
-
-
         logger.debug("Got envirs: %s" % (self.envirs))
-        logger.debug("Got plugins: %s" % (self.plugins))
+
+
 
         local_upload = args.get('local_upload')
         # If the local_upload arge was specified by the user (i.e if it's not None), the use it
@@ -87,6 +87,7 @@ class Submit():
             self.skip_time_check = True
 
         self.location = args.get('location') or CONFIG.get("location")
+        logger.debug("Consumed args")
 
 
 
@@ -170,7 +171,7 @@ class Submit():
 
     def get_upload_files(self):
         '''
-        Resolve the "upload_paths", "upload_file", and plugin arguments to return a single list
+        Resolve the "upload_paths", "upload_file" arguments to return a single list
         of paths that will get uploaded to the cloud. 
         '''
         # begin a list of "raw" filepaths that will need to be processed (starting with the self.upload_paths)
@@ -181,8 +182,6 @@ class Submit():
             logger.debug("self.upload_file is %s", self.upload_file)
             upload_files = self.parse_upload_file(self.upload_file)
             raw_filepaths.extend(upload_files)
-        if self.plugins:
-            raw_filepaths.extend(self.plugins)
 
         # Process the raw filepaths (to account for directories, image sequences, formatting, etc)
         return file_utils.process_upload_filepaths(raw_filepaths)
