@@ -141,7 +141,7 @@ def process_upload_filepath(path):
             # if there are no matching frames/files found on disk for the given
             # path expression(e.g image sequence) then raise an exception
             if not filepaths:
-                raise Exception("No files found for path expression: %s", path)
+                raise Exception("No files found for path: %s" % path)
 
             # Otherwise treat each frame as a dependency (adding it to the
             # dependency dictionary and running it through validation)
