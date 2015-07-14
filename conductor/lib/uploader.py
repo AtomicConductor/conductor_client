@@ -1,23 +1,28 @@
-import time
-import json
 import base64
+import json
 import hashlib
+from httplib2 import Http
 import multiprocessing
 import Queue as queue_exception
+import sys
 import threading
+import time
 import traceback
 
-from httplib2 import Http
-
-import conductor, conductor.setup
-
-from conductor.setup import *
+from conductor.setup import CONFIG, logger
 from conductor.lib import api_client, common
 
 class Uploader():
+
+    sleep_time = 10
+
     def __init__(self, args=None):
         logger.debug("Uploader.__init__")
-        self.api_client = conductor.lib.api_client.ApiClient()
+        self.api_client = api_client.ApiClient()
+        args = args or {}
+        self.location = args.get("location") or CONFIG.get("location")
+        self.process_count = CONFIG['thread_count']
+        common.register_sigint_signal_handler()
 
     def get_upload_url(self, filename):
         uri_path = '/api/files/get_upload_url'
@@ -56,14 +61,13 @@ class Uploader():
             logger.debug("No files to upload. Skipping run_uploads")
             return []
 
-        process_count = CONFIG['thread_count']
         upload_queue = multiprocessing.Queue()
         for upload_file in file_list:
             logger.debug('adding %s to queue', upload_file)
             upload_queue.put(upload_file)
 
         threads = []
-        for n in range(process_count):
+        for n in range(self.process_count):
 
             thread = threading.Thread(target=self.upload_file, args=(upload_queue,))
 
@@ -98,8 +102,8 @@ class Uploader():
                 logger.error('could not do upload for %s', filename)
                 logger.error(traceback.format_exc())
                 raise e
-        
-        if common.EXIT:
+
+        if common.SIGINT_EXIT:
             logger.debug("Exiting Upload thread")
             return
 
@@ -120,73 +124,84 @@ class Uploader():
         return resp, content
 
 
+    def main(self):
+        logger.info('Starting Uploader...')
 
-def run_uploader():
-    '''
-    Start the uploader process. This process will run indefinitely, polling
-    the Conductor cloud app for files that need to be uploaded.
-    '''
-
-    sleep_time = 10
-
-
-    uploader = Uploader()
-    api_util = api_client.ApiClient()
-
-    logger.info('launching uploader')
-    while not common.EXIT:
-        try:
-            response_string, response_code = api_util.make_request(
-                '/uploads/client/next',
-                data='{}',  # TODO: pass content type correctly in api_client
-                verb='PUT')
-            if response_code == 204:
-                logger.debug('no files to upload')
-                sys.stdout.write('.')
-                sys.stdout.flush()
-                time.sleep(sleep_time)
-                continue
-            elif response_code != 201:
-                logger.error('recieved invalid response code from app %s', response_code)
-                logger.error('response is %s', response_string)
-                time.sleep(sleep_time)
-                continue
-
-            print ''  # to make a newline after the 204 loop
-            logger.debug('recieved next upload from app: %s\n\t%s', response_code, response_string)
-
+        while not common.SIGINT_EXIT:
             try:
-                json_data = json.loads(response_string)
-                logger.debug('json_data is: %s', json_data)
-                upload_files = json_data['upload_files'].split(',')
-                logger.debug('upload_files is: %s', upload_files)
-            except ValueError, e:
-                logger.error('response was not valid json: %s', response_string)
-                time.sleep(sleep_time)
+                data = {}
+                data['location'] = self.location
+                logger.debug("Data: %s", data)
+                resp_str, resp_code = self.api_client.make_request('/uploads/client/next',
+                                                                   data=json.dumps(data),  # TODO: pass content type correctly in api_client
+                                                                   verb='PUT')
+                if resp_code == 204:
+                    logger.debug('no files to upload')
+                    sys.stdout.write('.')
+                    sys.stdout.flush()
+                    time.sleep(self.sleep_time)
+                    continue
+                elif resp_code != 201:
+                    logger.error('recieved invalid response code from app %s', resp_code)
+                    logger.error('response is %s', resp_str)
+                    time.sleep(self.sleep_time)
+                    continue
+
+                print ''  # to make a newline after the 204 loop
+                logger.debug('recieved next upload from app: %s\n\t%s', resp_code, resp_str)
+
+                try:
+                    json_data = json.loads(resp_str)
+                    logger.debug('json_data is: %s', json_data)
+                    upload_files = json_data['upload_files'].split(',')
+                    logger.debug('upload_files is: %s', upload_files)
+                except ValueError, e:
+                    logger.error('response was not valid json: %s', resp_str)
+                    time.sleep(self.sleep_time)
+                    continue
+
+                upload_id = json_data['upload_id']
+
+
+                logger.info('uploading files for upload task %s: \n\t%s', upload_id, "\n\t".join(upload_files))
+                self.run_uploads(upload_files)
+                logger.info('done uploading files')
+
+                finish_dict = {'upload_id':upload_id}
+
+                if upload_files:
+                    finish_dict['status'] = 'server_pending'
+                else:
+                    finish_dict['status'] = 'success'
+                resp_str, resp_code = self.api_util.make_request('/uploads/%s/finish' % upload_id,
+                                                                 data=json.dumps(finish_dict),
+                                                                 verb='PUT')
+
+            except Exception, e:
+                logger.error('hit exception %s', e)
+                logger.error(traceback.format_exc())
+                time.sleep(self.sleep_time)
                 continue
-
-            upload_id = json_data['upload_id']
-
-
-            logger.info('uploading files for upload task %s: \n\t%s', upload_id, "\n\t".join(upload_files))
-            uploader.run_uploads(upload_files)
-            logger.info('done uploading files')
-
-            finish_dict = {'upload_id':upload_id}
-
-            if upload_files:
-                finish_dict['status'] = 'server_pending'
-            else:
-                finish_dict['status'] = 'success'
-            response_string, response_code = api_util.make_request(
-                '/uploads/%s/finish' % upload_id,
-                data=json.dumps(finish_dict),
-                verb='PUT')
-
-        except Exception, e:
-            logger.error('hit exception %s', e)
-            logger.error(traceback.format_exc())
-            time.sleep(sleep_time)
-            continue
 
     logger.info('exiting uploader')
+
+
+
+
+def run_uploader(args):
+    '''
+    Start the uploader process. This process will run indefinitely, polling
+    the Conductor cloud app for files that need to be uploaded. 
+    '''
+    # convert the Namespace object to a dictionary
+    args_dict = vars(args)
+    logger.debug('Uploader parsed_args is %s', args_dict)
+    uploader = Uploader(args_dict)
+    uploader.main()
+
+
+
+
+
+
+

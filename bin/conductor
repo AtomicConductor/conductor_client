@@ -4,6 +4,7 @@ import argparse
 import getpass
 import imp
 import os
+import re
 import sys
 
 try:
@@ -64,6 +65,7 @@ def parse_args():
                                required=False)
 
     submit_parser.add_argument("--upload_paths",
+                               default=[],
                                help="Paths to upload",
                                nargs="*")
 
@@ -111,6 +113,40 @@ def parse_args():
                                default=None,
                                required=False)
 
+    submit_parser.add_argument("--env",
+        help=(r"Specify environment variable statements to be executed on Conductor's "
+             "render instance.\n\n"
+             "Example:\n"
+             "\t--env PYTHONPATH=/home/user/steve/python:/home/user/marry/python\n\n"
+
+             "Multipe environment variable statements can be made by separating them with a space:\n"
+             "\t--env PYTHONPATH=/home/user/marry PATH=/home/usr/bin\n\n"
+
+             "Appending to Conductor's existing environment variables is also possible.  "
+             "Note that the referenced environment variable is encapsulated by single quotes "
+             "so that it does not get evaluated until it is executed on Conductor's render instance:\n"
+             "\t--env PYTHONPATH=/tmp:/home/user:'$PYTHONPATH'\n\n"
+             "However, it may be desirable to both evaluate your local environment variable "
+             "AND also append it to Conductor's own. Note that one PYTHONPATH is"
+             " contained with single quotes while the other is not:\n"
+             "\t--env PYTHONPATH=/tmp:/home/user:$PYTHONPATH:'$PYTHONPATH'\n\n"
+             "Note that the syntax for Windows clients will look different in some "
+             "places, but it's important to remember that ultimately these environment "
+             "variable statements will be executed on a linux platform on Conductor, "
+             "which means that when referencing Conductor\'s environment variable, "
+             "A dollar sign syntax must be used:\n"
+             "\t--env PYTHONPATH=\"c:\\My Documents\";%%PYTHONPATH%%;$PYTHONPATH"),
+           nargs="*",
+           default={},
+           action=ValidateArgEnv,
+           required=False)
+
+
+    submit_parser.add_argument("--location",
+                                 help=('An optional string to indicate which location this submitted job should be registered as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader running (for downloading completed renders). This location string allows each conductor downloader to target only files that match the appropriate location. This is potentially useful when you have multiple downloaders running but each have differing file systems available to them (e.g. downloader1 has /filesystem1 available to it, but downloader2 only has /filesystem2 available to it).  In this case downloader1 should only download files that exist on /filesystem1 and downloader2 should only download files that exist on /filesystem2.  This is achieved by including a location string (such as "location1" or "location2") when submitting jobs (and when running a downloader or uploader command).'),
+                                 type=str)
+
+
     submit_parser.set_defaults(func=run_submit)
 
 
@@ -124,6 +160,10 @@ def parse_args():
                                       description=uploader_parser_desciption,
                                       formatter_class=argparse.RawTextHelpFormatter)
 
+    uploader_parser.add_argument("--location",
+                                 help=('An optional string to indicate which location this uploader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor uploader process running. This location string allows each uploader to target specific upload jobs (files to upload) that are appropriate for it. This is potentially useful as each location may have differing file systems available to it (e.g. uploader1 has /filesystem1 available to it, but uploader2 only has /filesystem2 available to it).  In this case uploader1 should only upload files that exist on /filesystem1 and uploader2 should only upload files that exist on /filesystem2.  This is achieved by including a location argument (such as "location1" or "location2") when submitting jobs, as well as when launching this uploader command.'),
+                                 type=str)
+
     uploader_parser.set_defaults(func=run_uploader)
 
 
@@ -135,9 +175,21 @@ def parse_args():
     downloader_parser_desciption = "parse downloader arguments"
     downloader_parser_help = ""
     downloader_parser = subparsers.add_parser("downloader", parents=[parent_parser],
-                                      help=downloader_parser_help,
-                                      description=downloader_parser_desciption,
-                                      formatter_class=argparse.RawTextHelpFormatter)
+                                  help=downloader_parser_help,
+                                  description=downloader_parser_desciption,
+                                  formatter_class=argparse.RawTextHelpFormatter)
+    downloader_parser.add_argument("--job_id",
+                                  help="Manually download output for this job",
+                                  required=False)
+    downloader_parser.add_argument("--task_id",
+                                  help="Manually download output for this task",
+                                  required=False)
+    downloader_parser.add_argument("--output",
+                                   help="Override for the output directory")
+    downloader_parser.add_argument("--location",
+                                   help=('An optional string to indicate which location this downloader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader process running. This location argument allows each downloader to target specific jobs (to download upon job-completion) that match its appropriate location.  Essentially this allows the location of which a job was submitted from to also be the destination in which to deliver completed renders to (which would typically be the desired behavior).'),
+                                   type=str)
+
 
     downloader_parser.set_defaults(func=run_downloader)
 
@@ -156,17 +208,56 @@ def cast_to_bool(string):
         return False
     raise argparse.ArgumentTypeError('Argument must be True or False')
 
+class ValidateArgEnv(argparse.Action):
+    '''
+    Validate the "env" argument that a user has provided, ensuring that it 
+    adheres to proper syntax, and ultimately produces a dictionary object 
+    consisting of desired environment variable names and their corresponding 
+    values.
+    
+    Example:
+        {"PYTHONPATH": "/tmp/files1:$PYTHONPATH",
+         "PATH": "/usr/bin":$PATH"}
+
+    '''
+
+    # Regular expression to validate argument construction  <varname>=<value>
+    # Example: PYTHONPATH=/tmp:$PYTHONPATH
+    rx_env_var = r'\s*(?P<var_name>[^\s=]+)\s*=(?P<var_value>[^=]+)$'
+
+    def __call__(self, parser, namespace, values, option_string):
+        '''
+        Read each variable definition and validate that it's constructed
+        properly.  Populate a dictionary where they keys are the variable names
+        and the values are the variable values 
+        '''
+        env_variables = {}
+        for variable_definition in values:
+            re_result = re.match(self.rx_env_var, variable_definition)
+            if not re_result:
+                msg = ("Invalid variable assignment: '%s'\n"
+                       "\tUse construct: <variable_name>=<value>  e.g "
+                       "PYTHONPATH=/tmp:$PYTHONPATH" % variable_definition)
+                raise argparse.ArgumentError(self, msg)
+
+            var_name = re_result.group("var_name").strip()
+            var_value = re_result.group("var_value").strip()
+            env_variables[var_name] = var_value
+
+        setattr(namespace, self.dest, env_variables)
+
+
 
 def run_submit(args):
     conductor_submit.run_submit(args)
 
 
 def run_uploader(args):
-    uploader.run_uploader()
+    uploader.run_uploader(args)
 
 
 def run_downloader(args):
-    downloader.run_downloader()
+    downloader.run_downloader(args)
 
 
 

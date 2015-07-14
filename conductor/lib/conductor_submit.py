@@ -17,10 +17,9 @@ try:
 except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-import conductor
+
 import conductor.setup
-from conductor.lib import common, file_utils, api_client, uploader
-from httplib2 import Http
+from conductor.lib import file_utils, api_client, uploader
 
 
 logger = conductor.setup.logger
@@ -35,12 +34,11 @@ class Submit():
         $ python conductor_submit.py -h
     """
     def __init__(self, args):
-        logger.debug("itit Submit")
+        logger.debug("Init Submit")
         self.timeid = int(time.time())
         self.consume_args(args)
         self.validate_args()
-        logger.debug("Consumed args")
-        self.api_client = conductor.lib.api_client.ApiClient()
+        self.api_client = api_client.ApiClient()
 
 
     def consume_args(self, args):
@@ -59,7 +57,22 @@ class Submit():
         self.cores = args.get('cores', CONFIG["instance_cores"])
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
-        self.upload_paths = args.get('upload_paths') or []
+
+        # Get any upload files/dirs listed in the config.yml
+        self.upload_paths = CONFIG.get('upload_paths', [])
+        assert isinstance(self.upload_paths, list), "Not a list: %s" % self.upload_paths
+        # Append any upload files/dirs specified via the command line
+        self.upload_paths.extend(args.get('upload_paths'))
+        logger.debug("Got upload_paths: %s" % (self.upload_paths))
+
+        #  Get any environment variable settings from config.yml
+        self.envirs = CONFIG.get("envir", {})
+        assert isinstance(self.envirs, dict), "Not a dictionary: %s" % self.envirs
+        # Then override any that were specified in the command line
+        self.envirs.update(args.get('env', {}))
+        logger.debug("Got envirs: %s" % (self.envirs))
+
+
 
         local_upload = args.get('local_upload')
         # If the local_upload arge was specified by the user (i.e if it's not None), the use it
@@ -72,6 +85,9 @@ class Submit():
         # For now always default nuke uploads to skip time check
         if self.upload_only or "nuke-render" in self.raw_command:
             self.skip_time_check = True
+
+        self.location = args.get('location') or CONFIG.get("location")
+        logger.debug("Consumed args")
 
 
 
@@ -89,10 +105,6 @@ class Submit():
         else:
             raise BadArgumentError('The supplied arguments could not submit a valid request.')
 
-
-
-
-
     def send_job(self, upload_files=None):
         '''
         Construct args for two different cases:
@@ -102,6 +114,9 @@ class Submit():
         logger.debug("upload_files: %s", upload_files)
 
         submit_dict = {'owner':self.user}
+        submit_dict['location'] = self.location
+        submit_dict['local_upload'] = self.local_upload
+
         if upload_files:
             submit_dict['upload_files'] = ','.join(upload_files)
 
@@ -123,7 +138,6 @@ class Submit():
                                 'command':self.raw_command,
                                 'cores':self.cores})
 
-
             if self.priority:
                 submit_dict['priority'] = self.priority
             if self.upload_dep:
@@ -132,13 +146,13 @@ class Submit():
                 submit_dict['postcmd'] = self.postcmd
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
+            if self.envirs:
+                submit_dict['envirs'] = self.envirs
 
-            submit_dict['local_upload'] = self.local_upload
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
             logger.debug("%s: %s", arg_name, arg_value)
-
 
         # TODO: verify that the response request is valid
         response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
@@ -147,9 +161,9 @@ class Submit():
 
     def main(self):
         upload_files = self.get_upload_files()
-        uploader = conductor.lib.uploader.Uploader()
+        uploader_ = uploader.Uploader()
         if self.local_upload:
-            uploader.run_uploads(upload_files)
+            uploader_.run_uploads(upload_files)
         # Submit the job to conductor
         response, response_code = self.send_job(upload_files=upload_files)
         return json.loads(response), response_code
@@ -157,8 +171,8 @@ class Submit():
 
     def get_upload_files(self):
         '''
-        Resolve the "upload_paths" and "upload_file" arguments to return a single list
-        of paths that will get uploaded to the cloud.
+        Resolve the "upload_paths", "upload_file" arguments to return a single list
+        of paths that will get uploaded to the cloud. 
         '''
         # begin a list of "raw" filepaths that will need to be processed (starting with the self.upload_paths)
         raw_filepaths = list(self.upload_paths)
@@ -166,7 +180,7 @@ class Submit():
         # if an upload file as been provided, parse it and add it's paths to the "raw" filepaths
         if self.upload_file:
             logger.debug("self.upload_file is %s", self.upload_file)
-            upload_files = self. parse_upload_file(self.upload_file)
+            upload_files = self.parse_upload_file(self.upload_file)
             raw_filepaths.extend(upload_files)
 
         # Process the raw filepaths (to account for directories, image sequences, formatting, etc)
