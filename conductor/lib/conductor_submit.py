@@ -114,6 +114,9 @@ class Submit():
         logger.debug("upload_files: %s", upload_files)
 
         submit_dict = {'owner':self.user}
+        submit_dict['location'] = self.location
+        submit_dict['local_upload'] = self.local_upload
+
         if upload_files:
             submit_dict['upload_files'] = ','.join(upload_files)
 
@@ -146,13 +149,10 @@ class Submit():
             if self.envirs:
                 submit_dict['envirs'] = self.envirs
 
-            submit_dict['local_upload'] = self.local_upload
-            submit_dict['location'] = self.location
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
             logger.debug("%s: %s", arg_name, arg_value)
-
 
         # TODO: verify that the response request is valid
         response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
