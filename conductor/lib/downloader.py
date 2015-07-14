@@ -169,6 +169,7 @@ class Download(object):
         data = {}
         data["location"] = self.location
         logger.debug("Data: %s", data)
+        data = json.dumps(data)
 
         if self.job_id:
             if self.task_id:
