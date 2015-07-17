@@ -1,5 +1,5 @@
 # Conductor Client #
 
-[Getting Started](wiki/getting_started)  
+[Getting Started](../../wiki/getting_started)  
 
-[Main Wiki Page](wiki/Home)
+[Main Wiki Page](../../wiki/Home)
