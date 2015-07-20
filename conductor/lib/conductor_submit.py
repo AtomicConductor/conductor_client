@@ -87,6 +87,7 @@ class Submit():
             self.skip_time_check = True
 
         self.location = args.get('location') or CONFIG.get("location")
+        self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
         logger.debug("Consumed args")
 
 
@@ -115,6 +116,7 @@ class Submit():
 
         submit_dict = {'owner':self.user}
         submit_dict['location'] = self.location
+        submit_dict['docker_image'] = self.docker_image
         submit_dict['local_upload'] = self.local_upload
 
         if upload_files:
@@ -172,7 +174,7 @@ class Submit():
     def get_upload_files(self):
         '''
         Resolve the "upload_paths", "upload_file" arguments to return a single list
-        of paths that will get uploaded to the cloud. 
+        of paths that will get uploaded to the cloud.
         '''
         # begin a list of "raw" filepaths that will need to be processed (starting with the self.upload_paths)
         raw_filepaths = list(self.upload_paths)
