@@ -147,6 +147,13 @@ def parse_args():
                                  type=str)
 
 
+    submit_parser.add_argument("--docker_image",
+                               help="docker image to run render in",
+                               type=str,
+                               default=None,
+                               required=False)
+
+
     submit_parser.set_defaults(func=run_submit)
 
 
@@ -198,7 +205,7 @@ def parse_args():
 
 def cast_to_bool(string):
     '''
-    Ensure that the argument provided is either "True" or "False (or "true" or 
+    Ensure that the argument provided is either "True" or "False (or "true" or
     "false") and that argument into an actual bool True or False value
     '''
     string_lower = string.lower()
@@ -210,11 +217,11 @@ def cast_to_bool(string):
 
 class ValidateArgEnv(argparse.Action):
     '''
-    Validate the "env" argument that a user has provided, ensuring that it 
-    adheres to proper syntax, and ultimately produces a dictionary object 
-    consisting of desired environment variable names and their corresponding 
+    Validate the "env" argument that a user has provided, ensuring that it
+    adheres to proper syntax, and ultimately produces a dictionary object
+    consisting of desired environment variable names and their corresponding
     values.
-    
+
     Example:
         {"PYTHONPATH": "/tmp/files1:$PYTHONPATH",
          "PATH": "/usr/bin":$PATH"}
@@ -229,7 +236,7 @@ class ValidateArgEnv(argparse.Action):
         '''
         Read each variable definition and validate that it's constructed
         properly.  Populate a dictionary where they keys are the variable names
-        and the values are the variable values 
+        and the values are the variable values
         '''
         env_variables = {}
         for variable_definition in values:
