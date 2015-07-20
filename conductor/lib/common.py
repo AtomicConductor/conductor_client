@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import math
 import multiprocessing
@@ -7,6 +8,7 @@ import signal
 import subprocess
 import time
 import traceback
+import base64
 import yaml
 
 def setup_logger():
@@ -103,6 +105,20 @@ def run(cmd):
     stdout, stderr = command.communicate()
     status = command.returncode
     return status, stdout, stderr
+
+def get_md5(file_path, blocksize=65536):
+    hasher = hashlib.md5()
+    afile = open(file_path, 'rb')
+    buf = afile.read(blocksize)
+    while len(buf) > 0:
+        hasher.update(buf)
+        buf = afile.read(blocksize)
+    return hasher.digest()
+
+def get_base64_md5(*args, **kwargs):
+    md5 = get_md5(*args)
+    b64 = base64.b64encode(md5)
+    return b64
 
 
 class Config():
