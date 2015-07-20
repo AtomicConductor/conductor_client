@@ -1,4 +1,6 @@
 import base64
+import time
+import ast
 import json
 import hashlib
 from httplib2 import Http
@@ -24,47 +26,27 @@ class Uploader():
         self.process_count = CONFIG['thread_count']
         common.register_sigint_signal_handler()
 
-    def get_upload_url(self, filename):
+    def get_upload_url(self, filename, md5_hash):
         uri_path = '/api/files/get_upload_url'
         # TODO: need to pass md5 and filename
         params = {
             'filename': filename,
-            'md5': self.get_base64_md5(filename)
+            'md5': md5_hash
         }
         logger.debug('params are %s', params)
         response_string, response_code = self.api_client.make_request(uri_path=uri_path, params=params)
         # TODO: validate that no error occured via error code
         return response_string, response_code
 
-    def get_md5(self, file_path, blocksize=65536):
-        logger.debug('trying to open %s', file_path)
-        logger.debug('file_path.__class__ %s', file_path.__class__)
-
-        hasher = hashlib.md5()
-        afile = open(file_path, 'rb')
-        buf = afile.read(blocksize)
-        while len(buf) > 0:
-            hasher.update(buf)
-            buf = afile.read(blocksize)
-        return hasher.digest()
-
-
-    def get_base64_md5(self, *args, **kwargs):
-        md5 = self.get_md5(*args)
-        b64 = base64.b64encode(md5)
-        logger.debug('b64 is %s', b64)
-        return b64
-
-
-    def run_uploads(self, file_list):
-        if not file_list:
+    def run_uploads(self, file_dict):
+        if file_dict == {}:
             logger.debug("No files to upload. Skipping run_uploads")
-            return []
+            return
 
         upload_queue = multiprocessing.Queue()
-        for upload_file in file_list:
-            logger.debug('adding %s to queue', upload_file)
-            upload_queue.put(upload_file)
+        for upload_file in file_dict:
+            logger.debug('adding %s:%s to queue' % (upload_file, file_dict[upload_file]))
+            upload_queue.put((upload_file, file_dict[upload_file]))
 
         threads = []
         for n in range(self.process_count):
@@ -84,13 +66,13 @@ class Uploader():
     def upload_file(self, upload_queue):
         logger.debug('entering upload_file')
         try:
-            filename = upload_queue.get(block=False)
+            (filename, md5_hash) = upload_queue.get(block=False)
         except queue_exception.Empty:
             logger.debug('queue is empty, caught EMPTY')
             return
 
         logger.debug('trying to upload %s', filename)
-        upload_url, response_code = self.get_upload_url(filename)
+        upload_url, response_code = self.get_upload_url(filename, md5_hash)
         logger.debug("upload url is '%s'", upload_url)
         if response_code == 200:
             logger.debug('uploading file %s', filename)
@@ -187,7 +169,6 @@ class Uploader():
 
 
 
-
 def run_uploader(args):
     '''
     Start the uploader process. This process will run indefinitely, polling
@@ -198,10 +179,6 @@ def run_uploader(args):
     logger.debug('Uploader parsed_args is %s', args_dict)
     uploader = Uploader(args_dict)
     uploader.main()
-
-
-
-
 
 
 

@@ -1,6 +1,7 @@
 import os, re, sys, glob
 import conductor.setup
 
+from conductor.lib import common
 
 # Regular expressions for different path expressions that are supported
 RX_HASH = r"#+"  # image.####.exr
@@ -84,9 +85,11 @@ def process_upload_filepaths(paths):
     Given the list of paths, process each one, ultimately returning a flattened
     list of all processed paths
     '''
-    processed_paths = []
+    processed_paths = {}
     for path in paths:
-        processed_paths.extend(process_upload_filepath(path))
+        resolved_paths = process_upload_filepath(path)
+        for resolved_path in resolved_paths:
+            processed_paths[resolved_path] = common.get_base64_md5(resolved_path)
 
     return processed_paths
 
