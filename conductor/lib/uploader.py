@@ -353,7 +353,7 @@ class Uploader():
         self.create_report_status_thread()
         self.create_print_status_thread()
 
-    def get_upload_url(self, filename):
+    def get_upload_url(self, filename, md5_hash):
         uri_path = '/api/files/get_upload_url'
         # TODO: need to pass md5 and filename
         md5 = self.get_base64_md5(filename)
@@ -771,8 +771,6 @@ class Uploader():
 
         # wait for work to finish
         self.wait_for_workers()
-
-        logger.info('exiting uploader')
 
 def run_uploader(args):
     '''
