@@ -19,7 +19,7 @@ except ImportError, e:
 
 
 import conductor.setup
-from conductor.lib import file_utils, api_client, uploader
+from conductor.lib import file_utils, api_client, uploader, common
 
 
 logger = conductor.setup.logger
