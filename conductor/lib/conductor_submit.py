@@ -67,7 +67,7 @@ class Submit():
         self.upload_paths = self.merge_config_uploads(arg_upload_paths)
 
         logger.debug("Got environment: %s" % (self.environment))
-        logger.debug("Got upload paths: %s" % (self.upload_paths)) 
+        logger.debug("Got upload paths: %s" % (self.upload_paths))
 
         local_upload = args.get('local_upload')
         # If the local_upload arge was specified by the user (i.e if it's not None), the use it
@@ -82,6 +82,7 @@ class Submit():
             self.skip_time_check = True
 
         self.location = args.get('location') or CONFIG.get("location")
+        self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
         logger.debug("Consumed args")
 
 
@@ -141,6 +142,7 @@ class Submit():
 
         submit_dict = {'owner':self.user}
         submit_dict['location'] = self.location
+        submit_dict['docker_image'] = self.docker_image
         submit_dict['local_upload'] = self.local_upload
 
         if upload_files:
@@ -201,7 +203,7 @@ class Submit():
     def get_upload_files(self):
         '''
         Resolve the "upload_paths" and "upload_file" arguments to return a single list
-        of paths that will get uploaded to the cloud. 
+        of paths that will get uploaded to the cloud.
         '''
         # begin a list of "raw" filepaths that will need to be processed (starting with the self.upload_paths)
         raw_filepaths = list(self.upload_paths)
