@@ -62,8 +62,8 @@ def on_windows():
 
 def retry(function, retry_count=5):
     def check_for_early_release(error):
-        LOGGER.debug('checking for early_release. EXIT is %s' % EXIT)
-        if EXIT:
+        LOGGER.debug('checking for early_release. SIGINT_EXIT is %s' % SIGINT_EXIT)
+        if SIGINT_EXIT:
             LOGGER.debug('releasing in retry')
             raise error
 
