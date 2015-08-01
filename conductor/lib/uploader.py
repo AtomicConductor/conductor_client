@@ -5,15 +5,145 @@ import json
 import hashlib
 from httplib2 import Http
 import multiprocessing
-import Queue as queue_exception
+import Queue
 import sys
-import threading
+from threading import Thread
 import time
 import traceback
 import requests
 
 from conductor.setup import CONFIG, logger
 from conductor.lib import api_client, common
+
+class Worker():
+    def __init__(self, in_queue, out_queue):
+        self.in_queue = in_queue
+        self.out_queue = out_queue
+
+    def do_work(self,job):
+        raise NotImplementedError
+
+    def target(self):
+        print 'on target'
+        while True:
+            try:
+                print 'looking for work'
+                job = self.in_queue.get(True)
+                print 'got job!'
+                output = self.do_work(job)
+                self.out_queue.put(output)
+                self.in_queue.task_done()
+            except Exception:
+                # print 'hit exception: %s' % e
+                print traceback.print_exc()
+                print traceback.format_exc()
+
+    def start(self,number_of_threads=1):
+        print 'in start'
+        print 'number_of_threads is %s' % number_of_threads
+        for i in range(number_of_threads):
+            print 'starting thread'
+            thd = Thread(target = self.target)
+            thd.daemon = True
+            thd.start()
+            print 'done starting thread'
+
+class MD5Worker(Worker):
+        def __init__(self, in_queue, out_queue):
+            logger.debug('starting init for MD5Worker')
+            Worker.__init__(self, in_queue, out_queue)
+
+        def get_md5(self, file_path, blocksize=65536):
+            logger.debug('trying to open %s', file_path)
+            logger.debug('file_path.__class__ %s', file_path.__class__)
+
+            hasher = hashlib.md5()
+            afile = open(file_path, 'rb')
+            buf = afile.read(blocksize)
+            while len(buf) > 0:
+                hasher.update(buf)
+                buf = afile.read(blocksize)
+            return hasher.digest()
+
+        def get_base64_md5(self, *args, **kwargs):
+            md5 = get_md5(*args)
+            b64 = base64.b64encode(md5)
+            logger.debug('b64 is %s', b64)
+            return b64
+
+
+        def do_work(self, job):
+            filename = job
+            md5 = get_base64_md5(filename)
+            logger.debug('computed md5 %s of %s: ', md5, filename)
+            out_queue.put((filename, md5))
+
+
+class MD5OutputWorker(Worker):
+    def __init__(self, in_queue, out_queue):
+        logger.debug('starting init for MD5OutputWorker')
+        Worker.__init__(self, in_queue, out_queue)
+
+
+    def target(self):
+        batch={}
+        def ship_batch():
+            if batch:
+                out_queue.put(batch)
+                batch = {}
+
+        while True:
+            try:
+                # block on the queue with a 5 second timeout
+                file_md5_tuple = in_queue.get(True, 5)
+                batch[file_md5_tuple[0]] = file_md5_tuple[1]
+                if len(batch) == self.batch_size:
+                    ship_batch()
+                # mark this task as done
+                in_queue.task_done()
+            except Queue.Empty:
+                ship_batch()
+
+
+class HttpBatchWorker(Worker):
+    def __init__(self, in_queue, out_queue):
+        logger.debug('starting init for HttpBatchWorker')
+        Worker.__init__(self, in_queue, out_queue)
+
+    def do_work(self, job):
+        # send a batch request
+        response_string, response_code = self.api_client.make_request(
+            uri_path = '/api/files/get_upload_urls',
+            # TODO: PUT vs. POST?
+            verb = 'POST',
+            data = job
+        )
+
+
+        if response_code == 200:
+            # TODO: verfify json
+            url_list = json.loads(response_string)
+            for path, upload_url in url_list.iteritems():
+                self.out_queue.put((path,upload_url))
+            else:
+                logger.error('response code was %s' % response_code)
+
+
+class UploadWorker(Worker):
+    def __init__(self, in_queue, out_queue):
+        logger.debug('starting init for HttpBatchWorker')
+        Worker.__init__(self, in_queue, out_queue)
+
+
+    def do_work(self, job):
+        filename = job[0]
+        upload_url = job[1]
+
+        logger.info("Uploading file: %s", filename)
+        # TODO: where does md5 come from?
+        response = self.do_upload(upload_url, "PUT", md5, filename)
+        logger.debug('finished uploading %s', filename)
+
 
 class Uploader():
 
@@ -28,7 +158,7 @@ class Uploader():
         self.batch_size = 100 # the controlls the batch size for http get_signed_urls
         common.register_sigint_signal_handler()
 
-    def get_upload_url(self, filename, md5_hash):
+    def get_upload_url(self, filename):
         uri_path = '/api/files/get_upload_url'
         # TODO: need to pass md5 and filename
         md5 = self.get_base64_md5(filename)
@@ -42,24 +172,7 @@ class Uploader():
         return response_string, response_code, md5
 
     # TODO: optimize blocksize
-    def get_md5(self, file_path, blocksize=65536):
-        logger.debug('trying to open %s', file_path)
-        logger.debug('file_path.__class__ %s', file_path.__class__)
 
-        hasher = hashlib.md5()
-        afile = open(file_path, 'rb')
-        buf = afile.read(blocksize)
-        while len(buf) > 0:
-            hasher.update(buf)
-            buf = afile.read(blocksize)
-        return hasher.digest()
-
-
-    def get_base64_md5(self, *args, **kwargs):
-        md5 = self.get_md5(*args)
-        b64 = base64.b64encode(md5)
-        logger.debug('b64 is %s', b64)
-        return b64
 
 
 
@@ -73,147 +186,45 @@ class Uploader():
             md5_process_queue.put(upload_file)
 
 
-    def md5_processor_target(self, md5_process_queue, md5_output_queue):
-        '''
-        Process MD5 of filenames in md5_process_queue and put a (filename,md5)
-        tuple in the md5_output_queue
-        '''
-        while True:
-            filename = md5_process_queue.get()
-            md5 = self.get_base64_md5(filename)
-            logger.debug('computed md5 %s of %s: ', md5, filename)
-            md5_output_queue.put((filename, md5))
-            # mark this task as done
-            md5_process_queue.task_done()
-
-    def create_md5_worker_pool(self, md5_process_queue, md5_output_queue):
-        for i in range(self.process_count):
-            thread = Thread(target=md5_processor_target, args=(md5_process_queue, md5_output_queue))
-            thread.daemon = True
-            thread.start
-
-
-    def md5_output_queue_worker(self, md5_output_queue, http_batch_queue, md5_process_queue):
-        '''
-        Pull self.batch_size items off the md5_output_queue and add chunk to http_batch_queue
-
-        If we timeout, send what we have
-        '''
-        batch={}
-        def ship_batch():
-            if batch:
-                http_batch_queue.put(batch)
-                batch = {}
-
-        while True:
-            try:
-                # block on the queue with a 5 second timeout
-                file_md5_tuple = md5_output_queue.get(True, 5)
-                batch[file_md5_tuple[0]] = file_md5_tuple[1]
-                if len(batch) == self.batch_size:
-                    ship_batch()
-                # mark this task as done
-                md5_output_queue.task_done()
-            except queue_exception.Empty:
-                ship_batch()
-
-
-    def create_md5_batch_worker(self,md5_output_queue, http_batch_queue, md5_process_queue):
-        thread = Thread(target=md5_output_queue_worker, args=(md5_output_queue, http_batch_queue, md5_process_queue))
-        thread.daemon = True
-        thread.start
-
-    def http_worker_pool_target(self, http_batch_queue, signed_upload_url_queue):
-        while True:
-            http_batch = http_batch_queue.get()
-
-            # send a batch request
-            response_string, response_code = self.api_client.make_request(
-                uri_path = '/api/files/get_upload_urls',
-                # TODO: PUT vs. POST?
-                verb = 'POST',
-                data = http_batch
-            )
-
-            if response_code == 200:
-                # TODO: verfify json
-                url_list = json.loads(response_string)
-                for path, upload_url in url_list.iteritems():
-                    signed_upload_url_queue.put((path,upload_url))
-                http_batch_queue.task_done()
-            else:
-                logger.error('response code was %s' % response_code)
-                    http_batch_queue.put(http_batch)
-
-
-
-    def create_http_request_pool(self, http_batch_queue, signed_upload_url_queue):
-        for i in range(self.process_count):
-            thread = Thread(target=http_worker_pool_target, args=(http_batch_queue, signed_upload_url_queue))
-            thread.daemon = True
-            thread.start
-
-
-    def create_upload_worker_target(self, signed_upload_url_queue, finished_queue):
-        while True:
-            signed_upload_url_item = signed_upload_url_queue.get()
-            filename = signed_upload_url_item[0]
-            upload_url = signed_upload_url_item[1]
-
-            logger.info("Uploading file: %s", filename)
-            response = self.do_upload(upload_url, "PUT", md5, filename)
-            logger.debug('finished uploading %s', filename)
-
-            signed_upload_url_queue.task_done()
-
-
-    def create_upload_worker_pool(self, signed_upload_url_queue, finished_queue):
-        for i in range(self.process_count):
-            thread = Thread(target=create_upload_worker_target, args=(signed_upload_url_queue, finished_queue))
-            thread.daemon = True
-            thread.start
-
-
-    def run_uploads(self, file_list):
-        if not file_list:
-            logger.debug("No files to upload. Skipping run_uploads")
-            return
-
+    def create_worker_pools(self)
         # create input and output for the md5 workers
         md5_process_queue = multiprocessing.Queue()
         md5_output_queue = multiprocessing.Queue()
-
-        # load the input queue. this must happen before we create the workers
-        self.load_md5_process_queue(md5_process_queue,file_list)
+        http_batch_queue = multiprocessing.Queue()
+        signed_upload_url_queue = multiprocessing.Queue()
+        finished_queue = multiprocessing.Queue()
 
         # create md5 worker pool threads
-        self.create_md5_worker_pool(md5_process_queue, md5_output_queue)
+        md5_worker = MD5Worker(md5_process_queue, md5_output_queue)
+        md5_worker.start(self.process_count)
 
 
-        # batch (filename,md5) tuples for http requests
-        http_batch_queue = multiprocessing.Queue()
-        self.create_md5_batch_worker(md5_output_queue, http_batch_queue, md5_process_queue)
+        # create md5 output worker
+        md5_output_worker = MD5OutputWorker(md5_output_worker,http_batch_queue)
+        md5_output_worker.start()
 
 
-        # create http client worker pool
-        signed_upload_url_queue = multiprocessing.Queue()
-        self.create_http_request_pool(http_batch_queue,signed_upload_url_queue)
+        # creat http batch worker
+        http_batch_worker = HttpBatchWorker(httpbatchworker, signed_upload_url_queue)
+        http_batch_worker.start(self.process_count/4) # TODO: consider thread count
 
 
-        # create upload_worker pool
-        finished_queue = multiprocessing.Queue()
-        self.create_upload_worker_pool(signed_upload_url_queue, finished_queue)
+        # create upload workers
+        upload_worker = UploadWorker(signed_upload_url_queue, finished_queue)
+        upload_worker.start(self.process_count)
 
-        # wait
-        md5_process_queue.join()
-        md5_output_queue.join()
-        http_batch_queue.join()
-        signed_upload_url_queue.join()
 
-        logger.info('done')
-        return
+        logger.debug('done creating worker pools')
+        return [
+            md5_process_queue,
+            md5_output_queue,
+            http_batch_queue,
+            signed_upload_url_queue,
+            finished_queue,
+        ]
 
         # kill rest
+    def run_uploads(self, file_list):
 
         upload_queue = multiprocessing.Queue()
         for upload_file in file_dict:
@@ -223,7 +234,7 @@ class Uploader():
         threads = []
         for n in range(self.process_count):
 
-            thread = threading.Thread(target=self.upload_file, args=(upload_queue,))
+            thread = Thread(target=self.upload_file, args=(upload_queue,))
 
             thread.start()
             threads.append(thread)
@@ -238,8 +249,8 @@ class Uploader():
     def upload_file(self, upload_queue):
         logger.debug('entering upload_file')
         try:
-            (filename, md5_hash) = upload_queue.get(block=False)
-        except queue_exception.Empty:
+            filename = upload_queue.get(block=False)
+        except Queue.Empty:
             logger.debug('queue is empty, caught EMPTY')
             return
 
@@ -288,6 +299,8 @@ class Uploader():
 
     def main(self):
         logger.info('Starting Uploader...')
+        logger.info('creating worker pools...')
+        self.create_worker_pools()
 
         while not common.SIGINT_EXIT:
             try:
@@ -326,7 +339,22 @@ class Uploader():
 
 
                 logger.info('uploading files for upload task %s: \n\t%s', upload_id, "\n\t".join(upload_files))
-                self.run_uploads(upload_files)
+
+                # load upload_file list to begin processing
+                work_queues = self.load_md5_process_queue(self, self.md5_process_queue, upload_files):
+                md5_process_queue = work_queues[0]
+                md5_output_queue = work_queues[1]
+                http_batch_queue = work_queues[2]
+                signed_upload_url_queue = work_queues[3]
+                finished_queue = work_queues[4]
+
+                # wait for work to finish
+                md5_process_queue.join()
+                md5_output_queue.join()
+                http_batch_queue.join()
+                signed_upload_url_queue.join()
+
+
                 logger.info('done uploading files')
 
                 finish_dict = {'upload_id':upload_id}
@@ -344,6 +372,12 @@ class Uploader():
                 logger.error(traceback.format_exc())
                 time.sleep(self.sleep_time)
                 continue
+
+    # wait for work to finish
+    md5_process_queue.join()
+    md5_output_queue.join()
+    http_batch_queue.join()
+    signed_upload_url_queue.join()
 
     logger.info('exiting uploader')
 
