@@ -25,7 +25,7 @@ class Uploader():
         args = args or {}
         self.location = args.get("location") or CONFIG.get("location")
         self.process_count = CONFIG['thread_count']
-        self.batch_size # the controlls the batch size for http get_signed_urls
+        self.batch_size = 100 # the controlls the batch size for http get_signed_urls
         common.register_sigint_signal_handler()
 
     def get_upload_url(self, filename, md5_hash):
@@ -97,19 +97,9 @@ class Uploader():
         '''
         Pull self.batch_size items off the md5_output_queue and add chunk to http_batch_queue
 
-        Makes really sure to make sure that all work is processed by joining with the two previous work queues.
-        Makes sure to ship the remaining items after previous workers have completed
+        If we timeout, send what we have
         '''
         batch={}
-
-        def work_left():
-            ''' returns true if current or previous work queues have items'''
-            if not md5_process_queue.empty():
-                return True
-            if not md5_output_queue.empty():
-                return True
-            return False
-
         def ship_batch():
             if batch:
                 http_batch_queue.put(batch)
@@ -117,35 +107,16 @@ class Uploader():
 
         while True:
             try:
-                # block on the queue with a 1 second timeout
-                file_md5_tuple = md5_output_queue.get(True, 1)
+                # block on the queue with a 5 second timeout
+                file_md5_tuple = md5_output_queue.get(True, 5)
                 batch[file_md5_tuple[0]] = file_md5_tuple[1]
                 if len(batch) == self.batch_size:
                     ship_batch()
                 # mark this task as done
                 md5_output_queue.task_done()
             except queue_exception.Empty:
-                '''
-                We have hit a timeout. This most likely means that all previous
-                workers have completed, but we need to make really sure that we
-                don't miss any late threads that are working on large files
-                '''
-
-                if work_left():
-                    continue
-
-                md5_process_queue.join()
-                md5_output_queue.join()
-
-                ''' check if any items have been created since we joined '''
-                if work_left():
-                    continue
-
-                ''' send off the remaining batch '''
                 ship_batch()
 
-                ''' we're done! '''
-                return
 
     def create_md5_batch_worker(self,md5_output_queue, http_batch_queue, md5_process_queue):
         thread = Thread(target=md5_output_queue_worker, args=(md5_output_queue, http_batch_queue, md5_process_queue))
@@ -193,8 +164,8 @@ class Uploader():
             response = self.do_upload(upload_url, "PUT", md5, filename)
             logger.debug('finished uploading %s', filename)
 
-
             signed_upload_url_queue.task_done()
+
 
     def create_upload_worker_pool(self, signed_upload_url_queue, finished_queue):
         for i in range(self.process_count):
@@ -203,12 +174,10 @@ class Uploader():
             thread.start
 
 
-
     def run_uploads(self, file_list):
         if not file_list:
             logger.debug("No files to upload. Skipping run_uploads")
             return
-
 
         # create input and output for the md5 workers
         md5_process_queue = multiprocessing.Queue()
