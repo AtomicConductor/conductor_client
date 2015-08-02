@@ -15,44 +15,84 @@ import requests
 from conductor.setup import CONFIG, logger
 from conductor.lib import api_client, common
 
+'''
+Abstract worker class.
+
+The class defines the basic function and data structures that all workers need.
+
+TODO: move this into it's own lib
+'''
 class Worker():
     def __init__(self, in_queue, out_queue):
+        # the in_queue provides work for us to do
         self.in_queue = in_queue
+
+        # results of work are put into the out_queue
         self.out_queue = out_queue
 
+    '''
+    This ineeds to be implmented for each worker type. The work task from
+    the in_queue is passed as the job argument.
+
+    Returns the result to be passed to the out_queue
+    '''
     def do_work(self,job):
         raise NotImplementedError
 
+    # Basic thread target loop.
     def target(self):
         print 'on target'
-        while True:
+        while not common.SIGINT_EXIT:
             try:
                 print 'looking for work'
+                # this will block until work is found
                 job = self.in_queue.get(True)
+
                 print 'got job!'
+                # start working on job
                 output = self.do_work(job)
+
+                # put result in out_queue
                 self.out_queue.put(output)
+
+                # signal that we are done with this task (needed for the
+                # Queue.join() operation to work.
                 self.in_queue.task_done()
+
             except Exception:
                 # print 'hit exception: %s' % e
                 print traceback.print_exc()
                 print traceback.format_exc()
 
+    '''
+    Start number_of_threads threads.
+    '''
     def start(self,number_of_threads=1):
         print 'in start'
         print 'number_of_threads is %s' % number_of_threads
         for i in range(number_of_threads):
-            print 'starting thread'
+            print 'starting thread %s' % i
+            # thread will begin execution on self.target()
             thd = Thread(target = self.target)
+
+            # trigger deamon mode which will cause sub-theads to exit when
+            # parent thread is done
             thd.daemon = True
+
+            # start thread
             thd.start()
             print 'done starting thread'
 
+'''
+This worker will pull filenames from in_queue and compute it's base64 encoded
+md5, which will be added to out_queue
+'''
 class MD5Worker(Worker):
         def __init__(self, in_queue, out_queue):
             logger.debug('starting init for MD5Worker')
             Worker.__init__(self, in_queue, out_queue)
 
+        # TODO: optimize blocksize
         def get_md5(self, file_path, blocksize=65536):
             logger.debug('trying to open %s', file_path)
             logger.debug('file_path.__class__ %s', file_path.__class__)
@@ -71,7 +111,6 @@ class MD5Worker(Worker):
             logger.debug('b64 is %s', b64)
             return b64
 
-
         def do_work(self, job):
             filename = job
             md5 = get_base64_md5(filename)
@@ -79,32 +118,55 @@ class MD5Worker(Worker):
             out_queue.put((filename, md5))
 
 
+'''
+This worker will batch the computed md5's into self.batch_size chunks.
+It will send a partial batch after waiting self.wait_time seconds
+'''
 class MD5OutputWorker(Worker):
     def __init__(self, in_queue, out_queue):
         logger.debug('starting init for MD5OutputWorker')
         Worker.__init__(self, in_queue, out_queue)
+        self.batch_size = 100 # the controlls the batch size for http get_signed_urls
+        self.wait_time = 5
 
 
     def target(self):
         batch={}
+
+        # helper function to ship batch
         def ship_batch():
             if batch:
                 out_queue.put(batch)
                 batch = {}
 
-        while True:
+        while not common.SIGINT_EXIT:
             try:
-                # block on the queue with a 5 second timeout
-                file_md5_tuple = in_queue.get(True, 5)
+                # block on the queue with a self.wait_time second timeout
+                file_md5_tuple = in_queue.get(True, self.wait_time)
+
+                # add (filepath: md5) to the batch dict
                 batch[file_md5_tuple[0]] = file_md5_tuple[1]
+
+                # if the batch is self.batch_size, ship it
                 if len(batch) == self.batch_size:
                     ship_batch()
+
                 # mark this task as done
                 in_queue.task_done()
+
+            # This happens if no new messages are put into the queue after
+            # waiting for self.wait_time seconds
             except Queue.Empty:
                 ship_batch()
 
 
+'''
+This worker recieves a batched dict of (filename: md5) pairs and makes a
+batched http api call which returns a list of (filename: signed_upload_url)
+of files that need to be uploaded.
+
+Each item in the return list is added to the out_queue.
+'''
 class HttpBatchWorker(Worker):
     def __init__(self, in_queue, out_queue):
         logger.debug('starting init for HttpBatchWorker')
@@ -124,11 +186,16 @@ class HttpBatchWorker(Worker):
             # TODO: verfify json
             url_list = json.loads(response_string)
             for path, upload_url in url_list.iteritems():
+                logging.debug('adding %s to list of files to be uploaded', path)
                 self.out_queue.put((path,upload_url))
-            else:
-                logger.error('response code was %s' % response_code)
+        else:
+            logger.error('response code was %s' % response_code)
 
 
+'''
+This woker recieves a (filepath: signed_upload_url) pair and performs an upload
+of the specified file to the provided url.
+'''
 class UploadWorker(Worker):
     def __init__(self, in_queue, out_queue):
         logger.debug('starting init for HttpBatchWorker')
@@ -140,8 +207,7 @@ class UploadWorker(Worker):
         upload_url = job[1]
 
         logger.info("Uploading file: %s", filename)
-        # TODO: where does md5 come from?
-        response = self.do_upload(upload_url, "PUT", md5, filename)
+        response = self.do_upload(upload_url, md5, filename)
         logger.debug('finished uploading %s', filename)
 
 
@@ -155,8 +221,10 @@ class Uploader():
         args = args or {}
         self.location = args.get("location") or CONFIG.get("location")
         self.process_count = CONFIG['thread_count']
-        self.batch_size = 100 # the controlls the batch size for http get_signed_urls
         common.register_sigint_signal_handler()
+        logger.info('creating worker pools...')
+        self.worker_pools = []
+        self.create_worker_pools()
 
     def get_upload_url(self, filename):
         uri_path = '/api/files/get_upload_url'
@@ -171,11 +239,6 @@ class Uploader():
         # TODO: validate that no error occured via error code
         return response_string, response_code, md5
 
-    # TODO: optimize blocksize
-
-
-
-
     def load_md5_process_queue(self, md5_process_queue, file_list):
         '''
         Add all items in the file_list to the md5_process_queue so workers can
@@ -185,6 +248,11 @@ class Uploader():
             logger.debug('adding %s to queue', upload_file)
             md5_process_queue.put(upload_file)
 
+    def wait_for_workers(self):
+        logger.info('waiting for workers to finish...')
+        for index, worker_pool in enumerate(self.worker_queues):
+            logger.debug('waiting for worker %s: %s', (index,worker_pool))
+            worker_pool.join()
 
     def create_worker_pools(self)
         # create input and output for the md5 workers
@@ -194,25 +262,30 @@ class Uploader():
         signed_upload_url_queue = multiprocessing.Queue()
         finished_queue = multiprocessing.Queue()
 
+        # ordered list of worker queues. this needs to be in pipeline order for
+        # wait_for_workers() to function correctly
+        self.worker_queues = [
+            md5_process_queue,
+            md5_output_queue,
+            http_batch_queue,
+            signed_upload_url_queue,
+        ]
+
         # create md5 worker pool threads
         md5_worker = MD5Worker(md5_process_queue, md5_output_queue)
-        md5_worker.start(self.process_count)
-
+        md5_worker.start(self.process_count/4)
 
         # create md5 output worker
         md5_output_worker = MD5OutputWorker(md5_output_worker,http_batch_queue)
         md5_output_worker.start()
 
-
         # creat http batch worker
         http_batch_worker = HttpBatchWorker(httpbatchworker, signed_upload_url_queue)
-        http_batch_worker.start(self.process_count/4) # TODO: consider thread count
-
+        http_batch_worker.start(self.process_count/4)
 
         # create upload workers
         upload_worker = UploadWorker(signed_upload_url_queue, finished_queue)
         upload_worker.start(self.process_count)
-
 
         logger.debug('done creating worker pools')
         return [
@@ -223,67 +296,8 @@ class Uploader():
             finished_queue,
         ]
 
-        # kill rest
-    def run_uploads(self, file_list):
 
-        upload_queue = multiprocessing.Queue()
-        for upload_file in file_dict:
-            logger.debug('adding %s:%s to queue' % (upload_file, file_dict[upload_file]))
-            upload_queue.put((upload_file, file_dict[upload_file]))
-
-        threads = []
-        for n in range(self.process_count):
-
-            thread = Thread(target=self.upload_file, args=(upload_queue,))
-
-            thread.start()
-            threads.append(thread)
-
-        for idx, thread in enumerate(threads):
-            logger.debug('waiting for thread: %s', idx)
-            thread.join()
-        logger.debug('done with threading stuff')
-
-
-
-    def upload_file(self, upload_queue):
-        logger.debug('entering upload_file')
-        try:
-            filename = upload_queue.get(block=False)
-        except Queue.Empty:
-            logger.debug('queue is empty, caught EMPTY')
-            return
-
-        logger.debug('trying to upload %s', filename)
-        upload_url, response_code, md5 = self.get_upload_url(filename)
-        logger.debug("upload url is '%s'", upload_url)
-        if response_code == 200:
-            logger.debug('uploading file %s', filename)
-            try:
-                logger.info("Uploading file: %s", filename)
-                response = self.do_upload(upload_url, "PUT", md5, filename)
-                logger.debug('finished uploading %s', filename)
-            except Exception, e:
-                logger.error('could not do upload for %s', filename)
-                logger.error(traceback.format_exc())
-                raise e
-
-        if common.SIGINT_EXIT:
-            logger.debug("Exiting Upload thread")
-            return
-
-        if upload_queue.empty():
-            logger.debug('upload_queue is empty')
-            return None
-        else:
-            logger.debug('upload_queue is not empty')
-
-            self.upload_file(upload_queue)
-
-        return
-
-
-    def do_upload(self, upload_url, http_verb, md5, filename):
+    def do_upload(self, upload_url, md5, filename):
         # h = Http()
         # this header is needed to work with signed urls
         headers={
@@ -299,16 +313,15 @@ class Uploader():
 
     def main(self):
         logger.info('Starting Uploader...')
-        logger.info('creating worker pools...')
-        self.create_worker_pools()
 
         while not common.SIGINT_EXIT:
             try:
+                # TODO: we should pass args as url params, not http data
                 data = {}
                 data['location'] = self.location
                 logger.debug("Data: %s", data)
                 resp_str, resp_code = self.api_client.make_request('/uploads/client/next',
-                                                                   data=json.dumps(data),  # TODO: pass content type correctly in api_client
+                                                                   data=json.dumps(data),
                                                                    verb='PUT')
                 if resp_code == 204:
                     logger.debug('no files to upload')
@@ -336,29 +349,16 @@ class Uploader():
                     continue
 
                 upload_id = json_data['upload_id']
-
-
                 logger.info('uploading files for upload task %s: \n\t%s', upload_id, "\n\t".join(upload_files))
 
                 # load upload_file list to begin processing
-                work_queues = self.load_md5_process_queue(self, self.md5_process_queue, upload_files):
-                md5_process_queue = work_queues[0]
-                md5_output_queue = work_queues[1]
-                http_batch_queue = work_queues[2]
-                signed_upload_url_queue = work_queues[3]
-                finished_queue = work_queues[4]
+                self.load_md5_process_queue(self, self.md5_process_queue, upload_files):
 
                 # wait for work to finish
-                md5_process_queue.join()
-                md5_output_queue.join()
-                http_batch_queue.join()
-                signed_upload_url_queue.join()
-
+                self.wait_for_workers()
 
                 logger.info('done uploading files')
-
                 finish_dict = {'upload_id':upload_id}
-
                 if upload_files:
                     finish_dict['status'] = 'server_pending'
                 else:
@@ -374,14 +374,9 @@ class Uploader():
                 continue
 
     # wait for work to finish
-    md5_process_queue.join()
-    md5_output_queue.join()
-    http_batch_queue.join()
-    signed_upload_url_queue.join()
+    self.wait_for_workers()
 
     logger.info('exiting uploader')
-
-
 
 def run_uploader(args):
     '''
