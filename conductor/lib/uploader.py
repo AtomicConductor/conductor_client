@@ -350,6 +350,8 @@ class Uploader():
         self.md5_map = {}
         self.worker_pools = []
         self.create_worker_pools()
+        self.working = False
+        self.create_report_status_thread()
 
     def get_upload_url(self, filename):
         uri_path = '/api/files/get_upload_url'
@@ -440,6 +442,43 @@ class Uploader():
         ]
 
 
+    def report_status(self):
+        update_interval = 20
+
+        def sleep()
+            time.sleep(update_interval)
+
+        while True:
+            if not self.working:
+                sleep
+                continue
+            try:
+                status_dict = {
+                    'upload_id':upload_id,
+                    'size_in_bytes': self.bytes_to_upload,
+                    'bytes_transfered': self.bytes_uploaded,
+                }
+                resp_str, resp_code = self.api_client.make_request(
+                    '/uploads/%s/update' % upload_id,
+                    data=json.dumps(finish_dict),
+                    verb='POST')
+
+            except:
+                pass
+
+            sleep
+
+
+    def create_report_status_thread(self):
+        print 'creating reporter thread'
+        # thread will begin execution on self.target()
+        thd = Thread(target = self.report_status)
+
+        # start thread
+        thd.start()
+        print 'done starting reporter thread'
+
+
     def main(self):
         logger.info('Starting Uploader...')
 
@@ -486,21 +525,26 @@ class Uploader():
                 # reset md5_map
                 self.md5_map = {}
 
+                # signal the reporter to start working
+                self.working = True
+
                 # load upload_file list to begin processing
                 self.load_md5_process_queue(self, self.md5_process_queue, upload_files):
 
                 # wait for work to finish
                 self.wait_for_workers()
 
+                # signal to the reporter to stop working
+                self.working = False
+
                 logger.info('done uploading files')
-                finish_dict = {'upload_id':upload_id}
-                if upload_files:
-                    finish_dict['status'] = 'server_pending'
-                else:
-                    finish_dict['status'] = 'success'
+                finish_dict = {
+                    'upload_id':upload_id,
+                    'status': 'server_pending',
+                }
                 resp_str, resp_code = self.api_client.make_request('/uploads/%s/finish' % upload_id,
                                                                  data=json.dumps(finish_dict),
-                                                                 verb='PUT')
+                                                                 verb='POST')
 
             except Exception, e:
                 logger.error('hit exception %s', e)
