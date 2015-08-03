@@ -4,7 +4,7 @@ import ast
 import json
 import hashlib
 from httplib2 import Http
-import multiprocessing
+import os
 import Queue
 import sys
 from threading import Thread
@@ -53,7 +53,8 @@ class Worker():
                 output = self.do_work(job)
 
                 # put result in out_queue
-                self.out_queue.put(output)
+                if output:
+                    self.out_queue.put(output)
 
                 # signal that we are done with this task (needed for the
                 # Queue.join() operation to work.
@@ -115,7 +116,7 @@ class MD5Worker(Worker):
             filename = job
             md5 = get_base64_md5(filename)
             logger.debug('computed md5 %s of %s: ', md5, filename)
-            out_queue.put((filename, md5))
+            return (filename, md5)
 
 
 '''
@@ -160,6 +161,7 @@ class MD5OutputWorker(Worker):
                 ship_batch()
 
 
+
 '''
 This worker recieves a batched dict of (filename: md5) pairs and makes a
 batched http api call which returns a list of (filename: signed_upload_url)
@@ -181,15 +183,63 @@ class HttpBatchWorker(Worker):
             data = job
         )
 
-
         if response_code == 200:
             # TODO: verfify json
             url_list = json.loads(response_string)
-            for path, upload_url in url_list.iteritems():
-                logging.debug('adding %s to list of files to be uploaded', path)
-                self.out_queue.put((path,upload_url))
+            return url_list
         else:
             logger.error('response code was %s' % response_code)
+
+        return None
+
+'''
+This worker subscribes to a queue of (path,signed_upload_url) pairs.
+
+For each item on the queue, it determines the size (in bytes) of the files to be
+uploaded, and aggregrates the total size for all uploads.
+
+The byte_count arg is used to hold the aggregrated size of all files that need
+to be uploaded. Note: This is stored as an [int] in order to pass it by
+reference, as it needs to be accessed and reset by the caller.
+
+This worker can only be run in a single thread
+'''
+class FileStatWorker(Worker):
+    def __init__(self, in_queue, out_queue, byte_count):
+        logger.debug('starting init for FileStatWorker')
+        Worker.__init__(self, in_queue, out_queue)
+        self.byte_count = byte_count
+
+    def do_work(self, job):
+        '''
+        Job is a dict of filepath: signed_upload_url pairs.
+        The FileStatWorker iterates through the dict.
+        For each item, it aggregrates the filesize in bytes, and passes each
+        pair as a tuple to the UploadWorker queue.
+        '''
+
+        ''' iterate through a dict of (filepath: upload_url) pairs '''
+        for path, upload_url in job.iteritems():
+            # TODO: handle non-existent paths
+            byte_count = os.path.getsize(path)
+
+            # update aggregrate byte_count
+            self.byte_count[0] += byte_count
+
+
+            logging.debug('adding %s to list of files to be uploaded. Size: %s', (path, byte_count))
+            self.out_queue.put((path,upload_url))
+
+        ''' make sure we return None, so no message is automatically added to the
+        out_queue '''
+        return None
+
+    '''
+    This worker can only run in a single thread due to non-locking
+    data-structures.
+    '''
+    def start(self):
+        return super(FileStatWorker, self).start(1)
 
 
 '''
@@ -223,6 +273,7 @@ class Uploader():
         self.process_count = CONFIG['thread_count']
         common.register_sigint_signal_handler()
         logger.info('creating worker pools...')
+        self.byte_count = [0] # hack for passing an int by reference
         self.worker_pools = []
         self.create_worker_pools()
 
@@ -256,11 +307,12 @@ class Uploader():
 
     def create_worker_pools(self)
         # create input and output for the md5 workers
-        md5_process_queue = multiprocessing.Queue()
-        md5_output_queue = multiprocessing.Queue()
-        http_batch_queue = multiprocessing.Queue()
-        signed_upload_url_queue = multiprocessing.Queue()
-        finished_queue = multiprocessing.Queue()
+        md5_process_queue = queue.Queue()
+        md5_output_queue = queue.Queue()
+        http_batch_queue = queue.Queue()
+        file_stat_queue = queue.Queue()
+        upload_queue = queue.Queue()
+        finished_queue = queue.Queue()
 
         # ordered list of worker queues. this needs to be in pipeline order for
         # wait_for_workers() to function correctly
@@ -268,8 +320,15 @@ class Uploader():
             md5_process_queue,
             md5_output_queue,
             http_batch_queue,
-            signed_upload_url_queue,
+            file_stat_queue,
+            upload_queue,
+            finished_queue,
         ]
+
+
+        # Let's make the worker queues avilable as a dict and let's see what
+        # happens
+        self.worker_queue_dict = {}
 
         # create md5 worker pool threads
         md5_worker = MD5Worker(md5_process_queue, md5_output_queue)
@@ -280,11 +339,15 @@ class Uploader():
         md5_output_worker.start()
 
         # creat http batch worker
-        http_batch_worker = HttpBatchWorker(httpbatchworker, signed_upload_url_queue)
+        http_batch_worker = HttpBatchWorker(httpbatchworker, file_stat_queue)
         http_batch_worker.start(self.process_count/4)
 
+        # create filestat workker
+        file_stat_worker = Filestatworker(file_stat_queue, upload_queue, self.byte_count)
+        file_stat_worker.start() # forced to a single thread
+
         # create upload workers
-        upload_worker = UploadWorker(signed_upload_url_queue, finished_queue)
+        upload_worker = UploadWorker(upload_queue, finished_queue)
         upload_worker.start(self.process_count)
 
         logger.debug('done creating worker pools')
@@ -292,7 +355,8 @@ class Uploader():
             md5_process_queue,
             md5_output_queue,
             http_batch_queue,
-            signed_upload_url_queue,
+            file_stat_queue,
+            upload_queue,
             finished_queue,
         ]
 
@@ -350,6 +414,9 @@ class Uploader():
 
                 upload_id = json_data['upload_id']
                 logger.info('uploading files for upload task %s: \n\t%s', upload_id, "\n\t".join(upload_files))
+
+                # reset bytes_to_upload counter
+                self.byte_count = [0]
 
                 # load upload_file list to begin processing
                 self.load_md5_process_queue(self, self.md5_process_queue, upload_files):
