@@ -137,30 +137,30 @@ class MD5OutputWorker(Worker):
         batch={}
 
         # helper function to ship batch
-        def ship_batch():
+        def ship_batch(batch):
             if batch:
-                out_queue.put(batch)
+                self.out_queue.put(batch)
                 batch = {}
 
         while not common.SIGINT_EXIT:
             try:
                 # block on the queue with a self.wait_time second timeout
-                file_md5_tuple = in_queue.get(True, self.wait_time)
+                file_md5_tuple = self.in_queue.get(True, self.wait_time)
 
                 # add (filepath: md5) to the batch dict
                 batch[file_md5_tuple[0]] = file_md5_tuple[1]
 
                 # if the batch is self.batch_size, ship it
                 if len(batch) == self.batch_size:
-                    ship_batch()
+                    ship_batch(batch)
 
                 # mark this task as done
-                in_queue.task_done()
+                self.in_queue.task_done()
 
             # This happens if no new messages are put into the queue after
             # waiting for self.wait_time seconds
             except Queue.Empty:
-                ship_batch()
+                ship_batch(batch)
 
 
 
@@ -244,7 +244,7 @@ class FileStatWorker(Worker):
     data-structures.
     '''
     def start(self):
-        return super(FileStatWorker, self).start(1)
+        return Worker.start(self, 1)
 
 
 '''
@@ -332,7 +332,7 @@ class UploadProgressWorker(Worker):
     data-structures.
     '''
     def start(self):
-        return super(FileStatWorker, self).start(1)
+        return Worker.start(self, 1)
 
 
 class Uploader():
@@ -355,9 +355,10 @@ class Uploader():
         self.worker_pools = []
         self.create_worker_pools()
         self.working = False
+        self.working = True
+        self.job_start_time = 0
         self.create_report_status_thread()
         self.create_print_status_thread()
-        self.job_start_time = 0
 
     def get_upload_url(self, filename):
         uri_path = '/api/files/get_upload_url'
@@ -387,14 +388,14 @@ class Uploader():
             logger.debug('waiting for worker %s: %s', (index,worker_pool))
             worker_pool.join()
 
-    def create_worker_pools(self)
+    def create_worker_pools(self):
         # create input and output for the md5 workers
-        md5_process_queue = queue.Queue()
-        md5_output_queue = queue.Queue()
-        http_batch_queue = queue.Queue()
-        file_stat_queue = queue.Queue()
-        upload_queue = queue.Queue()
-        upload_progress_queue = queue.Queue()
+        md5_process_queue = Queue.Queue()
+        md5_output_queue = Queue.Queue()
+        http_batch_queue = Queue.Queue()
+        file_stat_queue = Queue.Queue()
+        upload_queue = Queue.Queue()
+        upload_progress_queue = Queue.Queue()
 
         # ordered list of worker queues. this needs to be in pipeline order for
         # wait_for_workers() to function correctly
@@ -413,19 +414,19 @@ class Uploader():
         self.worker_queue_dict = {}
 
         # create md5 worker pool threads
-        md5_worker = MD5Worker(md5_process_queue, md5_output_queue)
+        md5_worker = MD5Worker(md5_process_queue, md5_output_queue, self.md5_map)
         md5_worker.start(self.process_count/4)
 
         # create md5 output worker
-        md5_output_worker = MD5OutputWorker(md5_output_worker,http_batch_queue, self.md5_map)
+        md5_output_worker = MD5OutputWorker(md5_output_queue,http_batch_queue)
         md5_output_worker.start()
 
         # creat http batch worker
-        http_batch_worker = HttpBatchWorker(httpbatchworker, file_stat_queue)
+        http_batch_worker = HttpBatchWorker(http_batch_queue, file_stat_queue)
         http_batch_worker.start(self.process_count/4)
 
         # create filestat worker
-        file_stat_worker = Filestatworker(file_stat_queue, upload_queue, self.bytes_to_upload, self.num_files_to_upload)
+        file_stat_worker = FileStatWorker(file_stat_queue, upload_queue, self.bytes_to_upload, self.num_files_to_upload)
         file_stat_worker.start() # forced to a single thread
 
         # create upload workers
@@ -451,28 +452,23 @@ class Uploader():
     def report_status(self):
         update_interval = 20
 
-        def sleep()
-            time.sleep(update_interval)
-
         while True:
-            if not self.working:
-                sleep
-                continue
-            try:
-                status_dict = {
-                    'upload_id':upload_id,
-                    'size_in_bytes': self.bytes_to_upload,
-                    'bytes_transfered': self.bytes_uploaded,
-                }
-                resp_str, resp_code = self.api_client.make_request(
-                    '/uploads/%s/update' % upload_id,
-                    data=json.dumps(finish_dict),
-                    verb='POST')
+            if self.working:
+                try:
+                    status_dict = {
+                        'upload_id':upload_id,
+                        'size_in_bytes': self.bytes_to_upload,
+                        'bytes_transfered': self.bytes_uploaded,
+                    }
+                    resp_str, resp_code = self.api_client.make_request(
+                        '/uploads/%s/update' % upload_id,
+                        data=json.dumps(finish_dict),
+                        verb='POST')
 
-            except:
-                pass
+                except:
+                    pass
 
-            sleep
+            time.sleep(update_interval)
 
 
     def create_report_status_thread(self):
@@ -507,12 +503,12 @@ class Uploader():
 
     def worker_queue_status_text(self):
         queue_list = [
-            md5_process_queue,
-            md5_output_queue,
-            http_batch_queue,
-            file_stat_queue,
-            upload_queue,
-            upload_progress_queue,
+            'md5_process_queue',
+            'md5_output_queue',
+            'http_batch_queue',
+            'file_stat_queue',
+            'upload_queue',
+            'upload_progress_queue',
         ]
 
         msg = '####################################\n'
@@ -525,15 +521,15 @@ class Uploader():
     def download_status_text(self):
         files_to_analyze = self.num_files_to_process
         files_to_upload = self.num_files_to_upload[0]
-        mb_to_upload = self.num_bytes_to_upload[0] / 2**20
-        mb_uploaded = self.num_bytes_uploaded[0] / 2**20
-        elapsed_time = int(time.time.now()) - self.job_start_time
-        if num_bytes_to_upload:
-            percent_complete = num_bytes_uploaded / float(num_bytes_to_upload)
+        mb_to_upload = self.bytes_to_upload[0] / 2**20
+        mb_uploaded = self.bytes_uploaded[0] / 2**20
+        elapsed_time = int(time.time()) - self.job_start_time
+        if self.bytes_to_upload[0]:
+            percent_complete = self.bytes_uploaded[0] / float(self.bytes_to_upload[0])
         else:
             percent_complete = 0
-        transer_rate = num_bytes_uploaded / elapsed_time_in_sec
-        time_remaining = self.estimated_time_remaining()
+        transfer_rate = mb_uploaded / elapsed_time
+        time_remaining = self.estimated_time_remaining(elapsed_time, percent_complete)
 
         unformatted_text = '''
 ####################################
@@ -548,18 +544,18 @@ percent complete: {percent_complete}
 ####################################
 '''
 
-    formatted_text = signature_string.format(
-        files_to_analyze=files_to_analyze,
-        files_to_upload=files_to_upload,
-        mb_to_upload=mb_to_upload,
-        mb_uploaded=mb_uploaded,
-        elapsed_time=elapsed_time,
-        percent_complete=percent_complete,
-        transfer_rate=transfer_rate,
-        time_remaining=time_remaining,
+        formatted_text = unformatted_text.format(
+            files_to_analyze=files_to_analyze,
+            files_to_upload=files_to_upload,
+            mb_to_upload=mb_to_upload,
+            mb_uploaded=mb_uploaded,
+            elapsed_time=elapsed_time,
+            percent_complete=percent_complete,
+            transfer_rate=transfer_rate,
+            time_remaining=time_remaining,
         )
 
-    return formatted_text
+        return formatted_text
 
 
     def print_status(self):
@@ -570,8 +566,9 @@ percent complete: {percent_complete}
 
         while True:
             if self.working:
-                logger.debug(worker_queue_status_text())
-                logger.debug(download_status_text())
+                logger.debug(self.worker_queue_status_text())
+                logger.debug(self.download_status_text())
+
 
             sleep()
 
@@ -598,7 +595,7 @@ percent complete: {percent_complete}
         self.working = True
 
         # load upload_file list to begin processing
-        self.load_md5_process_queue(self, self.md5_process_queue, upload_files):
+        self.load_md5_process_queue(self, self.md5_process_queue, upload_files)
 
         # wait for work to finish
         self.wait_for_workers()
@@ -667,10 +664,10 @@ percent complete: {percent_complete}
                 time.sleep(self.sleep_time)
                 continue
 
-    # wait for work to finish
-    self.wait_for_workers()
+        # wait for work to finish
+        self.wait_for_workers()
 
-    logger.info('exiting uploader')
+        logger.info('exiting uploader')
 
 def run_uploader(args):
     '''
