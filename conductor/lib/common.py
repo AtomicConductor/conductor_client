@@ -74,7 +74,7 @@ def retry(function, retry_count=5):
     i = 0
     while True:
         try:
-            LOGGER.debug('trying to run %s' % function)
+            # LOGGER.debug('trying to run %s' % function)
             return_values = function()
         except Exception, e:
             LOGGER.debug('caught error')
@@ -91,7 +91,7 @@ def retry(function, retry_count=5):
                 LOGGER.debug('exceeded %s retries. throwing error...' % retry_count)
                 raise e
         else:
-            LOGGER.debug('ran %s ok' % function)
+            # LOGGER.debug('ran %s ok' % function)
             return return_values
 
 def run(cmd):

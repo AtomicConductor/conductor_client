@@ -303,15 +303,26 @@ class UploadWorker(Worker):
             'Content-Type': 'application/octet-stream',
         }
 
+        # logger.debug('%$%$%$%$%$%$%$ file deets:')
+        # logger.debug('headers are %s', headers)
+        # logger.debug('md5 is %s', md5)
+        # logger.debug('upload_url is %s', upload_url)
+        # logger.debug('filename is %s', self.filename)
+
+
         try:
             # logger.info('trying to upload %s to %s', self.filename, upload_url)
-            response = requests.put(upload_url, data=self.chunked_reader(), headers=headers)
+            # response = requests.put(upload_url, data=self.chunked_reader(), headers=headers)
+            response = common.retry(lambda: requests.put(
+                upload_url,
+                data=self.chunked_reader(),
+                headers=headers))
+
         except Exception, e:
             logger.error('hit error')
             logger.error(traceback.print_exc())
             logger.error(traceback.format_exc())
 
-            # response = common.retry(lambda:  requests.put(upload_url, data=self.chunked_reader(), headers=headers))
 
         # TODO: verify upload
         # return resp, content
@@ -431,7 +442,8 @@ class Uploader():
 
         # creat http batch worker
         http_batch_worker = HttpBatchWorker(http_batch_queue, file_stat_queue)
-        http_batch_worker.start(self.process_count/4)
+        # http_batch_worker.start(self.process_count/4)
+        http_batch_worker.start(4)
 
         # create filestat worker
         file_stat_worker = FileStatWorker(file_stat_queue, upload_queue, self.bytes_to_upload, self.num_files_to_upload)
@@ -439,7 +451,8 @@ class Uploader():
 
         # create upload workers
         upload_worker = UploadWorker(upload_queue, upload_progress_queue, self.md5_map)
-        upload_worker.start(self.process_count)
+        # upload_worker.start(self.process_count)
+        upload_worker.start(self.process_count/4)
 
         # create upload progress worker
         upload_worker = UploadProgressWorker(upload_progress_queue, None, self.bytes_uploaded)
@@ -629,6 +642,7 @@ class Uploader():
     def handle_upload_response(self, upload_files, upload_id):
         # reset counters
         self.bytes_to_upload[0] = 0
+        self.bytes_uploaded[0] = 0
         self.num_files_to_upload[0] = 0
         self.num_files_to_process = len(upload_files)
         self.job_start_time = int(time.time())
