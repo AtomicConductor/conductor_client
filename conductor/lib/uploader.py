@@ -78,11 +78,10 @@ class Worker():
             # thread will begin execution on self.target()
             thd = Thread(target = self.target)
 
-            # trigger deamon mode which will cause sub-theads to exit when
-            # parent thread is done
+            # make sure threads don't stop the program from exiting
             thd.daemon = True
 
-            # start thread
+        # start thread
             thd.start()
             print 'done starting thread'
 
@@ -360,7 +359,7 @@ class Uploader():
         self.working = True
         self.job_start_time = 0
         self.create_report_status_thread()
-        self.create_print_status_thread()
+        # self.create_print_status_thread()
 
     def get_upload_url(self, filename):
         uri_path = '/api/files/get_upload_url'
@@ -478,6 +477,9 @@ class Uploader():
         # thread will begin execution on self.target()
         thd = Thread(target = self.report_status)
 
+        # make sure threads don't stop the program from exiting
+        thd.daemon = True
+
         # start thread
         thd.start()
         print 'done starting reporter thread'
@@ -582,6 +584,9 @@ percent complete: {percent_complete}
     def create_print_status_thread(self):
         print 'creating console status thread'
         thd = Thread(target = self.print_status)
+
+        # make sure threads don't stop the program from exiting
+        thd.daemon = True
 
         # start thread
         thd.start()
