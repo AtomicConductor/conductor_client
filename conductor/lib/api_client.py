@@ -51,5 +51,5 @@ class ApiClient():
 
 
         logger.debug('response.status_code: %s', response.status_code)
-        logger.debug('response.text is: %s', response.text)
+        # logger.debug('response.text is: %s', response.text)
         return response.text, response.status_code
