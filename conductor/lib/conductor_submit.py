@@ -138,7 +138,7 @@ class Submit():
             - upload_only
             - running an actual command (cmd)
         '''
-        logger.debug("upload_files: %s", upload_files)
+        # logger.debug("upload_files: %s", upload_files) #
 
         submit_dict = {'owner':self.user}
         submit_dict['location'] = self.location
@@ -181,9 +181,9 @@ class Submit():
                 submit_dict['environment'] = self.environment
 
 
-        logger.debug("send_job JOB ARGS:")
-        for arg_name, arg_value in sorted(submit_dict.iteritems()):
-            logger.debug("%s: %s", arg_name, arg_value)
+        # logger.debug("send_job JOB ARGS:")
+        # for arg_name, arg_value in sorted(submit_dict.iteritems()):
+        #     logger.debug("%s: %s", arg_name, arg_value)
 
         # TODO: verify that the response request is valid
         response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))

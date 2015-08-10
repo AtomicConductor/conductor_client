@@ -24,12 +24,12 @@ class ApiClient():
         # TODO: set Content Type to json if data arg
         if not headers:
             headers = {'Content-Type':'application/json'}
-        logger.debug('headers are: %s', headers)
+        # logger.debug('headers are: %s', headers)
 
 
         # Construct URL
         conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
-        logger.debug('conductor_url: %s', conductor_url)
+        # logger.debug('conductor_url: %s', conductor_url)
 
         if not verb:
             if data:
@@ -50,6 +50,6 @@ class ApiClient():
         )
 
 
-        logger.debug('response.status_code: %s', response.status_code)
+        # logger.debug('response.status_code: %s', response.status_code)
         # logger.debug('response.text is: %s', response.text)
         return response.text, response.status_code

@@ -7,10 +7,12 @@ from httplib2 import Http
 import os
 import Queue
 import sys
+import thread
 from threading import Thread
 import time
 import traceback
 import requests
+import urllib
 
 from conductor.setup import CONFIG, logger
 from conductor.lib import api_client, common
@@ -124,6 +126,8 @@ class MD5OutputWorker(Worker):
         # logger.debug('starting init for MD5OutputWorker')
         Worker.__init__(self, in_queue, out_queue)
         self.batch_size = 100 # the controlls the batch size for http get_signed_urls
+        # TODO
+        self.batch_size = 20
         self.wait_time = 5
         self.batch={}
 
@@ -181,13 +185,18 @@ class HttpBatchWorker(Worker):
             data = job,
         )
 
+
         if response_code == 200:
             # TODO: verfify json
             url_list = json.loads(response_string)
             return url_list
+        if response_code == 204:
+            pass
+            # logger.info('file already uptodate')
         else:
             logger.error('response_string was %s' % response_string)
             logger.error('response code was %s' % response_code)
+            os._exit(1)
 
         return None
 
@@ -222,6 +231,8 @@ class FileStatWorker(Worker):
 
         ''' iterate through a dict of (filepath: upload_url) pairs '''
         for path, upload_url in job.iteritems():
+
+            # logger.debug('need to upload: %s', path)
             # TODO: handle non-existent paths
             byte_count = os.path.getsize(path)
 
@@ -269,9 +280,9 @@ class UploadWorker(Worker):
         self.out_queue.put(amount_of_bytes_to_report)
         self.bytes_reported += amount_of_bytes_to_report
 
-    def chunked_reader(self):
-        with open(self.filename, 'rb') as file:
-            while True:
+    def chunked_reader(self, filename):
+        with open(filename, 'rb') as file:
+            while True and not common.SIGINT_EXIT:
                 data = file.read(self.chunk_size)
                 if not data:
                     # we are done reading the file
@@ -279,7 +290,15 @@ class UploadWorker(Worker):
                 self.bytes_read += len(data)
 
                 # this should block until chunk is uploaded
-                yield data
+
+                try:
+                    yield data
+                except Exception, e:
+                    logger.error('hit error')
+                    logger.error(traceback.print_exc())
+                    logger.error(traceback.format_exc())
+                    # TODO:
+                    exit(1)
 
                 # report upload progress
                 self.report_status()
@@ -291,12 +310,14 @@ class UploadWorker(Worker):
         self.bytes_reported = 0
         self.bytes_read = 0
 
-        self.filename = job[0]
+        filename = job[0]
         upload_url = job[1]
         self.byte_count = job[2]
 
-        # logger.info("Uploading file: %s", self.filename)
-        md5 = self.md5_map[self.filename]
+        # logger.info("Uploading file: %s to: %s", filename, upload_url)
+        md5 = self.md5_map[filename]
+        # logger.info("md5 of %s is %s", filename, md5)
+        # logger.info("Again: Uploading file: %s to: %s", filename, upload_url)
 
         headers={
             'Content-MD5': md5,
@@ -307,21 +328,30 @@ class UploadWorker(Worker):
         # logger.debug('headers are %s', headers)
         # logger.debug('md5 is %s', md5)
         # logger.debug('upload_url is %s', upload_url)
-        # logger.debug('filename is %s', self.filename)
+        # logger.debug('filename is %s', filename)
 
 
         try:
-            # logger.info('trying to upload %s to %s', self.filename, upload_url)
+            # logger.info('trying to upload %s to %s', filename, upload_url)
             # response = requests.put(upload_url, data=self.chunked_reader(), headers=headers)
             response = common.retry(lambda: requests.put(
                 upload_url,
-                data=self.chunked_reader(),
+                data=self.chunked_reader(filename),
                 headers=headers))
+
+            if response.status_code != 200:
+                logger.error('could not upload %s', filename )
+                logger.error('url: %s', upload_url)
+                logger.error('response.status_code is %s', response.status_code)
+                logger.error('response.text is %s', response.text)
+                os._exit(1)
 
         except Exception, e:
             logger.error('hit error')
             logger.error(traceback.print_exc())
             logger.error(traceback.format_exc())
+            # TODO:
+            exit(1)
 
 
         # TODO: verify upload
@@ -387,6 +417,7 @@ class Uploader():
             'md5': md5
         }
         logger.debug('params are %s', params)
+        # retries?
         response_string, response_code = self.api_client.make_request(uri_path=uri_path, params=params)
         # TODO: validate that no error occured via error code
         return response_string, response_code, md5
@@ -443,7 +474,7 @@ class Uploader():
         # creat http batch worker
         http_batch_worker = HttpBatchWorker(http_batch_queue, file_stat_queue)
         # http_batch_worker.start(self.process_count/4)
-        http_batch_worker.start(4)
+        http_batch_worker.start(self.process_count)
 
         # create filestat worker
         file_stat_worker = FileStatWorker(file_stat_queue, upload_queue, self.bytes_to_upload, self.num_files_to_upload)
@@ -451,8 +482,9 @@ class Uploader():
 
         # create upload workers
         upload_worker = UploadWorker(upload_queue, upload_progress_queue, self.md5_map)
-        # upload_worker.start(self.process_count)
-        upload_worker.start(self.process_count/4)
+        upload_worker.start(self.process_count)
+        # TODO
+        # upload_worker.start(2)
 
         # create upload progress worker
         upload_worker = UploadProgressWorker(upload_progress_queue, None, self.bytes_uploaded)
@@ -522,7 +554,13 @@ class Uploader():
         if not percent_complete:
             return -1
 
-        return ( elapsed_time - elapsed_time * percent_complete ) / percent_complete
+        estimated_time = ( elapsed_time - elapsed_time * percent_complete ) / percent_complete
+
+        # logger.debug('elapsed_time is %s', elapsed_time)
+        # logger.debug('percent_complete is %s', percent_complete)
+        # logger.debug('estimated_time is %s', estimated_time)
+
+        return estimated_time
 
     def worker_queue_status_text(self):
         queue_list = [
@@ -557,14 +595,14 @@ class Uploader():
 
     def convert_time_to_string(self, time_remaining):
         if time_remaining > 3600:
-            return str(round(time_remaining / 3600, 1)) + ' hours'
+            return str(round(time_remaining / float(3600) , 1)) + ' hours'
         elif time_remaining > 60:
-            return str(round(time_remaining / 60, 1)) + ' minutes'
+            return str(round(time_remaining / float(60) , 1)) + ' minutes'
         else:
             return str(round(time_remaining, 1)) + ' seconds'
 
 
-    def download_status_text(self):
+    def upload_status_text(self):
         # logger.debug('self.bytes_to_upload is %s' % self.bytes_to_upload)
         # logger.debug('self.num_files_to_upload is %s' % self.num_files_to_upload)
         files_to_analyze = "{:,}".format(self.num_files_to_process)
@@ -605,7 +643,7 @@ class Uploader():
             bytes_to_upload=self.convert_byte_count_to_string(self.bytes_to_upload[0]),
             bytes_uploaded=self.convert_byte_count_to_string(self.bytes_uploaded[0]),
             elapsed_time=self.convert_time_to_string(elapsed_time),
-            percent_complete=str(round(percent_complete * 100, 1)) + '%',
+            percent_complete=str(round(percent_complete * 100, 1)) + ' %',
             transfer_rate=self.convert_byte_count_to_string(transfer_rate) + '/s',
             time_remaining = self.convert_time_to_string(
                 self.estimated_time_remaining(elapsed_time, percent_complete)),
@@ -623,7 +661,7 @@ class Uploader():
         while True:
             if self.working:
                 logger.info(self.worker_queue_status_text())
-                logger.info(self.download_status_text())
+                logger.info(self.upload_status_text())
 
 
             sleep()
