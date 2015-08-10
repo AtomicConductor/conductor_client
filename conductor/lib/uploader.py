@@ -15,79 +15,16 @@ import requests
 import urllib
 
 from conductor.setup import CONFIG, logger
-from conductor.lib import api_client, common
-
-'''
-Abstract worker class.
-
-The class defines the basic function and data structures that all workers need.
-
-TODO: move this into it's own lib
-'''
-class Worker():
-    def __init__(self, in_queue, out_queue=None):
-        # the in_queue provides work for us to do
-        self.in_queue = in_queue
-
-        # results of work are put into the out_queue
-        self.out_queue = out_queue
-
-        self.api_client = api_client.ApiClient()
-
-    '''
-    This ineeds to be implmented for each worker type. The work task from
-    the in_queue is passed as the job argument.
-
-    Returns the result to be passed to the out_queue
-    '''
-    def do_work(self,job):
-        raise NotImplementedError
-
-    # Basic thread target loop.
-    def target(self):
-        # logger.debug('on target')
-        while not common.SIGINT_EXIT:
-            try:
-                # this will block until work is found
-                job = self.in_queue.get(True)
-
-                # start working on job
-                output = self.do_work(job)
-
-                # put result in out_queue
-                if output and self.out_queue:
-                    self.out_queue.put(output)
-
-                # signal that we are done with this task (needed for the
-                # Queue.join() operation to work.
-                self.in_queue.task_done()
-
-            except Exception:
-                logger.error(traceback.print_exc())
-                logger.error(traceback.format_exc())
-
-    '''
-    Start number_of_threads threads.
-    '''
-    def start(self,number_of_threads=1):
-        for i in range(number_of_threads):
-            # thread will begin execution on self.target()
-            thd = Thread(target = self.target)
-
-            # make sure threads don't stop the program from exiting
-            thd.daemon = True
-
-        # start thread
-            thd.start()
+from conductor.lib import api_client, common, worker
 
 '''
 This worker will pull filenames from in_queue and compute it's base64 encoded
 md5, which will be added to out_queue
 '''
-class MD5Worker(Worker):
+class MD5Worker(worker.ThreadWorker):
         def __init__(self, in_queue, out_queue, md5_map):
             # logger.debug('starting init for MD5Worker')
-            Worker.__init__(self, in_queue, out_queue)
+            worker.ThreadWorker.__init__(self, in_queue, out_queue)
             self.md5_map = md5_map
 
         # TODO: optimize blocksize
@@ -121,10 +58,10 @@ class MD5Worker(Worker):
 This worker will batch the computed md5's into self.batch_size chunks.
 It will send a partial batch after waiting self.wait_time seconds
 '''
-class MD5OutputWorker(Worker):
+class MD5OutputWorker(worker.ThreadWorker):
     def __init__(self, in_queue, out_queue):
         # logger.debug('starting init for MD5OutputWorker')
-        Worker.__init__(self, in_queue, out_queue)
+        worker.ThreadWorker.__init__(self, in_queue, out_queue)
         self.batch_size = 100 # the controlls the batch size for http get_signed_urls
         # TODO
         self.batch_size = 20
@@ -169,10 +106,10 @@ of files that need to be uploaded.
 
 Each item in the return list is added to the out_queue.
 '''
-class HttpBatchWorker(Worker):
+class HttpBatchWorker(worker.ThreadWorker):
     def __init__(self, in_queue, out_queue):
         # logger.debug('starting init for HttpBatchWorker')
-        Worker.__init__(self, in_queue, out_queue)
+        worker.ThreadWorker.__init__(self, in_queue, out_queue)
 
     def do_work(self, job):
         # send a batch request
@@ -214,10 +151,10 @@ reference, as it needs to be accessed and reset by the caller.
 
 This worker can only be run in a single thread
 '''
-class FileStatWorker(Worker):
+class FileStatWorker(worker.ThreadWorker):
     def __init__(self, in_queue, out_queue, bytes_to_upload, num_files_to_upload):
         # logger.debug('starting init for FileStatWorker')
-        Worker.__init__(self, in_queue, out_queue)
+        worker.ThreadWorker.__init__(self, in_queue, out_queue)
         self.bytes_to_upload = bytes_to_upload
         self.num_files_to_upload = num_files_to_upload
 
@@ -255,17 +192,17 @@ class FileStatWorker(Worker):
     data-structures.
     '''
     def start(self):
-        return Worker.start(self, 1)
+        return worker.ThreadWorker.start(self, 1)
 
 
 '''
 This woker recieves a (filepath: signed_upload_url) pair and performs an upload
 of the specified file to the provided url.
 '''
-class UploadWorker(Worker):
+class UploadWorker(worker.ThreadWorker):
     def __init__(self, in_queue, out_queue, md5_map):
         # logger.debug('starting init for HttpBatchWorker')
-        Worker.__init__(self, in_queue, out_queue)
+        worker.ThreadWorker.__init__(self, in_queue, out_queue)
         self.chunk_size = 1048576 # 1M
         self.md5_map = md5_map
         self.report_size = 10485760 # 10M
@@ -365,10 +302,10 @@ The UploadProgressWorker aggregrates the total amount of bytes that have been up
 
 It gets bytes uploaded from worker threads and sums them into the bytes_uploaded arg
 '''
-class UploadProgressWorker(Worker):
+class UploadProgressWorker(worker.ThreadWorker):
     def __init__(self, in_queue, out_queue, bytes_uploaded):
         # logger.debug('starting init for HttpBatchWorker')
-        Worker.__init__(self, in_queue, out_queue)
+        worker.ThreadWorker.__init__(self, in_queue, out_queue)
         self.bytes_uploaded = bytes_uploaded
 
     def do_work(self, job):
@@ -380,7 +317,7 @@ class UploadProgressWorker(Worker):
     data-structures.
     '''
     def start(self):
-        return Worker.start(self, 1)
+        return worker.ThreadWorker.start(self, 1)
 
 
 class Uploader():
