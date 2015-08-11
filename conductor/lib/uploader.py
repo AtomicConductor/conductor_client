@@ -111,9 +111,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         # logger.debug('starting init for HttpBatchWorker')
         worker.ThreadWorker.__init__(self, in_queue, out_queue)
 
-    def do_work(self, job):
-        # send a batch request
-
+    def make_request(self, job):
         response_string, response_code = self.api_client.make_request(
             uri_path = '/api/files/get_upload_urls',
             # TODO: PUT vs. POST?
@@ -121,7 +119,6 @@ class HttpBatchWorker(worker.ThreadWorker):
             headers = {'Content-Type':'application/json'},
             data = job,
         )
-
 
         if response_code == 200:
             # TODO: verfify json
@@ -135,7 +132,15 @@ class HttpBatchWorker(worker.ThreadWorker):
             logger.error('response code was %s' % response_code)
             os._exit(1)
 
-        return None
+    def do_work(self, job):
+        # send a batch request
+
+        try:
+            url_list = common.retry(lambda: self.make_request(job))
+        except Exception, e:
+            pass
+
+        return url_list
 
 '''
 This worker subscribes to a queue of (path,signed_upload_url) pairs.
