@@ -333,7 +333,7 @@ class Uploader():
         common.register_sigint_signal_handler()
         logger.info('creating worker pools...')
         self.num_files_to_process = 0
-        self.num_files_to_upload = [0]
+        self.num_files_to_upload = [0] # hack for passing an int by reference
         self.bytes_to_upload = [0] # hack for passing an int by reference
         self.bytes_uploaded = [0] # hack for passing an int by reference
         self.md5_map = {}
@@ -438,7 +438,6 @@ class Uploader():
             upload_progress_queue,
         ]
 
-
     def report_status(self):
         update_interval = 20
 
@@ -446,17 +445,21 @@ class Uploader():
             if self.working:
                 try:
                     status_dict = {
-                        'upload_id':upload_id,
-                        'size_in_bytes': self.bytes_to_upload,
-                        'bytes_transfered': self.bytes_uploaded,
+                        'upload_id': self.upload_id,
+                        'size_in_bytes': self.bytes_to_upload[0],
+                        'bytes_transfered': self.bytes_uploaded[0],
                     }
+
+                    logger.debug('reporting status as: %s', status_dict)
                     resp_str, resp_code = self.api_client.make_request(
-                        '/uploads/%s/update' % upload_id,
-                        data=json.dumps(finish_dict),
+                        '/uploads/%s/update' % self.upload_id,
+                        data=json.dumps(status_dict),
                         verb='POST')
 
-                except:
-                    pass
+                except Exception, e:
+                    logger.error('could not report status:')
+                    logger.error(traceback.print_exc())
+                    logger.error(traceback.format_exc())
 
             time.sleep(update_interval)
 
@@ -621,6 +624,7 @@ class Uploader():
         self.num_files_to_upload[0] = 0
         self.num_files_to_process = len(upload_files)
         self.job_start_time = int(time.time())
+        self.upload_id = upload_id
 
         # reset md5_map
         self.md5_map = {}
