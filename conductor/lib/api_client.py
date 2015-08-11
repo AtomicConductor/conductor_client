@@ -16,6 +16,19 @@ class ApiClient():
         userpass = "%s:unused" % CONFIG['conductor_token']
         return userpass
 
+    def _make_request(self, verb, conductor_url, headers, params, data):
+        response = getattr(requests, verb.lower())(
+            conductor_url,
+            auth=HTTPBasicAuth(CONFIG['conductor_token'], 'unused'),
+            headers=headers,
+            params=params,
+            data=data)
+
+        # trigger an exception to be raised for 4XX or 5XX http responses
+        response.raise_for_status()
+
+        return response
+
     def make_request(self, uri_path="/", headers=None, params=None, data=None, verb=None):
         '''
         verb: PUT, POST, GET, DELETE, HEAD
@@ -40,13 +53,7 @@ class ApiClient():
         auth = CONFIG['conductor_token']
 
         response = common.retry(
-            lambda:
-            getattr(requests, verb.lower())(
-                conductor_url,
-                auth=HTTPBasicAuth(CONFIG['conductor_token'], 'unused'),
-                headers=headers,
-                params=params,
-                data=data)
+            lambda: self._make_request(verb, conductor_url, headers, params, data)
         )
 
 
