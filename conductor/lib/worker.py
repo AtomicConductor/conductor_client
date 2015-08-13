@@ -15,7 +15,7 @@ The class defines the basic function and data structures that all workers need.
 TODO: move this into it's own lib
 '''
 class ThreadWorker():
-    def __init__(self, in_queue, out_queue=None):
+    def __init__(self, in_queue, out_queue=None, error_queue=None):
         # the in_queue provides work for us to do
         self.in_queue = in_queue
 
@@ -42,7 +42,14 @@ class ThreadWorker():
                 job = self.in_queue.get(True)
 
                 # start working on job
-                output = self.do_work(job)
+                try:
+                    output = self.do_work(job)
+                except Exception, e:
+                    if error_queue:
+                        error_queue.put(e)
+                        continue
+                    else:
+                        raise e
 
                 # put result in out_queue
                 if output and self.out_queue:

@@ -22,9 +22,9 @@ This worker will pull filenames from in_queue and compute it's base64 encoded
 md5, which will be added to out_queue
 '''
 class MD5Worker(worker.ThreadWorker):
-        def __init__(self, in_queue, out_queue, md5_map):
+        def __init__(self, in_queue, out_queue, error_queue, md5_map):
             # logger.debug('starting init for MD5Worker')
-            worker.ThreadWorker.__init__(self, in_queue, out_queue)
+            worker.ThreadWorker.__init__(self, in_queue, out_queue, error_queue)
             self.md5_map = md5_map
 
         # TODO: optimize blocksize
@@ -59,15 +59,13 @@ This worker will batch the computed md5's into self.batch_size chunks.
 It will send a partial batch after waiting self.wait_time seconds
 '''
 class MD5OutputWorker(worker.ThreadWorker):
-    def __init__(self, in_queue, out_queue):
+    def __init__(self, in_queue, out_queue, error_queue):
         # logger.debug('starting init for MD5OutputWorker')
         worker.ThreadWorker.__init__(self, in_queue, out_queue)
-        self.batch_size = 100 # the controlls the batch size for http get_signed_urls
-        # TODO
-        self.batch_size = 20
+        self.batch_size = 20 # the controlls the batch size for http get_signed_urls
         self.wait_time = 5
         self.batch={}
-
+        self.error_queue = error_queue
 
     def target(self):
 
@@ -96,6 +94,8 @@ class MD5OutputWorker(worker.ThreadWorker):
             # waiting for self.wait_time seconds
             except Queue.Empty:
                 ship_batch()
+            except Exception, e:
+                self.error_queue.put(e)
 
 
 
@@ -107,9 +107,9 @@ of files that need to be uploaded.
 Each item in the return list is added to the out_queue.
 '''
 class HttpBatchWorker(worker.ThreadWorker):
-    def __init__(self, in_queue, out_queue):
+    def __init__(self, in_queue, out_queue, error_queue):
         # logger.debug('starting init for HttpBatchWorker')
-        worker.ThreadWorker.__init__(self, in_queue, out_queue)
+        worker.ThreadWorker.__init__(self, in_queue, out_queue, error_queue)
 
     def make_request(self, job):
         response_string, response_code = self.api_client.make_request(
@@ -157,9 +157,9 @@ reference, as it needs to be accessed and reset by the caller.
 This worker can only be run in a single thread
 '''
 class FileStatWorker(worker.ThreadWorker):
-    def __init__(self, in_queue, out_queue, bytes_to_upload, num_files_to_upload):
+    def __init__(self, in_queue, out_queue, error_queue, bytes_to_upload, num_files_to_upload):
         # logger.debug('starting init for FileStatWorker')
-        worker.ThreadWorker.__init__(self, in_queue, out_queue)
+        worker.ThreadWorker.__init__(self, in_queue, out_queue, error_queue)
         self.bytes_to_upload = bytes_to_upload
         self.num_files_to_upload = num_files_to_upload
 
@@ -205,9 +205,9 @@ This woker recieves a (filepath: signed_upload_url) pair and performs an upload
 of the specified file to the provided url.
 '''
 class UploadWorker(worker.ThreadWorker):
-    def __init__(self, in_queue, out_queue, md5_map):
+    def __init__(self, in_queue, out_queue, error_queue, md5_map):
         # logger.debug('starting init for HttpBatchWorker')
-        worker.ThreadWorker.__init__(self, in_queue, out_queue)
+        worker.ThreadWorker.__init__(self, in_queue, out_queue, error_queue)
         self.chunk_size = 1048576 # 1M
         self.md5_map = md5_map
         self.report_size = 10485760 # 10M
@@ -308,9 +308,9 @@ The UploadProgressWorker aggregrates the total amount of bytes that have been up
 It gets bytes uploaded from worker threads and sums them into the bytes_uploaded arg
 '''
 class UploadProgressWorker(worker.ThreadWorker):
-    def __init__(self, in_queue, out_queue, bytes_uploaded):
+    def __init__(self, in_queue, out_queue, error_queue, bytes_uploaded):
         # logger.debug('starting init for HttpBatchWorker')
-        worker.ThreadWorker.__init__(self, in_queue, out_queue)
+        worker.ThreadWorker.__init__(self, in_queue, out_queue, error_queue)
         self.bytes_uploaded = bytes_uploaded
 
     def do_work(self, job):
@@ -382,6 +382,7 @@ class Uploader():
 
     def create_worker_pools(self):
         # create input and output for the md5 workers
+        error_queue = Queue.Queue()
         md5_process_queue = Queue.Queue()
         md5_output_queue = Queue.Queue()
         http_batch_queue = Queue.Queue()
@@ -406,30 +407,35 @@ class Uploader():
         self.worker_queue_dict = {}
 
         # create md5 worker pool threads
-        md5_worker = MD5Worker(md5_process_queue, md5_output_queue, self.md5_map)
+        md5_worker = MD5Worker(md5_process_queue, md5_output_queue, error_queue, self.md5_map)
         md5_worker.start()
 
         # create md5 output worker
-        md5_output_worker = MD5OutputWorker(md5_output_queue,http_batch_queue)
+        md5_output_worker = MD5OutputWorker(md5_output_queue,http_batch_queue, error_queue)
         md5_output_worker.start()
 
         # creat http batch worker
-        http_batch_worker = HttpBatchWorker(http_batch_queue, file_stat_queue)
+        http_batch_worker = HttpBatchWorker(http_batch_queue, file_stat_queue, error_queue)
         # http_batch_worker.start(self.process_count/4)
         http_batch_worker.start(self.process_count)
 
         # create filestat worker
-        file_stat_worker = FileStatWorker(file_stat_queue, upload_queue, self.bytes_to_upload, self.num_files_to_upload)
+        file_stat_worker = FileStatWorker(file_stat_queue,
+                                          upload_queue,
+                                          error_queue,
+                                          self.bytes_to_upload,
+                                          self.num_files_to_upload)
         file_stat_worker.start() # forced to a single thread
 
         # create upload workers
-        upload_worker = UploadWorker(upload_queue, upload_progress_queue, self.md5_map)
+        upload_worker = UploadWorker(upload_queue, upload_progress_queue, error_queue, self.md5_map)
         upload_worker.start(self.process_count)
-        # TODO
-        # upload_worker.start(2)
 
         # create upload progress worker
-        upload_worker = UploadProgressWorker(upload_progress_queue, None, self.bytes_uploaded)
+        upload_progress_worker = UploadProgressWorker(upload_progress_queue,
+                                             None,
+                                             error_queue,
+                                             self.bytes_uploaded)
         upload_worker.start() # forced to a single thread
 
         logger.debug('done creating worker pools')
