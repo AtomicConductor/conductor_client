@@ -36,22 +36,22 @@ def setup_logger():
 LOGGER = setup_logger()
 
 
-# Use this global variable across all modules to query whether the the SIGINT signal has been triggered
+# Create trap for SIGINT that sets common.EXIT to true
 SIGINT_EXIT = False
-
-def signal_handler(sig_number, stack_frame):
+def signal_handler(sig_number,stack_frame):
     LOGGER.debug('in signal_handler. setting common.SIGINT_EXIT to True')
     global SIGINT_EXIT
     SIGINT_EXIT = True
+signal.signal(signal.SIGINT, signal_handler)
 
 def register_sigint_signal_handler(signal_handler=signal_handler):
     signal.signal(signal.SIGINT, signal_handler)
 
 
-
 # ##
 # Global Functions
 # ##
+
 
 def on_windows():
     '''
@@ -138,7 +138,7 @@ class Config():
         LOGGER.debug('base dir is %s' % self.base_dir())
 
         # create config. precedence is ENV, CLI, default
-        combined_config = self.default_config
+        combined_config     = self.default_config
         combined_config.update(self.get_user_config())
         combined_config.update(self.get_environment_config())
 
@@ -155,16 +155,16 @@ class Config():
         LOGGER.debug('config is:\n%s' % self.config)
 
 
-    def validate_client_token(self, config):
+    def validate_client_token(self,config):
         """
         load conductor config. default to base_dir/auth/CONDUCTOR_TOKEN.pem
         if token_path is not specified in config
         """
         if not 'token_path' in config:
-            config['token_path'] = os.path.join(self.base_dir(), 'auth/CONDUCTOR_TOKEN.pem')
+            config['token_path'] = os.path.join(self.base_dir(),'auth/CONDUCTOR_TOKEN.pem')
         token_path = config['token_path']
         try:
-            with open(token_path, 'r') as f:
+            with open(token_path,'r') as f:
                 conductor_token = f.read().rstrip()
         except IOError, e:
             message = 'could not open client token file in %s\n' % token_path
@@ -186,7 +186,7 @@ class Config():
         for env in os.environ:
             if env.startswith('CONDUCTOR_'):
                 # skip these options
-                if env in ['CONDUCTOR_DEVELOPMENT', 'CONDUCTOR_CONFIG']:
+                if env in ['CONDUCTOR_DEVELOPMENT','CONDUCTOR_CONFIG']:
                     continue
                 # if we find a match, strip the conductor_ prefix and downcase it
                 config_name = env[10:].lower()

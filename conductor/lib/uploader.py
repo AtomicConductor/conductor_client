@@ -155,7 +155,7 @@ class Uploader():
                     finish_dict['status'] = 'server_pending'
                 else:
                     finish_dict['status'] = 'success'
-                resp_str, resp_code = self.api_util.make_request('/uploads/%s/finish' % upload_id,
+                resp_str, resp_code = self.api_client.make_request('/uploads/%s/finish' % upload_id,
                                                                  data=json.dumps(finish_dict),
                                                                  verb='PUT')
 

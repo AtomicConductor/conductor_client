@@ -8,6 +8,7 @@ import imp
 import json
 import os
 import multiprocessing
+import ntpath
 import sys
 import time
 import threading
@@ -142,11 +143,16 @@ class Download(object):
 
                     #  Do not run as a daemon if self.job_id was specified...
                     if self.job_id:
+                        logger.debug("Jobs are done, exit!")
                         common.SIGINT_EXIT = True
                 else:
-                    logger.debug("nothing to download. sleeping...")
-                    sys.stdout.write('.')
-                    self.nap()
+                    if self.job_id:
+                        logger.debug("nothing to download! exiting...")
+                        common.SIGINT_EXIT = True
+                    else:
+                        logger.debug("nothing to download. sleeping...")
+                        sys.stdout.write('.')
+                        self.nap()
             except Exception, e:
                 logger.error("caught exception %s" % e)
                 logger.error(traceback.format_exc())
