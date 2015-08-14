@@ -7,6 +7,13 @@ import conductor, conductor.setup
 
 from conductor.lib import api_client, common
 
+
+'''
+This is used to signal to workers if work should continue or not
+'''
+WORKING=True
+
+
 '''
 Abstract worker class.
 
@@ -52,8 +59,7 @@ class ThreadWorker():
                         raise e
 
                 # put result in out_queue
-                if output and self.out_queue:
-                    self.out_queue.put(output)
+                self.put_job(output)
 
                 # signal that we are done with this task (needed for the
                 # Queue.join() operation to work.
@@ -74,5 +80,20 @@ class ThreadWorker():
             # make sure threads don't stop the program from exiting
             thd.daemon = True
 
-        # start thread
+            # start thread
             thd.start()
+
+
+    def put_job(self,job):
+        # if were not supposed to be working, don't create new jobs
+        if not WORKING:
+            return
+        # don't to anything if we were not provided an out_queue
+        if not self.out_queue:
+            return
+        # dont create jobs with None or empty things
+        if not job:
+            return
+
+        self.out_queue.put(job)
+        return True

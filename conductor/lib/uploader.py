@@ -72,7 +72,7 @@ class MD5OutputWorker(worker.ThreadWorker):
         # helper function to ship batch
         def ship_batch():
             if self.batch:
-                self.out_queue.put(json.dumps(self.batch))
+                self.put_job(json.dumps(self.batch))
                 self.batch = {}
 
         while not common.SIGINT_EXIT:
@@ -186,7 +186,7 @@ class FileStatWorker(worker.ThreadWorker):
             # logger.debug('self.num_files_to_upload is %s', self.num_files_to_upload)
 
             # logger.debug('adding %s to list of files to be uploaded. Size: %s', path, byte_count)
-            self.out_queue.put((path,upload_url, byte_count))
+            self.put_job((path,upload_url, byte_count))
 
         ''' make sure we return None, so no message is automatically added to the
         out_queue '''
@@ -219,7 +219,7 @@ class UploadWorker(worker.ThreadWorker):
             if amount_of_bytes_to_report < self.report_size:
                 return
 
-        self.out_queue.put(amount_of_bytes_to_report)
+        self.put_job(amount_of_bytes_to_report)
         self.bytes_reported += amount_of_bytes_to_report
 
     def chunked_reader(self, filename):
