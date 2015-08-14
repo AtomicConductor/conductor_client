@@ -75,7 +75,7 @@ class MD5OutputWorker(worker.ThreadWorker):
                 self.put_job(json.dumps(self.batch))
                 self.batch = {}
 
-        while not common.SIGINT_EXIT:
+        while worker.WORKING and not common.SIGINT_EXIT:
             try:
                 # block on the queue with a self.wait_time second timeout
                 file_md5_tuple = self.in_queue.get(True, self.wait_time)
@@ -226,7 +226,7 @@ class UploadWorker(worker.ThreadWorker):
 
     def chunked_reader(self, filename):
         with open(filename, 'rb') as file:
-            while True and not common.SIGINT_EXIT:
+            while worker.WORKING and not common.SIGINT_EXIT:
                 data = file.read(self.chunk_size)
                 if not data:
                     # we are done reading the file
