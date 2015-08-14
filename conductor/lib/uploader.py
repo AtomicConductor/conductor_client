@@ -110,6 +110,7 @@ class HttpBatchWorker(worker.ThreadWorker):
     def __init__(self, in_queue, out_queue, error_queue):
         # logger.debug('starting init for HttpBatchWorker')
         worker.ThreadWorker.__init__(self, in_queue, out_queue, error_queue)
+        self.api_client = api_client.ApiClient()
 
     def make_request(self, job):
         response_string, response_code = self.api_client.make_request(
@@ -128,6 +129,7 @@ class HttpBatchWorker(worker.ThreadWorker):
             pass
             # logger.info('file already uptodate')
         else:
+            # TODO: make this raise so retry works properly
             logger.error('response_string was %s' % response_string)
             logger.error('response code was %s' % response_code)
             os._exit(1)
@@ -232,7 +234,7 @@ class UploadWorker(worker.ThreadWorker):
                 self.bytes_read += len(data)
 
                 # this should block until chunk is uploaded
-
+                # TODO: can we wrap this in a retry?
                 try:
                     yield data
                 except Exception, e:
@@ -344,6 +346,7 @@ class Uploader():
         self.md5_map = {}
         self.worker_pools = []
         self.create_worker_pools()
+        self.start_error_handler()
         self.working = False
         # self.working = True
         self.job_start_time = 0
@@ -383,6 +386,7 @@ class Uploader():
     def create_worker_pools(self):
         # create input and output for the md5 workers
         error_queue = Queue.Queue()
+        self.error_queue = error_queue
         md5_process_queue = Queue.Queue()
         md5_output_queue = Queue.Queue()
         http_batch_queue = Queue.Queue()
@@ -399,6 +403,7 @@ class Uploader():
             file_stat_queue,
             upload_queue,
             upload_progress_queue,
+            error_queue,
         ]
 
 
@@ -487,6 +492,54 @@ class Uploader():
         thd.start()
 
 
+    def drain_queues(self):
+        # http://stackoverflow.com/questions/6517953/clear-all-items-from-the-queue
+        for queue in self.worker_queues:
+            queue.queue.clear()
+
+        return True
+
+    def fail_upload(self, error):
+        self.working = False
+        worker.WORKING = False
+
+        # drain work from queues
+        self.drain_queues()
+
+        # grab the stacktrace
+        # it sucks to do this but it's the only/easiest way that I found to get the traceback
+        try:
+            raise error
+        except:
+            error_message = traceback.print_exc()
+            error_message += traceback.format_exc()
+
+        # report error_message to the app
+        logger.debug('failing upload due to:\n%s', error_message)
+        resp_str, resp_code = self.api_client.make_request(
+            '/uploads/%s/fail' % self.upload_id,
+            data=error_message,
+            verb='POST')
+
+        return True
+
+    def error_handler_target(self):
+        while True:
+            error = self.error_queue.get(True)
+            self.fail_upload(error)
+
+    def start_error_handler(self):
+        logger.debug('creating error handler thread')
+        thd = Thread(target = self.error_handler_target)
+
+        # make sure threads don't stop the program from exiting
+        thd.daemon = True
+
+        # start thread
+        thd.start()
+
+        return None
+
     def estimated_time_remaining(self, elapsed_time, percent_complete):
         '''
         This method estimates the time that is remaining, given the elapsed time
@@ -521,6 +574,7 @@ class Uploader():
             'file_stat_queue',
             'upload_queue',
             'upload_progress_queue',
+            'error_queue',
         ]
 
         msg = '####################################\n'
@@ -636,6 +690,7 @@ class Uploader():
         self.num_files_to_process = len(upload_files)
         self.job_start_time = int(time.time())
         self.upload_id = upload_id
+        worker.WORKING = True
 
         # reset md5_map
         self.md5_map = {}

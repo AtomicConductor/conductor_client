@@ -29,7 +29,8 @@ class ThreadWorker():
         # results of work are put into the out_queue
         self.out_queue = out_queue
 
-        self.api_client = api_client.ApiClient()
+        # exceptions will be put here if provided
+        self.error_queue = error_queue
 
     '''
     This ineeds to be implmented for each worker type. The work task from
@@ -52,8 +53,8 @@ class ThreadWorker():
                 try:
                     output = self.do_work(job)
                 except Exception, e:
-                    if error_queue:
-                        error_queue.put(e)
+                    if self.error_queue:
+                        self.error_queue.put(e)
                         continue
                     else:
                         raise e
