@@ -88,14 +88,15 @@ class MD5OutputWorker(worker.ThreadWorker):
                     ship_batch()
 
                 # mark this task as done
-                self.in_queue.task_done()
+                self.mark_done()
 
             # This happens if no new messages are put into the queue after
             # waiting for self.wait_time seconds
             except Queue.Empty:
                 ship_batch()
             except Exception, e:
-                self.error_queue.put(e)
+                error_message = traceback.format_exc()
+                self.error_queue.put(error_message)
 
 
 
@@ -132,15 +133,12 @@ class HttpBatchWorker(worker.ThreadWorker):
             # TODO: make this raise so retry works properly
             logger.error('response_string was %s' % response_string)
             logger.error('response code was %s' % response_code)
-            os._exit(1)
+            # os._exit(1)
 
     def do_work(self, job):
         # send a batch request
 
-        try:
-            url_list = common.retry(lambda: self.make_request(job))
-        except Exception, e:
-            pass
+        url_list = common.retry(lambda: self.make_request(job))
 
         return url_list
 
@@ -242,7 +240,7 @@ class UploadWorker(worker.ThreadWorker):
                     logger.error(traceback.print_exc())
                     logger.error(traceback.format_exc())
                     # TODO:
-                    exit(1)
+                    # exit(1)
 
                 # report upload progress
                 self.report_status()
@@ -268,38 +266,17 @@ class UploadWorker(worker.ThreadWorker):
             'Content-Type': 'application/octet-stream',
         }
 
-        # logger.debug('%$%$%$%$%$%$%$ file deets:')
-        # logger.debug('headers are %s', headers)
-        # logger.debug('md5 is %s', md5)
-        # logger.debug('upload_url is %s', upload_url)
-        # logger.debug('filename is %s', filename)
+        response = common.retry(lambda: requests.put(
+            upload_url,
+            data=self.chunked_reader(filename),
+            headers=headers))
 
+        if response.status_code != 200:
+            logger.error('could not upload %s', filename )
+            logger.error('url: %s', upload_url)
+            logger.error('response.status_code is %s', response.status_code)
+            logger.error('response.text is %s', response.text)
 
-        try:
-            # logger.info('trying to upload %s to %s', filename, upload_url)
-            # response = requests.put(upload_url, data=self.chunked_reader(), headers=headers)
-            response = common.retry(lambda: requests.put(
-                upload_url,
-                data=self.chunked_reader(filename),
-                headers=headers))
-
-            if response.status_code != 200:
-                logger.error('could not upload %s', filename )
-                logger.error('url: %s', upload_url)
-                logger.error('response.status_code is %s', response.status_code)
-                logger.error('response.text is %s', response.text)
-                os._exit(1)
-
-        except Exception, e:
-            logger.error('hit error')
-            logger.error(traceback.print_exc())
-            logger.error(traceback.format_exc())
-            # TODO:
-            exit(1)
-
-
-        # TODO: verify upload
-        # return resp, content
         # logger.debug('finished uploading %s', self.filename)
         return None
 
@@ -447,7 +424,7 @@ class Uploader():
                                              None,
                                              error_queue,
                                              self.bytes_uploaded)
-        upload_worker.start() # forced to a single thread
+        upload_progress_worker.start() # forced to a single thread
 
         logger.debug('done creating worker pools')
 
@@ -499,29 +476,26 @@ class Uploader():
 
 
     def drain_queues(self):
+        logger.error('draining queues')
         # http://stackoverflow.com/questions/6517953/clear-all-items-from-the-queue
         for queue in self.worker_queues:
+            queue.mutex.acquire()
             queue.queue.clear()
+            queue.all_tasks_done.notify_all()
+            queue.unfinished_tasks = 0
+            queue.mutex.release()
 
         return True
 
-    def fail_upload(self, error):
-        self.working = False
+    def fail_upload(self, error_message):
+        logger.error('failing upload due to: \n%s' % error_message)
+        # self.working = False
         worker.WORKING = False
 
         # drain work from queues
         self.drain_queues()
 
-        # grab the stacktrace
-        # it sucks to do this but it's the only/easiest way that I found to get the traceback
-        try:
-            raise error
-        except:
-            error_message = traceback.print_exc()
-            error_message += traceback.format_exc()
-
         # report error_message to the app
-        logger.debug('failing upload due to:\n%s', error_message)
         resp_str, resp_code = self.api_client.make_request(
             '/uploads/%s/fail' % self.upload_id,
             data=error_message,

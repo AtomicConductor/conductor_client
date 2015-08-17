@@ -1,10 +1,12 @@
 import Queue
 import thread
+import traceback
 from threading import Thread
 
 
 import conductor, conductor.setup
 
+from conductor.setup import CONFIG, logger
 from conductor.lib import api_client, common
 
 
@@ -54,7 +56,10 @@ class ThreadWorker():
                     output = self.do_work(job)
                 except Exception, e:
                     if self.error_queue:
-                        self.error_queue.put(e)
+
+                        error_message = traceback.format_exc()
+                        self.mark_done()
+                        self.error_queue.put(error_message)
                         continue
                     else:
                         raise e
@@ -64,9 +69,14 @@ class ThreadWorker():
 
                 # signal that we are done with this task (needed for the
                 # Queue.join() operation to work.
-                self.in_queue.task_done()
+                self.mark_done()
 
             except Exception:
+                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
+                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
+                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
+                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
+                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
                 logger.error(traceback.print_exc())
                 logger.error(traceback.format_exc())
 
@@ -85,16 +95,29 @@ class ThreadWorker():
             thd.start()
 
 
+    def mark_done(self):
+        try:
+            self.in_queue.task_done()
+        except ValueError:
+            # this will happen if we are draining queues
+            if WORKING:
+                # this should not happen if we are still working
+                raise
+        return
+
+
+
     def put_job(self,job):
-        # if were not supposed to be working, don't create new jobs
-        if not WORKING:
-            return
         # don't to anything if we were not provided an out_queue
         if not self.out_queue:
             return
         # dont create jobs with None or empty things
         if not job:
             return
+        # if were not supposed to be working, don't create new jobs
+        if not WORKING:
+            return
 
+        # add item to job
         self.out_queue.put(job)
         return True
