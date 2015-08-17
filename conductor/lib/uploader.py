@@ -336,24 +336,30 @@ class Uploader():
         self.api_client = api_client.ApiClient()
         args = args or {}
         self.location = args.get("location") or CONFIG.get("location")
+
+    def prepare_workers(self):
+        logger.debug('preparing workers...')
         self.process_count = CONFIG['thread_count']
         common.register_sigint_signal_handler()
-        logger.info('creating worker pools...')
         self.num_files_to_process = 0
         self.num_files_to_upload = [0] # hack for passing an int by reference
         self.bytes_to_upload = [0] # hack for passing an int by reference
         self.bytes_uploaded = [0] # hack for passing an int by reference
         self.md5_map = {}
         self.worker_pools = []
+        logger.info('creating worker pools...')
         self.create_worker_pools()
         self.start_error_handler()
         self.working = False
         # self.working = True
         self.job_start_time = 0
+        logger.debug('creating report status thread...')
         self.create_report_status_thread()
+        logger.info('creating console status thread...')
         self.create_print_status_thread()
 
-    def get_upload_url(self, filename, md5_hash):
+
+    def get_upload_url(self, filename):
         uri_path = '/api/files/get_upload_url'
         # TODO: need to pass md5 and filename
         md5 = self.get_base64_md5(filename)
@@ -722,6 +728,7 @@ class Uploader():
 
     def main(self):
         logger.info('Starting Uploader...')
+        self.prepare_workers()
 
         while not common.SIGINT_EXIT:
             try:
