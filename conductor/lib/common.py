@@ -81,7 +81,9 @@ def retry(function, retry_count=5):
             LOGGER.debug('failed due to: \n%s' % traceback.format_exc())
             if i < retry_count:
                 check_for_early_release(e)
-                sleep_time = int(math.pow(2, i))
+                # exponential backoff with 250ms base
+                sleep_time_in_ms = 250 * int(math.pow(2, i))
+                sleep_time = sleep_time_in_ms / 1000.0
                 LOGGER.debug('retrying after %s seconds' % sleep_time)
                 time.sleep(sleep_time)
                 i += 1
