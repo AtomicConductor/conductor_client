@@ -1,9 +1,11 @@
 
 import os
-import sys
-from PySide import QtGui, QtCore
-
 import imp
+import sys
+import uuid
+from PySide import QtGui, QtCore
+from shiboken import wrapInstance
+from maya import OpenMayaUI
 
 try:
     imp.find_module('conductor')
@@ -127,18 +129,31 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
         Load the UI
         '''
-        ui = cls()
+        global maya_window  # This global statement is particularly important (though it may not appear so when using simple usecases that don't use complex inheritence structures).
+        maya_window = get_maya_window()
+        ui = cls(parent=maya_window)
         ui.show()
 
     def __init__(self, parent=None):
         super(MayaConductorSubmitter, self).__init__(parent=parent)
+        self.setMayaWindow()
         self.refreshUi()
 
     def initializeUi(self):
         super(MayaConductorSubmitter, self).initializeUi()
 
 
+    def setMayaWindow(self):
+        '''
+        Set a few QT paramaters so that the ui plays nicely with Maya's.
+        '''
+        # Set a unique object name string so Maya can easily look it up
+        self.setObjectName('%s_%s' % (self.__class__.__name__, uuid.uuid4()))
+        # Make this widget appear as a standalone window even though it is parented
+        self.setWindowFlags(QtCore.Qt.Window)
+
     def refreshUi(self):
+
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
@@ -218,7 +233,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         if invalid_filepaths:
             message = "Found invalid filepaths:\n\n%s" % "\n\n".join(invalid_filepaths)
             pyside_utils.launch_error_box("Invalid filepaths!", message, parent=self)
-            return
+            raise Exception(message)
 
         return True
 
@@ -264,9 +279,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # If an "abort" key has a True value then abort submission
         if data.get("abort"):
             logger.info("Conductor: Submission aborted")
-            return
+            return data
 
-        super(MayaConductorSubmitter, self).runConductorSubmission(data)
+        return super(MayaConductorSubmitter, self).runConductorSubmission(data)
 
 
 
@@ -291,5 +306,12 @@ class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):
 
 
 
+
+def get_maya_window():
+    '''
+    Return the Qt instance of Maya's MainWindow
+    '''
+    mainWindowPtr = OpenMayaUI.MQtUtil.mainWindow()
+    return wrapInstance(long(mainWindowPtr), QtGui.QMainWindow)
 
 

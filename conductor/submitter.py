@@ -57,6 +57,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
     # corresponds to the core count of the conductor instance type
     default_instance_type = 16
 
+    link_color = "rgb(200,100,100)"
+
     def __init__(self, parent=None):
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
@@ -329,6 +331,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         return self.ui_force_upload_chkbx.isChecked()
 
+    @pyside_utils.wait_cursor
+    @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
     def runConductorSubmission(self, data):
         '''
         Instantiate a Conductor Submit object with the given conductor_args 
@@ -353,22 +357,25 @@ class ConductorSubmitter(QtGui.QMainWindow):
             pyside_utils.launch_error_box(title, message, self)
             raise
 
-        # If the job submitted successfully (201)
+        return response_code, response
+
+
+    def launch_result_dialog(self, response_code, response):
+
+        # If the job submitted successfully
         if response_code in [201, 204]:
-            jobid = response.get("jobid")
+            job_id = str(response.get("jobid") or 0).zfill(5)
             title = "Job Submitted"
-            message = "Job submitted: %s" % jobid
-            pyside_utils.launch_message_box(title, message, self)
-        # All other response codes (anython other than 201) indicate a submission failue.
+            job_url = conductor.setup.CONFIG['url'] + "/job/" + job_id
+            message = ('<html><head/><body><p>Job submitted: '
+                       '<a href="%s"><span style=" text-decoration: underline; '
+                       'color:%s;">%s</span></a></p></body></html>') % (job_url, self.link_color, job_id)
+            pyside_utils.launch_message_box(title, message, is_richtext=True, parent=self)
+        # All other response codes indicate a submission failure.
         else:
             title = "Job Submission Failure"
             message = "Job submission failed: error %s" % response_code
-            pyside_utils.launch_error_box(title, message, self)
-
-
-
-
-
+            pyside_utils.launch_error_box(title, message, parent=self)
 
 
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
@@ -397,9 +404,14 @@ class ConductorSubmitter(QtGui.QMainWindow):
         is also an available/appropriate methodology.  
         
         '''
+
         data = self.runPreSubmission()
-        result = self.runConductorSubmission(data)
-        return self.runPostSubmission(result)
+        response_code, response = self.runConductorSubmission(data)
+        self.runPostSubmission(response_code)
+
+        self.launch_result_dialog(response_code, response)
+
+
 
 
     def runPreSubmission(self):
@@ -458,6 +470,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
         ui = cls()
         ui.show()
         app.exec_()
+
+
 
 
 
