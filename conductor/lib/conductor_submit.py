@@ -185,8 +185,10 @@ class Submit():
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
             logger.debug("%s: %s", arg_name, arg_value)
 
-        # TODO: verify that the response request is valid
+
         response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
+        if response_code not in [201, 204]:
+            raise Exception("Submitting Upload job failed: Error %s ...\n%s" % (response_code, response))
         return response, response_code
 
 

@@ -1,3 +1,4 @@
+from functools import wraps
 from PySide import QtGui, QtCore, QtUiTools
 
 class UiLoader(QtUiTools.QUiLoader):
@@ -42,9 +43,65 @@ class UiLoader(QtUiTools.QUiLoader):
         return widget
 
 
-def launch_message_box(title, message, parent=None):
+def wait_cursor(func):
+    """
+    Wraps the decorated function so that while it is running, the mouse
+    cursor changes to waiting icon.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwds):
+        try:
+            QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+            return func(*args, **kwds)
+        finally:
+            QtGui.QApplication.restoreOverrideCursor()
+            # Not sure if this is needed
+            QtGui.QApplication.processEvents()
+
+    return wrapper
+
+
+
+def wait_message(title, message):
+    """
+    Wraps the decorated method so that while it runs, a dialog box will
+    be displayed with the given message and title
+    """
+
+    def decorator(func):
+
+        @wraps(func)
+        def wrapper(*args, **kwds):
+            parent = args[0]  # The first argument will be the wrapped method's class instance (i.e. self), which will be used as the parent
+            dialog = QtGui.QDialog(parent=parent)
+            layout = QtGui.QHBoxLayout()
+            dialog.label = QtGui.QLabel()
+            dialog.label.setText(message)
+            dialog.label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            layout.addWidget(dialog.label)
+            dialog.setLayout(layout)
+            dialog.setWindowTitle(title)
+            dialog.show()
+            # TODO: This stupid for-loop with a print statement is hack to force a redraw/update to the dialog. Otherwise it's blank. Tried a million things.  This is the only one that works..most of the time.
+            for i in range(5):
+                print "",
+                QtGui.qApp.processEvents()
+            try:
+                return func(*args, **kwds)
+            finally:
+                dialog.done(0)
+        return wrapper
+    return decorator
+
+
+
+
+def launch_message_box(title, message, is_richtext=False, parent=None):
     """
     Launches a very basic message dialog box with the given title and message. 
+    
+    is_richtext: bool. If True, willl set the given as RichText.  This will also
+                 allow the text to support hyperlink behavior.
     """
 
     # create a QMessageBox
@@ -59,6 +116,11 @@ def launch_message_box(title, message, parent=None):
     # Set the text to be selectable by a mouse
     text_label = dialog.findChild(QtGui.QLabel, "qt_msgbox_label")
     text_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+    if is_richtext:
+        text_label.setTextInteractionFlags(text_label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
+        text_label.setTextFormat(QtCore.Qt.RichText)
+        text_label.setOpenExternalLinks(True);
+
     return dialog.exec_()
 
 
