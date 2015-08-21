@@ -1,12 +1,19 @@
 import urlparse
+import os
 
-import requests
-from requests.auth import HTTPBasicAuth
 
 import conductor, conductor.setup
 
 from conductor.setup import *
 from conductor.lib import common
+
+import requests
+from requests.auth import HTTPBasicAuth
+# TODO:
+# appspot_dot_com_cert = os.path.join(common.base_dir(),'auth','appspot_dot_com_cert2')
+# load appspot.com cert into requests lib
+# verify = appspot_dot_com_cert
+
 
 class ApiClient():
     def __init__(self):
