@@ -508,8 +508,7 @@ class Uploader():
                 time.sleep(self.sleep_time)
                 continue
 
-        # wait for work to finish
-        self.wait_for_workers()
+        logger.info('exiting uploader')
 
 def run_uploader(args):
     '''
