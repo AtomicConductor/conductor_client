@@ -196,7 +196,7 @@ class Submit():
         upload_files = self.get_upload_files()
         if self.local_upload:
             uploader_ = uploader.Uploader()
-            uploader_.run_uploads(upload_files)
+            uploader_.handle_upload_response(upload_files)
         # Submit the job to conductor
         response, response_code = self.send_job(upload_files=upload_files)
         return json.loads(response), response_code

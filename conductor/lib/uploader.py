@@ -214,10 +214,10 @@ class Uploader():
         self.api_client = api_client.ApiClient()
         args = args or {}
         self.location = args.get("location") or CONFIG.get("location")
+        self.process_count = CONFIG['thread_count']
 
     def prepare_workers(self):
         logger.debug('preparing workers...')
-        self.process_count = CONFIG['thread_count']
         common.register_sigint_signal_handler()
         self.num_files_to_process = 0
         self.working = False
@@ -419,7 +419,9 @@ class Uploader():
 
         return True
 
-    def handle_upload_response(self, upload_files, upload_id):
+    def handle_upload_response(self, upload_files, upload_id=None ):
+        self.prepare_workers()
+
         # reset counters
         self.num_files_to_process = len(upload_files)
         self.job_start_time = int(time.time())
@@ -443,9 +445,9 @@ class Uploader():
         # self.manager.
 
         # report upload status
-        if output == True:
+        if output == True and upload_id:
             self.mark_upload_finished(upload_id)
-        else:
+        elif upload_id:
             self.mark_upload_failed(output, upload_id)
 
         # signal to the reporter to stop working
@@ -458,9 +460,8 @@ class Uploader():
         return
 
 
-    def main(self):
+    def main(self, run_one_loop=False):
         logger.info('Starting Uploader...')
-        self.prepare_workers()
 
         while not common.SIGINT_EXIT:
             try:
