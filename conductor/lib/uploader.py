@@ -489,8 +489,8 @@ class Uploader():
 
                 try:
                     json_data = json.loads(resp_str)
-                    # logger.debug('json_data is: %s', json_data)
-                    upload_files = json_data['upload_files'].split(',')
+                    # TODO: consider failing if the md5's have changed since submission
+                    upload_files = json_data['upload_files'].keys()
                 except ValueError, e:
                     logger.error('response was not valid json: %s', resp_str)
                     time.sleep(self.sleep_time)
