@@ -108,6 +108,20 @@ def run(cmd):
     status = command.returncode
     return status, stdout, stderr
 
+def get_md5(file_path, blocksize=65536):
+    hasher = hashlib.md5()
+    afile = open(file_path, 'rb')
+    buf = afile.read(blocksize)
+    while len(buf) > 0:
+        hasher.update(buf)
+        buf = afile.read(blocksize)
+    return hasher.digest()
+
+def get_base64_md5(*args, **kwargs):
+    md5 = get_md5(*args)
+    b64 = base64.b64encode(md5)
+    return b64
+
 def base_dir():
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 

@@ -26,24 +26,10 @@ class MD5Worker(worker.ThreadWorker):
         def __init__(self, *args, **kwargs):
             worker.ThreadWorker.__init__(self, *args, **kwargs)
 
-        def get_md5(self, file_path, blocksize=65536):
-            hasher = hashlib.md5()
-            afile = open(file_path, 'rb')
-            buf = afile.read(blocksize)
-            while len(buf) > 0:
-                hasher.update(buf)
-                buf = afile.read(blocksize)
-            return hasher.digest()
-
-        def get_base64_md5(self, *args, **kwargs):
-            md5 = self.get_md5(*args)
-            b64 = base64.b64encode(md5)
-            return b64
-
         def do_work(self, job):
             filename = job
             # logger.debug('md5: %s', filename)
-            md5 = self.get_base64_md5(filename)
+            md5 = common.get_base64_md5(filename)
             self.metric_store.set(filename, md5)
             return (filename, md5)
 
