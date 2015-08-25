@@ -3,7 +3,6 @@ import time
 import ast
 import json
 import hashlib
-from httplib2 import Http
 import os
 import Queue
 import sys
