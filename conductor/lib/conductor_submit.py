@@ -196,10 +196,13 @@ class Submit():
         upload_files = self.get_upload_files()
         if self.local_upload:
             uploader_ = uploader.Uploader()
-            uploader_.handle_upload_response(upload_files)
+            upload_error_message = uploader_.handle_upload_response(upload_files)
         # Submit the job to conductor
-        response, response_code = self.send_job(upload_files=upload_files)
-        return json.loads(response), response_code
+        if upload_error_message:
+            raise Exception("Could not upload files:\n%s" % upload_error_message)
+        else:
+            response, response_code = self.send_job(upload_files=upload_files)
+            return json.loads(response), response_code
 
 
     def get_upload_files(self):

@@ -440,23 +440,19 @@ class Uploader():
         # wait for work to finish
         output = self.manager.join()
 
-        # kill worker threads
-        # self.manager.
-
-        # report upload status
-        if output == True and upload_id:
-            self.mark_upload_finished(upload_id)
-        elif upload_id:
-            self.mark_upload_failed(output, upload_id)
-
         # signal to the reporter to stop working
         self.working = False
-        # self.manager = None
         logger.info('done uploading files')
 
-        # if not self.job_failed:
-
-        return
+        # report upload status
+        if output == True:
+            if upload_id:
+                self.mark_upload_finished(upload_id)
+            return None
+        else:
+            if upload_id:
+                self.mark_upload_failed(output, upload_id)
+            return output
 
 
     def main(self, run_one_loop=False):
