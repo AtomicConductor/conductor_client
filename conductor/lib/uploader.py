@@ -243,6 +243,11 @@ class Uploader():
     def report_status(self):
         update_interval = 20
         while True:
+
+            # don't report status if we are doing a local_upload
+            if not self.upload_id:
+                return
+
             if self.working:
                 bytes_to_upload = self.manager.metric_store.get('bytes_to_upload')
                 bytes_uploaded = self.manager.metric_store.get('bytes_uploaded')
