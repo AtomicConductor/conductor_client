@@ -221,6 +221,7 @@ class Uploader():
         self.num_files_to_process = 0
         self.working = False
         self.job_start_time = 0
+        self.upload_id = None
         logger.debug('creating report status thread...')
         self.create_report_status_thread()
         logger.info('creating console status thread...')
@@ -431,6 +432,7 @@ class Uploader():
         self.job_start_time = int(time.time())
         self.upload_id = upload_id
         self.job_failed = False
+        self.upload_id = upload_id
 
         # signal the reporter to start working
         self.working = True
