@@ -58,16 +58,19 @@ class Submit():
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
 
+        # Get any upload files/dirs listed in the config.yml
+        self.upload_paths = CONFIG.get('upload_paths', [])
+        assert isinstance(self.upload_paths, list), "Not a list: %s" % self.upload_paths
+        # Append any upload files/dirs specified via the command line
+        self.upload_paths.extend(args.get('upload_paths'))
+        logger.debug("Got upload_paths: %s" % (self.upload_paths))
+
         #  Get any environment variable settings from config.yml
-        arg_environment = args.get('env', None)
-        self.environment = self.merge_config_environment(arg_environment)
-
-        #  Also get any upload paths...
-        arg_upload_paths = args.get('upload_paths')
-        self.upload_paths = self.merge_config_uploads(arg_upload_paths)
-
+        self.environment = CONFIG.get("environment", {})
+        assert isinstance(self.environment, dict), "Not a dictionary: %s" % self.environment
+        # Then override any that were specified in the command line
+        self.environment.update(args.get('env', {}))
         logger.debug("Got environment: %s" % (self.environment))
-        logger.debug("Got upload paths: %s" % (self.upload_paths))
 
         local_upload = args.get('local_upload')
         # If the local_upload arge was specified by the user (i.e if it's not None), the use it
@@ -85,38 +88,6 @@ class Submit():
         self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
         logger.debug("Consumed args")
 
-
-    #  Merge any new or modified envirs from the config yaml file
-    def merge_config_environment(self, arg_environment):
-        environment = {}
-
-        #  First populate our output dictionary with anything specified in config
-        if 'environment' in CONFIG:
-            for key, value in CONFIG['environment'].iteritems():
-                environment[key] = value
-
-        #  Override any config settings with command line ones
-        if arg_environment:
-            for env in arg_environment:
-                key, value = env.split('=')
-                environment[key] = value
-        return environment
-
-    #  Get any upload paths from the config file
-    def merge_config_uploads(self, arg_upload_files):
-        upload_files = []
-
-        #  First grab any specified in the config
-        if 'upload_files' in CONFIG:
-            for file_path in CONFIG['upload_files']:
-                upload_files.append(file_path)
-
-        #  If anything was specified on the command line, tack it on
-        if arg_upload_files:
-            for upload_file in arg_upload_files:
-                upload_files.append(upload_file)
-
-        return upload_files
 
     def validate_args(self):
         '''
@@ -138,7 +109,7 @@ class Submit():
             - upload_only
             - running an actual command (cmd)
         '''
-        # logger.debug("upload_files: %s", upload_files) #
+        logger.debug("upload_files: %s", upload_files)
 
         submit_dict = {'owner':self.user}
         submit_dict['location'] = self.location
@@ -181,9 +152,9 @@ class Submit():
                 submit_dict['environment'] = self.environment
 
 
-        # logger.debug("send_job JOB ARGS:")
-        # for arg_name, arg_value in sorted(submit_dict.iteritems()):
-        #     logger.debug("%s: %s", arg_name, arg_value)
+        logger.debug("send_job JOB ARGS:")
+        for arg_name, arg_value in sorted(submit_dict.iteritems()):
+            logger.debug("%s: %s", arg_name, arg_value)
 
 
         response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
