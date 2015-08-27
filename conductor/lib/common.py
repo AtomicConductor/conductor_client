@@ -74,14 +74,16 @@ def retry(function, retry_count=5):
     i = 0
     while True:
         try:
-            LOGGER.debug('trying to run %s' % function)
+            # LOGGER.debug('trying to run %s' % function)
             return_values = function()
         except Exception, e:
             LOGGER.debug('caught error')
             LOGGER.debug('failed due to: \n%s' % traceback.format_exc())
             if i < retry_count:
                 check_for_early_release(e)
-                sleep_time = int(math.pow(2, i))
+                # exponential backoff with 250ms base
+                sleep_time_in_ms = 250 * int(math.pow(2, i))
+                sleep_time = sleep_time_in_ms / 1000.0
                 LOGGER.debug('retrying after %s seconds' % sleep_time)
                 time.sleep(sleep_time)
                 i += 1
@@ -91,7 +93,7 @@ def retry(function, retry_count=5):
                 LOGGER.debug('exceeded %s retries. throwing error...' % retry_count)
                 raise e
         else:
-            LOGGER.debug('ran %s ok' % function)
+            # LOGGER.debug('ran %s ok' % function)
             return return_values
 
 def run(cmd):
@@ -120,6 +122,8 @@ def get_base64_md5(*args, **kwargs):
     b64 = base64.b64encode(md5)
     return b64
 
+def base_dir():
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 class Config():
     required_keys = ['account']
@@ -135,7 +139,7 @@ class Config():
 
 
     def __init__(self):
-        LOGGER.debug('base dir is %s' % self.base_dir())
+        LOGGER.debug('base dir is %s' % base_dir())
 
         # create config. precedence is ENV, CLI, default
         combined_config     = self.default_config
@@ -161,7 +165,7 @@ class Config():
         if token_path is not specified in config
         """
         if not 'token_path' in config:
-            config['token_path'] = os.path.join(self.base_dir(),'auth/CONDUCTOR_TOKEN.pem')
+            config['token_path'] = os.path.join(base_dir(), 'auth/CONDUCTOR_TOKEN.pem')
         token_path = config['token_path']
         try:
             with open(token_path,'r') as f:
@@ -176,8 +180,6 @@ class Config():
         config['conductor_token'] = conductor_token
 
 
-    def base_dir(self):
-        return os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
     # look for any environment settings that start with CONDUCTOR_
@@ -195,7 +197,7 @@ class Config():
         return environment_config
 
     def get_config_file_path(self, config_file=None):
-        default_config_file = os.path.join(self.base_dir(), 'config.yml')
+        default_config_file = os.path.join(base_dir(), 'config.yml')
         if os.environ.has_key('CONDUCTOR_CONFIG'):
             config_file = os.environ['CONDUCTOR_CONFIG']
         else:
@@ -217,7 +219,7 @@ class Config():
                 message = "could't open config file: %s\n" % config_file
                 message += 'please either create one or set the CONDUCTOR_CONFIG\n'
                 message += 'environment variable to a valid config file\n'
-                message += 'see %s for an example' % os.path.join(self.base_dir(), 'config.example.yml')
+                message += 'see %s for an example' % os.path.join(base_dir(), 'config.example.yml')
                 LOGGER.error(message)
 
                 raise ValueError(message)

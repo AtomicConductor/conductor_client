@@ -1,4 +1,3 @@
-httplib2
 pyaml
 requests
 urllib3

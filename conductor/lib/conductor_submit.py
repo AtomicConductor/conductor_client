@@ -58,16 +58,19 @@ class Submit():
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
 
+        # Get any upload files/dirs listed in the config.yml
+        self.upload_paths = CONFIG.get('upload_paths') or []
+        assert isinstance(self.upload_paths, list), "Not a list: %s" % self.upload_paths
+        # Append any upload files/dirs specified via the command line
+        self.upload_paths.extend(args.get('upload_paths') or [])
+        logger.debug("Got upload_paths: %s" % (self.upload_paths))
+
         #  Get any environment variable settings from config.yml
-        arg_environment = args.get('env', None)
-        self.environment = self.merge_config_environment(arg_environment)
-
-        #  Also get any upload paths...
-        arg_upload_paths = args.get('upload_paths')
-        self.upload_paths = self.merge_config_uploads(arg_upload_paths)
-
+        self.environment = CONFIG.get("environment") or {}
+        assert isinstance(self.environment, dict), "Not a dictionary: %s" % self.environment
+        # Then override any that were specified in the command line
+        self.environment.update(args.get('env', {}))
         logger.debug("Got environment: %s" % (self.environment))
-        logger.debug("Got upload paths: %s" % (self.upload_paths))
 
         local_upload = args.get('local_upload')
         # If the local_upload arge was specified by the user (i.e if it's not None), the use it
@@ -84,39 +87,6 @@ class Submit():
         self.location = args.get('location') or CONFIG.get("location")
         self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
         logger.debug("Consumed args")
-
-
-    #  Merge any new or modified envirs from the config yaml file
-    def merge_config_environment(self, arg_environment):
-        environment = {}
-
-        #  First populate our output dictionary with anything specified in config
-        if 'environment' in CONFIG:
-            for key, value in CONFIG['environment'].iteritems():
-                environment[key] = value
-
-        #  Override any config settings with command line ones
-        if arg_environment:
-            for env in arg_environment:
-                key, value = env.split('=')
-                environment[key] = value
-        return environment
-
-    #  Get any upload paths from the config file
-    def merge_config_uploads(self, arg_upload_files):
-        upload_files = []
-
-        #  First grab any specified in the config
-        if 'upload_files' in CONFIG:
-            for file_path in CONFIG['upload_files']:
-                upload_files.append(file_path)
-
-        #  If anything was specified on the command line, tack it on
-        if arg_upload_files:
-            for upload_file in arg_upload_files:
-                upload_files.append(upload_file)
-
-        return upload_files
 
     def validate_args(self):
         '''
@@ -185,20 +155,23 @@ class Submit():
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
             logger.debug("%s: %s", arg_name, arg_value)
 
-        # TODO: verify that the response request is valid
+
         response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
+        if response_code not in [201, 204]:
+            raise Exception("Submitting Upload job failed: Error %s ...\n%s" % (response_code, response))
         return response, response_code
 
 
     def main(self):
         upload_files = self.get_upload_files()
-        uploader_ = uploader.Uploader()
         if self.local_upload:
-            uploader_.run_uploads(upload_files)
+            uploader_ = uploader.Uploader()
+            upload_error_message = uploader_.handle_upload_response(upload_files)
+            if upload_error_message:
+                raise Exception("Could not upload files:\n%s" % upload_error_message)
         # Submit the job to conductor
         response, response_code = self.send_job(upload_files=upload_files)
         return json.loads(response), response_code
-
 
     def get_upload_files(self):
         '''
