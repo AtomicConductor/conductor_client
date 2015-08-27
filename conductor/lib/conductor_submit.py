@@ -59,14 +59,14 @@ class Submit():
         self.priority = args.get('priority', CONFIG["priority"])
 
         # Get any upload files/dirs listed in the config.yml
-        self.upload_paths = CONFIG.get('upload_paths', [])
+        self.upload_paths = CONFIG.get('upload_paths') or []
         assert isinstance(self.upload_paths, list), "Not a list: %s" % self.upload_paths
         # Append any upload files/dirs specified via the command line
-        self.upload_paths.extend(args.get('upload_paths'))
+        self.upload_paths.extend(args.get('upload_paths') or [])
         logger.debug("Got upload_paths: %s" % (self.upload_paths))
 
         #  Get any environment variable settings from config.yml
-        self.environment = CONFIG.get("environment", {})
+        self.environment = CONFIG.get("environment") or {}
         assert isinstance(self.environment, dict), "Not a dictionary: %s" % self.environment
         # Then override any that were specified in the command line
         self.environment.update(args.get('env', {}))
