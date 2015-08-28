@@ -26,11 +26,18 @@ class MD5Worker(worker.ThreadWorker):
             worker.ThreadWorker.__init__(self, *args, **kwargs)
 
         def do_work(self, job):
-            filename = job
-            # logger.debug('md5: %s', filename)
-            md5 = common.get_base64_md5(filename)
-            self.metric_store.set(filename, md5)
-            return (filename, md5)
+            logger.debug('job is %s', job)
+            filename, submission_time_md5 = job
+            logger.debug('checking md5 of %s', filename)
+            current_md5 = common.get_base64_md5(filename)
+            if current_md5 != submission_time_md5:
+                message = 'MD5 of %s has changed since submission\n' % filename
+                message += 'submitted md5: %s\n' % submission_time_md5
+                message += 'current md5:   %s' % current_md5
+                logger.error(message)
+                raise message
+            self.metric_store.set(filename, current_md5)
+            return (filename, current_md5)
 
 
 '''
@@ -41,19 +48,21 @@ class MD5OutputWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.batch_size = 20 # the controlls the batch size for http get_signed_urls
-        self.wait_time = 5
+        self.wait_time = 1
         self.batch={}
 
     def check_for_posion_pill(self, job):
         ''' we need to make sure we ship the last batch before we terminate '''
-        if job == 'PosionPill':
+        if job == self.PosionPill():
+            logger.debug('md5outputworker got posion pill')
             self.ship_batch()
             self.mark_done()
-            exit()
+            thread.exit()
 
     # helper function to ship batch
     def ship_batch(self):
         if self.batch:
+            logger.debug('sending batch: %s', self.batch)
             self.put_job(json.dumps(self.batch))
             self.batch = {}
 
@@ -118,6 +127,7 @@ class HttpBatchWorker(worker.ThreadWorker):
             raise Exception('could not make request to /api/files/get_upload_urls')
 
     def do_work(self, job):
+        logger.debug('getting upload urls for %s',job)
         url_list = common.retry(lambda: self.make_request(job))
         return url_list
 
@@ -193,6 +203,7 @@ class UploadWorker(worker.ThreadWorker):
             'Content-Type': 'application/octet-stream',
         }
 
+        logger.debug('uploading %s to: %s', filename, upload_url)
         response = common.retry(lambda: requests.put(
             upload_url,
             data=self.chunked_reader(filename),
@@ -434,6 +445,10 @@ class Uploader():
         self.job_failed = False
         self.upload_id = upload_id
 
+        # print out info
+        logger.info('upload_files contains %s files like:', len(upload_files))
+        logger.info('\t%s', "\n\t".join(upload_files.keys()[:5]))
+
         # signal the reporter to start working
         self.working = True
 
@@ -441,8 +456,8 @@ class Uploader():
         self.manager = self.create_manager()
 
         # load tasks into worker pools
-        for upload in upload_files:
-            self.manager.add_task(upload)
+        for path,md5 in upload_files.iteritems():
+            self.manager.add_task((path,md5))
 
         # wait for work to finish
         output = self.manager.join()
@@ -492,7 +507,7 @@ class Uploader():
                 try:
                     json_data = json.loads(resp_str)
                     # TODO: consider failing if the md5's have changed since submission
-                    upload_files = json_data['upload_files'].keys()
+                    upload_files = json_data['upload_files']
                 except ValueError, e:
                     logger.error('response was not valid json: %s', resp_str)
                     time.sleep(self.sleep_time)
@@ -500,8 +515,6 @@ class Uploader():
 
                 upload_id = json_data['upload_id']
                 logger.info('upload_id is %s', upload_id)
-                logger.info('upload_files contains %s files like:', len(upload_files))
-                logger.info('\t%s', "\n\t".join(upload_files[:5]))
 
                 self.handle_upload_response(upload_files, upload_id)
 
