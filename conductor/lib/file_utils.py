@@ -93,12 +93,19 @@ def process_upload_filepaths(paths):
 
     return processed_paths
 
-def process_upload_filepath(path):
+def process_upload_filepath(path, strict=True):
     '''
     Process the given path to ensure that the path is valid (exists on disk), 
     and return any/all files which the path may represent.  
     For example, if the path is a directory or an image sequence, then explicity 
     list and return all files that that path represents/contains.
+    
+       
+    strict: bool. When True and the give path does not exist on disk, raise an 
+                  exception.  
+                  Note that when this function is given a directory path, and
+                  and it finds any broken symlinks within the directory, the
+   
     
     This function should be able to handle various types of paths:
         1. Directory path
@@ -121,35 +128,58 @@ def process_upload_filepath(path):
     
     3. If the path is a file then ensure that it exists on disk and that it conforms
        to Conductor's expectations.
-    '''
+   
+     
+    
+     '''
 
     paths = []
 
     if path:
 
-        # If the path is a file
+        # If the path is a file (and it exits)
         if os.path.isfile(path):
             # Condition the path to conform to Conductor's expectations
             paths.append(conform_platform_filepath(path))
 
+
         # If the path is a directory
         elif os.path.isdir(path):
             for filepath in get_files(path, recurse=True):
-                paths.extend(process_upload_filepath(filepath))
+                # when recursing a directory, don't be strict about whether
+                # any of it's enclosed files are "missing" (e.g. broken symlinks)
+                paths.extend(process_upload_filepath(filepath, strict=False))
+
+        # If the path is a symlink (which must be broken bc os.path.isfile or
+        # os.path.isdir would have been True if it existed)
+        elif os.path.islink(path):
+            message = "No files found for path: %s" % path
+            # If we're being strict, then raise an exception
+            if strict:
+                raise Exception(message)
+            # otherwise warn
+            logger.warning(message)
 
         # If the path is not a file and not a directory then see if it's a path expression
         else:
             filepaths = get_files_from_path_expression(path)
 
-            # if there are no matching frames/files found on disk for the given
-            # path expression(e.g image sequence) then raise an exception
-            if not filepaths:
-                raise Exception("No files found for path: %s" % path)
+            if filepaths:
+                # if there are matching frames/files for the given path
+                # expression(e.g image sequence), treat each frame as a dependency
+                # (adding it to the dependency dictionary and running it through validation)
+                for filepath in filepaths:
+                    paths.extend(process_upload_filepath(filepath))
+            else:
+                # if there are no matching frames/files found on disk for the given
+                # path expression(e.g image sequence) and we're being strict,
+                # then raise an exception
+                if not filepaths:
+                    message = "No files found for path: %s" % path
+                    if strict:
+                        raise Exception(message)
+                    logger.warning(message)
 
-            # Otherwise treat each frame as a dependency (adding it to the
-            # dependency dictionary and running it through validation)
-            for filepath in filepaths:
-                paths.extend(process_upload_filepath(filepath))
 
     return paths
 
