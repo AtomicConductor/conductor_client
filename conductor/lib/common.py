@@ -18,16 +18,16 @@ def setup_logger():
     logger = logging.getLogger("ConductorClient")
     if os.environ.has_key('CONDUCTOR_DEVELOPMENT'):
         logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(levelname)s - %(lineno)d - %(filename)s.%(funcName)s\n    %(message)s')
+        formatter = logging.Formatter('%(asctime)s  %(levelname)8s  %(name)s.%(funcName)s:  %(message)s')
     else:
         logger.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s -  %(message)s',
-            "%Y-%m-%d %H:%M:%S")
+        formatter = logging.Formatter('%(asctime)s -  %(message)s', "%Y-%m-%d %H:%M:%S")
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
     return logger
+
 
 
 # Global logger object, don't use this object directly.
@@ -38,7 +38,7 @@ LOGGER = setup_logger()
 
 # Create trap for SIGINT that sets common.EXIT to true
 SIGINT_EXIT = False
-def signal_handler(sig_number,stack_frame):
+def signal_handler(sig_number, stack_frame):
     LOGGER.debug('in signal_handler. setting common.SIGINT_EXIT to True')
     global SIGINT_EXIT
     SIGINT_EXIT = True
@@ -142,7 +142,7 @@ class Config():
         LOGGER.debug('base dir is %s' % base_dir())
 
         # create config. precedence is ENV, CLI, default
-        combined_config     = self.default_config
+        combined_config = self.default_config
         combined_config.update(self.get_user_config())
         combined_config.update(self.get_environment_config())
 
@@ -159,7 +159,7 @@ class Config():
         LOGGER.debug('config is:\n%s' % self.config)
 
 
-    def validate_client_token(self,config):
+    def validate_client_token(self, config):
         """
         load conductor config. default to base_dir/auth/CONDUCTOR_TOKEN.pem
         if token_path is not specified in config
@@ -168,7 +168,7 @@ class Config():
             config['token_path'] = os.path.join(base_dir(), 'auth/CONDUCTOR_TOKEN.pem')
         token_path = config['token_path']
         try:
-            with open(token_path,'r') as f:
+            with open(token_path, 'r') as f:
                 conductor_token = f.read().rstrip()
         except IOError, e:
             message = 'could not open client token file in %s\n' % token_path
@@ -188,7 +188,7 @@ class Config():
         for env in os.environ:
             if env.startswith('CONDUCTOR_'):
                 # skip these options
-                if env in ['CONDUCTOR_DEVELOPMENT','CONDUCTOR_CONFIG']:
+                if env in ['CONDUCTOR_DEVELOPMENT', 'CONDUCTOR_CONFIG']:
                     continue
                 # if we find a match, strip the conductor_ prefix and downcase it
                 config_name = env[10:].lower()
