@@ -123,7 +123,21 @@ def get_base64_md5(*args, **kwargs):
     return b64
 
 def base_dir():
-    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+    '''
+    Return the top level directory for the local Conductor repo. This is derived 
+    by traversing up directories from this current script.
+    
+    Note that due to symkinks, we can't use os.path.realpath on __file__ because 
+    __file__ may be a symlinked path and would return the directory for the 
+    "real" file (as opposed to the directory of the symlinked file (__file__))
+    '''
+    module_filepath = __file__
+    if module_filepath.startswith(".%s" % os.sep):
+        # the module filepath will somtimes be relative (to the current working directory), reconstruct full path if necessary
+        module_filepath = module_filepath.replace(".%s" % os.sep,
+                                                  "%s%s" % (os.getcwd(), os.sep))
+
+    return os.path.dirname(os.path.dirname(os.path.dirname(module_filepath)))
 
 class Config():
     required_keys = ['account']
