@@ -140,6 +140,7 @@ class Download(object):
                         download_info = [download_url, file_path, download_id, update_status]
                         logger.debug("adding %s to download queue", download_info)
                         self.download_queue.put(download_info)
+                        time.sleep(0.1)
 
                     #  Do not run as a daemon if self.job_id was specified...
                     if self.job_id:

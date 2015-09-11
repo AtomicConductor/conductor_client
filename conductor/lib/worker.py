@@ -49,21 +49,23 @@ class ThreadWorker():
     def do_work(self,job):
         raise NotImplementedError
 
+    def PosionPill(self):
+        return 'PosionPill'
 
     def check_for_posion_pill(self,job):
-        if job == 'PosionPill':
+        if job == self.PosionPill():
             self.mark_done()
             exit()
 
     def kill(self,block=False):
         logger.debug('killing workers %s', self.__class__.__name__)
         for _ in self.threads:
-            self.in_queue.put('PosionPill')
+            self.in_queue.put(self.PosionPill())
 
         if block:
             for index, thd in enumerate(self.threads):
                 logger.debug('waiting for thread %s', index)
-                thd.join
+                thd.join()
 
         # TODO
         # self.threads = []
