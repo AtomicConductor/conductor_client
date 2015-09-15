@@ -16,6 +16,17 @@ This is used to signal to workers if work should continue or not
 WORKING = True
 
 
+class Reporter():
+    def __init__(metric_store=None):
+        self.metric_store = metric_store
+
+    def working(self):
+        return WORKING
+
+    def start(self):
+        raise 'not implmented'
+
+
 '''
 Abstract worker class.
 
@@ -187,6 +198,10 @@ class MetricStore():
         self.update_queue = Queue.Queue()
         self.started = False
 
+    def join(self):
+        self.update_queue.join()
+        return True
+
     def start(self):
 
         '''
@@ -233,14 +248,16 @@ class JobManager():
 
     '''
 
-    def __init__(self, job_description):
+    def __init__(self, job_description, reporter_description=None):
         self.error = None
         self.workers = []
+        self.reporters = []
         self.error_queue = Queue.Queue()
         self.aux_queue = Queue.Queue()
         self.metric_store = MetricStore()
         self.work_queues = [Queue.Queue()]
         self.job_description = job_description
+        self.reporter_description = reporter_description
 
     def drain_queues(self):
         logger.error('draining queues')
@@ -262,7 +279,7 @@ class JobManager():
         return True
 
     def kill_workers(self):
-        # WORKING = False
+        WORKING = False
         for worker in self.workers:
             worker.kill(block=False)
 
@@ -329,6 +346,13 @@ class JobManager():
             self.workers.append(worker)
             last_queue = next_queue
 
+        # start reporters
+        for reporter_class, download_id in reporter_description.items():
+            reporter = reporter_class(self.metric_store)
+            logger.debug('starting reporter %s', reporter_class.__name__)
+            reporter.start(download_id)
+            self.reporters.append(reporter)
+
         return True
 
     def join(self):
@@ -342,6 +366,8 @@ class JobManager():
             logger.debug('waiting for %s workers to finish', worker_class_name)
             worker.join()
         logger.debug('all workers finished')
+        self.metric_store.join()
+        logger.debug('metric store in sync')
         if self.error:
             return self.error
         self.kill_workers()
