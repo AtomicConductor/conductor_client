@@ -108,7 +108,7 @@ class Submit():
             - upload_only
             - running an actual command (cmd)
         '''
-        logger.debug("upload_files: %s", upload_files)
+        logger.debug("upload_files:\n\t%s", "\n\t".join(upload_files or []))
 
         submit_dict = {'owner':self.user}
         submit_dict['location'] = self.location
@@ -117,8 +117,11 @@ class Submit():
 
         if upload_files:
             upload_file_dict = {}
+            logger.info("Generating MD5s for %s files ...", len(upload_files))
             for upload_file in upload_files:
+                logger.debug("Generating M5D: %s", upload_file)
                 upload_file_dict[upload_file] = common.get_base64_md5(upload_file)
+
             submit_dict['upload_files'] = upload_file_dict
 
         if self.upload_only:
@@ -153,12 +156,12 @@ class Submit():
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
-            logger.debug("%s: %s", arg_name, arg_value)
+            logger.debug("\t%s: %s", arg_name, arg_value)
 
-
+        logger.info("Sending Job...")
         response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
         if response_code not in [201, 204]:
-            raise Exception("Submitting Upload job failed: Error %s ...\n%s" % (response_code, response))
+            raise Exception("Job Submission failed: Error %s ...\n%s" % (response_code, response))
         return response, response_code
 
 
