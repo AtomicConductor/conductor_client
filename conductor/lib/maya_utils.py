@@ -110,7 +110,8 @@ def collect_dependencies(node_attrs):
              'VRayMesh':['fileName'],
              'VRaySettingsNode':['ifile', 'fnm'],
              'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
-             'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam']
+             'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam'],
+             'xgmPalette':['.xfn']
              }
 
     
@@ -128,7 +129,8 @@ def collect_dependencies(node_attrs):
                      'VRayMesh':['fileName'],
                      'VRaySettingsNode':['ifile', 'fnm'],
                      'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
-                     'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam']
+                     'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam'],
+                     'xgmPalette':['.xfn']
                      }
 
     all_node_types = cmds.allNodeTypes()

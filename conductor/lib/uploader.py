@@ -112,7 +112,7 @@ class HttpBatchWorker(worker.ThreadWorker):
 
     def make_request(self, job):
         response_string, response_code = self.api_client.make_request(
-            uri_path = '/api/files/get_upload_urls',
+            uri_path = '/api/files/get_upload_url',
             verb = 'POST',
             headers = {'Content-Type':'application/json'},
             data = job,
@@ -203,7 +203,6 @@ class UploadWorker(worker.ThreadWorker):
             'Content-Type': 'application/octet-stream',
         }
 
-        logger.debug('uploading %s to: %s', filename, upload_url)
         response = common.retry(lambda: requests.put(
             upload_url,
             data=self.chunked_reader(filename),

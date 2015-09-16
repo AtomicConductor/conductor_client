@@ -26,7 +26,7 @@ class ApiClient():
     def _make_request(self, verb, conductor_url, headers, params, data):
         response = getattr(requests, verb.lower())(
             conductor_url,
-            auth=HTTPBasicAuth(CONFIG['conductor_token'], 'unused'),
+            # auth=HTTPBasicAuth(CONFIG['conductor_token'], 'unused'),
             headers=headers,
             params=params,
             data=data)
@@ -46,6 +46,7 @@ class ApiClient():
             headers = {'Content-Type':'application/json'}
         # logger.debug('headers are: %s', headers)
 
+        headers['Authorization'] = "Token %s" % CONFIG['conductor_token']
 
         # Construct URL
         conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
