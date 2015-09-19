@@ -1,9 +1,8 @@
+import collections
 import Queue
 import thread
 import traceback
 import threading
-# from threading import Thread
-
 
 import conductor, conductor.setup
 
@@ -14,7 +13,7 @@ from conductor.lib import api_client, common
 '''
 This is used to signal to workers if work should continue or not
 '''
-WORKING=True
+WORKING = True
 
 
 '''
@@ -25,12 +24,15 @@ The class defines the basic function and data structures that all workers need.
 TODO: move this into it's own lib
 '''
 class ThreadWorker():
-    def __init__(self, in_queue, out_queue=None, error_queue=None, metric_store=None):
+    def __init__(self, in_queue, out_queue=None, error_queue=None, metric_store=None, aux_queue=None):
         # the in_queue provides work for us to do
         self.in_queue = in_queue
 
         # results of work are put into the out_queue
         self.out_queue = out_queue
+
+        # misc data to store (that isn't going to be used as input data for the next worker)
+        self.aux_queue = aux_queue
 
         # exceptions will be put here if provided
         self.error_queue = error_queue
@@ -46,18 +48,18 @@ class ThreadWorker():
 
     Returns the result to be passed to the out_queue
     '''
-    def do_work(self,job):
+    def do_work(self, job):
         raise NotImplementedError
 
     def PosionPill(self):
         return 'PosionPill'
 
-    def check_for_posion_pill(self,job):
+    def check_for_posion_pill(self, job):
         if job == self.PosionPill():
             self.mark_done()
             exit()
 
-    def kill(self,block=False):
+    def kill(self, block=False):
         logger.debug('killing workers %s', self.__class__.__name__)
         for _ in self.threads:
             self.in_queue.put(self.PosionPill())
@@ -102,6 +104,8 @@ class ThreadWorker():
 
                 # put result in out_queue
                 self.put_job(output)
+                aux_data = (self.__class__, list(output or []))  # Give the class name as identifier as to what worker class produced the data
+                self.put_aux_data(aux_data)
 
                 # signal that we are done with this task (needed for the
                 # Queue.join() operation to work.
@@ -119,13 +123,13 @@ class ThreadWorker():
     '''
     Start number_of_threads threads.
     '''
-    def start(self,number_of_threads=1):
+    def start(self, number_of_threads=1):
         if self.threads:
             return self.threads
 
         for i in range(number_of_threads):
             # thread will begin execution on self.target()
-            thd = threading.Thread(target = self.target)
+            thd = threading.Thread(target=self.target)
 
             # make sure threads don't stop the program from exiting
             thd.daemon = True
@@ -148,7 +152,7 @@ class ThreadWorker():
                 raise
         return
 
-    def put_job(self,job):
+    def put_job(self, job):
         # don't to anything if we were not provided an out_queue
         if not self.out_queue:
             return
@@ -161,6 +165,13 @@ class ThreadWorker():
         # add item to job
         self.out_queue.put(job)
         return True
+
+    def put_aux_data(self, data):
+        '''
+        If there is aux data then put it in in the aux queue
+        '''
+        if self.aux_queue and data and WORKING:
+            self.aux_queue.put(data)
 
 
 class MetricStore():
@@ -195,9 +206,9 @@ class MetricStore():
         self.metrics[variable] = value
 
     def get(self, variable):
-        return self.metrics.get(variable,0)
+        return self.metrics.get(variable, 0)
 
-    def increment(self, variable, step_size = 1):
+    def increment(self, variable, step_size=1):
         self.update_queue.put((variable, step_size))
 
     def target(self):
@@ -226,6 +237,7 @@ class JobManager():
         self.error = None
         self.workers = []
         self.error_queue = Queue.Queue()
+        self.aux_queue = Queue.Queue()
         self.metric_store = MetricStore()
         self.work_queues = [Queue.Queue()]
         self.job_description = job_description
@@ -256,10 +268,10 @@ class JobManager():
 
     def stop_work(self):
         global WORKING
-        WORKING = False                # stop any new jobs from being created
-        self.drain_queues()            # clear out any jobs in queue
-        self.kill_workers()            # kill all threads
-        self.mark_all_tasks_complete() # reset task counts
+        WORKING = False  # stop any new jobs from being created
+        self.drain_queues()  # clear out any jobs in queue
+        self.kill_workers()  # kill all threads
+        self.mark_all_tasks_complete()  # reset task counts
 
     def error_handler_target(self):
         while True:
@@ -277,12 +289,12 @@ class JobManager():
 
     def start_error_handler(self):
         logger.debug('creating error handler thread')
-        thd = threading.Thread(target = self.error_handler_target)
+        thd = threading.Thread(target=self.error_handler_target)
         thd.daemon = True
         thd.start()
         return None
 
-    def add_task(self,task):
+    def add_task(self, task):
         self.work_queues[0].put(task)
         return True
 
@@ -310,7 +322,8 @@ class JobManager():
             worker = worker_class(last_queue,
                                   next_queue,
                                   self.error_queue,
-                                  self.metric_store)
+                                  self.metric_store,
+                                  self.aux_queue)
             logger.debug('starting worker %s', worker_class.__name__)
             worker_threads = worker.start(thread_count)
             self.workers.append(worker)
@@ -347,3 +360,10 @@ class JobManager():
             msg += '\t\t%s threads' % num_active_threads
             msg += '\n'
         return msg
+
+    def get_aux_data(self):
+        aux_data = collections.defaultdict(list)
+        for WorkerClass, worker_data in self.aux_queue.queue:
+            aux_data[WorkerClass].append(worker_data)
+        return aux_data
+
