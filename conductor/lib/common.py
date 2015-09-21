@@ -179,7 +179,7 @@ class Config():
         if token_path is not specified in config
         """
         if not 'token_path' in config:
-            config['token_path'] = os.path.join(base_dir(), 'auth/CONDUCTOR_TOKEN')
+            config['token_path'] = os.path.join(base_dir(), 'auth/CONDUCTOR_TOKEN.pem')
         token_path = config['token_path']
         try:
             with open(token_path, 'r') as f:
