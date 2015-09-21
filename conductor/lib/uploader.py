@@ -245,13 +245,13 @@ class Uploader():
         self.manager = None
 
     def create_manager(self):
-        job_description = collections.OrderedDict([
-            (MD5Worker, 1),
-            (MD5OutputWorker, 1),
-            (HttpBatchWorker, self.process_count),
-            (FileStatWorker, 1),
-            (UploadWorker, self.process_count),
-        ])
+        job_description = [
+            (MD5Worker, [], {'thread_count': 1}),
+            (MD5OutputWorker, [], {'thread_count': 1}),
+            (HttpBatchWorker, [], {'thread_count': self.process_count}),
+            (FileStatWorker, [], {'thread_count': 1}),
+            (UploadWorker, [], {'thread_count': self.process_count}),
+        ]
 
         manager = worker.JobManager(job_description)
         manager.start()

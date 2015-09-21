@@ -17,8 +17,9 @@ WORKING = True
 
 
 class Reporter():
-    def __init__(metric_store=None):
+    def __init__(self, metric_store=None):
         self.metric_store = metric_store
+        self.api_helper = api_client.ApiClient()
 
     def working(self):
         return WORKING
@@ -35,23 +36,28 @@ The class defines the basic function and data structures that all workers need.
 TODO: move this into it's own lib
 '''
 class ThreadWorker():
-    def __init__(self, in_queue, out_queue=None, error_queue=None, metric_store=None, aux_queue=None):
+    def __init__(self,**kwargs):
+
         # the in_queue provides work for us to do
-        self.in_queue = in_queue
+        self.in_queue = kwargs['in_queue']
 
         # results of work are put into the out_queue
-        self.out_queue = out_queue
+        self.out_queue = kwargs['out_queue']
 
         # misc data to store (that isn't going to be used as input data for the next worker)
         self.aux_queue = aux_queue
 
         # exceptions will be put here if provided
-        self.error_queue = error_queue
+        self.error_queue = kwargs['error_queue']
 
-        self.threads = []
+        # set the thread count (default: 1)
+        self.thread_count = int(kwargs.get('thread_count',1))
 
         # an optional metric store to share counters between threads
-        self.metric_store = metric_store
+        self.metric_store = kwargs['metric_store']
+
+        # create a list to hold the threads that we create
+        self.threads = []
 
     '''
     This ineeds to be implmented for each worker type. The work task from
@@ -108,7 +114,7 @@ class ThreadWorker():
                     if self.error_queue:
                         self.mark_done()
                         error_message = traceback.format_exc()
-                        self.error_queue.put(error_message)
+                        self.error_queue.put(e)
                         continue
                     else:
                         raise e
@@ -134,11 +140,12 @@ class ThreadWorker():
     '''
     Start number_of_threads threads.
     '''
-    def start(self, number_of_threads=1):
+    def start(self):
         if self.threads:
+            logging.error('threads already started. will not start more')
             return self.threads
 
-        for i in range(number_of_threads):
+        for i in range(self.thread_count):
             # thread will begin execution on self.target()
             thd = threading.Thread(target=self.target)
 
@@ -249,7 +256,7 @@ class JobManager():
     '''
 
     def __init__(self, job_description, reporter_description=None):
-        self.error = None
+        self.error = []
         self.workers = []
         self.reporters = []
         self.error_queue = Queue.Queue()
@@ -293,11 +300,7 @@ class JobManager():
     def error_handler_target(self):
         while True:
             error = self.error_queue.get(True)
-            if self.error:
-                self.error += '#' * 80 + '\n'
-            else:
-                self.error = ''
-            self.error += error
+            self.error.append(error)
             self.stop_work()
             try:
                 self.error_queue.task_done()
@@ -326,32 +329,48 @@ class JobManager():
         self.start_error_handler()
 
         # create worker pools based on job_description
+        next_queue = None
         last_queue = self.work_queues[0]
         last_worker = next(reversed(self.job_description))
-        for worker_class, thread_count in self.job_description.items():
+
+        for worker_description in self.job_description:
+            worker_class = worker_description[0]
+            thread_count = worker_description[1]
+            args = []
+            kwargs = {}
+
+            if len(worker_description) > 1:
+                args = worker_description[1]
+
+            if len(worker_description) > 2:
+                kwargs = worker_description[2]
+
+            kwargs['in_queue'] = last_queue
+
             if last_worker == worker_class:
                 # the last worker does not need an output queue
-                next_queue = None
+                kwargs['out_queue'] = None
             else:
                 next_queue = Queue.Queue()
                 self.work_queues.append(next_queue)
+                kwargs['out_queue'] = next_queue
 
-            worker = worker_class(last_queue,
-                                  next_queue,
-                                  self.error_queue,
-                                  self.metric_store,
-                                  self.aux_queue)
+            kwargs['error_queue'] = self.error_queue
+            kwargs['metric_store'] = self.metric_store
+
+            worker = worker_class(*args, **kwargs)
             logger.debug('starting worker %s', worker_class.__name__)
-            worker_threads = worker.start(thread_count)
+            worker_threads = worker.start()
             self.workers.append(worker)
             last_queue = next_queue
 
         # start reporters
-        for reporter_class, download_id in reporter_description.items():
-            reporter = reporter_class(self.metric_store)
-            logger.debug('starting reporter %s', reporter_class.__name__)
-            reporter.start(download_id)
-            self.reporters.append(reporter)
+        if self.reporter_description:
+            for reporter_class, download_id in self.reporter_description:
+                reporter = reporter_class(self.metric_store)
+                logger.debug('starting reporter %s', reporter_class.__name__)
+                reporter.start(download_id)
+                self.reporters.append(reporter)
 
         return True
 
@@ -392,4 +411,3 @@ class JobManager():
         for WorkerClass, worker_data in self.aux_queue.queue:
             aux_data[WorkerClass].append(worker_data)
         return aux_data
-
