@@ -169,7 +169,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         example:
             "maya2015Render -rd /tmp/render_output/ -s %f -e %f -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
         '''
-        base_cmd = "maya2015Render -rd /tmp/render_output/ -s %%f -e %%f %s %s"
+        base_cmd = "-rd /tmp/render_output/ -s %%f -e %%f %s %s"
+        if maya_utils.get_maya_version() != "2016":
+            base_cmd = "maya2015Render %s" % base_cmd
 
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
@@ -183,12 +185,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         Generate a list of filepaths that the current maya scene is dependent on.
         '''
         # A dict of maya node types and their attributes to query for dependency filepaths
-        dependency_attrs = {'file':['fileTextureName'],
-                         'AlembicNode':['abc_File'],
-                         'VRayMesh':['fileName'],
-                         'VRaySettingsNode':['ifile', 'fnm']}
-
-        return maya_utils.collect_dependencies(dependency_attrs)
+        return maya_utils.collect_dependencies(maya_utils.dependency_attrs)
 
 
     def runPreSubmission(self):
@@ -265,6 +262,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["output_path"] = maya_utils.get_image_dirpath()
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
+        if maya_utils.get_maya_version() == "2016":
+            conductor_args["docker_image"] = "maya2016"
 
         # if there are any dependencies, generate a dependendency manifest and add it as an argument
         dependency_filepaths = data["dependencies"].keys()

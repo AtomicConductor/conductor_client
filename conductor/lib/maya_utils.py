@@ -1,10 +1,18 @@
-import os
+import os, re
 from maya import cmds
 
 import conductor.setup
 
 logger = conductor.setup.logger
-
+dependency_attrs = {'file':['fileTextureName'],
+                     'af_alembicDeform':['fileName'],
+                     'AlembicNode':['abc_File'],
+                     'VRayMesh':['fileName'],
+                     'VRaySettingsNode':['ifile', 'fnm'],
+                     'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
+                     'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam'],
+                     'xgmPalette':['xfn']
+                    }
 
 def get_transform(shape_node):
     '''
@@ -25,6 +33,9 @@ def get_short_name(node):
     assert len(short_name) == 1, "More than one object matches node name: %s" % node
     return short_name[0]
 
+
+def get_maya_version():
+    return cmds.about(version=True)
 
 
 def get_maya_scene_filepath():
@@ -103,40 +114,15 @@ def collect_dependencies(node_attrs):
     Return a list of filepaths that the current maya scene has dependencies on.
     This is achieved by inspecting maya's nodes.  Use the node_attrs argument
     to pass in a dictionary 
-
-    node_attrs = {'file':['fileTextureName'],
-             'af_alembicDeform':['fileName'],
-             'AlembicNode':['abc_File'],
-             'VRayMesh':['fileName'],
-             'VRaySettingsNode':['ifile', 'fnm'],
-             'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
-             'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam'],
-             'xgmPalette':['.xfn']
-             }
-
-    
     '''
     assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
 
     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
     dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
 
-    # explicit deps
-    if node_attrs is None:
-        node_attrs = {'file':['fileTextureName'],
-                     'af_alembicDeform':['fileName'],
-                     'AlembicNode':['abc_File'],
-                     'VRayMesh':['fileName'],
-                     'VRaySettingsNode':['ifile', 'fnm'],
-                     'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
-                     'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam'],
-                     'xgmPalette':['.xfn']
-                     }
-
     all_node_types = cmds.allNodeTypes()
 
     for node_type, node_attrs in node_attrs.iteritems():
-
         if node_type not in all_node_types:
             logger.warning("skipping unknown node type: %s", node_type)
             continue
@@ -148,9 +134,59 @@ def collect_dependencies(node_attrs):
                     plug_value = cmds.getAttr(plug_name)
                     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
+
+                    #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
+                    if node_type == "xgmPalette":
+                        sceneFile = cmds.file(query=True, sceneName=True)
+                        path = os.path.join(os.path.dirname(sceneFile), plug_value)
+                        dependencies += parse_xgen_file(path, node)
+
                     dependencies.append(path)
 
     # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
 
 
+#  Parse the xgen file to find the paths for extra dependencies not explicitly
+#  named. This will return a list of files and directories.
+def parse_xgen_file(path, node):
+    file_paths = []
+    m = re.match("(.+)\.xgen", path)
+    if m:
+        abc_patch_file = cmds.file("%s.abc" % (m.group(1)), expandName=True, query=True, withoutCopyNumber=True)
+        file_paths.append(abc_patch_file)
+
+    paletteSection = False
+    project_dir = ""
+    local_file = ""
+    fp = open(path, "r")
+    for line in fp:
+        m = re.match("^Palette$", line)
+        if m:
+            paletteSection = True
+            continue
+
+        if paletteSection:
+            print line
+            m = re.match("^\w", line)
+            if m:
+                file_path = os.path.join(project_dir, local_file)
+                file_paths.append(file_path)
+
+                paletteSection = False
+                local_file = ""
+                project_dir = ""
+                continue
+
+            m = re.match("\s*xgDataPath\s+(.+/%s)" % node, line)
+            if m:
+                local_file = m.group(1)
+                local_file = re.sub("\$\{PROJECT\}", "", local_file)
+                continue
+
+            m = re.match("\s*xgProjectPath\s+(.+)", line)
+            if m:
+                project_dir = m.group(1)
+                continue
+
+    return file_paths

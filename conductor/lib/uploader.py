@@ -112,7 +112,7 @@ class HttpBatchWorker(worker.ThreadWorker):
 
     def make_request(self, job):
         response_string, response_code = self.api_client.make_request(
-            uri_path = '/api/files/get_upload_url',
+            uri_path = '/api/files/get_upload_urls',
             verb = 'POST',
             headers = {'Content-Type':'application/json'},
             data = job,
