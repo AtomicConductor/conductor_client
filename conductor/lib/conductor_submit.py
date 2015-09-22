@@ -102,13 +102,21 @@ class Submit():
         else:
             raise BadArgumentError('The supplied arguments could not submit a valid request.')
 
-    def send_job(self, upload_files=None):
+    def send_job(self, upload_files):
         '''
         Construct args for two different cases:
             - upload_only
             - running an actual command (cmd)
+            
+            
+        upload_files: dict, where they key is the filepath, and the value is the md5. e.g.
+                    {"/batman/v06/batman_v006_high.abc": "oFUgxKUUOFIHJ9HEvaRwgg==", 
+                    "/batman/v06/batman_v006_high.png": "s9y36AyAR5cYoMg0Vx1tzw=="}
+        
         '''
-        logger.debug("upload_files:\n\t%s", "\n\t".join(upload_files or []))
+        assert isinstance(upload_files, dict), "Expected dictionary. Got: %s" % upload_files
+
+        logger.debug("upload_files:\n\t%s", "\n\t".join(upload_files or {}))
 
         submit_dict = {'owner':self.user}
         submit_dict['location'] = self.location
@@ -116,13 +124,7 @@ class Submit():
         submit_dict['local_upload'] = self.local_upload
 
         if upload_files:
-            upload_file_dict = {}
-            logger.info("Generating MD5s for %s files ...", len(upload_files))
-            for upload_file in upload_files:
-                logger.debug("Generating M5D: %s", upload_file)
-                upload_file_dict[upload_file] = common.get_base64_md5(upload_file)
-
-            submit_dict['upload_files'] = upload_file_dict
+            submit_dict['upload_files'] = upload_files
 
         if self.upload_only:
             # If there are not files to upload, then simulate a response string
@@ -168,18 +170,31 @@ class Submit():
     def main(self):
         upload_files = self.get_upload_files()
         if self.local_upload:
+            # Create a dictionary of upload_files with None as the values.
+            upload_files = dict([(path, None) for path in upload_files])
             uploader_ = uploader.Uploader()
             upload_error_message = uploader_.handle_upload_response(upload_files)
             if upload_error_message:
                 raise Exception("Could not upload files:\n%s" % upload_error_message)
+
+            upload_file_dict = uploader_.return_md5s()
+        else:
+            upload_file_dict = {}
+            logger.info("Generating MD5s for %s files ...", len(upload_files))
+            for upload_file in upload_files:
+                logger.debug("Generating M5D: %s", upload_file)
+                upload_file_dict[upload_file] = common.get_base64_md5(upload_file)
+
+
+
         # Submit the job to conductor
-        response, response_code = self.send_job(upload_files=upload_files)
+        response, response_code = self.send_job(upload_file_dict)
         return json.loads(response), response_code
 
     def get_upload_files(self):
         '''
         Resolve the "upload_paths" and "upload_file" arguments to return a single list
-        of paths that will get uploaded to the cloud.
+        of paths.
         '''
         # begin a list of "raw" filepaths that will need to be processed (starting with the self.upload_paths)
         raw_filepaths = list(self.upload_paths)

@@ -150,7 +150,9 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                             'ScannedGrain':['fullGrain'],
                             'Group':['vfield_file', 'cdl_path'],
                             'Precomp':['file'],
-                            'AudioRead':['file']}
+                            'AudioRead':['file'],
+                            'Camera':['file'],
+                            'Camera2':['file']}
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         dependencies = nuke_utils.collect_dependencies(write_nodes, dependency_knobs)

@@ -22,6 +22,7 @@ This worker will pull filenames from in_queue and compute it's base64 encoded
 md5, which will be added to out_queue
 '''
 class MD5Worker(worker.ThreadWorker):
+
         def __init__(self, *args, **kwargs):
             worker.ThreadWorker.__init__(self, *args, **kwargs)
 
@@ -30,7 +31,8 @@ class MD5Worker(worker.ThreadWorker):
             filename, submission_time_md5 = job
             logger.debug('checking md5 of %s', filename)
             current_md5 = common.get_base64_md5(filename)
-            if current_md5 != submission_time_md5:
+            # if a submissio time md5 was provided then check against it
+            if submission_time_md5 and current_md5 != submission_time_md5:
                 message = 'MD5 of %s has changed since submission\n' % filename
                 message += 'submitted md5: %s\n' % submission_time_md5
                 message += 'current md5:   %s' % current_md5
@@ -47,9 +49,9 @@ It will send a partial batch after waiting self.wait_time seconds
 class MD5OutputWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
-        self.batch_size = 20 # the controlls the batch size for http get_signed_urls
+        self.batch_size = 20  # the controlls the batch size for http get_signed_urls
         self.wait_time = 1
-        self.batch={}
+        self.batch = {}
 
     def check_for_posion_pill(self, job):
         ''' we need to make sure we ship the last batch before we terminate '''
@@ -112,10 +114,10 @@ class HttpBatchWorker(worker.ThreadWorker):
 
     def make_request(self, job):
         response_string, response_code = self.api_client.make_request(
-            uri_path = '/api/files/get_upload_urls',
-            verb = 'POST',
-            headers = {'Content-Type':'application/json'},
-            data = job,
+            uri_path='/api/files/get_upload_urls',
+            verb='POST',
+            headers={'Content-Type':'application/json'},
+            data=job,
         )
 
         if response_code == 200:
@@ -127,7 +129,7 @@ class HttpBatchWorker(worker.ThreadWorker):
             raise Exception('could not make request to /api/files/get_upload_urls')
 
     def do_work(self, job):
-        logger.debug('getting upload urls for %s',job)
+        logger.debug('getting upload urls for %s', job)
         url_list = common.retry(lambda: self.make_request(job))
         return url_list
 
@@ -163,7 +165,7 @@ class FileStatWorker(worker.ThreadWorker):
             self.metric_store.increment('bytes_to_upload', byte_count)
             self.metric_store.increment('num_files_to_upload')
 
-            self.put_job((path,upload_url))
+            self.put_job((path, upload_url))
 
         ''' make sure we return None, so no message is automatically added to the
         out_queue '''
@@ -178,8 +180,8 @@ of the specified file to the provided url.
 class UploadWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
-        self.chunk_size = 1048576 # 1M
-        self.report_size = 10485760 # 10M
+        self.chunk_size = 1048576  # 1M
+        self.report_size = 10485760  # 10M
 
     def chunked_reader(self, filename):
         with open(filename, 'rb') as file:
@@ -198,7 +200,7 @@ class UploadWorker(worker.ThreadWorker):
         filename = job[0]
         upload_url = job[1]
         md5 = self.metric_store.get(filename)
-        headers={
+        headers = {
             'Content-MD5': md5,
             'Content-Type': 'application/octet-stream',
         }
@@ -213,6 +215,9 @@ class UploadWorker(worker.ThreadWorker):
             raise Exception('could not upload %s' % filename)
 
         return None
+
+
+
 
 
 class Uploader():
@@ -240,13 +245,13 @@ class Uploader():
         self.manager = None
 
     def create_manager(self):
-        job_description = collections.OrderedDict([
-            (MD5Worker, 1),
-            (MD5OutputWorker, 1),
-            (HttpBatchWorker, self.process_count),
-            (FileStatWorker, 1),
-            (UploadWorker, self.process_count),
-        ])
+        job_description = [
+            (MD5Worker, [], {'thread_count': 1}),
+            (MD5OutputWorker, [], {'thread_count': 1}),
+            (HttpBatchWorker, [], {'thread_count': self.process_count}),
+            (FileStatWorker, [], {'thread_count': 1}),
+            (UploadWorker, [], {'thread_count': self.process_count}),
+        ]
 
         manager = worker.JobManager(job_description)
         manager.start()
@@ -284,7 +289,7 @@ class Uploader():
 
     def create_report_status_thread(self):
         logger.debug('creating reporter thread')
-        thd = Thread(target = self.report_status)
+        thd = Thread(target=self.report_status)
         thd.daemon = True
         thd.start()
 
@@ -306,18 +311,18 @@ class Uploader():
         if not percent_complete:
             return -1
 
-        estimated_time = ( elapsed_time - elapsed_time * percent_complete ) / percent_complete
+        estimated_time = (elapsed_time - elapsed_time * percent_complete) / percent_complete
         return estimated_time
 
-    def convert_byte_count_to_string(self,byte_count,transfer_rate=False):
+    def convert_byte_count_to_string(self, byte_count, transfer_rate=False):
         apend_string = ' '
 
-        if byte_count > 2**30:
-            return str(round(byte_count / float(2**30), 1)) + ' GB'
-        elif byte_count > 2**20:
-            return str(round(byte_count / float(2**20), 1)) + ' MB'
-        elif byte_count > 2**10:
-            return str(round(byte_count / float(2**10), 1)) + ' KB'
+        if byte_count > 2 ** 30:
+            return str(round(byte_count / float(2 ** 30), 1)) + ' GB'
+        elif byte_count > 2 ** 20:
+            return str(round(byte_count / float(2 ** 20), 1)) + ' MB'
+        elif byte_count > 2 ** 10:
+            return str(round(byte_count / float(2 ** 10), 1)) + ' KB'
         else:
             return str(byte_count) + ' B'
 
@@ -379,7 +384,7 @@ class Uploader():
             elapsed_time=self.convert_time_to_string(elapsed_time),
             percent_complete=str(round(percent_complete * 100, 1)) + ' %',
             transfer_rate=self.convert_byte_count_to_string(transfer_rate) + '/s',
-            time_remaining = self.convert_time_to_string(
+            time_remaining=self.convert_time_to_string(
                 self.estimated_time_remaining(elapsed_time, percent_complete)),
         )
 
@@ -403,7 +408,7 @@ class Uploader():
 
     def create_print_status_thread(self):
         logger.debug('creating console status thread')
-        thd = Thread(target = self.print_status)
+        thd = Thread(target=self.print_status)
 
         # make sure threads don't stop the program from exiting
         thd.daemon = True
@@ -412,7 +417,7 @@ class Uploader():
         thd.start()
 
 
-    def mark_upload_finished(self,upload_id):
+    def mark_upload_finished(self, upload_id):
         finish_dict = {
             'upload_id':upload_id,
             'status': 'server_pending',
@@ -435,7 +440,7 @@ class Uploader():
 
         return True
 
-    def handle_upload_response(self, upload_files, upload_id=None ):
+    def handle_upload_response(self, upload_files, upload_id=None):
         self.prepare_workers()
 
         # reset counters
@@ -456,8 +461,8 @@ class Uploader():
         self.manager = self.create_manager()
 
         # load tasks into worker pools
-        for path,md5 in upload_files.iteritems():
-            self.manager.add_task((path,md5))
+        for path, md5 in upload_files.iteritems():
+            self.manager.add_task((path, md5))
 
         # wait for work to finish
         output = self.manager.join()
@@ -525,6 +530,16 @@ class Uploader():
                 continue
 
         logger.info('exiting uploader')
+
+
+    def return_md5s(self):
+        '''
+        Return a dictionary of the filepaths and their md5s that were generated
+        upon uploading
+        '''
+        md5_data = self.manager.get_aux_data().get(MD5Worker, [])
+        return dict(md5_data)
+
 
 def run_uploader(args):
     '''
