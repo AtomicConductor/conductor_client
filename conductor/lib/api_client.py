@@ -41,11 +41,12 @@ class ApiClient():
         verb: PUT, POST, GET, DELETE, HEAD
         '''
 
-        # TODO: set Content Type to json if data arg
+        # TODO: set Content Content-Type to json if data arg
         if not headers:
             headers = {'Content-Type':'application/json'}
         # logger.debug('headers are: %s', headers)
 
+        # headers['Authorization'] = "Token %s" % CONFIG['conductor_token']
 
         # Construct URL
         conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)

@@ -175,7 +175,7 @@ class Config():
 
     def validate_client_token(self, config):
         """
-        load conductor config. default to base_dir/auth/CONDUCTOR_TOKEN.pem
+        load conductor config. default to base_dir/auth/CONDUCTOR_TOKEN
         if token_path is not specified in config
         """
         if not 'token_path' in config:

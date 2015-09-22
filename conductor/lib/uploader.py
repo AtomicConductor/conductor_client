@@ -205,7 +205,6 @@ class UploadWorker(worker.ThreadWorker):
             'Content-Type': 'application/octet-stream',
         }
 
-        logger.debug('uploading %s to: %s', filename, upload_url)
         response = common.retry(lambda: requests.put(
             upload_url,
             data=self.chunked_reader(filename),
