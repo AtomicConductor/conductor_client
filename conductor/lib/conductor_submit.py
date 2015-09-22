@@ -88,7 +88,6 @@ class Submit():
         self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
         logger.debug("Consumed args")
 
-
     def validate_args(self):
         '''
         Ensure that the combination of arugments don't result in an invalid job/request
