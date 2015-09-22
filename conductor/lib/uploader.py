@@ -476,14 +476,14 @@ class Uploader():
         logger.info('done uploading files')
 
         # report upload status
-        if output == True:
-            if upload_id:
-                self.mark_upload_finished(upload_id)
-            return None
-        else:
+        if output:
             if upload_id:
                 self.mark_upload_failed(output, upload_id)
             return output
+        else:
+            if upload_id:
+                self.mark_upload_finished(upload_id)
+            return None
 
 
     def main(self, run_one_loop=False):

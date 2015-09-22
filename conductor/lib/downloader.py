@@ -5,6 +5,7 @@
 
 import argparse
 import collections
+import errno
 import imp
 import json
 import os
@@ -114,10 +115,13 @@ class ReportThread(worker.Reporter):
         logger.debug("updated status: %s\n%s", response_code, response_string)
         return response_string, response_code
 
-
     def start(self, download_id):
+        self.download_id = download_id
+        worker.Reporter.start(self)
+
+    def target(self):
         while self.working and not common.SIGINT_EXIT:
-            self.report_status(download_id)
+            self.report_status(self.download_id)
             time.sleep(10)
 
 
@@ -141,7 +145,7 @@ class Download(object):
         for download in download_info['downloads']:
             manager.add_task(download)
         job_output = manager.join()
-        if job_output == True:
+        if not job_output:
             # report success
             logger.debug('job successfully completed')
             return True

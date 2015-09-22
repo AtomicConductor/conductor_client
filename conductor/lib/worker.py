@@ -20,12 +20,26 @@ class Reporter():
     def __init__(self, metric_store=None):
         self.metric_store = metric_store
         self.api_helper = api_client.ApiClient()
+        self.thread = None
 
     def working(self):
         return WORKING
 
-    def start(self):
+    def target(self):
         raise 'not implmented'
+
+    def start(self):
+        if self.thread:
+            logger.error('threads already started. will not start more')
+            return self.thread
+
+        logger.debug('starting reporter thread')
+        thd = threading.Thread(target=self.target)
+        thd.daemon = True
+        thd.start()
+        self.thread = thd
+        return self.thread
+
 
 
 '''
@@ -112,8 +126,8 @@ class ThreadWorker():
                         self.mark_done()
                         error_message = traceback.format_exc()
                         logger.error('hit error: \n')
-                        self.error_queue.put(e)
-                        continue
+                        self.error_queue.put(error_message)
+                        break
                     else:
                         raise e
 
@@ -138,10 +152,11 @@ class ThreadWorker():
     '''
     def start(self):
         if self.threads:
-            logging.error('threads already started. will not start more')
+            logger.error('threads already started. will not start more')
             return self.threads
 
         for i in range(self.thread_count):
+            logger.debug('starting thread %s', i)
             # thread will begin execution on self.target()
             thd = threading.Thread(target=self.target)
 
@@ -339,8 +354,10 @@ class JobManager():
         self.mark_all_tasks_complete()  # reset task counts
 
     def error_handler_target(self):
+
         while True:
             error = self.error_queue.get(True)
+            logger.error('got something from the error queue')
             self.error.append(error)
             self.stop_work()
             try:
@@ -431,7 +448,7 @@ class JobManager():
         if self.error:
             return self.error
         self.kill_workers()
-        return True
+        return None
 
     def metric_store(self):
         return self.metric_store
