@@ -124,11 +124,11 @@ def get_base64_md5(*args, **kwargs):
 
 def base_dir():
     '''
-    Return the top level directory for the local Conductor repo. This is derived 
+    Return the top level directory for the local Conductor repo. This is derived
     by traversing up directories from this current script.
-    
-    Note that due to symkinks, we can't use os.path.realpath on __file__ because 
-    __file__ may be a symlinked path and would return the directory for the 
+
+    Note that due to symkinks, we can't use os.path.realpath on __file__ because
+    __file__ may be a symlinked path and would return the directory for the
     "real" file (as opposed to the directory of the symlinked file (__file__))
     '''
     module_filepath = __file__
