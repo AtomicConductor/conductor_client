@@ -31,14 +31,14 @@ class MD5Worker(worker.ThreadWorker):
             filename, submission_time_md5 = job
             logger.debug('checking md5 of %s', filename)
             current_md5 = common.get_base64_md5(filename)
-            # if a submissio time md5 was provided then check against it
+            # if a submission time md5 was provided then check against it
             if submission_time_md5 and current_md5 != submission_time_md5:
                 message = 'MD5 of %s has changed since submission\n' % filename
                 message += 'submitted md5: %s\n' % submission_time_md5
                 message += 'current md5:   %s' % current_md5
                 logger.error(message)
                 raise message
-            self.metric_store.set(filename, current_md5)
+            self.metric_store.set_dict('file_md5s', filename, current_md5)
             return (filename, current_md5)
 
 
@@ -199,7 +199,7 @@ class UploadWorker(worker.ThreadWorker):
     def do_work(self, job):
         filename = job[0]
         upload_url = job[1]
-        md5 = self.metric_store.get(filename)
+        md5 = self.metric_store.get_dict('file_md5s', filename)
         headers = {
             'Content-MD5': md5,
             'Content-Type': 'application/octet-stream',
@@ -243,14 +243,19 @@ class Uploader():
         self.create_print_status_thread()
         self.manager = None
 
-    def create_manager(self):
-        job_description = [
-            (MD5Worker, [], {'thread_count': 1}),
-            (MD5OutputWorker, [], {'thread_count': 1}),
-            (HttpBatchWorker, [], {'thread_count': self.process_count}),
-            (FileStatWorker, [], {'thread_count': 1}),
-            (UploadWorker, [], {'thread_count': self.process_count}),
-        ]
+    def create_manager(self, md5_only=False):
+        if md5_only:
+            job_description = [
+                (MD5Worker, [], {'thread_count': self.process_count})
+            ]
+        else:
+            job_description = [
+                (MD5Worker, [], {'thread_count': self.process_count}),
+                (MD5OutputWorker, [], {'thread_count': 1}),
+                (HttpBatchWorker, [], {'thread_count': self.process_count}),
+                (FileStatWorker, [], {'thread_count': 1}),
+                (UploadWorker, [], {'thread_count': self.process_count}),
+            ]
 
         manager = worker.JobManager(job_description)
         manager.start()
@@ -439,7 +444,7 @@ class Uploader():
 
         return True
 
-    def handle_upload_response(self, upload_files, upload_id=None):
+    def handle_upload_response(self, upload_files, upload_id=None, md5_only=False):
         self.prepare_workers()
 
         # reset counters
@@ -457,7 +462,7 @@ class Uploader():
         self.working = True
 
         # create worker pools
-        self.manager = self.create_manager()
+        self.manager = self.create_manager(md5_only)
 
         # load tasks into worker pools
         for path, md5 in upload_files.iteritems():
@@ -536,8 +541,7 @@ class Uploader():
         Return a dictionary of the filepaths and their md5s that were generated
         upon uploading
         '''
-        md5_data = self.manager.get_aux_data().get(MD5Worker, [])
-        return dict(md5_data)
+        return self.manager.metric_store.get_dict('file_md5s')
 
 
 def run_uploader(args):
