@@ -107,12 +107,12 @@ class Submit():
         Construct args for two different cases:
             - upload_only
             - running an actual command (cmd)
-            
-            
+
+
         upload_files: dict, where they key is the filepath, and the value is the md5. e.g.
-                    {"/batman/v06/batman_v006_high.abc": "oFUgxKUUOFIHJ9HEvaRwgg==", 
+                    {"/batman/v06/batman_v006_high.abc": "oFUgxKUUOFIHJ9HEvaRwgg==",
                     "/batman/v06/batman_v006_high.png": "s9y36AyAR5cYoMg0Vx1tzw=="}
-        
+
         '''
         assert isinstance(upload_files, dict), "Expected dictionary. Got: %s" % upload_files
 
@@ -169,23 +169,16 @@ class Submit():
 
     def main(self):
         upload_files = self.get_upload_files()
-        if self.local_upload:
-            # Create a dictionary of upload_files with None as the values.
-            upload_files = dict([(path, None) for path in upload_files])
-            uploader_ = uploader.Uploader()
-            upload_error_message = uploader_.handle_upload_response(upload_files)
-            if upload_error_message:
-                raise Exception("Could not upload files:\n%s" % upload_error_message)
+        md5_only = not self.local_upload
 
-            upload_file_dict = uploader_.return_md5s()
-        else:
-            upload_file_dict = {}
-            logger.info("Generating MD5s for %s files ...", len(upload_files))
-            for upload_file in upload_files:
-                logger.debug("Generating M5D: %s", upload_file)
-                upload_file_dict[upload_file] = common.get_base64_md5(upload_file)
+        # Create a dictionary of upload_files with None as the values.
+        upload_files = dict([(path, None) for path in upload_files])
+        uploader_ = uploader.Uploader()
+        upload_error_message = uploader_.handle_upload_response(upload_files, md5_only=md5_only)
+        if upload_error_message:
+            raise Exception("Could not upload files:\n%s" % upload_error_message)
 
-
+        upload_file_dict = uploader_.return_md5s()
 
         # Submit the job to conductor
         response, response_code = self.send_job(upload_file_dict)

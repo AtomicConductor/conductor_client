@@ -31,10 +31,6 @@ CHUNK_SIZE = 1024
 
 class DownloadWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
-        logger.debug('$^%&$%^&$%^&$%^&$%^&$%^&$%^&')
-        logger.debug('$^%&$%^&$%^&$%^&$%^&$%^&$%^&')
-        logger.debug('$^%&$%^&$%^&$%^&$%^&$%^&$%^&')
-        logger.debug('$^%&$%^&$%^&$%^&$%^&$%^&$%^&')
         logger.debug('args are %s', args)
         logger.debug('kwargs are %s', kwargs)
 
@@ -120,7 +116,7 @@ class ReportThread(worker.Reporter):
 
 
     def start(self, download_id):
-        while self.working:
+        while self.working and not common.SIGINT_EXIT:
             self.report_status(download_id)
             time.sleep(10)
 

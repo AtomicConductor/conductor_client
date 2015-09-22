@@ -44,9 +44,6 @@ class ThreadWorker():
         # results of work are put into the out_queue
         self.out_queue = kwargs['out_queue']
 
-        # misc data to store (that isn't going to be used as input data for the next worker)
-        self.aux_queue = aux_queue
-
         # exceptions will be put here if provided
         self.error_queue = kwargs['error_queue']
 
@@ -114,6 +111,7 @@ class ThreadWorker():
                     if self.error_queue:
                         self.mark_done()
                         error_message = traceback.format_exc()
+                        logger.error('hit error: \n')
                         self.error_queue.put(e)
                         continue
                     else:
@@ -121,8 +119,6 @@ class ThreadWorker():
 
                 # put result in out_queue
                 self.put_job(output)
-                aux_data = (self.__class__, list(output or []))  # Give the class name as identifier as to what worker class produced the data
-                self.put_aux_data(aux_data)
 
                 # signal that we are done with this task (needed for the
                 # Queue.join() operation to work.
@@ -184,14 +180,6 @@ class ThreadWorker():
         self.out_queue.put(job)
         return True
 
-    def put_aux_data(self, data):
-        '''
-        If there is aux data then put it in in the aux queue
-        '''
-        if self.aux_queue and data and WORKING:
-            self.aux_queue.put(data)
-
-
 class MetricStore():
     '''
     This provides a thread-safe integer store that can be used by workers to
@@ -201,7 +189,7 @@ class MetricStore():
     '''
 
     def __init__(self):
-        self.metrics = {}
+        self.metric_store = {}
         self.update_queue = Queue.Queue()
         self.started = False
 
@@ -224,27 +212,81 @@ class MetricStore():
         self.started = True
         return thd
 
-    def set(self, variable, value):
-        self.metrics[variable] = value
+    def set(self, key, value):
+        self.metric_store[key] = value
 
     def get(self, variable):
-        return self.metrics.get(variable, 0)
+        return self.metric_store.get(variable, 0)
 
     def increment(self, variable, step_size=1):
-        self.update_queue.put((variable, step_size))
+        self.update_queue.put(('increment', variable, step_size))
+
+    def do_increment(self, *args):
+        variable, step_size = args
+
+        # initialize variable to 0 if not set
+        if not self.metric_store.has_key(variable):
+            self.metric_store[variable] = 0
+
+        # increment variable by step_size
+        self.metric_store[variable] += step_size
+
+    def set_dict(self, dict_name, key, value):
+        self.update_queue.put(('set_dict', dict_name, key, value))
+
+    def do_set_dict(self, *args):
+        dict_name, key, value = args
+
+        if not self.metric_store.has_key(dict_name):
+            self.metric_store[dict_name] = {}
+
+        self.metric_store[dict_name][key] = value
+
+    def get_dict(self, dict_name, key=None):
+        # if dict_name does not exist, return an empty dict
+        if not self.metric_store.has_key(dict_name):
+            return {}
+
+        # if key was not provided, return full dict
+        if not key:
+            return self.metric_store[dict_name]
+
+        # return value of key
+        return self.metric_store[dict_name].get(key)
+
+    def append(self, list_name, value):
+        self.update_queue.put(('append', list_name, value))
+
+    def do_append(self, *args):
+        list_name, value = args
+
+        # initialize to empty list if not yet created
+        if not self.metric_store.has_key(list_name):
+            self.metric_store[list_name] = []
+
+        # append value to list
+        self.metric_store[list_name] = value
+
+    def get_list(self, list_name):
+        return self.metric_store.get(list_name, [])
 
     def target(self):
         logger.debug('created metric_store target thread')
         while True:
             # block until update given
-            variable, step_size = self.update_queue.get(True)
+            update_tuple = self.update_queue.get(True)
 
-            # initialize variable to 0 if not set
-            if not self.metrics.has_key(variable):
-                self.metrics[variable] = 0
-
-            # increment variable by step_size
-            self.metrics[variable] += step_size
+            method = update_tuple[0]
+            method_args = update_tuple[1:]
+            # check to see what action is to be carried out
+            if method == 'increment':
+                self.do_increment(*method_args)
+            elif method == 'append':
+                self.do_append(*method_args)
+            elif method == 'set_dict':
+                self.do_set_dict(*method_args)
+            else:
+                raise "method '%s' not valid" % method
 
             # mark task done
             self.update_queue.task_done()
@@ -260,7 +302,6 @@ class JobManager():
         self.workers = []
         self.reporters = []
         self.error_queue = Queue.Queue()
-        self.aux_queue = Queue.Queue()
         self.metric_store = MetricStore()
         self.work_queues = [Queue.Queue()]
         self.job_description = job_description
@@ -405,9 +446,3 @@ class JobManager():
             msg += '\t\t%s threads' % num_active_threads
             msg += '\n'
         return msg
-
-    def get_aux_data(self):
-        aux_data = collections.defaultdict(list)
-        for WorkerClass, worker_data in self.aux_queue.queue:
-            aux_data[WorkerClass].append(worker_data)
-        return aux_data
