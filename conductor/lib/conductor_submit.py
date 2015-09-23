@@ -55,6 +55,8 @@ class Submit():
 
         # Apply client config values in cases where arguments have not been passed in
         self.cores = args.get('cores', CONFIG["instance_cores"])
+        self.machine_flavor = args.get('machine_type', CONFIG["instance_flavor"])
+        print ("machine flavor is %s" % self.machine_flavor)
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
 
@@ -102,6 +104,13 @@ class Submit():
         else:
             raise BadArgumentError('The supplied arguments could not submit a valid request.')
 
+        if self.machine_flavor not in ["standard", "highmem", "highcpu"]:
+            raise BadArgumentError("Machine type %s is not \"highmem\", \"standard\", or \"highcpu\"" % self.machine_flavor)
+
+        if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
+            raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
+
+
     def send_job(self, upload_files):
         '''
         Construct args for two different cases:
@@ -142,7 +151,8 @@ class Submit():
             submit_dict.update({'resource':self.resource,
                                 'frame_range':self.frames,
                                 'command':self.raw_command,
-                                'cores':self.cores})
+                                'cores':self.cores,
+                                'machine_flavor':self.machine_flavor})
 
             if self.priority:
                 submit_dict['priority'] = self.priority
