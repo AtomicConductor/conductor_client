@@ -155,17 +155,18 @@ class Download(object):
         common.register_sigint_signal_handler()
 
     def handle_response(self, download_info, job_id=None):
+        download_id = download_info['download_id']
         manager = self.create_manager(download_info, job_id)
         for download in download_info['downloads']:
             manager.add_task(download)
         job_output = manager.join()
         if not job_output:
             logger.debug('job successfully completed')
-            self.report_status(job_id, 'success')
+            self.report_status('transfered', download_id)
             return True
         logger.debug('job failed:')
         logger.debug(job_output)
-        self.report_status(job_id, 'failed')
+        self.report_status('failed', download_id)
         return False
 
     def create_manager(self, download_info, job_id):
@@ -248,8 +249,9 @@ class Download(object):
             logger.error(traceback.format_exc())
             return None
 
-    def report_status(self, download_id=None, status):
+    def report_status(self, status, download_id=None):
         if not download_id:
+            logger.debug("not reporting status as we weren't passed a download_id")
             return None
 
         ''' update status of download '''
@@ -257,6 +259,7 @@ class Download(object):
             'download_id': download_id,
             'status': status,
         }
+        logger.debug('marking download %s as %s', download_id, status)
         response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
         logger.debug("updated status: %s\n%s", response_code, response_string)
         return response_string, response_code
