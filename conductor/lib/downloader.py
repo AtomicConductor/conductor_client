@@ -205,12 +205,12 @@ class Download(object):
             except Exception, e:
                 logger.error('hit uncaught exception: \n%s', e)
                 logger.error(traceback.format_exc())
-            finally:
                 self.nap()
 
     def do_loop(self,job_id=None):
         next_download = self.get_next_download(job_id=job_id)
         if not next_download:
+            self.nap()
             return
         self.handle_response(next_download, job_id)
 
