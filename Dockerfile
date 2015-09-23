@@ -10,3 +10,4 @@ WORKDIR /conductor
 ADD requirements.txt /conductor/requirements.txt
 RUN pip install -r requirements.txt
 ADD . /conductor
+ENTRYPOINT ["/conductor/bin/conductor"]
