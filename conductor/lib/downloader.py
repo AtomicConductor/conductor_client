@@ -77,16 +77,22 @@ class DownloadWorker(worker.ThreadWorker):
         logger.debug('%s successfully downloaded', path)
         return True
 
-    def mkdir_p(self,path):
+    def mkdir_p(self, path):
+        # return True if the directory already exists
         if os.path.isdir(path):
             return True
-        try:
-            os.makedirs(path)
-        except OSError as exception:
-            if exception.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
+
+        # if parent dir does not exist, create that first
+        base_dir = os.path.dirname(path)
+        if not os.path.isdir(base_dir):
+            self.mkdir_p(base_dir)
+
+        # create path (parent should already be created)
+        os.mkdir(path)
+
+        # make path world writable
+        os.chmod(path,0777)
+
         return True
 
     def correct_file_present(self, path, md5):
