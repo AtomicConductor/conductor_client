@@ -21,6 +21,14 @@ class Reporter():
         self.metric_store = metric_store
         self.api_helper = api_client.ApiClient()
         self.thread = None
+        self.terminate = False
+
+    def kill(self, block=False):
+        self.terminate = True
+        if block:
+            logger.debug('joining reporter thread...')
+            self.thread.join()
+            logger.debug('reporter_thread exited')
 
     def working(self):
         return WORKING
@@ -342,15 +350,22 @@ class JobManager():
         return True
 
     def kill_workers(self):
+        global WORKING
         WORKING = False
         for worker in self.workers:
             worker.kill(block=False)
+
+    def kill_reporters(self):
+        for reporter in self.reporters:
+            logger.debug('killing reporter %s', reporter)
+            reporter.kill()
 
     def stop_work(self):
         global WORKING
         WORKING = False  # stop any new jobs from being created
         self.drain_queues()  # clear out any jobs in queue
         self.kill_workers()  # kill all threads
+        self.kill_reporters()
         self.mark_all_tasks_complete()  # reset task counts
 
     def error_handler_target(self):
@@ -448,6 +463,7 @@ class JobManager():
         if self.error:
             return self.error
         self.kill_workers()
+        self.kill_reporters()
         return None
 
     def metric_store(self):

@@ -127,6 +127,9 @@ class ReportThread(worker.Reporter):
 
     def target(self):
         while self.working and not common.SIGINT_EXIT:
+            if self.terminate:
+                logger.debug('exiting reporter thread')
+                return
             self.report_status(self.download_id)
             time.sleep(10)
 
