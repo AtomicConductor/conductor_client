@@ -131,7 +131,12 @@ class ReportThread(worker.Reporter):
                 logger.debug('exiting reporter thread')
                 return
             self.report_status(self.download_id)
-            time.sleep(10)
+            for i in range(0,9):
+                if not self.working:
+                    return
+                if common.SIGINT_EXIT:
+                    return
+                time.sleep(1)
 
 
 class Download(object):
@@ -155,12 +160,12 @@ class Download(object):
             manager.add_task(download)
         job_output = manager.join()
         if not job_output:
-            # report success
             logger.debug('job successfully completed')
+            self.report_status(job_id, 'success')
             return True
-        # report failure
         logger.debug('job failed:')
         logger.debug(job_output)
+        self.report_status(job_id, 'failed')
         return False
 
     def create_manager(self, download_info, job_id):
@@ -243,6 +248,18 @@ class Download(object):
             logger.error(traceback.format_exc())
             return None
 
+    def report_status(self, download_id=None, status):
+        if not download_id:
+            return None
+
+        ''' update status of download '''
+        post_dic = {
+            'download_id': download_id,
+            'status': status,
+        }
+        response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
+        logger.debug("updated status: %s\n%s", response_code, response_string)
+        return response_string, response_code
 
 def run_downloader(args):
     '''
