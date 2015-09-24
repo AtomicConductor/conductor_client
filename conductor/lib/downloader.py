@@ -75,6 +75,9 @@ class DownloadWorker(worker.ThreadWorker):
                     file_pointer.write(chunk)
                     self.metric_store.increment('bytes_downloaded', len(chunk))
         logger.debug('%s successfully downloaded', path)
+        logger.debug('setting file perms to 666')
+        os.chmod(path,0666)
+
         return True
 
     def mkdir_p(self, path):
