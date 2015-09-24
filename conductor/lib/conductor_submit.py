@@ -55,7 +55,7 @@ class Submit():
 
         # Apply client config values in cases where arguments have not been passed in
         self.cores = args.get('cores', CONFIG["instance_cores"])
-        self.machine_flavor = args.get('machine_type', CONFIG["instance_flavor"])
+        self.machine_flavor = args.get('machine_type') or CONFIG["instance_flavor"]
         print ("machine flavor is %s" % self.machine_flavor)
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
