@@ -471,7 +471,8 @@ class JobManager():
 
     def worker_queue_status_text(self):
         msg = '\n' + '#' * 80 + '\n'
-        for index, worker_class in enumerate(self.job_description):
+        for index, worker_info in enumerate(self.job_description):
+            worker_class = worker_info[0]
             q_size = self.work_queues[index].qsize()
             worker_threads = self.workers[index].threads
             num_active_threads = len([thd for thd in worker_threads if thd.isAlive()])

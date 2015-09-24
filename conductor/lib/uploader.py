@@ -37,7 +37,7 @@ class MD5Worker(worker.ThreadWorker):
                 message += 'submitted md5: %s\n' % submission_time_md5
                 message += 'current md5:   %s' % current_md5
                 logger.error(message)
-                raise message
+                # raise message
             self.metric_store.set_dict('file_md5s', filename, current_md5)
             return (filename, current_md5)
 
@@ -234,13 +234,7 @@ class Uploader():
         logger.debug('preparing workers...')
         common.register_sigint_signal_handler()
         self.num_files_to_process = 0
-        self.working = False
         self.job_start_time = 0
-        self.upload_id = None
-        logger.debug('creating report status thread...')
-        self.create_report_status_thread()
-        logger.info('creating console status thread...')
-        self.create_print_status_thread()
         self.manager = None
 
     def create_manager(self, md5_only=False):
@@ -262,11 +256,13 @@ class Uploader():
         return manager
 
     def report_status(self):
-        update_interval = 20
+        logger.debug('started report_status thread')
+        update_interval = 5
         while True:
 
             # don't report status if we are doing a local_upload
             if not self.upload_id:
+                logger.debug('not updating status as we were not provided an upload_id')
                 return
 
             if self.working:
@@ -396,6 +392,7 @@ class Uploader():
 
 
     def print_status(self):
+        logger.debug('starting print_status thread')
         update_interval = 3
 
         def sleep():
@@ -406,8 +403,10 @@ class Uploader():
                 try:
                     logger.info(self.manager.worker_queue_status_text())
                     logger.info(self.upload_status_text())
-                except:
-                    pass
+                except Exception, e:
+                    print e
+                    print traceback.format_exc()
+                    # pass
             sleep()
 
     def create_print_status_thread(self):
@@ -445,24 +444,28 @@ class Uploader():
         return True
 
     def handle_upload_response(self, upload_files, upload_id=None, md5_only=False):
-        self.prepare_workers()
-
         # reset counters
         self.num_files_to_process = len(upload_files)
         self.job_start_time = int(time.time())
         self.upload_id = upload_id
         self.job_failed = False
-        self.upload_id = upload_id
+        # signal the reporter to start working
+        self.working = True
+
+        self.prepare_workers()
 
         # print out info
         logger.info('upload_files contains %s files like:', len(upload_files))
         logger.info('\t%s', "\n\t".join(upload_files.keys()[:5]))
 
-        # signal the reporter to start working
-        self.working = True
-
         # create worker pools
         self.manager = self.create_manager(md5_only)
+
+        # create reporters
+        logger.debug('creating report status thread...')
+        self.create_report_status_thread()
+        logger.info('creating console status thread...')
+        self.create_print_status_thread()
 
         # load tasks into worker pools
         for path, md5 in upload_files.iteritems():
@@ -554,4 +557,3 @@ def run_uploader(args):
     logger.debug('Uploader parsed_args is %s', args_dict)
     uploader = Uploader(args_dict)
     uploader.main()
-
