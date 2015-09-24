@@ -154,7 +154,8 @@ def parse_xgen_file(path, node):
     m = re.match("(.+)\.xgen", path)
     if m:
         abc_patch_file = cmds.file("%s.abc" % (m.group(1)), expandName=True, query=True, withoutCopyNumber=True)
-        file_paths.append(abc_patch_file)
+        if os.path.isfile(abc_patch_file):
+            file_paths.append(abc_patch_file)
 
     paletteSection = False
     project_dir = ""

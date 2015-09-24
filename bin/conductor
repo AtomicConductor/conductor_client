@@ -73,8 +73,13 @@ def parse_args():
                                type=str,
                                required=False)
 
+    submit_parser.add_argument("--machine_type",
+                               help="Type of machine to run on (\"standard\", \"highmem\", or \"highcpu\")",
+                               type=str,
+                               required=False)
+
     submit_parser.add_argument("--cores",
-                               help="Number of cores that this job should run on",
+                               help="Number of cores that this job should run on (highmem and highcpu machines have a minimum of 2 cores)",
                                type=int,
                                required=False)
 
