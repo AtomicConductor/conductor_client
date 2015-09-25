@@ -165,7 +165,7 @@ class Download(object):
         job_output = manager.join()
         if not job_output:
             logger.debug('job successfully completed')
-            self.report_status('transfered', download_id)
+            self.report_status('downloaded', download_id)
             return True
         logger.debug('job failed:')
         logger.debug(job_output)
