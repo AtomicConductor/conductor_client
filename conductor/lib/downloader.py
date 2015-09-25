@@ -75,6 +75,9 @@ class DownloadWorker(worker.ThreadWorker):
                     file_pointer.write(chunk)
                     self.metric_store.increment('bytes_downloaded', len(chunk))
         logger.debug('%s successfully downloaded', path)
+        logger.debug('setting file perms to 666')
+        os.chmod(path,0666)
+
         return True
 
     def mkdir_p(self, path):
@@ -162,7 +165,7 @@ class Download(object):
         job_output = manager.join()
         if not job_output:
             logger.debug('job successfully completed')
-            self.report_status('transfered', download_id)
+            self.report_status('downloaded', download_id)
             return True
         logger.debug('job failed:')
         logger.debug(job_output)
