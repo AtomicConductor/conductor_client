@@ -262,7 +262,12 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["output_path"] = maya_utils.get_image_dirpath()
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
-        conductor_args["docker_image"] = "maya%s" % maya_utils.get_maya_version()
+        maya_version = maya_utils.get_maya_version()
+        if int(maya_version) <= 2015: 
+            conductor_args["docker_image"] = "maya2015"
+        else: 
+            conductor_args["docker_image"] = "maya%s" % maya_utils.get_maya_version()
+
         # if maya_utils.get_maya_version() == "2016":
         #     conductor_args["docker_image"] = "maya2016"
 
