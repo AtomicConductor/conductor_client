@@ -19,9 +19,6 @@ class ApiClient():
     def __init__(self):
         logger.debug('')
 
-    def get_token(self):
-        userpass = "%s:unused" % CONFIG['conductor_token']
-        return userpass
 
     def _make_request(self, verb, conductor_url, headers, params, data):
         response = getattr(requests, verb.lower())(
