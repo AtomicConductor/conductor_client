@@ -260,7 +260,8 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         '''
         conductor_args = {}
         conductor_args["cmd"] = self.generateConductorCmd()
-        conductor_args["cores"] = self.getInstanceType()
+        conductor_args["cores"] = self.getInstanceType()['cores']
+        conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["output_path"] = data["output_path"]
