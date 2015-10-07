@@ -36,7 +36,7 @@ class ApiClient():
 
         return response
 
-    def make_request(self, uri_path="/", headers=None, params=None, data=None, verb=None):
+    def make_request(self, uri_path="/", headers=None, params=None, data=None, verb=None, conductor_url=None):
         '''
         verb: PUT, POST, GET, DELETE, HEAD
         '''
@@ -49,7 +49,8 @@ class ApiClient():
         # headers['Authorization'] = "Token %s" % CONFIG['conductor_token']
 
         # Construct URL
-        conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
+        if not conductor_url:
+            conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
         # logger.debug('conductor_url: %s', conductor_url)
 
         if not verb:
