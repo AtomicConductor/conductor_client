@@ -182,6 +182,7 @@ class UploadWorker(worker.ThreadWorker):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.chunk_size = 1048576  # 1M
         self.report_size = 10485760  # 10M
+        self.api_client = api_client.ApiClient()
 
     def chunked_reader(self, filename):
         with open(filename, 'rb') as file:
@@ -205,13 +206,16 @@ class UploadWorker(worker.ThreadWorker):
             'Content-Type': 'application/octet-stream',
         }
 
-        response = common.retry(lambda: requests.put(
-            upload_url,
-            data=self.chunked_reader(filename),
-            headers=headers))
-
-        if response.status_code != 200:
-            raise Exception('could not upload %s' % filename)
+        try:
+            resp_str, resp_code = self.api_client.make_request(
+                conductor_url=upload_url,
+                headers=headers,
+                data=self.chunked_reader(filename),
+                verb='PUT')
+        except Exception, e:
+            error_message = 'failed to upload file %s because of:\n%s' % (filename, traceback.format_exc())
+            logger.error(error_message)
+            raise Exception(error_message)
 
         return None
 
