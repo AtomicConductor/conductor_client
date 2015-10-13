@@ -42,9 +42,9 @@ class DownloadWorker(worker.ThreadWorker):
     def do_work(self, job):
         logger.debug('got file to download:')
 
-        url  = job['url']
+        url = job['url']
         path = job['path']
-        md5  = job['md5']
+        md5 = job['md5']
         size = int(job['size'])
 
         logger.debug('\turl is %s', url)
@@ -76,7 +76,7 @@ class DownloadWorker(worker.ThreadWorker):
                     self.metric_store.increment('bytes_downloaded', len(chunk))
         logger.debug('%s successfully downloaded', path)
         logger.debug('setting file perms to 666')
-        os.chmod(path,0666)
+        os.chmod(path, 0666)
 
         return True
 
@@ -94,7 +94,7 @@ class DownloadWorker(worker.ThreadWorker):
         os.mkdir(path)
 
         # make path world writable
-        os.chmod(path,0777)
+        os.chmod(path, 0777)
 
         return True
 
@@ -134,7 +134,7 @@ class ReportThread(worker.Reporter):
                 logger.debug('exiting reporter thread')
                 return
             self.report_status(self.download_id)
-            for i in range(0,9):
+            for i in range(0, 9):
                 if not self.working:
                     return
                 if common.SIGINT_EXIT:
@@ -163,6 +163,11 @@ class Download(object):
         for download in download_info['downloads']:
             manager.add_task(download)
         job_output = manager.join()
+        if job_id:
+            if job_output:
+                return False
+            return True
+
         if not job_output:
             logger.debug('job successfully completed')
             self.report_status('downloaded', download_id)
@@ -173,8 +178,8 @@ class Download(object):
         return False
 
     def create_manager(self, download_info, job_id):
-        args=[]
-        kwargs={'thread_count': self.thread_count,
+        args = []
+        kwargs = {'thread_count': self.thread_count,
                 'output_path': self.output_path,
                 'destination': download_info['destination']}
         job_description = [
@@ -192,7 +197,7 @@ class Download(object):
         if not common.SIGINT_EXIT:
             time.sleep(self.naptime)
 
-    def main(self,job_id=None):
+    def main(self, job_id=None):
         logger.info('starting downloader...')
         if job_id:
             logger.debug('getting download for job %s', job_id)
@@ -210,7 +215,7 @@ class Download(object):
                 logger.error(traceback.format_exc())
                 self.nap()
 
-    def do_loop(self,job_id=None):
+    def do_loop(self, job_id=None):
         next_download = self.get_next_download(job_id=job_id)
         if not next_download:
             self.nap()
