@@ -180,8 +180,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         instance_types = get_conductor_instance_types()
         self.ui_instance_type_cmbx.clear()
-        for core_count, instance_type in sorted(instance_types.iteritems()):
-            self.ui_instance_type_cmbx.addItem(instance_type, userData=core_count)
+        for instance_info in instance_types:
+            self.ui_instance_type_cmbx.addItem(instance_info['description'], userData=instance_info)
 
     def setFrameRange(self, start, end):
         '''
@@ -249,7 +249,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         core count int.
         '''
 
-        item_idx = self.ui_instance_type_cmbx.findData(core_count)
+        item_idx = self.ui_instance_type_cmbx.findData({"cores": core_count, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
         if item_idx == -1:
             raise Exception("Could not find combobox entry for core count: %s!"
                             "This should never happen!" % core_count)
@@ -260,7 +260,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         Return the number of cores that the user has selected from the
         "Instance Type" combobox
         '''
-        return int(self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex()))
+        return self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex())
 
     def setResource(self, resource_str):
         '''
@@ -485,10 +485,21 @@ def get_conductor_instance_types():
     TODO: This information should probably be put into and read from an external
           file (yaml, json, etc) 
     '''
-    instances = {2: " 2 core,  7.5GB Mem",
-                 4: " 4 core, 15.0GB Mem",
-                 8: " 8 core, 30.0GB Mem",
-                16: "16 core, 60.0GB Mem"}
+    instances = [{"cores": 2, "flavor": "highcpu", "description": " 2 core 1.8GB Mem"},
+                 {"cores": 2, "flavor": "standard", "description": " 2 core,  7.5GB Mem"},
+                 {"cores": 2, "flavor": "highmem", "description": " 2 core, 13.0GB Mem"},
+                 {"cores": 4, "flavor": "highcpu", "description": " 4 core, 3.6GB Mem"},
+                 {"cores": 4, "flavor": "standard", "description": " 4 core, 15.0GB Mem"},
+                 {"cores": 4, "flavor": "highmem", "description": " 4 core, 26.0GB Mem"},
+                 {"cores": 8, "flavor": "highcpu", "description": " 8 core, 7.20GB Mem"},
+                 {"cores": 8, "flavor": "standard", "description": " 8 core, 30.0GB Mem"},
+                 {"cores": 8, "flavor": "highmem", "description": " 8 core, 52.0GB Mem"},
+                 {"cores": 16, "flavor": "highcpu", "description": "16 core, 14.4GB Mem"},
+                 {"cores": 16, "flavor": "standard", "description": "16 core, 60.0GB Mem"},
+                 {"cores": 16, "flavor": "highmem", "description": "16 core, 104GB Mem"},
+                 {"cores": 32, "flavor": "highcpu", "description": "32 core, 28.8GB Mem"},
+                 {"cores": 32, "flavor": "standard", "description": "32 core, 120GB Mem"},
+                 {"cores": 32, "flavor": "highmem", "description": "32 core, 208GB Mem"}]
     return instances
 
 
