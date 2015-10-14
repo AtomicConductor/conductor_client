@@ -167,12 +167,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         Return the command string that Conductor will execute
         
         example:
-            "maya2015Render -rd /tmp/render_output/ -s %f -e %f -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
+            "-rd /tmp/render_output/ -s %f -e %f -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
         '''
         base_cmd = "-rd /tmp/render_output/ -s %%f -e %%f %s %s"
-        # if maya_utils.get_maya_version() != "2016":
-        #     base_cmd = "maya2015Render %s" % base_cmd
-
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
         maya_filepath = maya_utils.get_maya_scene_filepath()
@@ -210,6 +207,19 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return {"abort":not is_valid,
                 "dependencies":dependencies}
 
+
+    def getDockerImage(self):
+        '''
+        If there is a docker image in the config.yml file, then use it (the
+        parent class' method retrieves this).  Otherwise query Maya for it's 
+        version information, and derive the proper docker image to use 
+        '''
+        docker_image = super(MayaConductorSubmitter, self).getDockerImage()
+        if not docker_image:
+            maya_version = maya_utils.get_maya_version()
+            plugin_versions = maya_utils.get_plugin_versions()
+            docker_image = maya_utils.derive_docker_image(maya_version, plugin_versions)
+        return docker_image
 
     def runValidation(self, raw_data):
         '''
@@ -260,17 +270,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
+        conductor_args["docker_image"] = self.getDockerImage()
         conductor_args["output_path"] = maya_utils.get_image_dirpath()
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
-        maya_version = maya_utils.get_maya_version()
-        if int(maya_version) <= 2015: 
-            conductor_args["docker_image"] = "maya2015"
-        else: 
-            conductor_args["docker_image"] = "maya%s" % maya_utils.get_maya_version()
-
-        # if maya_utils.get_maya_version() == "2016":
-        #     conductor_args["docker_image"] = "maya2016"
 
         # if there are any dependencies, generate a dependendency manifest and add it as an argument
         dependency_filepaths = data["dependencies"].keys()

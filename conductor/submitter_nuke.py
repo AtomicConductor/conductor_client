@@ -124,10 +124,10 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         Return the command string that Conductor will execute
         
         example:
-            "nuke-render -X AFWrite.write_exr -F %f /Volumes/af/show/walk/shots/114/114_100/sandbox/mjtang/tractor/nuke_render_job_122/walk_114_100_main_comp_v136.nk"
+            "-X AFWrite.write_exr -F %f /Volumes/af/show/walk/shots/114/114_100/sandbox/mjtang/tractor/nuke_render_job_122/walk_114_100_main_comp_v136.nk"
 
         '''
-        base_cmd = "nuke-render -F %%f %s %s"
+        base_cmd = "-F %%f %s %s"
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = ["-X %s" % write_node for write_node in write_nodes]
@@ -204,6 +204,20 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                 "output_path":output_path}
 
 
+    def getDockerImage(self):
+        '''
+        If there is a docker image in the config.yml file, then use it (the
+        parent class' method retrieves this).  Otherwise query Nuke for it's 
+        version information, and derive the proper docker image to use 
+        '''
+        docker_image = super(NukeConductorSubmitter, self).getDockerImage()
+        if not docker_image:
+            nuke_version = nuke_utils.get_nuke_version()
+            docker_image = nuke_utils.derive_docker_image(nuke_version)
+        return docker_image
+
+
+
 
     def runValidation(self, raw_data):
         '''
@@ -264,6 +278,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
+        conductor_args["docker_image"] = self.getDockerImage()
         conductor_args["output_path"] = data["output_path"]
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
@@ -283,5 +298,5 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             print "Conductor: Submission aborted"
             return
 
-        super(NukeConductorSubmitter, self).runConductorSubmission(data)
+        return super(NukeConductorSubmitter, self).runConductorSubmission(data)
 
