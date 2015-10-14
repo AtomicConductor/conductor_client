@@ -16,9 +16,12 @@ def derive_docker_image(version):
     '''
     For the given version of nuke "figure out" which docker image to use
     '''
+    default_version = "9.0v7"
+
     versions = {"9.0v5": "nuke9.0v5",
                 "9.0v7": "nuke9.0v7"}
-    return versions.get(version)
+
+    return versions.get(version) or default_version
 
 
 def collect_dependencies(write_nodes, dependency_knobs={}):
