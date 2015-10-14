@@ -35,7 +35,91 @@ def get_short_name(node):
 
 
 def get_maya_version():
+    '''
+    Return the version string of the currently running maya session. 
+    e.g. "2015"
+    '''
     return cmds.about(version=True)
+
+
+def get_plugin_versions():
+    '''
+    Query maya for all of it's plugins and their  versions. 
+    
+    return a dictionary such as:
+        {'AbcExport': '1.0',
+         'AbcImport': '1.0',
+         'BifrostMain': '1.0',
+         'HoldOut': '1.0',
+         'MayaMuscle': '2.00 (Build: 004)',
+         'Mayatomr': '2015.0 - 3.12.1.18 ',
+         'Substance': '1.11143',
+         'autoLoader': '1.0',
+         'bifrostshellnode': '2015',
+         'bifrostvisplugin': '3.0',
+         'cgfxShader': 'cgfxShader 4.5 for Maya 2015.0 (Apr  9 2015)',
+         'fbxmaya': '2015.1',
+         'glmCrowd': '4.1.3[21f4d33]-2015/08/25',
+         'gpuCache': '1.0',
+         'iDeform': '1.0',
+         'ik2Bsolver': '2.5',
+         'ikSpringSolver': '1.0',
+         'matrixNodes': '1.0',
+         'mayaCharacterization': '5',
+         'mayaHIK': '1.0_HIK_2014.2',
+         'modelingToolkit': 'Unknown',
+         'modelingToolkitStd': '0.0.0.0',
+         'quatNodes': '1.0',
+         'relax_node': 'Unknown',
+         'retargeterNodes': '1.0',
+         'rotateHelper': '1.0',
+         'sceneAssembly': '1.0',
+         'shaderFXPlugin': '1.0',
+         'skinningDecomposition': '1.0',
+         'spReticleLoc': '2.0',
+         'tiffFloatReader': '8.0',
+         'vrayformaya': '3.00.01',
+         'xgenMR': '1.0',
+         'xgenToolkit': '1.0'}
+    
+    '''
+    plugin_versions = {}
+    for plugin in cmds.pluginInfo(q=True, listPlugins=True):
+        plugin_versions[str(plugin)] = str(cmds.pluginInfo(plugin, version=True, q=True))
+    return plugin_versions
+
+
+
+
+def derive_docker_image(version, plugin_versions):
+    '''
+    For the given version of maya "figure out" which docker image to use
+    
+    todo: query plugin_versions to crossreference vray and other plugins to derive
+          the proper docker image
+    '''
+    version = int(version)
+    vray_version = plugin_versions.get("vrayformaya") or plugin_versions.get("vrayformaya.bundle")
+
+    # IF the version is less than 2015 then just use the 2015 image
+    if version < 2015:
+        return "maya2015"
+
+    # if using maya2015
+    if version == 2015:
+        # If not using vray, or using vray 3.x then use the the maya2015 image (which uses vray 3.1)
+        if not vray_version or vray_version.startswith("3."):
+            return "maya2015"
+        # If the vray version uses 2.x, then use the  "maya2015_vray2.4" docker image
+        if vray_version.startswith("2."):
+            return "maya2015_vray2.4"
+
+        # Otherwise raise an exception that we don't support that version of vray
+        raise Exception("Unsupported Vray version: %s", vray_version)
+
+    # This in theory will load maya2016 docker image which is harcoded to use vray 3.1
+    return "maya%s" % version
+
 
 
 def get_maya_scene_filepath():

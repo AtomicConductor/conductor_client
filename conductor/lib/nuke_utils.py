@@ -5,7 +5,20 @@ import nuke
 def get_image_dirpath():
     pass
 
+def get_nuke_version():
+    '''
+    Return the full version string of the currently running nuke session. 
+    e.g. "9.0v5"
+    '''
+    return nuke.env["NukeVersionString"]
 
+def derive_docker_image(version):
+    '''
+    For the given version of nuke "figure out" which docker image to use
+    '''
+    versions = {"9.0v5": "nuke9.0v5",
+                "9.0v7": "nuke9.0v7"}
+    return versions.get(version)
 
 
 def collect_dependencies(write_nodes, dependency_knobs={}):

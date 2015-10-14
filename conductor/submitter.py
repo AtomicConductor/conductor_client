@@ -325,6 +325,18 @@ class ConductorSubmitter(QtGui.QMainWindow):
         raise NotImplementedError(message)
 
 
+    def getDockerImage(self):
+        '''
+        Return the Docker image name (str) to use on Conductor.
+        Example: "Maya2015"
+        By default, this will return the docker image that is listed in the 
+        conductor config.yml file (or None if one does not exist).
+        Child classes should override this method to return the image that 
+        is appropriate for the software context (e.g nuke or maya, etc)
+        '''
+        return conductor.setup.CONFIG.get("docker_image")
+
+
     def getForceUploadBool(self):
         '''
         Return whether the "Force Upload" checkbox is checked on or off.
