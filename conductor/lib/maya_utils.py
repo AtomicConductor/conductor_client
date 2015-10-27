@@ -90,38 +90,6 @@ def get_plugin_versions():
 
 
 
-
-def derive_docker_image(version, plugin_versions):
-    '''
-    For the given version of maya "figure out" which docker image to use
-    
-    todo: query plugin_versions to crossreference vray and other plugins to derive
-          the proper docker image
-    '''
-    version = int(version)
-    vray_version = plugin_versions.get("vrayformaya") or plugin_versions.get("vrayformaya.bundle")
-
-    # IF the version is less than 2015 then just use the 2015 image
-    if version < 2015:
-        return "maya2015"
-
-    # if using maya2015
-    if version == 2015:
-        # If not using vray, or using vray 3.x then use the the maya2015 image (which uses vray 3.1)
-        if not vray_version or vray_version.startswith("3."):
-            return "maya2015"
-        # If the vray version uses 2.x, then use the  "maya2015_vray2.4" docker image
-        if vray_version.startswith("2."):
-            return "maya2015_vray2.4"
-
-        # Otherwise raise an exception that we don't support that version of vray
-        raise Exception("Unsupported Vray version: %s", vray_version)
-
-    # This in theory will load maya2016 docker image which is harcoded to use vray 3.1
-    return "maya%s" % version
-
-
-
 def get_maya_scene_filepath():
     filepath = cmds.file(q=True, sceneName=True)
     if not filepath or not os.path.isfile(filepath):

@@ -14,7 +14,7 @@ except ImportError, e:
 
 import conductor
 import conductor.setup
-from conductor.lib import maya_utils, pyside_utils, file_utils
+from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common
 from conductor import submitter
 
 
@@ -211,15 +211,22 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def getDockerImage(self):
         '''
         If there is a docker image in the config.yml file, then use it (the
-        parent class' method retrieves this).  Otherwise query Maya for it's 
-        version information, and derive the proper docker image to use 
+        parent class' method retrieves this).  Otherwise query Maya and its
+        plugins for their version information, and then query  Conductor for 
+        a docker image that meets those requirements. 
         '''
         docker_image = super(MayaConductorSubmitter, self).getDockerImage()
         if not docker_image:
             maya_version = maya_utils.get_maya_version()
+            software_info = {"software": "maya",
+                             "maya":maya_version}
             plugin_versions = maya_utils.get_plugin_versions()
-            docker_image = maya_utils.derive_docker_image(maya_version, plugin_versions)
+            software_info.update(plugin_versions)
+            docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
+
         return docker_image
+
+
 
     def runValidation(self, raw_data):
         '''
@@ -312,8 +319,6 @@ class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):
         self.setIndentation(0)
         self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.setHeaderItem (QtGui.QTreeWidgetItem(["Layer", "Camera"]))
-
-
 
 
 def get_maya_window():
