@@ -70,3 +70,30 @@ class ApiClient():
         # logger.debug('response.text is: %s', response.text)
         return response.text, response.status_code
 
+
+def request_docker_image(software_info):
+    '''
+    Query the app for an image that satisfies the given software_info requirements
+   
+    args:
+        software_info: dict. e.g. {"software":"maya",
+                                   "maya": "2015",
+                                   "vray":"3.0",
+                                   "golaem": "3.0.4"}
+
+        return: str. the name of the docker image
+    '''
+    api = ApiClient()
+
+    logger.debug("software_info: %s", software_info)
+
+    uri = 'api/get_docker_image'
+
+    response, response_code = api.make_request(uri_path=uri, params=software_info, raise_on_error=False)
+    logger.debug("response: %s", response)
+    if response_code not in [200]:
+        msg = "Failed to retrieve docker image with the given paramaters:\n%s" % software_info
+        msg += "\nError %s ...\n%s" % (response_code, response)
+        raise Exception(msg)
+    data = json.loads(response)
+    return data["docker_image"]
