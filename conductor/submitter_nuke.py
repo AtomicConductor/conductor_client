@@ -10,7 +10,7 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import conductor
-from conductor.lib import file_utils, nuke_utils, pyside_utils
+from conductor.lib import file_utils, nuke_utils, pyside_utils, common, api_client
 from conductor import submitter
 
 
@@ -207,17 +207,27 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
     def getDockerImage(self):
         '''
         If there is a docker image in the config.yml file, then use it (the
-        parent class' method retrieves this).  Otherwise query Nuke for it's 
-        version information, and derive the proper docker image to use 
+        parent class' method retrieves this).  Otherwise query Nuke and its
+        plugins for their version information, and then query  Conductor for 
+        a docker image that meets those requirements. 
         '''
         docker_image = super(NukeConductorSubmitter, self).getDockerImage()
         if not docker_image:
             nuke_version = nuke_utils.get_nuke_version()
-            docker_image = nuke_utils.derive_docker_image(nuke_version)
+            software_info = {"software": "nuke",
+                             "nuke":nuke_version}
+
+#             RE-ENABLE THIS SECTION WHEN the get_docker_image endpoint can handle larger requests
+#             # Get a list of nuke plugins
+#             plugins = nuke_utils.get_plugins()
+#
+#             # Convert the plugins list into a dictionary (to conform to endpoint expectations)
+#             # Populate the keys with each plugin, where the value is an empty string
+#             # (hopefully in the future we'll have relevant information such as plugin version, etc)
+#             plugins_dict = dict([(p, "") for p in plugins])
+#             software_info.update(plugins_dict)
+            docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
         return docker_image
-
-
-
 
     def runValidation(self, raw_data):
         '''

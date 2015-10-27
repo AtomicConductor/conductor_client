@@ -12,16 +12,61 @@ def get_nuke_version():
     '''
     return nuke.env["NukeVersionString"]
 
-def derive_docker_image(version):
+def get_plugins():
     '''
-    For the given version of nuke "figure out" which docker image to use
+    TODO:(lws) WIP - there has to be better way of doing this.  
+    
+    Return the plugins from the current Nuke session. This is a list of filepaths
+    to each nuke plugin. ugly
+    
+        ['/home/nuke/tools/customCG_Neutralize.gizmo',
+        '/home/nuke/tools/customCG_deNeutralize.gizmo',
+        '/home/nuke/tools/customCameraShake.gizmo',
+        '/home/nuke/tools/customChromaticAbberation.gizmo',
+        '/home/nuke/tools/customGlint.gizmo',
+        '/home/nuke/tools/customGrain.gizmo',
+        '/home/nuke/tools/customHaze.gizmo',
+        '/home/nuke/tools/custom_OutputCrop.gizmo',
+        '/home/nuke/tools/gizmos/default_viewer.gizmo',
+        '/home/nuke/tools/nuke/init.py',
+        '/home/nuke/nuke/linux64/Nuke9.0/GeoPoints.so',
+        '/home/nuke/nuke/linux64/Nuke9.0/LD_3DE4_Anamorphic_Degree_6.so',
+        '/home/nuke/nuke/linux64/Nuke9.0/OpticalFlares.so',
+        '/home/nuke/nuke/linux64/Nuke9.0/pgBokeh.so',
+        '/home/nuke/nuke/linux64/Nuke9.0/render',
+        '/home/nuke/nuke/linux64/Nuke9.0/starpro.key',
+        '/home/nuke/.nuke/MTTF',
+        '/home/nuke/.nuke/ScriptEditorHistory.xml',
+        '/home/nuke/.nuke/layout1.xml',
+        '/home/nuke/.nuke/preferences8.0.nk',
+        '/home/nuke/.nuke/recent_files',
+        '/home/nuke/.nuke/uistate.ini',
+        '/home/nuke/.nuke/user.9-0.hrox',
+        '/home/neatvideo/neat_video_ofx/NeatVideo.ofx.bundle/Contents/Linux-x86-64/NeatVideo.ofx']
+        
     '''
-    default_version = "9.0v7"
 
-    versions = {"9.0v5": "nuke9.0v5",
-                "9.0v7": "nuke9.0v7"}
-
-    return versions.get(version) or default_version
+    # If you don't specify the nuke.ALL flag, you end up with paths to icon files
+    # (png, etg), instead of the actual plugin (.so, .py, etc). However, when specifying
+    # nuke.ALL it also returns plugins that are not currently loaded, which we
+    # probably don't want. I assume we want to only return plugins that are
+    # currently in use, otherwise our docker image requirements become far more
+    # comprehensive (demanding) than they need to be. So we use the
+    # nuke.pluginExists() on each plugin, to determine if the plugin is loaded.
+    # I have no idea if the this is a the best way (or even a reliable way) to
+    # determine if a plugin is loaded or not, but I couldn't find a better function.
+    # It did however cut down the returned plugins by 10  (54 to 44).
+    # Note that we gather the fullpaths bc it's possible that there could be
+    # naming conflicts/overlaps between plugins.
+    # Exclude any plugins that are located within Nuke's installation directory.
+    # We'll assume those are standarad plugins that Nuke ships with. Perhaps
+    # a bad assumption, but we'll go with it for now.
+    plugins = []
+    nuke_dirpath = os.path.dirname(nuke.EXE_PATH)
+    for p in nuke.plugins(nuke.ALL):
+        if nuke.pluginExists(p) and not p.startswith(nuke_dirpath):
+            plugins.append(p)
+    return plugins
 
 
 def collect_dependencies(write_nodes, dependency_knobs={}):
