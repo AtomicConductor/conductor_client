@@ -89,8 +89,12 @@ def request_docker_image(software_info):
 
     uri = 'api/get_docker_image'
 
-    response, response_code = api.make_request(uri_path=uri, params=software_info, raise_on_error=False)
+    data = json.dumps(software_info)
+    logger.debug("data: %s", data)
+
+    response, response_code = api.make_request(uri_path=uri, verb="POST", data=data, raise_on_error=False)
     logger.debug("response: %s", response)
+    logger.debug("response: %s", response_code)
     if response_code not in [200]:
         msg = "Failed to retrieve docker image with the given paramaters:\n%s" % software_info
         msg += "\nError %s ...\n%s" % (response_code, response)

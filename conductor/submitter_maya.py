@@ -219,9 +219,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         if not docker_image:
             maya_version = maya_utils.get_maya_version()
             software_info = {"software": "maya",
-                             "maya":maya_version}
+                             "software_version":maya_version}
             plugin_versions = maya_utils.get_plugin_versions()
-            software_info.update(plugin_versions)
+            software_info["plugins"] = plugin_versions
             docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
 
         return docker_image
