@@ -215,17 +215,15 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         if not docker_image:
             nuke_version = nuke_utils.get_nuke_version()
             software_info = {"software": "nuke",
-                             "nuke":nuke_version}
+                             "software_version":nuke_version}
 
-#             RE-ENABLE THIS SECTION WHEN the get_docker_image endpoint can handle larger requests
-#             # Get a list of nuke plugins
-#             plugins = nuke_utils.get_plugins()
-#
-#             # Convert the plugins list into a dictionary (to conform to endpoint expectations)
-#             # Populate the keys with each plugin, where the value is an empty string
-#             # (hopefully in the future we'll have relevant information such as plugin version, etc)
-#             plugins_dict = dict([(p, "") for p in plugins])
-#             software_info.update(plugins_dict)
+            # Get a list of nuke plugins
+            plugins = nuke_utils.get_plugins()
+            # Convert the plugins list into a dictionary (to conform to endpoint expectations)
+            # Populate the keys with each plugin, where the value is an empty string
+            # (hopefully we will populate it with relevant information such as plugin version, etc)
+            plugins_dict = dict([(p, "") for p in plugins])
+            software_info["plugins"] = plugins_dict
             docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
         return docker_image
 
