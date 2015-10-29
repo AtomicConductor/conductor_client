@@ -227,6 +227,46 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return docker_image
 
 
+    def getJobTitle(self):
+        '''
+        Generate and return the title to be given to the job.  This is the title
+        that will be displayed in the webUI.
+                
+        Construct the job title by using the software name (MAYA), followed by
+        the filename of maya file (excluding directory path), followed by the
+        renderlayers being rendered.  If all of the renderlayers in the maya 
+        scene are being rendered then don't list any of them. 
+        
+        MAYA - <maya filename> - <renderlayers> 
+        
+        example: "MAYA - my_maya_scene.ma - beauty, shadow, spec"
+        '''
+        maya_filepath = maya_utils.get_maya_scene_filepath()
+        _, maya_filename = os.path.split(maya_filepath)
+
+        # Cross-reference all renderable renderlayers in the maya scene with
+        # the renderlayers that the user has selected in the UI.  If there is
+        # a 1:1 match, then don't list any render layers in the job title (as
+        # it is assumed that all will be rendered).  If there is not a 1:1
+        # match, then add the render layers to the title which the user has
+        # selected in the UI
+        selected_render_layers = self.extended_widget.getSelectedRenderLayers()
+
+        all_renderable_layers = []
+        for render_layer_info in maya_utils.get_render_layers_info():
+            if render_layer_info['renderable']:
+                all_renderable_layers.append(render_layer_info['layer_name'])
+
+        # If all render layers are being rendered, then don't specify them in the job title
+        if set(all_renderable_layers) == set(selected_render_layers):
+            render_layer_str = ""
+        # Otherwise specify the user-selected layers in the job title
+        else:
+            render_layer_str = " - " + ", ".join(selected_render_layers)
+
+        title = "MAYA - %s%s" % (maya_filename, render_layer_str)
+        return title
+
 
     def runValidation(self, raw_data):
         '''
@@ -272,6 +312,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args = {}
         conductor_args["cmd"] = self.generateConductorCmd()
         conductor_args["cores"] = self.getInstanceType()['cores']
+        conductor_args["job_title"] = self.getJobTitle()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
