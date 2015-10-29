@@ -19,7 +19,7 @@ except ImportError, e:
 
 
 import conductor.setup
-from conductor.lib import file_utils, api_client, uploader, common
+from conductor.lib import file_utils, api_client, uploader
 
 
 logger = conductor.setup.logger
@@ -45,18 +45,16 @@ class Submit():
         self.raw_command = args.get('cmd') or ''
         self.user = args.get('user') or getpass.getuser()
         self.frames = args.get('frames')
-        self.upload_dep = args.get('upload_dependent')
         self.output_path = args.get('output_path')
         self.upload_file = args.get('upload_file')
         self.upload_only = args.get('upload_only')
         self.postcmd = args.get('postcmd')
-        self.skip_time_check = args.get('skip_time_check') or False
         self.force = args.get('force')
 
         # Apply client config values in cases where arguments have not been passed in
         self.cores = args.get('cores', CONFIG["instance_cores"])
         self.machine_flavor = args.get('machine_type') or CONFIG["instance_flavor"]
-        print ("machine flavor is %s" % self.machine_flavor)
+
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
 
@@ -81,10 +79,6 @@ class Submit():
         # Otherwise use the value in the config
         else:
             self.local_upload = CONFIG['local_upload']
-
-        # For now always default nuke uploads to skip time check
-        if self.upload_only or "nuke-render" in self.raw_command:
-            self.skip_time_check = True
 
         self.location = args.get('location') or CONFIG.get("location")
         self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
@@ -156,8 +150,6 @@ class Submit():
 
             if self.priority:
                 submit_dict['priority'] = self.priority
-            if self.upload_dep:
-                submit_dict['dependent'] = self.upload_dep
             if self.postcmd:
                 submit_dict['postcmd'] = self.postcmd
             if self.output_path:

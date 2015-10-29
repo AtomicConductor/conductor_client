@@ -125,14 +125,6 @@ def parse_args():
     submit_parser.add_argument("--resource",
                                help="resource pool to submit jobs to, defaults to show name.")
 
-    submit_parser.add_argument("--skip_time_check",
-                               action='store_true',
-                               default=False,
-                               help="Don't perform a time check between local and cloud")
-
-    submit_parser.add_argument("--upload_dependent",
-                               help="job id of another job that this should be upload dependent on.")
-
     submit_parser.add_argument("--upload_file",
                                help="The path to an upload file")
 

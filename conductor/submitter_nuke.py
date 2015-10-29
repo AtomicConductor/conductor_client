@@ -273,8 +273,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             postcmd: str?
             priority: int?
             resource: int, core count
-            skip_time_check: bool?
-            upload_dependent: int? jobid?
             upload_file: str , the filepath to the dependency text file 
             upload_only: bool
             upload_paths: list of str?
