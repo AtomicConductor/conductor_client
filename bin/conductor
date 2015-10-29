@@ -125,6 +125,10 @@ def parse_args():
     submit_parser.add_argument("--resource",
                                help="resource pool to submit jobs to, defaults to show name.")
 
+    submit_parser.add_argument("--job_title",
+                               help=("The title to name the job.  This is the title "
+                                     "that will be displayed in the web ui"))
+
     submit_parser.add_argument("--upload_file",
                                help="The path to an upload file")
 

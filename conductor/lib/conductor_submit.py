@@ -50,6 +50,7 @@ class Submit():
         self.upload_only = args.get('upload_only')
         self.postcmd = args.get('postcmd')
         self.force = args.get('force')
+        self.job_title = args.get('job_title')
 
         # Apply client config values in cases where arguments have not been passed in
         self.cores = args.get('cores', CONFIG["instance_cores"])
@@ -86,7 +87,7 @@ class Submit():
 
     def validate_args(self):
         '''
-        Ensure that the combination of arugments don't result in an invalid job/request
+        Ensure that the combination of arguments don't result in an invalid job/request
         '''
         # TODO: Clean this shit up
         if self.raw_command and self.frames:
@@ -125,6 +126,7 @@ class Submit():
         submit_dict['location'] = self.location
         submit_dict['docker_image'] = self.docker_image
         submit_dict['local_upload'] = self.local_upload
+        submit_dict['job_title'] = self.job_title
 
         if upload_files:
             submit_dict['upload_files'] = upload_files
