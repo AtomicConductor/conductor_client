@@ -320,6 +320,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["output_path"] = maya_utils.get_image_dirpath()
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
+        ocio_config = maya_utils.get_ocio_config()
+        if ocio_config != "":
+            print("Setting OCIO environment variable...")
+            conductor_args["env"] = {"OCIO": ocio_config}
 
         # if there are any dependencies, generate a dependendency manifest and add it as an argument
         dependency_filepaths = data["dependencies"].keys()
