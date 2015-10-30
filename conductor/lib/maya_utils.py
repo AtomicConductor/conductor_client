@@ -1,4 +1,4 @@
-import os, re
+import os, re, yaml
 import functools
 from maya import cmds
 
@@ -224,9 +224,21 @@ def collect_dependencies(node_attrs):
 
                     dependencies.append(path)
 
+    #  Grab any OCIO settings that might be there...
+    ocio_config = get_ocio_config()
+    if ocio_config != "":
+        print("OCIO config detected -- %s" % ocio_config)
+        dependencies.append(ocio_config)
+        dependencies.append(parse_ocio_config(ocio_config))
+
+
     # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
 
+def get_ocio_config():
+    cmds.select("defaultColorMgtGlobals")
+    ocio_config = cmds.getAttr(".cfp")
+    return ocio_config
 
 #  Parse the xgen file to find the paths for extra dependencies not explicitly
 #  named. This will return a list of files and directories.
@@ -272,3 +284,20 @@ def parse_xgen_file(path, node):
                 continue
 
     return file_paths
+
+#  Parse the OCIO config file to get the location of the associated LUT files
+def parse_ocio_config(config_file):
+
+    def bunk_constructor(loader, node):
+        pass
+
+    yaml.add_constructor(u"ColorSpace", bunk_constructor)
+    yaml.add_constructor(u"View", bunk_constructor)
+
+    with open(config_file, 'r') as f:
+        contents = yaml.load(f)
+
+    config_path = os.path.dirname(config_file)
+    print("Adding LUT config path %s" % config_path + "/" +  contents['search_path'])
+    return config_path + "/" + contents['search_path']
+    
