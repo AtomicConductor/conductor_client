@@ -15,7 +15,7 @@ except:
 
 import conductor
 from conductor.setup import *
-from conductor.lib import conductor_submit, downloader, uploader
+from conductor.lib import conductor_submit, downloader2, uploader
 
 
 def parse_args():
@@ -258,7 +258,7 @@ def run_uploader(args):
 
 
 def run_downloader(args):
-    downloader.run_downloader(args)
+    downloader2.run_downloader(args)
 
 
 
