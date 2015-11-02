@@ -494,7 +494,7 @@ class Uploader():
 
 
     def main(self, run_one_loop=False):
-        logger.info('Starting Uploader...')
+        logger.info('Uploader Started. Checking for uploads...')
 
         while not common.SIGINT_EXIT:
             try:

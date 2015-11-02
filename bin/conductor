@@ -41,82 +41,14 @@ def parse_args():
                                           formatter_class=argparse.RawTextHelpFormatter)
 
     submit_parser.add_argument("--cmd",
-                               help="execute this command.",
-                               type=str)
-
-    submit_parser.add_argument("--frames",
-                               help="frame range to execute over.",
-                               type=str)
-
-    submit_parser.add_argument("--user",
-                               help="Username to submit as",
-                               type=str,
-                               default=getpass.getuser(),
-                               required=False)
-
-    submit_parser.add_argument("--output_path",
-                               help="path to copy renders to",
-                               type=str,
-                               required=False)
-
-    submit_parser.add_argument("--upload_file",
-                               help="The path to an upload file",
-                               type=str,
-                               required=False)
-
-    submit_parser.add_argument("--upload_paths",
-                               default=[],
-                               help="Paths to upload",
-                               nargs="*")
-
-    submit_parser.add_argument("--resource", help="resource pool to submit jobs to, defaults to show name.",
-                               type=str,
-                               required=False)
-
-    submit_parser.add_argument("--machine_type",
-                               help="Type of machine to run on (\"standard\", \"highmem\", or \"highcpu\")",
-                               type=str,
-                               required=False)
+                               help="execute this command.")
 
     submit_parser.add_argument("--cores",
                                help="Number of cores that this job should run on (highmem and highcpu machines have a minimum of 2 cores)",
-                               type=int,
-                               required=False)
+                               type=int)
 
-    submit_parser.add_argument("--priority",
-                               help="Set the priority of the submitted job. Default is 5",
-                               type=str,
-                               required=False)
-
-    submit_parser.add_argument("--upload_dependent",
-                               help="job id of another job that this should be upload dependent on.",
-                               type=str,
-                               required=False)
-
-    submit_parser.add_argument("--upload_only",
-                               help="Only upload the files, don't start the render",
-                               action='store_true')
-
-    submit_parser.add_argument("--force",
-                               help="Do not check for existing uploads, force a new upload",
-                               action='store_true')
-
-    submit_parser.add_argument("--postcmd",
-                               help="Run this command once the entire job is complete and downloaded",
-                               type=str,
-                               required=False)
-
-    submit_parser.add_argument("--skip_time_check",
-                               action='store_true',
-                               default=False,
-                               help="Don't perform a time check between local and cloud")
-
-    submit_parser.add_argument("--local_upload",
-                               help="Trigger files to be uploaded localy",
-                               choices=[False, True],
-                               type=cast_to_bool,
-                               default=None,
-                               required=False)
+    submit_parser.add_argument("--docker_image",
+                               help="docker image to run render in")
 
     submit_parser.add_argument("--env",
         help=(r"Specify environment variable statements to be executed on Conductor's "
@@ -141,23 +73,77 @@ def parse_args():
              "which means that when referencing Conductor\'s environment variable, "
              "A dollar sign syntax must be used:\n"
              "\t--env PYTHONPATH=\"c:\\My Documents\";%%PYTHONPATH%%;$PYTHONPATH"),
-           nargs="*",
-           default={},
-           action=ValidateArgEnv,
-           required=False)
+        nargs="*",
+        default={},
+        action=ValidateArgEnv)
 
+    submit_parser.add_argument("--force",
+                               help="Do not check for existing uploads, force a new upload",
+                               action='store_true')
+
+    submit_parser.add_argument("--frames",
+                               help="frame range to execute over.")
+
+    submit_parser.add_argument("--local_upload",
+                               help="Trigger files to be uploaded localy",
+                               choices=[False, True],
+                               type=cast_to_bool,
+                               default=None)
 
     submit_parser.add_argument("--location",
-                                 help=('An optional string to indicate which location this submitted job should be registered as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader running (for downloading completed renders). This location string allows each conductor downloader to target only files that match the appropriate location. This is potentially useful when you have multiple downloaders running but each have differing file systems available to them (e.g. downloader1 has /filesystem1 available to it, but downloader2 only has /filesystem2 available to it).  In this case downloader1 should only download files that exist on /filesystem1 and downloader2 should only download files that exist on /filesystem2.  This is achieved by including a location string (such as "location1" or "location2") when submitting jobs (and when running a downloader or uploader command).'),
-                                 type=str)
+            help=('An optional string to indicate which location this submitted '
+                  'job should be registered as. This option is only relevant '
+                  'for conductor accounts which submits jobs from different '
+                  'locations (e.g. differing geographic locations or office '
+                  'locations that have differing file systems). Typically each '
+                  'location would have its own conductor downloader running (for '
+                  'downloading completed renders). This location string allows '
+                  'each conductor downloader to target only files that match the '
+                  'appropriate location. This is potentially useful when you have '
+                  'multiple downloaders running but each have differing file '
+                  'systems available to them (e.g. downloader1 has /filesystem1 '
+                  'available to it, but downloader2 only has /filesystem2 '
+                  'available to it).  In this case downloader1 should only '
+                  'download files that exist on /filesystem1 and downloader2 '
+                  'should only download files that exist on /filesystem2.  '
+                  'This is achieved by including a location string (such as '
+                  '"location1" or "location2") when submitting jobs (and when '
+                  'running a downloader or uploader command).'))
 
+    submit_parser.add_argument("--machine_type",
+                               help='Type of machine to run on ("standard", "highmem", or "highcpu")')
 
-    submit_parser.add_argument("--docker_image",
-                               help="docker image to run render in",
-                               type=str,
-                               default=None,
-                               required=False)
+    submit_parser.add_argument("--output_path",
+                               help="path to copy renders to")
 
+    submit_parser.add_argument("--postcmd",
+                               help="Run this command once the entire job is complete and downloaded")
+
+    submit_parser.add_argument("--priority",
+                               help="Set the priority of the submitted job. Default is 5")
+
+    submit_parser.add_argument("--resource",
+                               help="resource pool to submit jobs to, defaults to show name.")
+
+    submit_parser.add_argument("--job_title",
+                               help=("The title to name the job.  This is the title "
+                                     "that will be displayed in the web ui"))
+
+    submit_parser.add_argument("--upload_file",
+                               help="The path to an upload file")
+
+    submit_parser.add_argument("--upload_only",
+                               help="Only upload the files, don't start the render",
+                               action='store_true')
+
+    submit_parser.add_argument("--upload_paths",
+                               default=[],
+                               help="Paths to upload",
+                               nargs="*")
+
+    submit_parser.add_argument("--user",
+                               help="Username to submit as",
+                               default=getpass.getuser())
 
     submit_parser.set_defaults(func=run_submit)
 
@@ -167,14 +153,14 @@ def parse_args():
     #############################
     uploader_parser_desciption = "parse uploader arguments"
     uploader_parser_help = ""
+
     uploader_parser = subparsers.add_parser("uploader", parents=[parent_parser],
                                       help=uploader_parser_help,
                                       description=uploader_parser_desciption,
                                       formatter_class=argparse.RawTextHelpFormatter)
 
     uploader_parser.add_argument("--location",
-                                 help=('An optional string to indicate which location this uploader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor uploader process running. This location string allows each uploader to target specific upload jobs (files to upload) that are appropriate for it. This is potentially useful as each location may have differing file systems available to it (e.g. uploader1 has /filesystem1 available to it, but uploader2 only has /filesystem2 available to it).  In this case uploader1 should only upload files that exist on /filesystem1 and uploader2 should only upload files that exist on /filesystem2.  This is achieved by including a location argument (such as "location1" or "location2") when submitting jobs, as well as when launching this uploader command.'),
-                                 type=str)
+                                 help=('An optional string to indicate which location this uploader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor uploader process running. This location string allows each uploader to target specific upload jobs (files to upload) that are appropriate for it. This is potentially useful as each location may have differing file systems available to it (e.g. uploader1 has /filesystem1 available to it, but uploader2 only has /filesystem2 available to it).  In this case uploader1 should only upload files that exist on /filesystem1 and uploader2 should only upload files that exist on /filesystem2.  This is achieved by including a location argument (such as "location1" or "location2") when submitting jobs, as well as when launching this uploader command.'))
 
     uploader_parser.set_defaults(func=run_uploader)
 
@@ -186,21 +172,23 @@ def parse_args():
 
     downloader_parser_desciption = "parse downloader arguments"
     downloader_parser_help = ""
+
     downloader_parser = subparsers.add_parser("downloader", parents=[parent_parser],
                                   help=downloader_parser_help,
                                   description=downloader_parser_desciption,
                                   formatter_class=argparse.RawTextHelpFormatter)
+
     downloader_parser.add_argument("--job_id",
-                                  help="Manually download output for this job",
-                                  required=False)
+                                  help="Manually download output for this job")
+
     downloader_parser.add_argument("--task_id",
-                                  help="Manually download output for this task",
-                                  required=False)
+                                  help="Manually download output for this task")
+
     downloader_parser.add_argument("--output",
                                    help="Override for the output directory")
+
     downloader_parser.add_argument("--location",
-                                   help=('An optional string to indicate which location this downloader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader process running. This location argument allows each downloader to target specific jobs (to download upon job-completion) that match its appropriate location.  Essentially this allows the location of which a job was submitted from to also be the destination in which to deliver completed renders to (which would typically be the desired behavior).'),
-                                   type=str)
+                                   help=('An optional string to indicate which location this downloader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader process running. This location argument allows each downloader to target specific jobs (to download upon job-completion) that match its appropriate location.  Essentially this allows the location of which a job was submitted from to also be the destination in which to deliver completed renders to (which would typically be the desired behavior).'))
 
 
     downloader_parser.set_defaults(func=run_downloader)

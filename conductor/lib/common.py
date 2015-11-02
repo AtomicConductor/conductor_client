@@ -36,13 +36,12 @@ def setup_logger():
 LOGGER = setup_logger()
 
 
-# Create trap for SIGINT that sets common.EXIT to true
+# Use this global variable across all modules to query whether the the SIGINT signal has been triggered
 SIGINT_EXIT = False
 def signal_handler(sig_number, stack_frame):
     LOGGER.debug('in signal_handler. setting common.SIGINT_EXIT to True')
     global SIGINT_EXIT
     SIGINT_EXIT = True
-signal.signal(signal.SIGINT, signal_handler)
 
 def register_sigint_signal_handler(signal_handler=signal_handler):
     signal.signal(signal.SIGINT, signal_handler)

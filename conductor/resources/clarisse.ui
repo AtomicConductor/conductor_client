@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ui_maya_wgt</class>
+ <widget class="QWidget" name="ui_maya_wgt">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>145</width>
+    <height>59</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="margin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QGroupBox" name="ui_render_layers_grpbx">
+     <property name="toolTip">
+      <string>Choose the render layers to submit for rendering (green check)</string>
+     </property>
+     <property name="title">
+      <string>Render Layers</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QCheckBox" name="ui_upload_only">
+        <property name="toolTip">
+         <string>Only upload dependencies. Don't submit render job</string>
+        </property>
+        <property name="text">
+         <string>Upload Only</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>ui_upload_only</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../submitter_maya_resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

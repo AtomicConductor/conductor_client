@@ -294,8 +294,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
             'postcmd': str?,
             'priority': int?,
             'resource': ?,
-            'skip_time_check': bool?,
-            'upload_dependent': int? jobid?,
             'upload_file': str,
             'upload_only': bool,
             'upload_paths': list of str?,
@@ -312,8 +310,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
             postcmd: str?
             priority: int?
             resource: ?
-            skip_time_check: bool?
-            upload_dependent: int? jobid?
             upload_file: str
             upload_only: bool
             upload_paths: list of str?

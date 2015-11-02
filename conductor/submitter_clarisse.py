@@ -1,8 +1,7 @@
 import os
 import sys
-from PySide import QtGui, QtCore
-import nuke
-import imp
+from PyQt4 import Qt, QtGui, QtCore, uic
+import imp, ix
 
 try:
     imp.find_module('conductor')
@@ -10,8 +9,10 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import conductor
-from conductor.lib import file_utils, nuke_utils, pyside_utils, common, api_client
+from conductor.lib import file_utils, pyside_utils
 from conductor import submitter
+
+import pyqt_clarisse
 
 
 '''
@@ -21,44 +22,19 @@ TODO:
 3. Test file pathing on Windows. Especially file_utils manipulations.
 '''
 
-class NukeWidget(QtGui.QWidget):
+class ClarisseWidget(QtGui.QWidget):
 
     # The .ui designer filepath
-    _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'nuke.ui')
+    _parent_ui_path = os.path.join(submitter.RESOURCES_DIRPATH, 'submitter.ui')
+    _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'clarisse.ui')
 
     def __init__(self, parent=None):
-        super(NukeWidget, self).__init__(parent=parent)
-        pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
+        super(ClarisseWidget, self).__init__(parent=parent)
+        uic.loadUi(self._ui_filepath, self)
         self.refreshUi()
 
     def refreshUi(self):
-        write_nodes = nuke_utils.get_all_write_nodes()
-        self.populateWriteNodes(write_nodes)
-
-
-    def populateWriteNodes(self, write_nodes):
-        '''
-        Populate each Write and Deep Write node into the UI QTreeWidget.
-        Any write nodes that are currently selected in nuke by the user will be
-        also be selected in UI. Note that only write nodes that are selected in 
-        the UI will be rendered when submitting to Conductor.
-        '''
-        self.ui_write_nodes_trwgt.clear()
-        assert isinstance(write_nodes, dict), "write_nodes argument must be a dict. Got: %s" % type(write_nodes)
-        for write_node, selected in write_nodes.iteritems():
-            tree_item = QtGui.QTreeWidgetItem([write_node])
-            self.ui_write_nodes_trwgt.addTopLevelItem(tree_item)
-
-            # If the node is selected in Nuke, then select it in the UI
-            if selected:
-                self.ui_write_nodes_trwgt.setItemSelected(tree_item, True)
-
-
-    def getSelectedWriteNodes(self):
-        '''
-        Return the names of the write nodes that are selected in the UI
-        '''
-        return [item.text(0)for item in self.ui_write_nodes_trwgt.selectedItems()]
+        pass
 
     def getUploadOnlyBool(self):
         '''
@@ -67,56 +43,82 @@ class NukeWidget(QtGui.QWidget):
         return self.ui_upload_only.isChecked()
 
 
-    @QtCore.Slot(bool, name="on_ui_upload_only_toggled")
-    def on_ui_upload_only_toggled(self, toggled):
-        '''
-        when the "Upload Only" checkbox is checked on, disable the Write 
-        Nodes widget. when the "Upload Only" checkbox is checked off, enable
-        the Write Nodes widget.
-        '''
-        self.ui_write_nodes_trwgt.setDisabled(toggled)
-
-
-
-
-class NukeConductorSubmitter(submitter.ConductorSubmitter):
+class ClarisseConductorSubmitter():
     '''
-    The class is PySide front-end for submitting Nuke renders to Conductor.
+    The class is PySide front-end for submitting Clarisse renders to Conductor.
     To launch the UI, simply call self.runUI method.
     
     This class serves as an implemenation example of how one might write a front 
-    end for a Conductor submitter for Nuke.  This class is designed to be ripped
+    end for a Conductor submitter for Clarisse.  This class is designed to be ripped
     apart of subclassed to suit the specific needs of a studio's pipeline. 
     Have fun :) 
     '''
 
-    _window_title = "Conductor - Nuke"
+    _window_title = "Conductor - Clarisse"
+    ui = None
 
-
-    @classmethod
-    def runUi(cls):
+    # @classmethod
+    def runUi(self):
         '''
         Launch the UI
         '''
-        ui = cls()
-        ui.show()
+        # ui = cls()
+        self.app = Qt.QApplication(["Clarisse"])
+        # cls.ui = uic.loadUi(os.path.join(submitter.RESOURCES_DIRPATH, 'submitter.ui'))
+        # uic.loadUi(os.path.join(submitter.RESOURCES_DIRPATH, 'clarisse.ui'))
+        self.ui = uic.loadUi(os.path.join(submitter.RESOURCES_DIRPATH, 'submitter.ui'))
+        extended_widget_layout = self.ui.ui_extended_container_wgt.layout()
+        extended_widget_layout.addWidget(ClarisseWidget())
+
+        self.initializeUi()
+
+        self.ui.show()
+        pyqt_clarisse.exec_(self.app)
+
 
     def __init__(self, parent=None):
-        super(NukeConductorSubmitter, self).__init__(parent=parent)
-        self.refreshUi()
+        # super(ClarisseConductorSubmitter, self).__init__()
+        return
+        # self.refreshUi()
 
     def initializeUi(self):
-        super(NukeConductorSubmitter, self).initializeUi()
+        self.ui.ui_start_frame_lnedt.setValidator(QtGui.QIntValidator())
+        self.ui.ui_end_frame_lnedt.setValidator(QtGui.QIntValidator())
+        self.ui.ui_start_end_wgt.setEnabled(True)
+        self.ui.ui_custom_wgt.setDisabled(True)
+        frame_range = ix.application.get_current_frame_range()
+        self.setFrameRange(int(frame_range[0]), int(frame_range[1]))
 
+        #  Populate instance type combo box
+        instance_types = submitter.get_conductor_instance_types()
+        self.ui.ui_instance_type_cmbx.clear()
+        for instance_info in instance_types:
+            self.ui.ui_instance_type_cmbx.addItem(instance_info['description'], userData=instance_info)
+
+        item_idx = self.ui.ui_instance_type_cmbx.findData({"cores": 16, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
+        if item_idx == -1:
+            raise Exception("Could not find combobox entry for core count: %s!"
+                            "This should never happen!" % core_count)
+        return self.ui.ui_instance_type_cmbx.setCurrentIndex(item_idx)
+
+    def setFrameRange(self, start, end):
+        '''
+        Set the UI's start/end frame fields
+        '''
+        self.setStartFrame(start)
+        self.setEndFrame(end)
+
+    def setStartFrame(self, start):
+        self.ui.ui_start_frame_lnedt.setText(str(start))
+    
+    def setEndFrame(self, end):
+        self.ui.ui_end_frame_lnedt.setText(str(end))
 
     def refreshUi(self):
-        start, end = nuke_utils.get_frame_range()
-        self.setFrameRange(start, end)
-        self.extended_widget.refreshUi()
-
+        pass
 
     def getExtendedWidget(self):
-        return NukeWidget()
+        return ClarisseWidget()
 
 
     def generateConductorCmd(self):
@@ -124,16 +126,11 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         Return the command string that Conductor will execute
         
         example:
-            "-X AFWrite.write_exr -F %f /Volumes/af/show/walk/shots/114/114_100/sandbox/mjtang/tractor/nuke_render_job_122/walk_114_100_main_comp_v136.nk"
+            "nuke-render -X AFWrite.write_exr -F %f /Volumes/af/show/walk/shots/114/114_100/sandbox/mjtang/tractor/nuke_render_job_122/walk_114_100_main_comp_v136.nk"
 
         '''
-        base_cmd = "-F %%f %s %s"
-
-        write_nodes = self.extended_widget.getSelectedWriteNodes()
-        write_nodes_args = ["-X %s" % write_node for write_node in write_nodes]
-        nuke_scriptpath = nuke_utils.get_nuke_script_path()
-        cmd = base_cmd % (" ".join(write_nodes_args), nuke_scriptpath)
-        return cmd
+        base_cmd = "nuke-render -F %%f %s %s"
+        return base_cmd
 
 
     def collectDependencies(self):
@@ -154,10 +151,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                             'Camera':['file'],
                             'Camera2':['file']}
 
-        write_nodes = self.extended_widget.getSelectedWriteNodes()
-        dependencies = nuke_utils.collect_dependencies(write_nodes, dependency_knobs)
-        dependencies.append(nuke_utils.get_nuke_script_path())
-        return dependencies
+        return []
 
 
     def getOutputPath(self):
@@ -167,16 +161,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         directory tree).  Return a two-item tuple, containing the output path, and
         a list of the write node's output paths 
         '''
-        write_paths = []
-        write_nodes = self.extended_widget.getSelectedWriteNodes()
-
-        for write_node in write_nodes:
-            filepath = nuke_utils.get_write_node_filepath(write_node)
-            if filepath:
-                write_paths.append(filepath)
-
-        output_path = file_utils.get_common_dirpath(write_paths)
-        return output_path, write_paths
+        return "", []
 
     def runPreSubmission(self):
         '''
@@ -204,28 +189,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                 "output_path":output_path}
 
 
-    def getDockerImage(self):
-        '''
-        If there is a docker image in the config.yml file, then use it (the
-        parent class' method retrieves this).  Otherwise query Nuke and its
-        plugins for their version information, and then query  Conductor for 
-        a docker image that meets those requirements. 
-        '''
-        docker_image = super(NukeConductorSubmitter, self).getDockerImage()
-        if not docker_image:
-            nuke_version = nuke_utils.get_nuke_version()
-            software_info = {"software": "nuke",
-                             "software_version":nuke_version}
-
-            # Get a list of nuke plugins
-            plugins = nuke_utils.get_plugins()
-            # Convert the plugins list into a dictionary (to conform to endpoint expectations)
-            # Populate the keys with each plugin, where the value is an empty string
-            # (hopefully we will populate it with relevant information such as plugin version, etc)
-            plugins_dict = dict([(p, "") for p in plugins])
-            software_info["plugins"] = plugins_dict
-            docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
-        return docker_image
 
     def runValidation(self, raw_data):
         '''
@@ -273,6 +236,8 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             postcmd: str?
             priority: int?
             resource: int, core count
+            skip_time_check: bool?
+            upload_dependent: int? jobid?
             upload_file: str , the filepath to the dependency text file 
             upload_only: bool
             upload_paths: list of str?
@@ -284,7 +249,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
-        conductor_args["docker_image"] = self.getDockerImage()
         conductor_args["output_path"] = data["output_path"]
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
@@ -304,5 +268,5 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             print "Conductor: Submission aborted"
             return
 
-        return super(NukeConductorSubmitter, self).runConductorSubmission(data)
+        super(ClarisseConductorSubmitter, self).runConductorSubmission(data)
 

@@ -19,7 +19,7 @@ except ImportError, e:
 
 
 import conductor.setup
-from conductor.lib import file_utils, api_client, uploader, common
+from conductor.lib import file_utils, api_client, uploader
 
 
 logger = conductor.setup.logger
@@ -45,18 +45,17 @@ class Submit():
         self.raw_command = args.get('cmd') or ''
         self.user = args.get('user') or getpass.getuser()
         self.frames = args.get('frames')
-        self.upload_dep = args.get('upload_dependent')
         self.output_path = args.get('output_path')
         self.upload_file = args.get('upload_file')
         self.upload_only = args.get('upload_only')
         self.postcmd = args.get('postcmd')
-        self.skip_time_check = args.get('skip_time_check') or False
         self.force = args.get('force')
+        self.job_title = args.get('job_title')
 
         # Apply client config values in cases where arguments have not been passed in
         self.cores = args.get('cores', CONFIG["instance_cores"])
         self.machine_flavor = args.get('machine_type') or CONFIG["instance_flavor"]
-        print ("machine flavor is %s" % self.machine_flavor)
+
         self.resource = args.get('resource', CONFIG["resource"])
         self.priority = args.get('priority', CONFIG["priority"])
 
@@ -82,17 +81,13 @@ class Submit():
         else:
             self.local_upload = CONFIG['local_upload']
 
-        # For now always default nuke uploads to skip time check
-        if self.upload_only or "nuke-render" in self.raw_command:
-            self.skip_time_check = True
-
         self.location = args.get('location') or CONFIG.get("location")
         self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
         logger.debug("Consumed args")
 
     def validate_args(self):
         '''
-        Ensure that the combination of arugments don't result in an invalid job/request
+        Ensure that the combination of arguments don't result in an invalid job/request
         '''
         # TODO: Clean this shit up
         if self.raw_command and self.frames:
@@ -131,6 +126,7 @@ class Submit():
         submit_dict['location'] = self.location
         submit_dict['docker_image'] = self.docker_image
         submit_dict['local_upload'] = self.local_upload
+        submit_dict['job_title'] = self.job_title
 
         if upload_files:
             submit_dict['upload_files'] = upload_files
@@ -156,8 +152,6 @@ class Submit():
 
             if self.priority:
                 submit_dict['priority'] = self.priority
-            if self.upload_dep:
-                submit_dict['dependent'] = self.upload_dep
             if self.postcmd:
                 submit_dict['postcmd'] = self.postcmd
             if self.output_path:

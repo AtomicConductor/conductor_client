@@ -1,4 +1,5 @@
-import os, re
+import os, re, yaml
+import functools
 from maya import cmds
 
 import conductor.setup
@@ -13,6 +14,25 @@ dependency_attrs = {'file':['fileTextureName'],
                      'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam'],
                      'xgmPalette':['xfn']
                     }
+
+def dec_undo(func):
+    '''
+    DECORATOR - Wrap the decorated function in a Maya undo block.  
+    This is useful when wrapping functions which execute multiple maya commands,
+    thereby altering maya's state and undo stack with multiple operations.  
+    This allows the artis to simply execute one undo call to undo all of the 
+    calls that this wrapped function executed (as opposed to having the artist
+    press undo undo undo undo..etc) 
+    '''
+    @functools.wraps(func)
+    def wrapper(*a, **kw):
+        cmds.undoInfo(openChunk=True)
+        try:
+            return func(*a, **kw)
+        finally:
+            cmds.undoInfo(closeChunk=True)
+    return wrapper
+
 
 def get_transform(shape_node):
     '''
@@ -125,7 +145,7 @@ def get_frame_range():
     return [(int(playback_start), int(playback_end)), (int(range_start), int(range_end))]
 
 
-
+@dec_undo
 def get_render_layers_info():
     '''
     TODO: Does the default render layer name need to be augmented when passed to maya's rendering command?
@@ -140,9 +160,16 @@ def get_render_layers_info():
     of an arbitraty limitation, but implemented to reduce complexity.  This 
     restriction may need to be removed.
     
+    Note that this function is wrapped in an undo block because it actually changes
+    the state of the maya session (unfortuantely). There doesn't appear to be
+    an available api call to query maya for this information, without changing
+    it's state (switching the active render layer)
     '''
     render_layers = []
     cameras = cmds.ls(type="camera", long=True)
+
+    # record the original render layer so that we can set it back later. Wow this sucks
+    original_render_layer = cmds.editRenderLayerGlobals(currentRenderLayer=True, q=True)
     for render_layer in cmds.ls(type="renderLayer"):
         layer_info = {"layer_name": render_layer}
         try:
@@ -158,6 +185,8 @@ def get_render_layers_info():
         layer_info["renderable"] = cmds.getAttr("%s.renderable" % render_layer)
         render_layers.append(layer_info)
 
+    # reinstate the original render layer as the active render layer
+    cmds.editRenderLayerGlobals(currentRenderLayer=original_render_layer)
     return render_layers
 
 
@@ -195,9 +224,21 @@ def collect_dependencies(node_attrs):
 
                     dependencies.append(path)
 
+    #  Grab any OCIO settings that might be there...
+    ocio_config = get_ocio_config()
+    if ocio_config != "":
+        print("OCIO config detected -- %s" % ocio_config)
+        dependencies.append(ocio_config)
+        dependencies.append(parse_ocio_config(ocio_config))
+
+
     # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
 
+def get_ocio_config():
+    cmds.select("defaultColorMgtGlobals")
+    ocio_config = cmds.getAttr(".cfp")
+    return ocio_config
 
 #  Parse the xgen file to find the paths for extra dependencies not explicitly
 #  named. This will return a list of files and directories.
@@ -243,3 +284,20 @@ def parse_xgen_file(path, node):
                 continue
 
     return file_paths
+
+#  Parse the OCIO config file to get the location of the associated LUT files
+def parse_ocio_config(config_file):
+
+    def bunk_constructor(loader, node):
+        pass
+
+    yaml.add_constructor(u"ColorSpace", bunk_constructor)
+    yaml.add_constructor(u"View", bunk_constructor)
+
+    with open(config_file, 'r') as f:
+        contents = yaml.load(f)
+
+    config_path = os.path.dirname(config_file)
+    print("Adding LUT config path %s" % config_path + "/" +  contents['search_path'])
+    return config_path + "/" + contents['search_path']
+    
