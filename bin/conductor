@@ -179,7 +179,8 @@ def parse_args():
                                   formatter_class=argparse.RawTextHelpFormatter)
 
     downloader_parser.add_argument("--job_id",
-                                  help="Manually download output for this job")
+                                  help="Manually download output for this job",
+                                  action='append')
 
     downloader_parser.add_argument("--task_id",
                                   help="Manually download output for this task")

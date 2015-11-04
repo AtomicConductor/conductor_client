@@ -36,36 +36,119 @@ class DownloadWorker(worker.ThreadWorker):
         logger.debug('kwargs are %s', kwargs)
 
         worker.ThreadWorker.__init__(self, *args, **kwargs)
-        self.destination = kwargs['destination']
         self.output_path = kwargs.get('output_path')
+        self.api_helper = api_client.ApiClient()
+
+    def report_error(self, download_id, error_message):
+        try:
+            logger.error('failing upload due to: \n%s' % error_message)
+            # report error_message to the app
+            resp_str, resp_code = self.api_helper.make_request(
+                '/downloads/%s/fail' % download_id,
+                data=error_message,
+                verb='POST')
+        except e:
+            pass
+        return True
 
     def do_work(self, job):
-        logger.debug('got file to download:')
+        try:
+            download_id = 0
+            download_id = job.get('download_id', 0)
+            self._do_work(job)
+        except Exception, e:
+            error_message = traceback.format_exc()
+            error_message += traceback.print_exc()
+            logger.error('hit error:')
+            logger.error(error_message)
+            self.report_error(download_id, error_message)
 
-        url = job['url']
-        path = job['path']
-        md5 = job['md5']
-        size = int(job['size'])
+    def _do_work(self, job):
+        download_id = job['download_id']
+        files = job['files']
+        destination = job['destination']
+        done = [False]
+        bytes_downloaded = [0]
+        total_size = 0
+        for file in files:
+            total_size += file['size']
 
-        logger.debug('\turl is %s', url)
-        logger.debug('\tpath is %s', path)
-        logger.debug('\tmd5 is %s', md5)
-        logger.debug('\tsize is %s', size)
+        reporter = threading.Thread(target=self.report_loop, args=(download_id, total_size, bytes_downloaded, done))
+        reporter.daemon = True
+        reporter.start()
 
-        if self.output_path:
-            logger.debug('using output_path %s', path)
-            path = re.sub(self.destination, self.output_path, path)
-            logger.debug('set new path to: %s', path)
+        for file in files:
+            logger.debug('downloading file:')
 
-        if not self.correct_file_present(path, md5):
-            logger.debug('downloading file...')
-            self.metric_store.increment('bytes_to_download', size)
-            common.retry(lambda: self.download_file(url, path))
-            logger.debug('file downloaded')
-        else:
-            logger.debug('file already exists')
+            url = file['url']
+            path = file['path']
+            md5 = file['md5']
+            size = int(file['size'])
 
-    def download_file(self, download_url, path):
+            logger.debug('\turl is %s', url)
+            logger.debug('\tpath is %s', path)
+            logger.debug('\tmd5 is %s', md5)
+            logger.debug('\tsize is %s', size)
+
+            if self.output_path:
+                logger.debug('using output_path %s', path)
+                path = re.sub(destination, self.output_path, path)
+                logger.debug('set new path to: %s', path)
+
+            if not self.correct_file_present(path, md5):
+                logger.debug('downloading file...')
+                common.retry(lambda: self.download_file(url, path, bytes_downloaded))
+                logger.debug('file downloaded')
+            else:
+                logger.debug('file already exists')
+
+        done[0] = True
+        logger.debug('waiting for reporter thread')
+        reporter.join()
+
+    def report_loop(self, download_id, total_size, bytes_downloaded, done):
+        while True:
+            logger.debug('bytes_downloaded is %s' % bytes_downloaded)
+            logger.debug('done is %s' % done )
+            if done[0]:
+                # mark download as finished
+                post_dic = {
+                    'download_id': download_id,
+                    'status': 'downloaded',
+                    'bytes_downloaded': bytes_downloaded[0]
+                }
+                logger.debug('marking download %s as finished', download_id)
+                response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
+                logger.debug("updated status: %s\n%s", response_code, response_string)
+                return
+            if common.SIGINT_EXIT:
+                # mark download as pending
+                post_dic = {
+                    'download_id': download_id,
+                    'status': 'pending',
+                }
+                logger.debug('marking download %s as pending', download_id)
+                response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
+                logger.debug("updated status: %s\n%s", response_code, response_string)
+                return
+
+            self.report(download_id, total_size, bytes_downloaded)
+            for i in range(0,9):
+                if not done[0] and not common.SIGINT_EXIT:
+                    time.sleep(1)
+
+    def report(self, download_id, total_size, bytes_downloaded):
+        post_dic = {
+            'download_id': download_id,
+            'status': 'downloading',
+            'bytes_downloaded': bytes_downloaded[0],
+            'bytes_to_download': total_size,
+        }
+        response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
+        logger.debug("updated status: %s\n%s", response_code, response_string)
+        return response_string, response_code
+
+    def download_file(self, download_url, path, bytes_downloaded):
         self.mkdir_p(os.path.dirname(path))
         logger.debug('trying to download %s', path)
         request = requests.get(download_url, stream=True)
@@ -73,7 +156,8 @@ class DownloadWorker(worker.ThreadWorker):
             for chunk in request.iter_content(chunk_size=CHUNK_SIZE):
                 if chunk:
                     file_pointer.write(chunk)
-                    self.metric_store.increment('bytes_downloaded', len(chunk))
+                    bytes_downloaded[0] += len(chunk)
+        request.raise_for_status()
         logger.debug('%s successfully downloaded', path)
         logger.debug('setting file perms to 666')
         os.chmod(path, 0666)
@@ -91,7 +175,10 @@ class DownloadWorker(worker.ThreadWorker):
             self.mkdir_p(base_dir)
 
         # create path (parent should already be created)
-        os.mkdir(path)
+        try:
+            os.mkdir(path)
+        except OSError:
+            pass
 
         # make path world writable
         os.chmod(path, 0777)
@@ -111,36 +198,6 @@ class DownloadWorker(worker.ThreadWorker):
         logger.debug('file is uptodate')
         return True
 
-class ReportThread(worker.Reporter):
-    def report_status(self, download_id):
-        ''' update status of download '''
-        post_dic = {
-            'download_id': download_id,
-            'status': 'downloading',
-            'bytes_downloaded': self.metric_store.get('bytes_downloaded'),
-            'bytes_to_download': self.metric_store.get('bytes_to_download'),
-        }
-        response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
-        logger.debug("updated status: %s\n%s", response_code, response_string)
-        return response_string, response_code
-
-    def start(self, download_id):
-        self.download_id = download_id
-        worker.Reporter.start(self)
-
-    def target(self):
-        while self.working and not common.SIGINT_EXIT:
-            if self.terminate:
-                logger.debug('exiting reporter thread')
-                return
-            self.report_status(self.download_id)
-            for i in range(0, 9):
-                if not self.working:
-                    return
-                if common.SIGINT_EXIT:
-                    return
-                time.sleep(1)
-
 
 class Download(object):
     naptime = 15
@@ -148,6 +205,7 @@ class Download(object):
         logger.debug('args are: %s', args)
 
         self.job_id = args.get('job_id')
+        self.daemon = False if self.job_id else True
         self.task_id = args.get('task_id')
         self.output_path = args.get('output')
         logger.info("output path=%s, job_id=%s, task_id=%s" % \
@@ -156,40 +214,16 @@ class Download(object):
         self.thread_count = CONFIG['thread_count']
         self.api_helper = api_client.ApiClient()
         common.register_sigint_signal_handler()
+        self.max_queue_size = self.thread_count
 
-    def handle_response(self, download_info, job_id=None):
-        download_id = download_info['download_id']
-        manager = self.create_manager(download_info, job_id)
-        for download in download_info['downloads']:
-            manager.add_task(download)
-        job_output = manager.join()
-        if job_id:
-            if job_output:
-                return False
-            return True
-
-        if not job_output:
-            logger.debug('job successfully completed')
-            self.report_status('downloaded', download_id)
-            return True
-        logger.debug('job failed:')
-        logger.debug(job_output)
-        self.report_status('failed', download_id)
-        return False
-
-    def create_manager(self, download_info, job_id):
+    def create_manager(self):
         args = []
         kwargs = {'thread_count': self.thread_count,
-                'output_path': self.output_path,
-                'destination': download_info['destination']}
+                'output_path': self.output_path}
         job_description = [
             (DownloadWorker, args, kwargs)
         ]
-        if job_id:
-            manager = worker.JobManager(job_description)
-        else:
-            reporter_description = [(ReportThread, download_info['download_id'])]
-            manager = worker.JobManager(job_description, reporter_description)
+        manager = worker.JobManager(job_description)
         manager.start()
         return manager
 
@@ -197,11 +231,32 @@ class Download(object):
         if not common.SIGINT_EXIT:
             time.sleep(self.naptime)
 
-    def main(self, job_id=None):
-        logger.info('starting downloader...')
-        if job_id:
-            logger.debug('getting download for job %s', job_id)
-            self.do_loop(job_id=job_id)
+    def print_queue_info(self):
+        while True:
+            logger.info('queue contains %s items' % self.manager.work_queues[0].qsize())
+            time.sleep(10)
+
+    def main(self, job_ids=None):
+        logger.info('started downloader...')
+        self.manager = self.create_manager()
+        printer = threading.Thread(target=self.print_queue_info)
+        printer.daemon = True
+        printer.start()
+        if job_ids:
+            for jid in job_ids:
+                logger.debug('getting download for job %s', jid)
+                job_info = self.get_next_download(job_id=jid, task_id=self.task_id)
+                if not job_info:
+                    error_message = 'could not get download info for job_id %s ' % jid
+                    if self.task_id:
+                        error_message += 'task_id: %s ' % self.task_id
+                    error_message += 'Is this a valid job?'
+                    logger.error(error_message)
+                    next
+                for download in job_info['downloads']:
+                    self.manager.add_task(download)
+            self.manager.join()
+            logger.debug('downloads finished')
         else:
             logger.debug('running downloader daemon')
             self.loop()
@@ -215,12 +270,20 @@ class Download(object):
                 logger.error(traceback.format_exc())
                 self.nap()
 
-    def do_loop(self, job_id=None):
-        next_download = self.get_next_download(job_id=job_id)
-        if not next_download:
+    def do_loop(self):
+        # don't add more than self.max_queue_size items on the queue
+        if self.manager.work_queues[0].qsize() >= self.max_queue_size:
+            logger.debug('queue is full at %s items. not adding any more tasks' % self.max_queue_size)
             self.nap()
             return
-        self.handle_response(next_download, job_id)
+
+        next_download = self.get_next_download()
+        if not next_download:
+            logger.debug('no downloads. sleeping...')
+            self.nap()
+            return
+
+        self.manager.add_task(next_download)
 
     def get_next_download(self, job_id=None, task_id=None):
         logger.debug('in get next download')
@@ -257,21 +320,6 @@ class Download(object):
             logger.error(traceback.format_exc())
             return None
 
-    def report_status(self, status, download_id=None):
-        if not download_id:
-            logger.debug("not reporting status as we weren't passed a download_id")
-            return None
-
-        ''' update status of download '''
-        post_dic = {
-            'download_id': download_id,
-            'status': status,
-        }
-        logger.debug('marking download %s as %s', download_id, status)
-        response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
-        logger.debug("updated status: %s\n%s", response_code, response_string)
-        return response_string, response_code
-
 def run_downloader(args):
     '''
     Start the downloader process. This process will run indefinitely, polling
@@ -280,9 +328,8 @@ def run_downloader(args):
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
     logger.debug('Downloader parsed_args is %s', args_dict)
-
     downloader = Download(args_dict)
-    downloader.main(job_id=args_dict.get('job_id'))
+    downloader.main(job_ids=args_dict.get('job_id'))
 
 if __name__ == "__main__":
     exit(1)
