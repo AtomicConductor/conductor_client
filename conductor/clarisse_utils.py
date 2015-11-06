@@ -31,6 +31,17 @@
 
 import os.path, tempfile, shutil, zipfile, ix, platform
 
+def get_clarisse_version():
+    return ix.application.get_version()
+
+def get_clarisse_images():
+    render_images = ix.api.OfObjectArray()
+    ix.application.get_factory().get_all_objects("Image", render_images)
+    return render_images
+
+def get_frame_range():
+    return ix.application.get_current_frame_range()
+
 # create folders according to a path
 def create_path(path):
     if not os.path.exists(path):
@@ -89,10 +100,15 @@ def do_export():
     attrs = ix.api.OfAttr.get_path_attrs()
     new_file_list = []
     attr_list = []
+    scene_info = {"output_path": ""}
     for i in range(attrs.get_count()):
         # deduplicating
         file = attrs[i].get_string()
         if not os.path.isfile(file):
+            #  Find the output path...
+            if attrs[i].get_name() == "save_as":
+                scene_info['output_path'] = os.path.dirname(file)
+
             print("Skipping file %s" % file)
             continue
         attr_list.append(attrs[i].get_full_name())
@@ -129,7 +145,9 @@ def do_export():
     # restoring file attributes with original paths
 
     # copying files in new directory
-    return_files = [gen_tempdir + '/' + name]
+    # return_files = [gen_tempdir + '/' + name]
+    scene_info["scene_file"] = "%s/%s" % (gen_tempdir, name)
+    scene_info["dependencies"] = [gen_tempdir + '/' + name]
     for file in unique_files:
         target = unique_files[file][5:]
         target_dir = gen_tempdir + os.path.dirname(target)
@@ -138,7 +156,7 @@ def do_export():
         ix.log_info("copying file '" + file + "'..." )
         ix.application.check_for_events()
         new_path = gen_tempdir + target
-        return_files.append(new_path)
+        scene_info["dependencies"].append(new_path)
         if platform.system == "Windows":
             shutil.copyfile(file, new_path)
         else:
@@ -161,7 +179,7 @@ def do_export():
     ix.disable_command_history()
 
     print("Dependencies: ")
-    for filename in return_files:
+    for filename in scene_info["dependencies"]:
         print("\t%s" % filename)
 
-    return return_files
+    return scene_info
