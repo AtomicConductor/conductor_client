@@ -47,6 +47,12 @@ def parse_args():
                                help="Number of cores that this job should run on (highmem and highcpu machines have a minimum of 2 cores)",
                                type=int)
 
+    submit_parser.add_argument("--database_filepath",
+             help=("The filepath to the local md5 caching database. If no filepath "
+                   "is specified, the database will be created in a temp directory. "
+                   "Note that this flag is only active when --local_upload is True."))
+
+
     submit_parser.add_argument("--docker_image",
                                help="docker image to run render in")
 
@@ -113,6 +119,22 @@ def parse_args():
     submit_parser.add_argument("--machine_type",
                                help='Type of machine to run on ("standard", "highmem", or "highcpu")')
 
+    submit_parser.add_argument("--md5_caching",
+            help=("Use cached md5s. This can dramatically improve the uploading "
+                  "times, as md5 checking can be very time consuming. Caching md5s "
+                  "allows subsequent uploads (of the same files) to skip the "
+                  "md5 generation process (if the files appear to not have been "
+                  "modified since the last time they were submitted). The cache is "
+                  "stored locally and uses a file's modification time and file size "
+                  "to intelligently guess whether the file has changed. Set this "
+                  "flag to False if there is concern that files may not be getting "
+                  "re-uploaded properly.  "
+                  "Note that this flag is only active when --local_upload is True."),
+            choices=[False, True],
+            type=cast_to_bool,
+            default=None)
+
+
     submit_parser.add_argument("--output_path",
                                help="path to copy renders to")
 
@@ -130,7 +152,10 @@ def parse_args():
                                      "that will be displayed in the web ui"))
 
     submit_parser.add_argument("--upload_file",
-                               help="The path to an upload file")
+            help=("A path to a text file whose contents list paths to upload to "
+                  "conductor. There should be one path per line in the text file. "
+                  "Valid paths are to files, directories (symlinked or not), as "
+                  "well as glob expressions. e.g * wildcards accepted"))
 
     submit_parser.add_argument("--upload_only",
                                help="Only upload the files, don't start the render",
@@ -159,8 +184,28 @@ def parse_args():
                                       description=uploader_parser_desciption,
                                       formatter_class=argparse.RawTextHelpFormatter)
 
+    uploader_parser.add_argument("--database_filepath",
+             help=("The filepath to the local md5 caching database. If no filepath "
+                   "is specified, the database will be created in a temp directory"))
+
     uploader_parser.add_argument("--location",
                                  help=('An optional string to indicate which location this uploader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor uploader process running. This location string allows each uploader to target specific upload jobs (files to upload) that are appropriate for it. This is potentially useful as each location may have differing file systems available to it (e.g. uploader1 has /filesystem1 available to it, but uploader2 only has /filesystem2 available to it).  In this case uploader1 should only upload files that exist on /filesystem1 and uploader2 should only upload files that exist on /filesystem2.  This is achieved by including a location argument (such as "location1" or "location2") when submitting jobs, as well as when launching this uploader command.'))
+
+    uploader_parser.add_argument("--md5_caching",
+            help=("Use cached md5s. This can dramatically improve the uploading "
+                  "times, as md5 checking can be very time consuming. Caching md5s "
+                  "allows subsequent uploads (of the same files) to skip the "
+                  "md5 generation process (if the files appear to not have been "
+                  "modified since the last time they were submitted). The cache is "
+                  "stored locally and uses a file's modification time and file size "
+                  "to intelligently guess whether the file has changed. Set this "
+                  "flag to False if there is concern that files may not be getting "
+                  "re-uploaded properly"),
+            choices=[False, True],
+            type=cast_to_bool,
+            default=None)
+
+
 
     uploader_parser.set_defaults(func=run_uploader)
 
