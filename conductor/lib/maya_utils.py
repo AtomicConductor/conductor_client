@@ -12,7 +12,8 @@ dependency_attrs = {'file':['fileTextureName'],
                      'VRaySettingsNode':['ifile', 'fnm'],
                      'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
                      'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam'],
-                     'xgmPalette':['xfn']
+                     'xgmPalette':['xfn'],
+                     'VRayVolumeGrid':['if']
                     }
 
 def dec_undo(func):
