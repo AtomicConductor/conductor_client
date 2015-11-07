@@ -183,7 +183,6 @@ class Submit():
             raise Exception("Could not upload files:\n%s" % upload_error_message)
 
         upload_file_dict = uploader_.return_md5s()
-
         # Submit the job to conductor
         response, response_code = self.send_job(upload_file_dict)
         return json.loads(response), response_code
@@ -213,8 +212,7 @@ class Submit():
         '''
         with open(upload_filepath, 'r') as file_:
             logger.debug('opening file')
-            contents = file_.read()
-        return [path.strip() for path in contents.split(",")]
+            return [line.strip() for line in file_.readlines]
 
 
 class BadArgumentError(ValueError):
