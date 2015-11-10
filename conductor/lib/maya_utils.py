@@ -227,8 +227,8 @@ def collect_dependencies(node_attrs):
 
     #  Grab any OCIO settings that might be there...
     ocio_config = get_ocio_config()
-    if ocio_config != "":
-        print("OCIO config detected -- %s" % ocio_config)
+    if ocio_config:
+        logger.info("OCIO config detected -- %s" % ocio_config)
         dependencies.append(ocio_config)
         dependencies.append(parse_ocio_config(ocio_config))
 
@@ -237,9 +237,9 @@ def collect_dependencies(node_attrs):
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
 
 def get_ocio_config():
-    cmds.select("defaultColorMgtGlobals")
-    ocio_config = cmds.getAttr(".cfp")
-    return ocio_config
+    plug_name = "defaultColorMgtGlobals.cfp"
+    if cmds.objExists(plug_name):
+        return cmds.getAttr(plug_name)
 
 #  Parse the xgen file to find the paths for extra dependencies not explicitly
 #  named. This will return a list of files and directories.
@@ -299,6 +299,6 @@ def parse_ocio_config(config_file):
         contents = yaml.load(f)
 
     config_path = os.path.dirname(config_file)
-    print("Adding LUT config path %s" % config_path + "/" +  contents['search_path'])
+    print("Adding LUT config path %s" % config_path + "/" + contents['search_path'])
     return config_path + "/" + contents['search_path']
-    
+
