@@ -29,6 +29,12 @@ class ApiClient():
                                     params=params,
                                     data=data)
 
+        logger.debug("verb: %s", verb)
+        logger.debug("conductor_url: %s", conductor_url)
+        logger.debug("headers: %s", headers)
+        logger.debug("params: %s", params)
+        logger.debug("data: %s", data)
+
         # trigger an exception to be raised for 4XX or 5XX http responses
         if raise_on_error:
             response.raise_for_status()
@@ -45,14 +51,12 @@ class ApiClient():
         # TODO: set Content Content-Type to json if data arg
         if not headers:
             headers = {'Content-Type':'application/json'}
-        # logger.debug('headers are: %s', headers)
 
         headers['Authorization'] = "Token %s" % CONFIG['conductor_token']
 
         # Construct URL
         if not conductor_url:
             conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
-        # logger.debug('conductor_url: %s', conductor_url)
 
         if not verb:
             if data:

@@ -64,26 +64,49 @@ class Submit():
         assert isinstance(self.upload_paths, list), "Not a list: %s" % self.upload_paths
         # Append any upload files/dirs specified via the command line
         self.upload_paths.extend(args.get('upload_paths') or [])
-        logger.debug("Got upload_paths: %s" % (self.upload_paths))
+        logger.debug("Upload_paths: %s", self.upload_paths)
 
         #  Get any environment variable settings from config.yml
         self.environment = CONFIG.get("environment") or {}
         assert isinstance(self.environment, dict), "Not a dictionary: %s" % self.environment
         # Then override any that were specified in the command line
         self.environment.update(args.get('env', {}))
-        logger.debug("Got environment: %s" % (self.environment))
+        logger.debug("environment: %s", self.environment)
 
-        local_upload = args.get('local_upload')
-        # If the local_upload arge was specified by the user (i.e if it's not None), the use it
-        if local_upload != None:
-            self.local_upload = local_upload
-        # Otherwise use the value in the config
-        else:
-            self.local_upload = CONFIG['local_upload']
+        self.local_upload = self.resolve_arg("local_upload", args, CONFIG)
+        logger.debug("local_upload: %s", self.local_upload)
+
+        self.md5_caching = self.resolve_arg("md5_caching", args, CONFIG)
+        logger.debug("md5_caching: %s", self.md5_caching)
+
+        self.database_filepath = self.resolve_arg("database_filepath", args, CONFIG)
+        logger.debug("database_filepath: %s", self.database_filepath)
 
         self.location = args.get('location') or CONFIG.get("location")
         self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
         logger.debug("Consumed args")
+
+
+    @classmethod
+    def resolve_arg(cls, arg_name, args, config):
+        '''
+        Helper function to resolve the value of an argument.
+        The order of resolution is:
+        1. Check whether the user explicitly specified the argument when calling/
+           instantiating the class. If so, then use it, otherwise...
+        2. Attempt to read it from the config.yml. If it's there, then use it, otherwise...
+        3. return None
+
+        '''
+        # Attempt to read the value from the args
+        value = args.get(arg_name)
+        # If the arg is not None, it indicates that the arg was explicity
+        # specified by the caller/user, and it's value should be used
+        if value != None:
+            return value
+        # Otherwise use the value in the config if it's there, otherwise default to None
+        return config.get(arg_name)
+
 
     def validate_args(self):
         '''
@@ -177,7 +200,11 @@ class Submit():
 
         # Create a dictionary of upload_files with None as the values.
         upload_files = dict([(path, None) for path in upload_files])
-        uploader_ = uploader.Uploader()
+        uploader_args = {"location":self.location,
+                         "database_filepath":self.database_filepath,
+                         "md5_caching": self.md5_caching}
+
+        uploader_ = uploader.Uploader(uploader_args)
         upload_error_message = uploader_.handle_upload_response(upload_files, md5_only=md5_only)
         if upload_error_message:
             raise Exception("Could not upload files:\n%s" % upload_error_message)

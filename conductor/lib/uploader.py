@@ -1,4 +1,5 @@
 import base64
+import datetime
 import time
 import ast
 import json
@@ -15,31 +16,71 @@ import urllib
 import collections
 
 from conductor.setup import CONFIG, logger
-from conductor.lib import api_client, common, worker
+from conductor.lib import api_client, common, worker, file_utils, client_db
 
-'''
-This worker will pull filenames from in_queue and compute it's base64 encoded
-md5, which will be added to out_queue
-'''
 class MD5Worker(worker.ThreadWorker):
+    '''
+    This worker will pull filenames from in_queue and compute it's base64 encoded
+    md5, which will be added to out_queue
+    '''
 
-        def __init__(self, *args, **kwargs):
-            worker.ThreadWorker.__init__(self, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        # The location of the sqlite database. If None, it will degault to a value
+        self.md5_caching = kwargs.get('md5_caching')
+        self.database_filepath = kwargs.get('database_filepath')
+        worker.ThreadWorker.__init__(self, *args, **kwargs)
 
-        def do_work(self, job):
-            logger.debug('job is %s', job)
-            filename, submission_time_md5 = job
-            logger.debug('checking md5 of %s', filename)
-            current_md5 = common.get_base64_md5(filename)
-            # if a submission time md5 was provided then check against it
-            if submission_time_md5 and current_md5 != submission_time_md5:
-                message = 'MD5 of %s has changed since submission\n' % filename
-                message += 'submitted md5: %s\n' % submission_time_md5
-                message += 'current md5:   %s' % current_md5
-                logger.error(message)
-                # raise message
-            self.metric_store.set_dict('file_md5s', filename, current_md5)
-            return (filename, current_md5)
+    def do_work(self, job):
+        logger.debug('job is %s', job)
+        filename, submission_time_md5 = job
+        current_md5 = self.get_md5(filename)
+        # if a submission time md5 was provided then check against it
+        if submission_time_md5 and current_md5 != submission_time_md5:
+            message = 'MD5 of %s has changed since submission\n' % filename
+            message += 'submitted md5: %s\n' % submission_time_md5
+            message += 'current md5:   %s' % current_md5
+            logger.error(message)
+            # raise message
+        self.metric_store.set_dict('file_md5s', filename, current_md5)
+        return (filename, current_md5)
+
+    def get_md5(self, filepath):
+        '''
+        For the given filepath, return it's md5.
+
+        Use the sqlite db cache to retrive this (if the cache is valid),
+        otherwise generate the md5 from scratch
+        '''
+        # If md5 caching is disable, then just generate the md5 from scratch
+        if not self.md5_caching:
+            return common.generate_md5(filepath, base_64=True, poll_seconds=5)
+
+        # Otherwise attempt to use the md5 cache
+        file_info = get_file_info(filepath)
+        file_cache = client_db.FilesDB.get_cached_file(file_info,
+                                                       db_filepath=self.database_filepath,
+                                                       thread_safe=True)
+        if not file_cache:
+            logger.debug("No md5 cache available for file: %s", filepath)
+            md5 = common.generate_md5(filepath, base_64=True, poll_seconds=5)
+            file_info["md5"] = md5
+            self.cache_file_info(file_info)
+            return md5
+
+        logger.debug("Using md5 cache for file: %s", filepath)
+        return file_cache["md5"]
+
+
+    def cache_file_info(self, file_info):
+        '''
+        Store the given file_info into the database
+        '''
+        client_db.FilesDB.add_file(file_info,
+                                   db_filepath=self.database_filepath,
+                                   thread_safe=True)
+
+
+
 
 
 '''
@@ -230,9 +271,10 @@ class Uploader():
     def __init__(self, args=None):
         logger.debug("Uploader.__init__")
         self.api_client = api_client.ApiClient()
-        args = args or {}
-        self.location = args.get("location") or CONFIG.get("location")
-        self.process_count = CONFIG['thread_count']
+        self.args = args or {}
+        self.args['thread_count'] = CONFIG['thread_count']
+        self.location = self.args.get("location")
+        logger.debug("args: %s", self.args)
 
     def prepare_workers(self):
         logger.debug('preparing workers...')
@@ -244,15 +286,20 @@ class Uploader():
     def create_manager(self, md5_only=False):
         if md5_only:
             job_description = [
-                (MD5Worker, [], {'thread_count': self.process_count})
+                (MD5Worker, [], {'thread_count': self.args['thread_count'],
+                                 "database_filepath": self.args['database_filepath'],
+                                 "md5_caching": self.args['md5_caching']})
             ]
         else:
             job_description = [
-                (MD5Worker, [], {'thread_count': self.process_count}),
+                (MD5Worker, [], {'thread_count': self.args['thread_count'],
+                                 "database_filepath": self.args['database_filepath'],
+                                 "md5_caching": self.args['md5_caching']}),
+
                 (MD5OutputWorker, [], {'thread_count': 1}),
-                (HttpBatchWorker, [], {'thread_count': self.process_count}),
+                (HttpBatchWorker, [], {'thread_count': self.args['thread_count']}),
                 (FileStatWorker, [], {'thread_count': 1}),
-                (UploadWorker, [], {'thread_count': self.process_count}),
+                (UploadWorker, [], {'thread_count': self.args['thread_count']}),
             ]
 
         manager = worker.JobManager(job_description)
@@ -486,7 +533,7 @@ class Uploader():
         if output:
             if upload_id:
                 self.mark_upload_failed(output, upload_id)
-            return output
+            return "\n".join(output)
         else:
             if upload_id:
                 self.mark_upload_finished(upload_id)
@@ -559,5 +606,137 @@ def run_uploader(args):
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
     logger.debug('Uploader parsed_args is %s', args_dict)
-    uploader = Uploader(args_dict)
+
+    resolved_args = resolve_args(args_dict)
+    uploader = Uploader(resolved_args)
     uploader.main()
+
+
+def get_file_info(filepath):
+    '''
+    For the given filepath return the following information in a dictionary:
+        "filepath": filepath (str)
+        "modtime": modification time (datetime.datetime) 
+        "size": filesize in bytes (int)
+        
+    '''
+    assert os.path.isfile(filepath), "Filepath does not exist: %s" % filepath
+    stat = os.stat(filepath)
+    modtime = datetime.datetime.fromtimestamp(stat.st_mtime)
+
+    return {"filepath": filepath,
+            "modtime": modtime,
+            "size": stat.st_size}
+
+def resolve_args(args):
+    '''
+    Resolve all arguments, reconsiling differences between command line args
+    and config.yml args.  See resolve_arg function.
+    '''
+    args["md5_caching"] = resolve_arg("md5_caching", args, CONFIG)
+    args["database_filepath"] = resolve_arg("database_filepath", args, CONFIG)
+    args["location"] = resolve_arg("location", args, CONFIG)
+
+    return args
+
+
+
+def resolve_arg(arg_name, args, config):
+    '''
+    Helper function to resolve the value of an argument.
+    The order of resolution is:
+    1. Check whether the user explicitly specified the argument when calling/
+       instantiating the class. If so, then use it, otherwise...
+    2. Attempt to read it from the config.yml. Note that the config also queries
+       environment variables to populate itself with values. 
+       If the value is in the config then use it, otherwise...
+    3. return None
+
+    '''
+    # Attempt to read the value from the args
+    value = args.get(arg_name)
+    # If the arg is not None, it indicates that the arg was explicity
+    # specified by the caller/user, and it's value should be used
+    if value != None:
+        return value
+    # Otherwise use the value in the config if it's there, otherwise default to None
+    return config.get(arg_name)
+
+
+# @common.dec_timer_exit
+# def test_md5_system(dirpath):
+#     '''
+#     Recurse the given directory, md5-checking all files and returning a dictionary
+#     whose key is a filepath and whose value is the md5 value for that file.
+#     When run successively, only md5 checkin when the file has changed.
+#     Keep track of "changed files" by using a sqlite db to "cache" every file
+#     that's been md5 checked (including it's modtime and filesize) to intellegently
+#     determine (assume) whether a file has actually changed or not.
+#
+#     Each file entry (row) in the database is uniquely identified by the filepath,
+#     (using the filepath as the Primary Key).
+#     '''
+#     BYTES_1MB = 1024.0 ** 2
+#     BYTES_1GB = 1024.0 ** 3
+#
+#
+#     # Get all files found within the given directory
+#     logger.debug("Reading files from: %s", dirpath)
+#     filepaths = [filepath for filepath in file_utils.get_files(dirpath, recurse=True) if os.path.exists(filepath)]
+#
+#
+#     # Get the caches for all files
+#     logger.debug("Getting files info from disk")
+#     files_info = dict([(filepath, get_file_info(filepath)) for filepath in filepaths])
+#
+#     logger.debug("Getting files cache from db")
+#     cached_files = get_cached_files(files_info)
+#     logger.debug("cached_files: %s", len(cached_files))
+#
+#     cached_files_size = sum([file_info["size"] for file_info in cached_files.values()])
+#     logger.debug("cached_files_size: %s GB", cached_files_size / BYTES_1GB)
+#
+#     # Figure out which files didn't have valid caches in the db
+#     uncached_filepaths = [filepath for filepath in filepaths if filepath not in cached_files]
+#     logger.debug("uncached files: %s", len(uncached_filepaths))
+#
+#     logger.debug("Generating md5s..")
+#     new_md5s = {}
+#     # For any files that aren't cached, get the md5 data:
+#     for uncached_filepath in uncached_filepaths:
+#         logger.debug("Getting md5: %s", uncached_filepath)
+#         md5 = common.get_base64_md5(filepath)
+#         new_md5s[uncached_filepath] = md5
+#
+#
+#     # Update the database cache with the new md5 info
+#     new_files_info = {}
+#     for file_path, md5 in new_md5s.iteritems():
+#         file_info = files_info[file_path]
+#         file_info["md5"] = md5
+#         new_files_info[file_path] = file_info
+#
+#     unchached_files_size = sum([file_info["size"] for file_info in new_files_info.values()])
+#     logger.debug("unchached_files_size: %s GB", unchached_files_size / BYTES_1GB)
+#
+#
+#     if new_files_info:
+#         logger.debug("adding %s new files to db", len(new_files_info))
+#         client_db.add_files(new_files_info.values())
+#
+#     # Return a dicationary of final md5s
+#     md5s = {}
+#     for file_info in cached_files.values():
+#         filepath = file_info["filepath"]
+#         md5s[filepath] = file_info.get("md5") or new_files_info[filepath]["md5"]
+#
+#     logger.debug("Complete")
+#     return md5s
+
+
+
+
+
+
+
+
