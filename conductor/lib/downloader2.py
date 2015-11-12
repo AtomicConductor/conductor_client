@@ -81,7 +81,7 @@ class DownloadWorker():
                 logger.debug('file already exists')
 
         #  When the job is done, phone home and mark as complete
-        # self.report_status("downloaded", download_data['download_id'])
+        self.report_status("downloaded", download_data['download_id'])
 
     def report_status(self, status, download_id=None):
         if not download_id:
@@ -99,7 +99,7 @@ class DownloadWorker():
         return response_string, response_code
 
     def download_file(self, download_url, path):
-        self.mkdir_p(os.path.dirname(path))
+        self.safe_mkdirs(os.path.dirname(path))
         logger.debug('trying to download %s', path)
         print("Downloading %s" % path)
         total_downloaded = 0
@@ -120,23 +120,17 @@ class DownloadWorker():
 
         return True
 
-    def mkdir_p(self, path):
-        # return True if the directory already exists
-        if os.path.isdir(path):
-            return True
-
-        # if parent dir does not exist, create that first
-        base_dir = os.path.dirname(path)
-        if not os.path.isdir(base_dir):
-            self.mkdir_p(base_dir)
-
-        # create path (parent should already be created)
-        os.mkdir(path)
-
-        # make path world writable
-        os.chmod(path, 0777)
-
-        return True
+    def safe_mkdirs(dirpath):
+        '''
+        Create the given directory.  If it already exists, suppress the exception.
+        This function is useful when handling concurrency issues where it's not
+        possible to reliably check with a directory exists before creating it.
+        '''
+        try:
+            os.makedirs(dirpath)
+        except OSError:
+            if not os.path.isdir(dirpath):
+                raise
 
     def correct_file_present(self, path, md5):
         logger.debug('checking if %s exists and is uptodate at %s', path, md5)
