@@ -121,7 +121,7 @@ class DownloadWorker():
 
         return True
 
-    def safe_mkdirs(dirpath):
+    def safe_mkdirs(self, dirpath):
         '''
         Create the given directory.  If it already exists, suppress the exception.
         This function is useful when handling concurrency issues where it's not
