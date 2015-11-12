@@ -44,19 +44,21 @@ class DownloadWorker():
         while not shutdown_event.is_set():
             if self.q.qsize() > 0:
                 logger.debug("Getting next download...")
-                job = self.q.get()
+                job = self.q.get(block=False)
                 try:
                     self.do_download(job)
                 except Exception, e: 
                     error_message = traceback.format_exc()
                     logger.error('Thread %d hit error: %s\n' % (self.thread_num, error_message))
             else:
-                logger.debug("No downloads found in queue. Sleeping...")
+                # logger.debug("No downloads found in queue. Sleeping...")
                 time.sleep(5)
         logger.debug("Thread %d got shutdown event!" % self.thread_num)
 
     def do_download(self, download_data):
         logger.debug('Thread %d got file to download:' % self.thread_num)
+        logger.debug("Marking download as in progress")
+        self.report_status("downloading", download_data['download_id'])
         for job in download_data['files']:
             url = job['url']
             path = job['path']
@@ -190,6 +192,7 @@ class Download(object):
             if next_download:
                 logger.debug("Found download %s" % next_download['download_id'])
                 self.start_download(next_download)
+                time.sleep(.25)
             else:
                 self.nap()
 
@@ -206,6 +209,7 @@ class Download(object):
             worker = DownloadWorker(self.queue, self.output_path, i)
             self.threads.append(threading.Thread(target=worker.do_work))
             self.threads[i].setDaemon(True)
+            time.sleep(0.2)
             self.threads[i].start()
 
     def start_download(self, download_data):
