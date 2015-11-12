@@ -114,7 +114,7 @@ class DownloadWorker():
                     if count % 1000 == 0:
                         print("%s - %d bytes" % (path, total_downloaded))
                     # self.metric_store.increment('bytes_downloaded', len(chunk))
-        logger.debug('%s successfully downloaded', path)
+        print('Successfully downloaded %s' % (path))
         logger.debug('setting file perms to 666')
         os.chmod(path, 0666)
 
@@ -180,7 +180,7 @@ class Download(object):
 
         #  If job ids were specified, immediately proceed to the download
         if job_ids:
-            for job_id in job_ids.split():
+            for job_id in job_ids:
                 #  Get download files
                 logger.debug("Finding downloads for job %s" % job_id)
                 self.download_job(job_id)
