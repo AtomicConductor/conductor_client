@@ -56,7 +56,7 @@ class DownloadWorker():
 
     def do_download(self, download_data):
         logger.debug('Thread %d got file to download:' % self.thread_num)
-        for job in download_data['downloads']:
+        for job in download_data['files']:
             url = job['url']
             path = job['path']
             md5 = job['md5']
@@ -81,7 +81,7 @@ class DownloadWorker():
                 logger.debug('file already exists')
 
         #  When the job is done, phone home and mark as complete
-        self.report_status("downloaded", download_data['download_id'])
+        # self.report_status("downloaded", download_data['download_id'])
 
     def report_status(self, status, download_id=None):
         if not download_id:
@@ -101,11 +101,18 @@ class DownloadWorker():
     def download_file(self, download_url, path):
         self.mkdir_p(os.path.dirname(path))
         logger.debug('trying to download %s', path)
+        print("Downloading %s" % path)
+        total_downloaded = 0
         request = requests.get(download_url, stream=True)
         with open(path, 'wb') as file_pointer:
+            count = 0
             for chunk in request.iter_content(chunk_size=CHUNK_SIZE):
                 if chunk:
+                    total_downloaded += CHUNK_SIZE
                     file_pointer.write(chunk)
+                    count += 1
+                    if count % 1000 == 0:
+                        print("%s - %d bytes" % (path, total_downloaded))
                     # self.metric_store.increment('bytes_downloaded', len(chunk))
         logger.debug('%s successfully downloaded', path)
         logger.debug('setting file perms to 666')
@@ -181,6 +188,7 @@ class Download(object):
             return
 
         #  Find jobs that need to be downloaded
+        print("Waiting for downloads...")
         while not common.SIGINT_EXIT:
             logger.debug("Finding next download")
             next_download = self.find_download()
@@ -190,16 +198,16 @@ class Download(object):
             else:
                 self.nap()
 
-        logger.debug("\n\n\nGot exit signal, waiting for threads to finish...\n\n\n")
+        print("\nGot exit signal, waiting for threads to finish...\n")
         self.wait_for_threads()
                 
     def wait_for_threads(self):
-        time.sleep(2)
+        time.sleep(5)
         shutdown_event.set()
 
     def start_threads(self):
         for i in range(self.thread_count):
-            print("Starting thread %d" % i)
+            logger.debug("Starting thread %d" % i)
             worker = DownloadWorker(self.queue, self.output_path, i)
             self.threads.append(threading.Thread(target=worker.do_work))
             self.threads[i].setDaemon(True)
@@ -207,7 +215,11 @@ class Download(object):
 
     def start_download(self, download_data):
         logger.debug("Adding download %s to queue" % download_data['download_id'])
-        self.queue.put(download_data)
+        if self.job_id:
+            for download in download_data['downloads']:
+                self.queue.put(download)
+        else:
+            self.queue.put(download_data)
 
     #  Download the files for a particular job
     def download_job(self, job_id):
