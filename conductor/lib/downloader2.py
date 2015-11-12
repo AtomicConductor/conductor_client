@@ -37,6 +37,7 @@ class DownloadWorker():
         self.q = q
         self.output_path = output_path
         self.thread_num = i
+        self.api_helper = api_client.ApiClient()
 
     def do_work(self):
         # while not common.SIGINT_EXIT:
