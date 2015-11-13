@@ -108,8 +108,6 @@ class DownloadWorker():
         total_downloaded = 0
         request = requests.get(download_url, stream=True)
         permissions = 'wb'
-        if os.path.isfile(path):
-            permissions = 'r+b'
 
         with open(path, permissions) as file_pointer:
             count = 0
