@@ -145,6 +145,9 @@ def parse_args():
                                help="Username to submit as",
                                default=getpass.getuser())
 
+    submit_parser.add_argument("--notify",
+                               help="Who to notify when job is complete")
+
     submit_parser.set_defaults(func=run_submit)
 
 
