@@ -20,9 +20,8 @@ RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
 logger = conductor.setup.logger
 DEFAULT_ATTRS = ["ui_notify_lnedt", "ui_start_frame_lnedt", "ui_end_frame_lnedt",
                  "ui_custom_lnedt", "ui_instance_type_cmbx", "ui_resource_lnedt",
-                 "ui_force_upload_chkbx", "ui_output_path_lnedt"]
-LAST_ATTRS = ["ui_notify_lnedt", "ui_instance_type_cmbx", "ui_resource_lnedt",
-                 "ui_force_upload_chkbx"]
+                 "ui_output_path_lnedt"]
+LAST_ATTRS = ["ui_notify_lnedt", "ui_instance_type_cmbx", "ui_resource_lnedt"]
 
 '''
 TODO:
