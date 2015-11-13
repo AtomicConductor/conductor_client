@@ -241,11 +241,11 @@ class MetricStore():
     def get(self, variable):
         return self.metric_store.get(variable, 0)
 
-    def increment(self, variable, step_size=1):
-        self.update_queue.put(('increment', variable, step_size))
+    def increment(self, variable, step_size=1, filename=""):
+        self.update_queue.put(('increment', variable, step_size, filename))
 
     def do_increment(self, *args):
-        variable, step_size = args
+        variable, step_size, filename = args
 
         # initialize variable to 0 if not set
         if not self.metric_store.has_key(variable):
@@ -253,6 +253,13 @@ class MetricStore():
 
         # increment variable by step_size
         self.metric_store[variable] += step_size
+
+        if filename:
+            if 'files' not in self.metric_store:
+                self.metric_store['files'] = {}
+            if filename not in self.metric_store['files']:
+                self.metric_store['files'][filename] = 0
+            self.metric_store['files'][filename] += step_size
 
     def set_dict(self, dict_name, key, value):
         self.update_queue.put(('set_dict', dict_name, key, value))
