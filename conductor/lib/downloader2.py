@@ -107,7 +107,7 @@ class DownloadWorker():
         print("Downloading %s" % path)
         total_downloaded = 0
         request = requests.get(download_url, stream=True)
-        with open(path, 'wb') as file_pointer:
+        with open(path, 'r+b') as file_pointer:
             count = 0
             for chunk in request.iter_content(chunk_size=CHUNK_SIZE):
                 if chunk:
