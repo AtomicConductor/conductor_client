@@ -111,7 +111,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def browseOutput(self):
         directory = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory"))
-        directory = os.path.abspath(directory)
+        directory = re.sub("\\\\", "/", directory)        
         self.ui_output_path_lnedt.setText(directory)
 
 
