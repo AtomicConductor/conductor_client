@@ -213,6 +213,9 @@ class Download(object):
             self.threads[i].start()
 
     def start_download(self, download_data):
+        if not download_data:
+            print("No download data found!")
+            return
         logger.debug("Adding download %s to queue" % download_data['download_id'])
         if self.job_id:
             for download in download_data['downloads']:
