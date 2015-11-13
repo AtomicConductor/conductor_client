@@ -137,11 +137,15 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def __init__(self, parent=None):
         super(MayaConductorSubmitter, self).__init__(parent=parent)
         self.setMayaWindow()
-        self.refreshUi()
+        # self.refreshUi()
 
     def initializeUi(self):
         super(MayaConductorSubmitter, self).initializeUi()
         self.getDefaults()
+
+        start, end = maya_utils.get_frame_range()[0]
+        self.setFrameRange(start, end)
+        self.extended_widget.refreshUi()
 
         # Set the defaults collected
         for ui_attr in self.defaults:
@@ -190,6 +194,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
+        self.ui_output_path_lnedt.setText(maya_utils.get_image_dirpath())
 
 
     def getExtendedWidget(self):
