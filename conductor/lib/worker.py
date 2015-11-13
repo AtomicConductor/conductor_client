@@ -58,7 +58,7 @@ The class defines the basic function and data structures that all workers need.
 TODO: move this into it's own lib
 '''
 class ThreadWorker():
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
 
         # the in_queue provides work for us to do
         self.in_queue = kwargs['in_queue']
@@ -70,7 +70,7 @@ class ThreadWorker():
         self.error_queue = kwargs['error_queue']
 
         # set the thread count (default: 1)
-        self.thread_count = int(kwargs.get('thread_count',1))
+        self.thread_count = int(kwargs.get('thread_count', 1))
 
         # an optional metric store to share counters between threads
         self.metric_store = kwargs['metric_store']
@@ -84,7 +84,7 @@ class ThreadWorker():
 
     Returns the result to be passed to the out_queue
     '''
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         raise NotImplementedError
 
     def PosionPill(self):
@@ -115,7 +115,7 @@ class ThreadWorker():
         self.kill(True)
 
     # Basic thread target loop.
-    def target(self):
+    def target(self, thread_int):
         # logger.debug('on target')
         while not common.SIGINT_EXIT:
             try:
@@ -128,12 +128,12 @@ class ThreadWorker():
                 # start working on job
                 try:
                     output = None
-                    output = self.do_work(job)
+                    output = self.do_work(job, thread_int)
                 except Exception, e:
                     if self.error_queue:
                         self.mark_done()
                         error_message = traceback.format_exc()
-                        logger.error('hit error: \n')
+                        logger.error('[thread %s]Hit error: \n', thread_int)
                         self.error_queue.put(error_message)
                         break
                     else:
@@ -147,11 +147,11 @@ class ThreadWorker():
                 self.mark_done()
 
             except Exception:
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
                 logger.error(traceback.print_exc())
                 logger.error(traceback.format_exc())
 
@@ -163,10 +163,10 @@ class ThreadWorker():
             logger.error('threads already started. will not start more')
             return self.threads
 
-        for i in range(self.thread_count):
-            logger.debug('starting thread %s', i)
+        for thread_int in range(self.thread_count):
+            logger.debug('starting thread %s', thread_int)
             # thread will begin execution on self.target()
-            thd = threading.Thread(target=self.target)
+            thd = threading.Thread(target=self.target, args=(thread_int,))
 
             # make sure threads don't stop the program from exiting
             thd.daemon = True

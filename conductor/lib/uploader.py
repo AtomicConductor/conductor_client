@@ -30,7 +30,7 @@ class MD5Worker(worker.ThreadWorker):
         self.database_filepath = kwargs.get('database_filepath')
         worker.ThreadWorker.__init__(self, *args, **kwargs)
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         logger.debug('job is %s', job)
         filename, submission_time_md5 = job
         assert isinstance(filename, (str, unicode)), "Filepath not of expected type. Got %s" % type(filename)
@@ -111,7 +111,7 @@ class MD5OutputWorker(worker.ThreadWorker):
             self.put_job(json.dumps(self.batch))
             self.batch = {}
 
-    def target(self):
+    def target(self, thread_int):
 
         while not common.SIGINT_EXIT:
             try:
@@ -171,7 +171,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         else:
             raise Exception('could not make request to /api/files/get_upload_urls')
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         logger.debug('getting upload urls for %s', job)
         url_list = common.retry(lambda: self.make_request(job))
         return url_list
@@ -192,7 +192,7 @@ class FileStatWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         '''
         Job is a dict of filepath: signed_upload_url pairs.
         The FileStatWorker iterates through the dict.
@@ -240,7 +240,7 @@ class UploadWorker(worker.ThreadWorker):
                 # report upload progress
                 self.metric_store.increment('bytes_uploaded', len(data))
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         filename = job[0]
         upload_url = job[1]
         md5 = self.metric_store.get_dict('file_md5s', filename)
