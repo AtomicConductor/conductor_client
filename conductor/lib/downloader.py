@@ -21,7 +21,7 @@ import traceback
 try:
     imp.find_module('conductor')
 except ImportError, e:
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.diraname(os.path.abspath(__file__)))))
 
 
 from conductor.lib import common, api_client, worker
@@ -84,7 +84,6 @@ class DownloadWorker(worker.ThreadWorker):
             output_dir = file_info['output_dir']
             md5 = file_info['md5']
             size = int(file_info['size'])
-
 
             logger.debug('[thread %s]\turl:%s', thread_int, url)
             logger.debug('[thread %s]\tmd5:%s', thread_int, md5)
@@ -196,7 +195,6 @@ def mkdir_p(path):
         os.mkdir(path)
     except OSError:
         pass
-
 
     def correct_file_present(self, path, md5, thread_int):
         if not os.path.isfile(path):
