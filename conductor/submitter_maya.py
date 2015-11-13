@@ -168,16 +168,15 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         self.defaults = {}
 
         default_name = maya_utils.get_maya_scene_filepath()
-        self.getDefaultValues(default_name)
-        self.getDefaultValues("Last")
+        self.getDefaultValues(default_name, submitter.DEFAULT_ATTRS)
+        self.getDefaultValues("Last", submitter.LAST_ATTRS)
 
-    def getDefaultValues(self, default_name):
+    def getDefaultValues(self, default_name, attr_list):
         settings = QtCore.QSettings("Conductor", "Submitter")
         settings.beginGroup(default_name)
-        for ui_attr in submitter.DEFAULT_ATTRS:
+        for ui_attr in attr_list:
             if ui_attr not in self.defaults or not self.defaults[ui_attr]:
                 self.defaults[ui_attr] = settings.value(ui_attr)
-                print("Default for %s is %s" % (ui_attr, self.defaults[ui_attr]))
         settings.endGroup()
 
     def setMayaWindow(self):
