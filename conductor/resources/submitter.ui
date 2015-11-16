@@ -602,7 +602,7 @@
           </sizepolicy>
          </property>
          <property name="readOnly">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
         </widget>
         <widget class="QPushButton" name="ui_choose_path_btn">

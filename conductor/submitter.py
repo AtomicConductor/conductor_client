@@ -4,6 +4,7 @@ import inspect
 import traceback
 from PySide import QtGui, QtCore
 import imp
+import re
 
 try:
     imp.find_module('conductor')
@@ -111,7 +112,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def browseOutput(self):
         directory = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory"))
-        directory = re.sub("\\\\", "/", directory)        
+        if not directory:
+            return
+        directory = re.sub("\\\\", "/", directory)
         self.ui_output_path_lnedt.setText(directory)
 
 
