@@ -31,6 +31,10 @@ class MD5Worker(worker.ThreadWorker):
             filename, submission_time_md5 = job
             logger.debug('checking md5 of %s', filename)
             current_md5 = common.get_base64_md5(filename)
+            if not current_md5:
+                logger.error("Upload file %s does not exist!" % filename)
+                return (filename, None)
+
             # if a submission time md5 was provided then check against it
             if submission_time_md5 and current_md5 != submission_time_md5:
                 message = 'MD5 of %s has changed since submission\n' % filename
@@ -159,6 +163,8 @@ class FileStatWorker(worker.ThreadWorker):
 
         ''' iterate through a dict of (filepath: upload_url) pairs '''
         for path, upload_url in job.iteritems():
+            if not os.path.isfile(path):
+                return None
             # logger.debug('stat: %s', path)
             byte_count = os.path.getsize(path)
 
@@ -477,7 +483,7 @@ class Uploader():
         self.create_print_status_thread()
 
         # load tasks into worker pools
-        for path, md5 in upload_files.iteritems():
+        for path, md5 in upload_files.iteritems():    
             self.manager.add_task((path, md5))
 
         # wait for work to finish
