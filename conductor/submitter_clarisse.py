@@ -14,7 +14,7 @@ import conductor
 from conductor.lib import file_utils, common, api_client, conductor_submit
 from conductor import clarisse_utils
 
-# import pyqt_clarisse
+import pyqt_clarisse
 
 logger = conductor.setup.logger
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -65,13 +65,13 @@ class ClarisseConductorSubmitter(object):
         self.initializeUi()
 
         self.ui.show()
-        # pyqt_clarisse.exec_(self.app)
-        self.app.exec_()
+        pyqt_clarisse.exec_(self.app)
+        # self.app.exec_()
 
 
     def initializeUi(self):
-        self.ui.ui_start_frame_lnedt.setValidator(QtGui.QIntValidator())
-        self.ui.ui_end_frame_lnedt.setValidator(QtGui.QIntValidator())
+#        self.ui.ui_start_frame_lnedt.setValidator(QtGui.QIntValidator())
+#        self.ui.ui_end_frame_lnedt.setValidator(QtGui.QIntValidator())
         self.ui.ui_start_end_wgt.setEnabled(True)
         self.ui.ui_custom_wgt.setDisabled(True)
 
@@ -79,7 +79,7 @@ class ClarisseConductorSubmitter(object):
         self.ui.ui_instance_type_cmbx.clear()
         for instance_info in INSTANCES:
             qv = QtCore.QVariant(instance_info)
-            self.ui.ui_instance_type_cmbx.addItem(instance_info['description'], userData=qv)
+            self.ui.ui_instance_type_cmbx.addItem(instance_info['description'], qv)
 
         item_idx = self.ui.ui_instance_type_cmbx.findData({"cores": 16, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
         if item_idx == -1:
@@ -124,7 +124,7 @@ class ClarisseConductorSubmitter(object):
         """
         #  Display a waiting cursor and message
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-        dialog = self.wait_message("Conductor", "Submitting Conductor Job...")
+        # dialog = self.wait_message("Conductor", "Submitting Conductor Job...")
 
         #  Run pre-submission steps
         data = self.runPreSubmission()
@@ -136,7 +136,7 @@ class ClarisseConductorSubmitter(object):
         self.runPostSubmission(response_code)
 
         #  Close waiting dialog and return cursor to normal state
-        dialog.done(0)
+        # dialog.done(0)
         QtGui.QApplication.restoreOverrideCursor()
         QtGui.QApplication.processEvents()
 
@@ -416,7 +416,7 @@ class ClarisseConductorSubmitter(object):
         """
 
         # create a QMessageBox
-        dialog = QtGui.QMessageBox(parent=parent)
+        dialog = QtGui.QMessageBox()
 
         # Set the window title to the given title string
         dialog.setWindowTitle(str(title))
