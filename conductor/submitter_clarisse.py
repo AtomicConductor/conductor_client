@@ -12,7 +12,7 @@ except ImportError, e:
 
 import conductor
 from conductor.lib import file_utils, common, api_client, conductor_submit
-from conductor import clarisse_utils
+from conductor import clarisse_utils, clarisse_resources
 
 import pyqt_clarisse
 
