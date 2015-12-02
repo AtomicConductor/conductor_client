@@ -313,9 +313,7 @@ class ClarisseConductorSubmitter(object):
         end_frame = self.getEndFrame()
         frame_step = self.getStepFrame()
         image_str = self.getImages()
-        base_cmd = "%s -start_frame %s -end_frame %s " % (data['scene_file'],
-                                                          start_frame,
-                                                          end_frame)
+        base_cmd = "%s -start_frame %%f -end_frame %%f " % (data['scene_file'])
         base_cmd += "-frame_step %s -image %s" % (frame_step, image_str)
         return base_cmd
 
