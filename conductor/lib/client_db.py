@@ -18,18 +18,11 @@ def get_default_db_filepath():
     directory, such as:
         - /usr/temp  (linux)
         - c:\users\<username>\appdata\local\temp  (windows)
-        
+    
     '''
     return os.path.join(tempfile.gettempdir(), DB_FILENAME)
 
-def get_files_db(db_filepath=None):
-    '''
-    Return the metadata for the project.
-    Use a caching mechanism when possible.
-    '''
-    if not db_filepath:
-        db_filepath = get_default_db_filepath()
-    return FilesDB(db_filepath)
+
 
 
 class TableDB(object):
@@ -61,7 +54,7 @@ class TableDB(object):
 
 
     @classmethod
-    def connnect_to_db(cls, db_filepath, timeout=100):
+    def connnect_to_db(cls, db_filepath, timeout=100, db_perms=0666):
         '''
         Creat a connection to the database with the specifed database filepath and
         return the connection object
@@ -75,6 +68,15 @@ class TableDB(object):
                  work in all circumstances.  We should really just query the db
                  in a single thread (IMO -lws)
         '''
+        # If the db filepath does not exist, create one with open permissions
+        if not os.path.exists(db_filepath):
+            file_utils.create_file(db_filepath, mode=db_perms)
+
+        # Check to make sure we have write permissions
+        if not os.access(db_filepath, os.W_OK):
+            raise Exception("database filepath is not writable: %s" % db_filepath)
+
+
         connection = sqlite3.connect(db_filepath, detect_types=sqlite3.PARSE_DECLTYPES, timeout=timeout)
         connection.row_factory = cls.sqlite_dict_factory
         connection.text_factory = str  # overrides text type to be unicode # TODO:(this) may not be a good idea, but too lazy to convert all text to unicode first
