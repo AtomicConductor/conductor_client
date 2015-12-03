@@ -54,7 +54,7 @@ class TableDB(object):
 
 
     @classmethod
-    def connnect_to_db(cls, db_filepath, timeout=100, db_perms=0666):
+    def connnect_to_db(cls, db_filepath, timeout=300, db_perms=0666):
         '''
         Creat a connection to the database with the specifed database filepath and
         return the connection object
