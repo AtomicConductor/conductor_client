@@ -342,8 +342,8 @@ class Uploader():
 
     def upload_status_text(self):
         num_files_to_upload = self.manager.metric_store.get('num_files_to_upload')
-        files_to_upload = "{:,}".format(num_files_to_upload)
-        files_to_analyze = "{:,}".format(self.num_files_to_process)
+        files_to_upload = str(num_files_to_upload)
+        files_to_analyze = str(self.num_files_to_process)
 
         if self.job_start_time:
             elapsed_time = int(time.time()) - self.job_start_time
