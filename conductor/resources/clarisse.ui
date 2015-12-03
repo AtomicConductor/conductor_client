@@ -52,7 +52,7 @@
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>conductor_logo_red_w_title_x64.png</pixmap>
+             <pixmap resource="../submitter_resources.qrc">:/images/resources/conductor_logo_red_w_title_x64.png</pixmap>
             </property>
            </widget>
           </item>
@@ -89,8 +89,8 @@
              <string/>
             </property>
             <property name="icon">
-             <iconset>
-              <normaloff>arrow_refresh_x16.png</normaloff>arrow_refresh_x16.png</iconset>
+             <iconset resource="../submitter_resources.qrc">
+              <normaloff>:/images/resources/arrow_refresh_x16.png</normaloff>:/images/resources/arrow_refresh_x16.png</iconset>
             </property>
             <property name="iconSize">
              <size>
