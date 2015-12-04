@@ -120,6 +120,149 @@ def get_maya_scene_filepath():
 
 
 def get_image_dirpath():
+    '''
+    This is high level function that "figures out"  the proper "output directory"
+    for the conductor job being submitted.  As of now, the output directory is 
+    used for two separate purposes (which desperately need to be separated at some point).
+    
+    1. Dictates the directory to search for rendered images on ther render node
+       when the render task completes.  If the rendered images cannot be found
+       recursively within the given output path then the images will not get
+       transferred to gcs, and therefore the task will have no frames to download.
+       
+    2. Dictates the default directory that the client downloader will download
+       the task's frames to.  Note that the client downloader can manually override
+       the download directory when evoking the downloader command manually 
+       (as opposed to running it in daemon mode).     
+    
+    
+    On a simple level, the output directory should be the directory in which
+    maya renders its images to. However, this is directory is not straight forward process to derive.
+    For starters, the "output directory" is not necessarily flat; it may contain
+    nested directories (such as for render layers, etc) that were created by the
+    rendering process. This is not actually a problem, but something to consider.
+    Those nested directories will be represented/recreated when the resulting 
+    images are downloaded by the client.  But the important piece to note is that
+    the output directory should be the "lowest" (longest) directory possible, 
+    while encompassing all rendered images from that task. 
+
+    The other part of the complexity, is that there are multiple places in maya 
+    to dictate where the "output directory" is (and I can't pretend to know every
+    possible way of achieving this). As of now, these are the known factors:
+    
+    1. The Workspace's "image" directory is the default location for renders.
+       (I'm not sure if this is even true).
+    
+    2. However, this can be essentially overridden within the global render
+       settings if one were to populate "File Name Prefix" field with an
+       absolute path. (perhaps there's another way to override the output directory
+       but this is what I've observed thus far).
+       
+    3. Each renderer (such as vray or maya software) has a different node/attribute
+       to set the File Name Prefix field.  So it's important to know which
+       renderer is active in order to query the proper node for its data.  
+       As other renderersare added/supported by conductor, those nodes will need 
+       to be considered when querying for data.
+              
+     '''
+
+    output_dirpath = get_workspace_image_dirpath()
+    file_prefix = get_render_file_prefix()
+
+    # If the file prefix is an absolute path, then use it's directory
+    if file_prefix.startswith(os.sep): 
+        output_dirpath = derive_prefix_directory(file_prefix)
+
+    return output_dirpath
+
+def get_render_file_prefix():
+    '''
+    Return the "File Name Prefix" from the global render settings. Note that this
+    is a read from different node/attribute depending on which renderer is 
+    currently active.
+    
+    Note that as more renderes are supported by Conductor, this function may 
+    need to be updated to properly query those renderers' information. 
+    '''
+
+    renderer = cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
+
+    # Use the render globals node/attr by default
+    prefix_node_attr = "defaultRenderGlobals.imageFilePrefix"
+
+    # If the active renderer is vray, then use the vray node
+    if "vray" in renderer:
+        prefix_node_attr = "vraySettings.fileNamePrefix"
+
+    # If the node doesn't exist, log an error. We could raise this as an exception,
+    # but I'd rather not break the client
+    if not cmds.objExists(prefix_node_attr):
+        logger.error("Could not find expected node/attr: %s", prefix_node_attr)
+        return ""
+
+    return cmds.getAttr(prefix_node_attr) or ""
+
+def derive_prefix_directory(file_prefix):
+    '''
+    This is a super hack that makes many assumptions.  It's purpose is to determine
+    the top level render output directory.  Normally one could query the workspace's
+    "images" directory to get this information, but in cases where the render 
+    file prefix specifies an absolute path(thereby overriding the workspace's
+    specified directory), we must honor that prefix path.  The problem is that
+    prefix path can contain variables, such as <Scene> or <RenderLayer>, which
+    could be specific to whichever render layer is currently being rendered. So
+    we need to navigate to highest common directory across all render layers.   
+    
+    So if this is the prefix:
+        "/shot_105/v076/<Layer>/105_light_<RenderLayer>_v076"
+    ...then this is directory we want to return:
+        "/shot_105/v076"
+        
+    However, there may not be *any* variables used. So if this is the prefix:
+        "/shot_105/v076/105_light_v076"
+    ...then this is directory we want to return (same as before):
+        "/shot_105/v076"  
+        
+    Note that the provided file_prefix is expected to be absolute path 
+    
+    variables are such as:
+        <Scene> 
+        <RenderLayer> 
+        <Camera> 
+        <RenderPassFileGroup>
+        <RenderPass>
+        <RenderPassType>
+        <Extension>
+        <Version>
+        <Layer>
+        
+    '''
+    assert file_prefix.startswith(os.sep), 'File Prefix expected to begin with "%s". file_prefix: %s' % (os.sep, file_prefix)
+    rx = r"<\w+>"
+    # If the the file prefix doesn't contain any variables, then simply return
+    # the prefix's directory
+    if not re.findall(rx, file_prefix):
+        return os.path.dirname(file_prefix)
+
+    prefix_reconstruct = ""
+    for dir_token in file_prefix.split(os.sep)[1:]:
+        if re.findall(rx, prefix_reconstruct):
+            break
+        prefix_reconstruct += os.sep + dir_token
+
+    return os.path.dirname(prefix_reconstruct)
+
+
+def get_maya_image_dirpath():
+    '''
+    Return the "images" directory for the active maya workspace 
+    '''
+    image_filepath = cmds.renderSettings(fullPath=True, genericFrameImageName=True)
+    assert len(image_filepath) == 1, image_filepath
+    return os.path.dirname(image_filepath[0])
+
+
+def get_workspace_image_dirpath():
     workspace_root = cmds.workspace(q=True, rootDirectory=True)
     image_dirname = cmds.workspace(fileRuleEntry="images")
     return os.path.join(workspace_root, image_dirname)
