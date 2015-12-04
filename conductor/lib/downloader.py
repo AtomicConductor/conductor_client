@@ -77,39 +77,55 @@ class DownloadWorker(worker.ThreadWorker):
         reporter.daemon = True
         reporter.start()
 
-        for file in files:
-            logger.debug('downloading file:')
-
-            url = file['url']
-            path = file['path']
-            md5 = file['md5']
-            size = int(file['size'])
-
-            logger.debug('\turl is %s', url)
-            logger.debug('\tpath is %s', path)
-            logger.debug('\tmd5 is %s', md5)
-            logger.debug('\tsize is %s', size)
+        for file_info in files:
+            logger.debug("file_info: %s", file_info)
+            url = file_info['url']
+            path = file_info['path']
+            md5 = file_info['md5']
 
             if self.output_path:
-                logger.debug('using output_path %s', path)
+                logger.debug('using output_path %s', self.output_path)
                 path = re.sub(destination, self.output_path, path)
                 logger.debug('set new path to: %s', path)
 
-            if not self.correct_file_present(path, md5):
-                logger.debug('downloading file...')
-                common.retry(lambda: self.download_file(url, path, bytes_downloaded))
-                logger.debug('file downloaded')
-            else:
-                logger.debug('file already exists')
+            self.process_download(path, url, md5, bytes_downloaded)
 
         done[0] = True
         logger.debug('waiting for reporter thread')
         reporter.join()
 
+    def process_download(self, path, url, md5, bytes_downloaded):
+        '''
+        For the given file information, download the file to disk.  Check whether
+        the file already exists and matches the expected md5 before downloading.
+        '''
+        logger.debug('checking for existing file %s', path)
+
+        # If the file already exists on disk
+        if os.path.isfile(path):
+            local_md5 = common.get_base64_md5(path)
+            # If the local md5 matchs the expected md5 then no need to download. Skip to next file
+            if md5 == local_md5:
+                logger.info('Existing file is up to date: %s', path)
+                return
+
+            logger.debug('md5 does not match existing file: %s vs %s', md5, local_md5)
+
+            logger.debug('Deleting dirty file: %s', path)
+            common.retry(lambda: os.remove(path))
+
+        # download the file
+        common.retry(lambda: download_file(url, path, bytes_downloaded))
+
+        # Set file permissions
+        logger.debug('setting file perms to 666')
+        os.chmod(path, 0666)
+
+
     def report_loop(self, download_id, total_size, bytes_downloaded, done):
         while True:
             logger.debug('bytes_downloaded is %s' % bytes_downloaded)
-            logger.debug('done is %s' % done )
+            logger.debug('done is %s' % done)
             if done[0]:
                 # mark download as finished
                 post_dic = {
@@ -133,7 +149,7 @@ class DownloadWorker(worker.ThreadWorker):
                 return
 
             self.report(download_id, total_size, bytes_downloaded)
-            for i in range(0,9):
+            for i in range(0, 9):
                 if not done[0] and not common.SIGINT_EXIT:
                     time.sleep(1)
 
@@ -148,55 +164,41 @@ class DownloadWorker(worker.ThreadWorker):
         logger.debug("updated status: %s\n%s", response_code, response_string)
         return response_string, response_code
 
-    def download_file(self, download_url, path, bytes_downloaded):
-        self.mkdir_p(os.path.dirname(path))
-        logger.debug('trying to download %s', path)
-        request = requests.get(download_url, stream=True)
-        with open(path, 'wb') as file_pointer:
-            for chunk in request.iter_content(chunk_size=CHUNK_SIZE):
-                if chunk:
-                    file_pointer.write(chunk)
-                    bytes_downloaded[0] += len(chunk)
-        request.raise_for_status()
-        logger.debug('%s successfully downloaded', path)
-        logger.debug('setting file perms to 666')
-        os.chmod(path, 0666)
 
+def download_file(download_url, path, bytes_downloaded):
+    mkdir_p(os.path.dirname(path))
+    logger.info('Downloading: %s', path)
+    request = requests.get(download_url, stream=True)
+    with open(path, 'wb') as file_pointer:
+        for chunk in request.iter_content(chunk_size=CHUNK_SIZE):
+            if chunk:
+                file_pointer.write(chunk)
+                bytes_downloaded[0] += len(chunk)
+    request.raise_for_status()
+    logger.debug('Successfully downloaded: %s', path)
+
+
+def mkdir_p(path):
+    # return True if the directory already exists
+    if os.path.isdir(path):
         return True
 
-    def mkdir_p(self, path):
-        # return True if the directory already exists
-        if os.path.isdir(path):
-            return True
+    # if parent dir does not exist, create that first
+    base_dir = os.path.dirname(path)
+    if not os.path.isdir(base_dir):
+        mkdir_p(base_dir)
 
-        # if parent dir does not exist, create that first
-        base_dir = os.path.dirname(path)
-        if not os.path.isdir(base_dir):
-            self.mkdir_p(base_dir)
+    # create path (parent should already be created)
+    try:
+        os.mkdir(path)
+    except OSError:
+        pass
 
-        # create path (parent should already be created)
-        try:
-            os.mkdir(path)
-        except OSError:
-            pass
+    # make path world writable
+    os.chmod(path, 0777)
 
-        # make path world writable
-        os.chmod(path, 0777)
+    return True
 
-        return True
-
-    def correct_file_present(self, path, md5):
-        logger.debug('checking if %s exists and is uptodate at %s', path, md5)
-        if not os.path.isfile(path):
-            logger.debug('file does not exist')
-            return False
-
-        if not md5 == common.get_base64_md5(path):
-            logger.debug('md5 does not match')
-            return False
-
-        logger.debug('file is uptodate')
-        return True
 
 
 class Download(object):
