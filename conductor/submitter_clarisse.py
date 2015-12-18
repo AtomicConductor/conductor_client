@@ -81,7 +81,8 @@ class ClarisseConductorSubmitter(object):
             qv = QtCore.QVariant(instance_info)
             self.ui.ui_instance_type_cmbx.addItem(instance_info['description'], qv)
 
-        item_idx = self.ui.ui_instance_type_cmbx.findData({"cores": 16, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
+        # item_idx = self.ui.ui_instance_type_cmbx.findData({"cores": 16, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
+        item_idx = 10
         if item_idx == -1:
             raise Exception("Could not find combobox entry for core count: %s!"
                             "This should never happen!" % core_count)
@@ -284,13 +285,13 @@ class ClarisseConductorSubmitter(object):
         instance_type = self.ui.ui_instance_type_cmbx.itemData(self.ui.ui_instance_type_cmbx.currentIndex()).toPyObject()
         conductor_args = {}
         conductor_args["cmd"] = self.generateConductorCmd(data)
-        conductor_args["cores"] = str(instance_type[QtCore.QString('cores')])
-        conductor_args["machine_type"] = str(instance_type[QtCore.QString('flavor')])
+        conductor_args["cores"] = str(instance_type['cores'])
+        conductor_args["machine_type"] = str(instance_type['flavor'])
         conductor_args["force"] = False
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["output_path"] = data["output_path"]
         conductor_args["resource"] = str(self.ui.ui_resource_lnedt.text())
-        conductor_args["docker_image"] = self.getDockerImage()
+        conductor_args["docker_image"] = "clarisse2.0"
         conductor_args["upload_only"] = self.ui.ui_upload_only.isChecked()
         conductor_args["job_title"] = "clarisse %s %s" % (data['scene_file'], self.getImages())
 
