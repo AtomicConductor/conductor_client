@@ -96,10 +96,10 @@ class MD5OutputWorker(worker.ThreadWorker):
         self.wait_time = 1
         self.batch = {}
 
-    def check_for_posion_pill(self, job):
+    def check_for_poison_pill(self, job):
         ''' we need to make sure we ship the last batch before we terminate '''
-        if job == self.PosionPill():
-            logger.debug('md5outputworker got posion pill')
+        if job == self.PoisonPill():
+            logger.debug('md5outputworker got poison pill')
             self.ship_batch()
             self.mark_done()
             thread.exit()
@@ -118,7 +118,7 @@ class MD5OutputWorker(worker.ThreadWorker):
                 # block on the queue with a self.wait_time second timeout
                 file_md5_tuple = self.in_queue.get(True, self.wait_time)
 
-                self.check_for_posion_pill(file_md5_tuple)
+                self.check_for_poison_pill(file_md5_tuple)
 
                 # add (filepath: md5) to the batch dict
                 self.batch[file_md5_tuple[0]] = file_md5_tuple[1]
