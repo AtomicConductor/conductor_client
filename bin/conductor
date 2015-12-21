@@ -18,6 +18,8 @@ from conductor.setup import *
 from conductor.lib import conductor_submit, downloader, downloader2, uploader
 
 
+
+
 def parse_args():
 
 
@@ -227,7 +229,9 @@ def parse_args():
                                   formatter_class=argparse.RawTextHelpFormatter)
 
     downloader_parser.add_argument("--job_id",
-                                  help="Manually download output for this job",
+                                  help=("The job id(s) to download. When specified "
+                                        "will only download those jobs and terminate "
+                                        "afterwards"),
                                   action='append')
 
     downloader_parser.add_argument("--task_id",
@@ -239,8 +243,17 @@ def parse_args():
     downloader_parser.add_argument("--location",
                                    help=('An optional string to indicate which location this downloader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader process running. This location argument allows each downloader to target specific jobs (to download upon job-completion) that match its appropriate location.  Essentially this allows the location of which a job was submitted from to also be the destination in which to deliver completed renders to (which would typically be the desired behavior).'))
 
+
     downloader_parser.add_argument("--experimental",
                                    help=('Run an experimental version of the downloader'),
+                                   action='store_true')
+
+    downloader_parser.add_argument("--thread_count",
+                                   type=int,
+                                   help=('The number of threads that should download simultaneously'))
+
+    downloader_parser.add_argument("--alt",
+                                   help=('Run an alternative version of the downloader'),
                                    action='store_true')
 
     downloader_parser.set_defaults(func=run_downloader)
@@ -309,10 +322,10 @@ def run_uploader(args):
 
 
 def run_downloader(args):
-    if vars(args).get('experimental'):
-      downloader2.run_downloader(args)
-    else:
-      downloader.run_downloader(args)
+    if vars(args).get("alt"):
+        return downloader.run_downloader(args)
+    return downloader2.run_downloader(args)
+
 
 
 if __name__ == '__main__':

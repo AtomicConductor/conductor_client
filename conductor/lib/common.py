@@ -12,6 +12,7 @@ import base64
 import yaml
 from functools import wraps
 
+
 def setup_logger():
     """ This function is called when this file is imported!
     Returns a general formatted logging object.
@@ -19,7 +20,7 @@ def setup_logger():
     logger = logging.getLogger("ConductorClient")
     if os.environ.has_key('CONDUCTOR_DEVELOPMENT'):
         logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s%(levelname)8s  %(module)s %(funcName)s:  %(message)s')
+        formatter = logging.Formatter('%(asctime)s%(levelname)8s  %(threadName)s:  %(message)s')
     else:
         logger.setLevel(logging.INFO)
         formatter = logging.Formatter('%(asctime)s %(name)s %(message)s', "%Y-%m-%d %H:%M:%S")
@@ -45,6 +46,7 @@ def signal_handler(sig_number, stack_frame):
     SIGINT_EXIT = True
 
 def register_sigint_signal_handler(signal_handler=signal_handler):
+    LOGGER.debug("REGISTERING SIGNAL HANDLER")
     signal.signal(signal.SIGINT, signal_handler)
 
 
@@ -139,7 +141,7 @@ def get_base64_md5(*args, **kwargs):
     b64 = base64.b64encode(md5)
     return b64
 
-def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None):
+def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, state=None):
     '''
     Generate and return md5 hash (base64) for the given filepath
     
@@ -147,6 +149,7 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None):
                    console when md5 hashing (particularly a large file which
                    may take a while)
     '''
+    file_size = os.path.getsize(filepath)
     hash_obj = hashlib.md5()
     file_obj = open(filepath, 'rb')
     buffer_count = 1
@@ -156,16 +159,21 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None):
         hash_obj.update(file_buffer)
         file_buffer = file_obj.read(blocksize)
         curtime = time.time()
-        if buffer_count == 1 or (poll_seconds and curtime - last_time >= poll_seconds):
-            LOGGER.debug("MD5 hashing: %s (%s bytes...)", filepath, (buffer_count * blocksize))
-            buffer_count += 1
+        progress = int(((buffer_count * blocksize) / float(file_size)) * 100)
+        if poll_seconds and curtime - last_time >= poll_seconds:
+            LOGGER.debug("MD5 hashing %s%% (size %s bytes): %s ", progress, file_size, filepath)
             last_time = curtime
+
+        if state:
+            state.hash_progress = progress
+
+        buffer_count += 1
 
     md5 = hash_obj.digest()
 
+    LOGGER.debug("MD5 hashing 100%% (size %s bytes): %s ", file_size, filepath)
     if base_64:
         return base64.b64encode(md5)
-
     return md5
 
 
