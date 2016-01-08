@@ -1,13 +1,12 @@
 import json
+import logging
 import requests
 import urlparse
 
-import conductor.setup
+from conductor import CONFIG
 from conductor.lib import common
 
-logger = conductor.setup.logger
-CONFIG = conductor.setup.CONFIG
-
+logger = logging.getLogger(__name__)
 
 # TODO:
 # appspot_dot_com_cert = os.path.join(common.base_dir(),'auth','appspot_dot_com_cert2')

@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import inspect
@@ -11,18 +12,18 @@ try:
 except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import conductor
-import conductor.setup
+from conductor import CONFIG
 from conductor.lib import  conductor_submit, pyside_utils
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
-logger = conductor.setup.logger
 DEFAULT_ATTRS = ["ui_notify_lnedt", "ui_start_frame_lnedt", "ui_end_frame_lnedt",
                  "ui_custom_lnedt", "ui_instance_type_cmbx", "ui_resource_lnedt",
                  "ui_output_path_lnedt"]
 LAST_ATTRS = ["ui_notify_lnedt", "ui_instance_type_cmbx", "ui_resource_lnedt"]
+
+logger = logging.getLogger(__name__)
 
 '''
 TODO:
@@ -346,7 +347,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         Child classes should override this method to return the image that 
         is appropriate for the software context (e.g nuke or maya, etc)
         '''
-        return conductor.setup.CONFIG.get("docker_image")
+        return CONFIG.get("docker_image")
 
 
     def getForceUploadBool(self):
@@ -383,14 +384,13 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         return response_code, response
 
-
     def launch_result_dialog(self, response_code, response):
 
         # If the job submitted successfully
         if response_code in [201, 204]:
             job_id = str(response.get("jobid") or 0).zfill(5)
             title = "Job Submitted"
-            job_url = conductor.setup.CONFIG['url'] + "/job/" + job_id
+            job_url = CONFIG['url'] + "/job/" + job_id
             message = ('<html><head/><body><p>Job submitted: '
                        '<a href="%s"><span style=" text-decoration: underline; '
                        'color:%s;">%s</span></a></p></body></html>') % (job_url, self.link_color, job_id)

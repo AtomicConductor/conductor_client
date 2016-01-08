@@ -4,6 +4,7 @@ import time
 import ast
 import json
 import hashlib
+import logging
 import os
 import Queue
 import sys
@@ -15,8 +16,13 @@ import requests
 import urllib
 import collections
 
-from conductor.setup import CONFIG, logger
-from conductor.lib import api_client, common, worker, file_utils, client_db
+from conductor import CONFIG
+from conductor.lib import api_client, common, worker, client_db, loggeria
+
+LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
+
+logger = logging.getLogger(__name__)
+
 
 class MD5Worker(worker.ThreadWorker):
     '''
@@ -607,6 +613,14 @@ class Uploader():
         return self.manager.metric_store.get_dict('file_md5s')
 
 
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_ul_log")
+    loggeria.setup_conductor_logging(logger_level=level,
+                                     console_formatter=LOG_FORMATTER,
+                                     log_filepath=log_filepath)
+
 def run_uploader(args):
     '''
     Start the uploader process. This process will run indefinitely, polling
@@ -614,8 +628,13 @@ def run_uploader(args):
     '''
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
-    logger.debug('Uploader parsed_args is %s', args_dict)
 
+    # Set up logging
+    log_level = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
+
+    logger.debug('Uploader parsed_args is %s', args_dict)
     resolved_args = resolve_args(args_dict)
     uploader = Uploader(resolved_args)
     uploader.main()
@@ -670,6 +689,8 @@ def resolve_arg(arg_name, args, config):
         return value
     # Otherwise use the value in the config if it's there, otherwise default to None
     return config.get(arg_name)
+
+
 
 
 # @common.dec_timer_exit

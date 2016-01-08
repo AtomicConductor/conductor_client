@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from PyQt4 import Qt, QtGui, QtCore, uic
@@ -10,13 +11,13 @@ try:
 except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import conductor
+from conductor import CONFIG
 from conductor.lib import file_utils, common, api_client, conductor_submit
 from conductor import clarisse_utils, clarisse_resources
 
 import pyqt_clarisse
 
-logger = conductor.setup.logger
+logger = logging.getLogger(__name__)
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
 INSTANCES = [{"cores": 2, "flavor": "highcpu", "description": " 2 core 1.8GB Mem"},
@@ -107,7 +108,7 @@ class ClarisseConductorSubmitter(object):
         self.ui.ui_render_images_trwgt.clear()
 
         render_images = clarisse_utils.get_clarisse_images()
-        
+
         for render_image in render_images:
             tree_item = QtGui.QTreeWidgetItem([render_image.__str__()])
 
@@ -132,7 +133,7 @@ class ClarisseConductorSubmitter(object):
 
         #  Do actual submission
         response_code, response = self.runConductorSubmission(data)
-        
+
         #  Do post steps (currently none)
         self.runPostSubmission(response_code)
 
@@ -326,7 +327,7 @@ class ClarisseConductorSubmitter(object):
 
     #  This is currently static, but eventually we'll query the app
     def getDockerImage(self):
-        docker_image = conductor.setup.CONFIG.get("docker_image")
+        docker_image = CONFIG.get("docker_image")
         if not docker_image:
             clarisse_version = clarisse_utils.get_clarisse_version()
             if clarisse_version.startswith("2.0"):
@@ -384,7 +385,7 @@ class ClarisseConductorSubmitter(object):
 
     def setStartFrame(self, start):
         self.ui.ui_start_frame_lnedt.setText(str(start))
-   
+
 
     def setEndFrame(self, end):
         self.ui.ui_end_frame_lnedt.setText(str(end))
@@ -395,7 +396,7 @@ class ClarisseConductorSubmitter(object):
         if response_code in [201, 204]:
             job_id = str(response.get("jobid") or 0).zfill(5)
             title = "Job Submitted"
-            job_url = conductor.setup.CONFIG['url'] + "/job/" + job_id
+            job_url = CONFIG['url'] + "/job/" + job_id
             message = ('<html><head/><body><p>Job submitted: '
                        '<a href="%s"><span style=" text-decoration: underline; '
                        'color:%s;">%s</span></a></p></body></html>') % (job_url, link_color, job_id)

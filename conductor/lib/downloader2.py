@@ -33,8 +33,8 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
-from conductor.lib import common, api_client  # , worker
-from conductor.setup import logger, CONFIG
+from conductor import CONFIG
+from conductor.lib import common, api_client, loggeria
 
 BYTES_1KB = 1024
 BYTES_1MB = BYTES_1KB ** 2
@@ -47,7 +47,9 @@ CONNECTION_EXCEPTIONS = (requests.exceptions.SSLError,
                          urllib2.HTTPError,
                          urllib2.URLError)
 
+LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
 
+logger = logging.getLogger(__name__)
 
 
 def dec_retry(retry_exceptions=Exception, tries=8, static_sleep=None, logger=logger):
@@ -1183,7 +1185,7 @@ def prepare_dest_dirpath(dir_path):
 @dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_next_download(location, endpoint, client):
     params = {'location': location}
-    #logger.debug('params: %s', params)
+    # logger.debug('params: %s', params)
     response_string, response_code = client.make_request(endpoint, params=params)
 #     logger.debug("response code is:\n%s" % response_code)
 #     logger.debug("response data is:\n%s" % response_string)
@@ -1287,12 +1289,16 @@ def run_downloader(args):
     '''
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
+
+    # Set up logging
+    log_level = args_dict.get("log_level") or CONFIG.get("log_level")
     logger.debug('Downloader parsed_args is %s', args_dict)
-#     log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
-#     logger = get_downloader_logger(log_dirpath)
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
 
     job_ids = args_dict.get("job_id")
     thread_count = args_dict.get("thread_count")
+
 
     if job_ids:
         Downloader.download_jobs(job_ids,
@@ -1308,39 +1314,15 @@ def run_downloader(args):
                                 logger=logger)
 
 
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_dl_log")
+    loggeria.setup_conductor_logging(logger_level=level,
+                                     console_formatter=LOG_FORMATTER,
+                                     log_filepath=log_filepath)
 
 
-
-
-
-
-# def get_downloader_logger(log_dirpath=None):
-#     logger = logging.getLogger("ConductorClient")
-#
-#     if os.environ.get('CONDUCTOR_DEVELOPMENT'):
-#         level = logging.DEBUG
-#         formatter = logging.Formatter('%(asctime)s%(levelname)8s  %(threadName)s:  %(message)s')
-#
-#     else:
-#         level = logging.INFO
-#         formatter = logging.Formatter('%(asctime)s %(threadName)s %(message)s', "%Y-%m-%d %H:%M:%S")
-#
-#     logger.setLevel(level)
-#     stream_handler = logging.StreamHandler()
-#     stream_handler.setFormatter(formatter)
-#     logger.addHandler(stream_handler)
-#
-#     # if a log directory has not been provided, the create log file handler
-#     if log_dirpath:
-#         safe_mkdirs(log_dirpath)
-#         log_filepath = os.path.join(log_dirpath, "conductor_dl_log")
-#         # rotate log every 24 hours for 7 days  (creates 1 log file per day)
-#         file_handler = logging.handlers.TimedRotatingFileHandler(log_filepath, interval=24, backupCount=7)
-#         file_handler.setLevel(level)
-#         file_handler.setFormatter(formatter)
-#         logger.addHandler(file_handler)
-#
-#     return logger
 
 
 

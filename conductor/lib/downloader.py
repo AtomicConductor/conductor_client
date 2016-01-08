@@ -8,6 +8,7 @@ import collections
 import errno
 import imp
 import json
+import logging
 import os
 import multiprocessing
 import ntpath
@@ -24,11 +25,13 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
-from conductor.lib import common, api_client, worker
-from conductor.setup import logger, CONFIG
+from conductor import CONFIG
+from conductor.lib import common, api_client, worker, loggeria
+
+logger = logging.getLogger(__name__)
 
 CHUNK_SIZE = 1024
-
+LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
 
 class DownloadWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
@@ -338,6 +341,15 @@ class Download(object):
             logger.error(traceback.format_exc())
             return None
 
+
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_dl_log")
+    loggeria.setup_conductor_logging(main_level=level,
+                                     console_formatter=LOG_FORMATTER,
+                                     log_filepath=log_filepath)
+
 def run_downloader(args):
     '''
     Start the downloader process. This process will run indefinitely, polling
@@ -345,11 +357,14 @@ def run_downloader(args):
     '''
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
+
+    # Set up logging
+    log_level = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
+
     logger.debug('Downloader parsed_args is %s', args_dict)
     downloader = Download(args_dict)
     downloader.main(job_ids=args_dict.get('job_id'))
 
-if __name__ == "__main__":
-    exit(1)
-    print 'args are %s' % args
-    run_downloader(args)
+

@@ -1,10 +1,7 @@
-import os, re, yaml
+import logging, os, re, yaml
 import functools
 from maya import cmds
 
-import conductor.setup
-
-logger = conductor.setup.logger
 dependency_attrs = {'file':['fileTextureName'],
                      'af_alembicDeform':['fileName'],
                      'AlembicNode':['abc_File'],
@@ -15,6 +12,8 @@ dependency_attrs = {'file':['fileTextureName'],
                      'xgmPalette':['xfn'],
                      'VRayVolumeGrid':['if']
                     }
+
+logger = logging.getLogger(__name__)
 
 def dec_undo(func):
     '''
@@ -170,7 +169,7 @@ def get_image_dirpath():
     file_prefix = get_render_file_prefix()
 
     # If the file prefix is an absolute path, then use it's directory
-    if file_prefix.startswith(os.sep): 
+    if file_prefix.startswith(os.sep):
         output_dirpath = derive_prefix_directory(file_prefix)
 
     return output_dirpath
