@@ -29,6 +29,12 @@ class ApiClient():
                                     params=params,
                                     data=data)
 
+        logger.debug("verb: %s", verb)
+        logger.debug("conductor_url: %s", conductor_url)
+        logger.debug("headers: %s", headers)
+        logger.debug("params: %s", params)
+        logger.debug("data: %s", data)
+
         # trigger an exception to be raised for 4XX or 5XX http responses
         if raise_on_error:
             response.raise_for_status()

@@ -1,4 +1,4 @@
-import os, re, sys, glob
+import os, re, sys, glob, stat
 import conductor.setup
 
 
@@ -391,4 +391,15 @@ def get_matching_files(glob_str, dev=False):
     else:
         return glob.glob(glob_str)
 
+def create_file(filepath, mode=0660):
+    '''
+    Create an empty file with the given permissions (octal)
+    '''
+    umask_original = os.umask(0)
+    try:
+        handle = os.fdopen(os.open(filepath, os.O_WRONLY | os.O_CREAT, mode), 'w')
+    finally:
+        os.umask(umask_original)
+    handle.write("")
+    handle.close()
 

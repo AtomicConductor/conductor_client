@@ -10,6 +10,7 @@ import time
 import traceback
 import base64
 import yaml
+from functools import wraps
 
 def setup_logger():
     """ This function is called when this file is imported!
@@ -95,6 +96,21 @@ def retry(function, retry_count=5):
             # LOGGER.debug('ran %s ok' % function)
             return return_values
 
+
+
+def dec_timer_exit(func):
+    '''
+    '''
+    @wraps(func)
+    def wrapper(*a, **kw):
+        func_name = getattr(func, "__name__", "<Unknown function>")
+        start_time = time.time()
+        result = func(*a, **kw)
+        finish_time = '%s :%.2f seconds' % (func_name, time.time() - start_time)
+        LOGGER.info(finish_time)
+        return result
+    return wrapper
+
 def run(cmd):
     LOGGER.debug("about to run command: " + cmd)
     command = subprocess.Popen(
@@ -122,6 +138,36 @@ def get_base64_md5(*args, **kwargs):
     md5 = get_md5(*args)
     b64 = base64.b64encode(md5)
     return b64
+
+def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None):
+    '''
+    Generate and return md5 hash (base64) for the given filepath
+    
+    poll_seconds: int, the number of seconds to wait between logging out to the 
+                   console when md5 hashing (particularly a large file which
+                   may take a while)
+    '''
+    hash_obj = hashlib.md5()
+    file_obj = open(filepath, 'rb')
+    buffer_count = 1
+    last_time = time.time()
+    file_buffer = file_obj.read(blocksize)
+    while len(file_buffer) > 0:
+        hash_obj.update(file_buffer)
+        file_buffer = file_obj.read(blocksize)
+        curtime = time.time()
+        if buffer_count == 1 or (poll_seconds and curtime - last_time >= poll_seconds):
+            LOGGER.debug("MD5 hashing: %s (%s bytes...)", filepath, (buffer_count * blocksize))
+            buffer_count += 1
+            last_time = curtime
+
+    md5 = hash_obj.digest()
+
+    if base_64:
+        return base64.b64encode(md5)
+
+    return md5
+
 
 def base_dir():
     '''
@@ -151,6 +197,7 @@ class Config():
         'resource': 'default',
         'priority': 5,
         'local_upload': True,
+        'md5_caching': True,
     }
 
 
