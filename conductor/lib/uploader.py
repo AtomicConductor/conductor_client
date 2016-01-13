@@ -202,6 +202,8 @@ class FileStatWorker(worker.ThreadWorker):
 
         ''' iterate through a dict of (filepath: upload_url) pairs '''
         for path, upload_url in job.iteritems():
+            if not os.path.isfile(path):
+                return None
             # logger.debug('stat: %s', path)
             byte_count = os.path.getsize(path)
 
@@ -238,7 +240,7 @@ class UploadWorker(worker.ThreadWorker):
                 yield data
 
                 # report upload progress
-                self.metric_store.increment('bytes_uploaded', len(data))
+                self.metric_store.increment('bytes_uploaded', len(data), filename)
 
     def do_work(self, job):
         filename = job[0]
@@ -391,8 +393,8 @@ class Uploader():
 
     def upload_status_text(self):
         num_files_to_upload = self.manager.metric_store.get('num_files_to_upload')
-        files_to_upload = "{:,}".format(num_files_to_upload)
-        files_to_analyze = "{:,}".format(self.num_files_to_process)
+        files_to_upload = str(num_files_to_upload)
+        files_to_analyze = str(self.num_files_to_process)
 
         if self.job_start_time:
             elapsed_time = int(time.time()) - self.job_start_time
@@ -422,8 +424,7 @@ class Uploader():
      percent complete: {percent_complete}
         transfer rate: {transfer_rate}
        time remaining: {time_remaining}
-################################################################################
-
+        file progress:
 '''
 
         bytes_to_upload = self.manager.metric_store.get('bytes_to_upload')
@@ -440,6 +441,12 @@ class Uploader():
             time_remaining=self.convert_time_to_string(
                 self.estimated_time_remaining(elapsed_time, percent_complete)),
         )
+
+        file_progress = self.manager.metric_store.get_dict('files')
+        for filename in file_progress:
+            formatted_text += "%s: %s\n" % (filename, file_progress[filename])
+
+        formatted_text += "################################################################################"
 
         return formatted_text
 

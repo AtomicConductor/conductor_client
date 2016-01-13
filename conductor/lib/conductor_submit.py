@@ -9,6 +9,7 @@ import getpass
 import imp
 import json
 import os
+import re
 import sys
 import time
 
@@ -84,6 +85,13 @@ class Submit():
 
         self.location = args.get('location') or CONFIG.get("location")
         self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
+
+        self.notify = { "emails": []}
+        if args.get('notify'):
+            self.notify["emails"].extend(re.split("/s*,*/s*", args.get('notify')))
+        if CONFIG.get('notify'):
+            self.notify["emails"].extend(re.split("/s*,*/s*", CONFIG.get('notify')))
+
         logger.debug("Consumed args")
 
 
@@ -150,6 +158,7 @@ class Submit():
         submit_dict['docker_image'] = self.docker_image
         submit_dict['local_upload'] = self.local_upload
         submit_dict['job_title'] = self.job_title
+        submit_dict['notify'] = self.notify
 
         if upload_files:
             submit_dict['upload_files'] = upload_files

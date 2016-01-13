@@ -51,12 +51,17 @@ class ApiClient():
         # TODO: set Content Content-Type to json if data arg
         if not headers:
             headers = {'Content-Type':'application/json'}
+        logger.debug('headers are: %s', headers)
+        logger.debug('data is: %s' % data)
+        logger.debug("params is %s" % params)
+        logger.debug("uri path is %s" % uri_path)
 
         headers['Authorization'] = "Token %s" % CONFIG['conductor_token']
 
         # Construct URL
         if not conductor_url:
             conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
+        logger.debug('conductor_url: %s', conductor_url)
 
         if not verb:
             if data:

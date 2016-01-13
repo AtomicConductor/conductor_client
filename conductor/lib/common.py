@@ -133,6 +133,8 @@ def get_md5(file_path, blocksize=65536):
     return hasher.digest()
 
 def get_base64_md5(*args, **kwargs):
+    if not os.path.isfile(args[0]):
+        return None
     md5 = get_md5(*args)
     b64 = base64.b64encode(md5)
     return b64

@@ -137,11 +137,47 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def __init__(self, parent=None):
         super(MayaConductorSubmitter, self).__init__(parent=parent)
         self.setMayaWindow()
-        self.refreshUi()
+        # self.refreshUi()
 
     def initializeUi(self):
         super(MayaConductorSubmitter, self).initializeUi()
+        self.getDefaults()
 
+        start, end = maya_utils.get_frame_range()[0]
+        self.setFrameRange(start, end)
+        self.extended_widget.refreshUi()
+
+        # Set the defaults collected
+        for ui_attr in self.defaults:
+            if not self.defaults[ui_attr]:
+                continue
+            if ui_attr.endswith("cmbx"):
+                getattr(self, ui_attr).setCurrentIndex(self.defaults[ui_attr])
+            elif ui_attr.endswith("chkbx"):
+                getattr(self, ui_attr).setChecked(self.defaults[ui_attr])
+            elif ui_attr.endswith("lnedt"):
+                getattr(self, ui_attr).setText(self.defaults[ui_attr])
+        if not self.ui_output_path_lnedt.text():
+            self.ui_output_path_lnedt.setText(maya_utils.get_image_dirpath())
+
+    def closeEvent(self, event):
+        self.saveDefaults()
+
+    #  Get any defaults that may exist for this user
+    def getDefaults(self):
+        self.defaults = {}
+
+        default_name = maya_utils.get_maya_scene_filepath()
+        self.getDefaultValues(default_name, submitter.DEFAULT_ATTRS)
+        self.getDefaultValues("Last", submitter.LAST_ATTRS)
+
+    def getDefaultValues(self, default_name, attr_list):
+        settings = QtCore.QSettings("Conductor", "Submitter")
+        settings.beginGroup(default_name)
+        for ui_attr in attr_list:
+            if ui_attr not in self.defaults or not self.defaults[ui_attr]:
+                self.defaults[ui_attr] = settings.value(ui_attr)
+        settings.endGroup()
 
     def setMayaWindow(self):
         '''
@@ -157,6 +193,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
+        self.ui_output_path_lnedt.setText(maya_utils.get_image_dirpath())
 
 
     def getExtendedWidget(self):
@@ -207,6 +244,26 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return {"abort":not is_valid,
                 "dependencies":dependencies}
 
+    def saveDefaults(self):
+        default_name = maya_utils.get_maya_scene_filepath()
+        self.storeDefaultSettings(default_name)
+        self.storeDefaultSettings("Last")
+
+    def storeDefaultSettings(self, default_name):
+        settings = QtCore.QSettings("Conductor", "Submitter")
+        settings.beginGroup(default_name)
+        for ui_attr in submitter.DEFAULT_ATTRS:
+            if ui_attr.endswith("cmbx"):
+                settings.setValue(ui_attr, getattr(self, ui_attr).currentIndex())
+            elif ui_attr.endswith("chkbx"):
+                settings.setValue(ui_attr, getattr(self, ui_attr).isChecked())
+            elif ui_attr.endswith("lnedt"):
+                settings.setValue(ui_attr, getattr(self, ui_attr).text())
+
+            # settings.setValue(ui_attr, getattr(self, ui_attr))
+        if settings.value("ui_output_path_lnedt") == maya_utils.get_image_dirpath():
+            settings.setValue("ui_output_path_lnedt", "")
+        settings.endGroup()
 
     def getDockerImage(self):
         '''
@@ -317,9 +374,11 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["docker_image"] = self.getDockerImage()
-        conductor_args["output_path"] = maya_utils.get_image_dirpath()
+        conductor_args["output_path"] = self.ui_output_path_lnedt.text()
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
+        conductor_args["notify"] = self.ui_notify_lnedt.text()
+
         ocio_config = maya_utils.get_ocio_config()
         if ocio_config != "":
             print("Setting OCIO environment variable...")

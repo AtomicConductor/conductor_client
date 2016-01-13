@@ -4,6 +4,7 @@ import inspect
 import traceback
 from PySide import QtGui, QtCore
 import imp
+import re
 
 try:
     imp.find_module('conductor')
@@ -18,6 +19,10 @@ from conductor import submitter_resources  # This is a required import  so that 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
 logger = conductor.setup.logger
+DEFAULT_ATTRS = ["ui_notify_lnedt", "ui_start_frame_lnedt", "ui_end_frame_lnedt",
+                 "ui_custom_lnedt", "ui_instance_type_cmbx", "ui_resource_lnedt",
+                 "ui_output_path_lnedt"]
+LAST_ATTRS = ["ui_notify_lnedt", "ui_instance_type_cmbx", "ui_resource_lnedt"]
 
 '''
 TODO:
@@ -68,6 +73,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         Initialize ui properties/behavior
         '''
+        self.defaults = self.getDefaults()
 
         # Set the start/end fields to be restricted to integers only
         self.ui_start_frame_lnedt.setValidator(QtGui.QIntValidator())
@@ -100,6 +106,16 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Set the keyboard focus on the frame range radio button
         self.ui_start_end_rdbtn.setFocus()
+
+        self.ui_choose_path_btn.clicked.connect(self.browseOutput)
+
+
+    def browseOutput(self):
+        directory = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory"))
+        if not directory:
+            return
+        directory = re.sub("\\\\", "/", directory)
+        self.ui_output_path_lnedt.setText(directory)
 
 
     def refreshUi(self):
@@ -418,8 +434,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         self.runPostSubmission(response_code)
 
         self.launch_result_dialog(response_code, response)
-
-
 
 
     def runPreSubmission(self):
