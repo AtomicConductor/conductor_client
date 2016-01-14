@@ -167,34 +167,22 @@ class DownloadWorker(worker.ThreadWorker):
 
         return True
 
-def download_file(download_url, path, bytes_downloaded):
-    mkdir_p(os.path.dirname(path))
-    logger.info('Downloading: %s', path)
-    request = requests.get(download_url, stream=True)
-    with open(path, 'wb') as file_pointer:
-        for chunk in request.iter_content(chunk_size=CHUNK_SIZE):
-            if chunk:
-                file_pointer.write(chunk)
-                bytes_downloaded[0] += len(chunk)
-    request.raise_for_status()
-    logger.debug('Successfully downloaded: %s', path)
 
+    def mkdir_p(self, path):
+        # return True if the directory already exists
+        if os.path.isdir(path):
+            return True
 
-def mkdir_p(path):
-    # return True if the directory already exists
-    if os.path.isdir(path):
-        return True
+        # if parent dir does not exist, create that first
+        base_dir = os.path.dirname(path)
+        if not os.path.isdir(base_dir):
+            self.mkdir_p(base_dir)
 
-    # if parent dir does not exist, create that first
-    base_dir = os.path.dirname(path)
-    if not os.path.isdir(base_dir):
-        mkdir_p(base_dir)
-
-    # create path (parent should already be created)
-    try:
-        os.mkdir(path)
-    except OSError:
-        pass
+        # create path (parent should already be created)
+        try:
+            os.mkdir(path)
+        except OSError:
+            pass
 
     def correct_file_present(self, path, md5, thread_int):
         if not os.path.isfile(path):
