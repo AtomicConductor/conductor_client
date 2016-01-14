@@ -322,10 +322,12 @@ class Download(object):
                     raise ValueError("you need to specify a job_id when passing a task_id")
                 params = {'tid': task_id}
             else:
-                params = {'location': self.location}
+                params = None
             logger.debug('params is: %s', params)
 
-            response_string, response_code = self.api_helper.make_request(endpoint, params=params)
+            json_data = json.dumps({'location': self.location})
+            logger.debug('json_data is: %s', json_data)
+            response_string, response_code = self.api_helper.make_request(endpoint, data=json_data, params=params)
             logger.debug("response code is:\n%s" % response_code)
             logger.debug("response data is:\n%s" % response_string)
 
