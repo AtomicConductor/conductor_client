@@ -51,81 +51,69 @@ class DownloadWorker(worker.ThreadWorker):
             pass
         return True
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         try:
             download_id = 0
             download_id = job.get('download_id', 0)
-            self._do_work(job)
+            self._do_work(job, thread_int)
         except Exception, e:
             error_message = traceback.format_exc()
             error_message += traceback.print_exc()
-            logger.error('hit error:')
-            logger.error(error_message)
+            logger.error('[thread %s]Hit error:', thread_int)
+            logger.error('[thread %s]\n%s', thread_int, error_message)
             self.report_error(download_id, error_message)
 
-    def _do_work(self, job):
+    def _do_work(self, job, thread_int):
         download_id = job['download_id']
         files = job['files']
-        destination = job['destination']
         done = [False]
         bytes_downloaded = [0]
         total_size = 0
-        for file in files:
-            total_size += file['size']
+        for file_info in files:
+            total_size += file_info['size']
 
-        reporter = threading.Thread(target=self.report_loop, args=(download_id, total_size, bytes_downloaded, done))
+        reporter = threading.Thread(target=self.report_loop, args=(download_id, total_size, bytes_downloaded, done, thread_int))
         reporter.daemon = True
         reporter.start()
 
         for file_info in files:
-            logger.debug("file_info: %s", file_info)
+            logger.debug('[thread %s]Processing file', thread_int)
+
             url = file_info['url']
-            path = file_info['path']
+            relative_path = file_info['relative_path']
+            output_dir = file_info['output_dir']
             md5 = file_info['md5']
+            size = int(file_info['size'])
+
+
+            logger.debug('[thread %s]\turl:%s', thread_int, url)
+            logger.debug('[thread %s]\tmd5:%s', thread_int, md5)
+            logger.debug('[thread %s]\tsize:%s', thread_int, size)
+            logger.debug('[thread %s]\trelative_path:%s', thread_int, relative_path)
+            logger.debug('[thread %s]\toutput_dir:%s', thread_int, output_dir)
 
             if self.output_path:
-                logger.debug('using output_path %s', self.output_path)
-                path = re.sub(destination, self.output_path, path)
-                logger.debug('set new path to: %s', path)
+                logger.debug('[thread %s]\tOverriding output directory to %s', thread_int, self.output_path)
+                output_dir = self.output_path
 
-            self.process_download(path, url, md5, bytes_downloaded)
+            filepath = os.path.join(output_dir, relative_path)
+            logger.debug('[thread %s]\tfilepath: %s', thread_int, filepath)
+
+            logger.debug('[thread %s]\tchecking if file exists and md5 verified: %s', thread_int, filepath)
+            if self.correct_file_present(filepath, md5, thread_int):
+                logger.debug('[thread %s]\tFile exists and is md5 verified: %s', thread_int, filepath)
+            else:
+                logger.debug('[thread %s]\tfile must be downloaded: %s', thread_int, filepath)
+                common.retry(lambda: self.download_file(url, filepath, bytes_downloaded, thread_int))
 
         done[0] = True
-        logger.debug('waiting for reporter thread')
+        logger.debug('[thread %s]\twaiting for reporter thread', thread_int)
         reporter.join()
 
-    def process_download(self, path, url, md5, bytes_downloaded):
-        '''
-        For the given file information, download the file to disk.  Check whether
-        the file already exists and matches the expected md5 before downloading.
-        '''
-        logger.debug('checking for existing file %s', path)
-
-        # If the file already exists on disk
-        if os.path.isfile(path):
-            local_md5 = common.get_base64_md5(path)
-            # If the local md5 matchs the expected md5 then no need to download. Skip to next file
-            if md5 == local_md5:
-                logger.info('Existing file is up to date: %s', path)
-                return
-
-            logger.debug('md5 does not match existing file: %s vs %s', md5, local_md5)
-
-            logger.debug('Deleting dirty file: %s', path)
-            common.retry(lambda: os.remove(path))
-
-        # download the file
-        common.retry(lambda: download_file(url, path, bytes_downloaded))
-
-        # Set file permissions
-        logger.debug('setting file perms to 666')
-        os.chmod(path, 0666)
-
-
-    def report_loop(self, download_id, total_size, bytes_downloaded, done):
+    def report_loop(self, download_id, total_size, bytes_downloaded, done, thread_int):
         while True:
-            logger.debug('bytes_downloaded is %s' % bytes_downloaded)
-            logger.debug('done is %s' % done)
+            logger.debug('[thread %s]bytes_downloaded is %s', thread_int, bytes_downloaded)
+            logger.debug('[thread %s]done is %s', thread_int, done)
             if done[0]:
                 # mark download as finished
                 post_dic = {
@@ -133,9 +121,9 @@ class DownloadWorker(worker.ThreadWorker):
                     'status': 'downloaded',
                     'bytes_downloaded': bytes_downloaded[0]
                 }
-                logger.debug('marking download %s as finished', download_id)
+                logger.debug('[thread %s]marking download %s as finished', thread_int, download_id)
                 response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
-                logger.debug("updated status: %s\n%s", response_code, response_string)
+                logger.debug("[thread %s]updated status: %s\n%s", thread_int, response_code, response_string)
                 return
             if common.SIGINT_EXIT:
                 # mark download as pending
@@ -143,9 +131,9 @@ class DownloadWorker(worker.ThreadWorker):
                     'download_id': download_id,
                     'status': 'pending',
                 }
-                logger.debug('marking download %s as pending', download_id)
+                logger.debug('[thread %s]marking download %s as pending', thread_int, download_id)
                 response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
-                logger.debug("updated status: %s\n%s", response_code, response_string)
+                logger.debug("[thread %s]updated status: %s\n%s", thread_int, response_code, response_string)
                 return
 
             self.report(download_id, total_size, bytes_downloaded)
@@ -164,6 +152,21 @@ class DownloadWorker(worker.ThreadWorker):
         logger.debug("updated status: %s\n%s", response_code, response_string)
         return response_string, response_code
 
+    def download_file(self, download_url, path, bytes_downloaded, thread_int):
+        self.mkdir_p(os.path.dirname(path))
+        logger.debug('[thread %s]\ttrying to download: %s', thread_int, path)
+        request = requests.get(download_url, stream=True)
+        with open(path, 'wb') as file_pointer:
+            for chunk in request.iter_content(chunk_size=CHUNK_SIZE):
+                if chunk:
+                    file_pointer.write(chunk)
+                    bytes_downloaded[0] += len(chunk)
+        request.raise_for_status()
+        logger.debug('[thread %s]\t%s successfully downloaded', thread_int, path)
+        logger.debug('[thread %s]\tsetting file perms to 666', thread_int)
+        os.chmod(path, 0666)
+
+        return True
 
 def download_file(download_url, path, bytes_downloaded):
     mkdir_p(os.path.dirname(path))
@@ -194,11 +197,17 @@ def mkdir_p(path):
     except OSError:
         pass
 
-    # make path world writable
-    os.chmod(path, 0777)
+    def correct_file_present(self, path, md5, thread_int):
+        if not os.path.isfile(path):
+            logger.debug('[thread %s]\tfile does not exist', thread_int)
+            return False
 
-    return True
+        current_md5 = common.get_base64_md5(path)
+        if md5 != current_md5:
+            logger.debug('[thread %s]\tmd5s do not match: %s vs %s', thread_int, md5, current_md5)
+            return False
 
+        return True
 
 
 class Download(object):
@@ -301,12 +310,10 @@ class Download(object):
                     raise ValueError("you need to specify a job_id when passing a task_id")
                 params = {'tid': task_id}
             else:
-                params = None
+                params = {'location': self.location}
             logger.debug('params is: %s', params)
 
-            json_data = json.dumps({'location': self.location})
-            logger.debug('json_data is: %s', json_data)
-            response_string, response_code = self.api_helper.make_request(endpoint, data=json_data, params=params)
+            response_string, response_code = self.api_helper.make_request(endpoint, params=params)
             logger.debug("response code is:\n%s" % response_code)
             logger.debug("response data is:\n%s" % response_string)
 
