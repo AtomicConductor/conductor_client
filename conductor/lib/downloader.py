@@ -55,33 +55,31 @@ class DownloadWorker(worker.ThreadWorker):
         try:
             download_id = 0
             download_id = job.get('download_id', 0)
-            self._do_work(job, thread_int)
+            self._do_work(job)
         except Exception, e:
             error_message = traceback.format_exc()
             error_message += traceback.print_exc()
-            logger.error('[thread %s]Hit error:', thread_int)
-            logger.error('[thread %s]\n%s', thread_int, error_message)
+            logger.error('hit error:')
+            logger.error(error_message)
             self.report_error(download_id, error_message)
 
-    def _do_work(self, job, thread_int):
+    def _do_work(self, job):
         download_id = job['download_id']
         files = job['files']
         done = [False]
         bytes_downloaded = [0]
         total_size = 0
-        for file_info in files:
-            total_size += file_info['size']
+        for file in files:
+            total_size += file['size']
 
-        reporter = threading.Thread(target=self.report_loop, args=(download_id, total_size, bytes_downloaded, done, thread_int))
+        reporter = threading.Thread(target=self.report_loop, args=(download_id, total_size, bytes_downloaded, done))
         reporter.daemon = True
         reporter.start()
 
         for file_info in files:
-            logger.debug('[thread %s]Processing file', thread_int)
-
+            logger.debug("file_info: %s", file_info)
             url = file_info['url']
             relative_path = file_info['relative_path']
-            output_dir = file_info['output_dir']
             md5 = file_info['md5']
             size = int(file_info['size'])
 
@@ -95,24 +93,49 @@ class DownloadWorker(worker.ThreadWorker):
                 logger.debug('[thread %s]\tOverriding output directory to %s', thread_int, self.output_path)
                 output_dir = self.output_path
 
+            output_dir = self.output_path or file_info.get('output_dir') or file_info.get('destination')
+            logger.debug('using output dir %s', output_dir)
             filepath = os.path.join(output_dir, relative_path)
-            logger.debug('[thread %s]\tfilepath: %s', thread_int, filepath)
+            logger.debug('filepath: %s', filepath)
 
-            logger.debug('[thread %s]\tchecking if file exists and md5 verified: %s', thread_int, filepath)
-            if self.correct_file_present(filepath, md5, thread_int):
-                logger.debug('[thread %s]\tFile exists and is md5 verified: %s', thread_int, filepath)
-            else:
-                logger.debug('[thread %s]\tfile must be downloaded: %s', thread_int, filepath)
-                common.retry(lambda: self.download_file(url, filepath, bytes_downloaded, thread_int))
+            self.process_download(filepath, url, md5, bytes_downloaded)
 
         done[0] = True
-        logger.debug('[thread %s]\twaiting for reporter thread', thread_int)
+        logger.debug('waiting for reporter thread')
         reporter.join()
 
-    def report_loop(self, download_id, total_size, bytes_downloaded, done, thread_int):
+    def process_download(self, filepath, url, md5, bytes_downloaded):
+        '''
+        For the given file information, download the file to disk.  Check whether
+        the file already exists and matches the expected md5 before downloading.
+        '''
+        logger.debug('checking for existing file %s', filepath)
+
+        # If the file already exists on disk
+        if os.path.isfile(filepath):
+            local_md5 = common.get_base64_md5(filepath)
+            # If the local md5 matchs the expected md5 then no need to download. Skip to next file
+            if md5 == local_md5:
+                logger.info('Existing file is up to date: %s', filepath)
+                return
+
+            logger.debug('md5 does not match existing file: %s vs %s', md5, local_md5)
+
+            logger.debug('Deleting dirty file: %s', filepath)
+            common.retry(lambda: os.remove(filepath))
+
+        # download the file
+        common.retry(lambda: download_file(url, filepath, bytes_downloaded))
+
+        # Set file permissions
+        logger.debug('setting file perms to 666')
+        os.chmod(filepath, 0666)
+
+
+    def report_loop(self, download_id, total_size, bytes_downloaded, done):
         while True:
-            logger.debug('[thread %s]bytes_downloaded is %s', thread_int, bytes_downloaded)
-            logger.debug('[thread %s]done is %s', thread_int, done)
+            logger.debug('bytes_downloaded is %s' % bytes_downloaded)
+            logger.debug('done is %s' % done)
             if done[0]:
                 # mark download as finished
                 post_dic = {
@@ -120,9 +143,9 @@ class DownloadWorker(worker.ThreadWorker):
                     'status': 'downloaded',
                     'bytes_downloaded': bytes_downloaded[0]
                 }
-                logger.debug('[thread %s]marking download %s as finished', thread_int, download_id)
+                logger.debug('marking download %s as finished', download_id)
                 response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
-                logger.debug("[thread %s]updated status: %s\n%s", thread_int, response_code, response_string)
+                logger.debug("updated status: %s\n%s", response_code, response_string)
                 return
             if common.SIGINT_EXIT:
                 # mark download as pending
@@ -130,9 +153,9 @@ class DownloadWorker(worker.ThreadWorker):
                     'download_id': download_id,
                     'status': 'pending',
                 }
-                logger.debug('[thread %s]marking download %s as pending', thread_int, download_id)
+                logger.debug('marking download %s as pending', download_id)
                 response_string, response_code = self.api_helper.make_request('/downloads/status', data=json.dumps(post_dic))
-                logger.debug("[thread %s]updated status: %s\n%s", thread_int, response_code, response_string)
+                logger.debug("updated status: %s\n%s", response_code, response_string)
                 return
 
             self.report(download_id, total_size, bytes_downloaded)
@@ -151,50 +174,60 @@ class DownloadWorker(worker.ThreadWorker):
         logger.debug("updated status: %s\n%s", response_code, response_string)
         return response_string, response_code
 
-    def download_file(self, download_url, path, bytes_downloaded, thread_int):
-        self.mkdir_p(os.path.dirname(path))
-        logger.debug('[thread %s]\ttrying to download: %s', thread_int, path)
-        request = requests.get(download_url, stream=True)
-        with open(path, 'wb') as file_pointer:
-            for chunk in request.iter_content(chunk_size=CHUNK_SIZE):
-                if chunk:
-                    file_pointer.write(chunk)
-                    bytes_downloaded[0] += len(chunk)
-        request.raise_for_status()
-        logger.debug('[thread %s]\t%s successfully downloaded', thread_int, path)
-        logger.debug('[thread %s]\tsetting file perms to 666', thread_int)
-        os.chmod(path, 0666)
 
+def download_file(download_url, path, bytes_downloaded):
+    dirpath = os.path.dirname(path)
+    safe_mkdirs(dirpath)
+    try:
+        # make path world writable
+        os.chmod(dirpath, 0777)
+    except:
+        logger.warning("unable chmod: %s", path)
+
+    logger.info('Downloading: %s', path)
+    request = requests.get(download_url, stream=True)
+    with open(path, 'wb') as file_pointer:
+        for chunk in request.iter_content(chunk_size=CHUNK_SIZE):
+            if chunk:
+                file_pointer.write(chunk)
+                bytes_downloaded[0] += len(chunk)
+    request.raise_for_status()
+    logger.debug('Successfully downloaded: %s', path)
+
+
+def mkdir_p(path):
+    # return True if the directory already exists
+    if os.path.isdir(path):
         return True
 
+    # if parent dir does not exist, create that first
+    base_dir = os.path.dirname(path)
+    if not os.path.isdir(base_dir):
+        mkdir_p(base_dir)
 
-    def mkdir_p(self, path):
-        # return True if the directory already exists
-        if os.path.isdir(path):
-            return True
+    # create path (parent should already be created)
+    try:
+        os.mkdir(path)
+    except OSError:
+        pass
 
-        # if parent dir does not exist, create that first
-        base_dir = os.path.dirname(path)
-        if not os.path.isdir(base_dir):
-            self.mkdir_p(base_dir)
+    # make path world writable
+    os.chmod(path, 0777)
 
-        # create path (parent should already be created)
-        try:
-            os.mkdir(path)
-        except OSError:
-            pass
+    return True
 
-    def correct_file_present(self, path, md5, thread_int):
-        if not os.path.isfile(path):
-            logger.debug('[thread %s]\tfile does not exist', thread_int)
-            return False
+def safe_mkdirs(dirpath):
+    '''
+    Create the given directory.  If it already exists, suppress the exception.
+    This function is useful when handling concurrency issues where it's not
+    possible to reliably check whether a directory exists before creating it.
+    '''
+    try:
+        os.makedirs(dirpath)
+    except OSError:
+        if not os.path.isdir(dirpath):
+            raise
 
-        current_md5 = common.get_base64_md5(path)
-        if md5 != current_md5:
-            logger.debug('[thread %s]\tmd5s do not match: %s vs %s', thread_int, md5, current_md5)
-            return False
-
-        return True
 
 
 class Download(object):
@@ -297,10 +330,12 @@ class Download(object):
                     raise ValueError("you need to specify a job_id when passing a task_id")
                 params = {'tid': task_id}
             else:
-                params = {'location': self.location}
+                params = None
             logger.debug('params is: %s', params)
 
-            response_string, response_code = self.api_helper.make_request(endpoint, params=params)
+            json_data = json.dumps({'location': self.location})
+            logger.debug('json_data is: %s', json_data)
+            response_string, response_code = self.api_helper.make_request(endpoint, data=json_data, params=params)
             logger.debug("response code is:\n%s" % response_code)
             logger.debug("response data is:\n%s" % response_string)
 
