@@ -148,7 +148,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         self.extended_widget.refreshUi()
 
         # Set the defaults collected
-        try: 
+        try:
             for ui_attr in self.defaults:
                 if not self.defaults[ui_attr]:
                     continue
@@ -160,7 +160,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                     getattr(self, ui_attr).setText(self.defaults[ui_attr])
         except:
             pass
-            
+
         if not self.ui_output_path_lnedt.text():
             self.ui_output_path_lnedt.setText(maya_utils.get_image_dirpath())
 
@@ -226,13 +226,67 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return maya_utils.collect_dependencies(maya_utils.dependency_attrs)
 
 
+
+    def getEnforcedMd5s(self):
+        '''
+        Note that this is only relevant when local_upload=False.
+        
+        Return a dictionary of any filepaths and their corresponding md5 hashes
+        that should be verified before uploading to cloud storage.  
+        
+        When local_upload is False, uploading files to cloud storage is handled
+        by an uploader daemon. Because there can be a time delay between when
+        a user has pressed "submit" and when the daemon actually goes to upload
+        the files to cloud storage, there is the possibility that files have
+        actually changes on disk.  For example, a user may submit 3 jobs to
+        conductor within 7 seconds of one another, by quickly rotating the camera, 
+        saving the maya scene on top of itself, and pressing "Submit" (and doing
+        this three time).  Though this is probably not a great workflow, 
+        it's something that needs to be guarded against.
+        
+        This method returns a dictionary of filepaths and and their corresponding 
+        md5 hashes, which is used by the uploader daemon when uploading the files
+        to conductor. The daemon will do its own md5 hash of all files in 
+        this dictionary,and match it against the md5s that the dictionary provides.
+        If the uploader finds a mismatch then it fails the upload process (and
+        fails the job).
+        
+        Generally there is gray area as to what is considered "acceptable" for
+        files being changed from underneath the feet of the artist.  Because a source file (such
+        as a maya scene or katana file, for example), has many external dependencies
+        (such as texture files, alembic, etc), those depencies could possibly be 
+        changed on disk by the time the uploader get a chance to upload them to Conductor. 
+        As a compromise on attempting to create an exact snapshot of the state 
+        of ALL files on disk (i.e. md5 hashes)that a job requires at the moment 
+        the artist presses "submit", Conductor only guarantees exact file integrity
+        on the source file (maya/katana file).  That source file's dependencies
+        are NOT guaranteed to match md5s.  In otherwords, a texture file or alembic cache file
+        is not md5 checked to ensure it matches the md5 of when the user pressed
+        "submit".  Only the maya file is.       
+        '''
+        # Create a list of files that we want to guarantee to be in the same
+        # state when uploading to conductor.  These files will need to md5 hashed here/now.
+        # This is potentially TIME CONSUMING (if the files are large and plenty).
+        enforced_files = []
+        enforced_files.append(maya_utils.get_maya_scene_filepath())
+
+        # Generate md5s to dictionary
+        enforced_md5s = {}
+        for filepath in enforced_files:
+            logger.info("md5 hashing: %s", filepath)
+            enforced_md5s[filepath] = common.generate_md5(filepath, base_64=True)
+
+        return enforced_md5s
+
+
+
     def runPreSubmission(self):
         '''
         Override the base class (which is an empty stub method) so that a 
         validation pre-process can be run.  If validation fails, then indicate
         that the the submission process should be aborted.   
         
-        We also collect dependencies (and asdasdss) at this point and pass that
+        We also collect dependencies  at this point and pass that
         data along...
         In order to validate the submission, dependencies must be collected
         and inspected. Because we don't want to unnessarily collect dependencies
@@ -241,12 +295,29 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         raw_dependencies = self.collectDependencies()
+
+
+        # If uploading locally (i.e. not using  uploader daemon
+        if self.getLocalUpload():
+            # Don't need to enforce md5s for the daemon (don't want to do unnessary md5 hashing here)
+            enforced_md5s = {}
+        else:
+            # Get all files that we want to have integrity enforcement when uploading via the daemon
+            enforced_md5s = self.getEnforcedMd5s()
+
+        # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
+        raw_dependencies.extend(enforced_md5s.keys())
+
+        # Process all of the dependendencies. This will create a dictionary of dependencies, and whether they are considred Valid or not (bool)
         dependencies = file_utils.process_dependencies(raw_dependencies)
+
+
         raw_data = {"dependencies":dependencies}
 
         is_valid = self.runValidation(raw_data)
         return {"abort":not is_valid,
-                "dependencies":dependencies}
+                "dependencies":dependencies,
+                "enforced_md5s":enforced_md5s}
 
     def saveDefaults(self):
         default_name = maya_utils.get_maya_scene_filepath()
@@ -375,23 +446,24 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["cores"] = self.getInstanceType()['cores']
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
+        # Grab the enforced md5s files from data (note that this comes from the presubmission phase
+        conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["docker_image"] = self.getDockerImage()
+        conductor_args["local_upload"] = self.getLocalUpload()
+        conductor_args["notify"] = self.ui_notify_lnedt.text()
         conductor_args["output_path"] = self.ui_output_path_lnedt.text()
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
-        conductor_args["notify"] = self.ui_notify_lnedt.text()
+        # Grab the file dependencies from data (note that this comes from the presubmission phase
+        conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
 
+        # TODO:(LWS) This should get moved to a method that is called self.getEnvironment().
         ocio_config = maya_utils.get_ocio_config()
         if ocio_config != "":
-            print("Setting OCIO environment variable...")
+            logger.info("Setting OCIO environment variable...")
             conductor_args["env"] = {"OCIO": ocio_config}
-
-        # if there are any dependencies, generate a dependendency manifest and add it as an argument
-        dependency_filepaths = data["dependencies"].keys()
-        if dependency_filepaths:
-            conductor_args["upload_paths"] = dependency_filepaths
 
         return conductor_args
 
@@ -400,7 +472,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         # If an "abort" key has a True value then abort submission
         if data.get("abort"):
-            logger.info("Conductor: Submission aborted")
+            logger.warning("Conductor: Submission aborted")
             return data
 
         return super(MayaConductorSubmitter, self).runConductorSubmission(data)

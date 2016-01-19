@@ -173,7 +173,7 @@ class ThreadWorker(object):
         for thread_int in range(self.thread_count):
             logger.debug('starting thread %s', thread_int)
             # thread will begin execution on self.target()
-            thd = threading.Thread(target=self.target, args=(thread_int,))
+            thd = threading.Thread(target=self.target, args=(thread_int,), name=self.__class__.__name__)
 
             # make sure threads don't stop the program from exiting
             thd.daemon = True

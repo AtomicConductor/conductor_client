@@ -43,12 +43,15 @@ class MD5Worker(worker.ThreadWorker):
         filename = str(filename)
         current_md5 = self.get_md5(filename)
         # if a submission time md5 was provided then check against it
-        if submission_time_md5 and current_md5 != submission_time_md5:
-            message = 'MD5 of %s has changed since submission\n' % filename
-            message += 'submitted md5: %s\n' % submission_time_md5
-            message += 'current md5:   %s' % current_md5
-            logger.error(message)
-            # raise message
+        if submission_time_md5:
+            logger.info("Enforcing md5 match: %s for: %s", submission_time_md5, filename)
+            if current_md5 != submission_time_md5:
+                message = 'MD5 of %s has changed since submission\n' % filename
+                message += 'submitted md5: %s\n' % submission_time_md5
+                message += 'current md5:   %s\n' % current_md5
+                message += 'This is likely due to the file being written to after the user submitted the job but before it got uploaded to conductor'
+                logger.error(message)
+                raise Exception(message)
         self.metric_store.set_dict('file_md5s', filename, current_md5)
         return (filename, current_md5)
 
@@ -486,15 +489,15 @@ class Uploader():
         thd.start()
 
 
-    def mark_upload_finished(self, upload_id):
-        finish_dict = {
-            'upload_id':upload_id,
-            'status': 'server_pending',
-        }
-        resp_str, resp_code = self.api_client.make_request(
-            '/uploads/%s/finish' % upload_id,
-            data=json.dumps(finish_dict),
-            verb='POST')
+    def mark_upload_finished(self, upload_id, upload_files):
+
+        data = {'upload_id':upload_id,
+                'status': 'server_pending',
+                'upload_files': upload_files}
+
+        resp_str, resp_code = self.api_client.make_request('/uploads/%s/finish' % upload_id,
+                                                           data=json.dumps(data),
+                                                           verb='POST')
         return True
 
 
@@ -510,49 +513,52 @@ class Uploader():
         return True
 
     def handle_upload_response(self, upload_files, upload_id=None, md5_only=False):
-        # reset counters
-        self.num_files_to_process = len(upload_files)
-        self.job_start_time = int(time.time())
-        self.upload_id = upload_id
-        self.job_failed = False
-        # signal the reporter to start working
-        self.working = True
+        try:
+            # reset counters
+            self.num_files_to_process = len(upload_files)
+            self.job_start_time = int(time.time())
+            self.upload_id = upload_id
+            self.job_failed = False
+            # signal the reporter to start working
+            self.working = True
 
-        self.prepare_workers()
+            self.prepare_workers()
 
-        # print out info
-        logger.info('upload_files contains %s files like:', len(upload_files))
-        logger.info('\t%s', "\n\t".join(upload_files.keys()[:5]))
+            # print out info
+            logger.info('upload_files contains %s files like:', len(upload_files))
+            logger.info('\t%s', "\n\t".join(upload_files.keys()[:5]))
 
-        # create worker pools
-        self.manager = self.create_manager(md5_only)
+            # create worker pools
+            self.manager = self.create_manager(md5_only)
 
-        # create reporters
-        logger.debug('creating report status thread...')
-        self.create_report_status_thread()
-        logger.info('creating console status thread...')
-        self.create_print_status_thread()
+            # create reporters
+            logger.debug('creating report status thread...')
+            self.create_report_status_thread()
+            logger.info('creating console status thread...')
+            self.create_print_status_thread()
 
-        # load tasks into worker pools
-        for path, md5 in upload_files.iteritems():
-            self.manager.add_task((path, md5))
+            # load tasks into worker pools
+            for path, md5 in upload_files.iteritems():
+                self.manager.add_task((path, md5))
 
-        # wait for work to finish
-        output = self.manager.join()
+            # wait for work to finish
+            error_message = self.manager.join()
+            logger.debug("error_message: %s", error_message)
 
-        # signal to the reporter to stop working
-        self.working = False
-        logger.info('done uploading files')
+            # signal to the reporter to stop working
+            self.working = False
+            logger.info('done uploading files')
 
-        # report upload status
-        if output:
-            if upload_id:
-                self.mark_upload_failed(output, upload_id)
-            return "\n".join(output)
-        else:
-            if upload_id:
-                self.mark_upload_finished(upload_id)
-            return None
+            if error_message:
+                return "\n".join(error_message)
+
+            if self.upload_id:
+                finished_upload_files = self.return_md5s()
+                self.mark_upload_finished(self.upload_id, finished_upload_files)
+
+        except:
+            return traceback.format_exc()
+
 
 
     def main(self, run_one_loop=False):
@@ -594,7 +600,9 @@ class Uploader():
                 upload_id = json_data['upload_id']
                 logger.info('upload_id is %s', upload_id)
 
-                self.handle_upload_response(upload_files, upload_id)
+                error_message = self.handle_upload_response(upload_files, upload_id)
+                if error_message:
+                    self.mark_upload_failed(error_message, upload_id)
 
             except Exception, e:
                 logger.error('hit exception %s', e)

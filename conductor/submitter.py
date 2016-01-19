@@ -384,6 +384,20 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         return response_code, response
 
+
+    def getLocalUpload(self):
+        '''
+        Return a bool indicating whether the uploading process should occur on
+        this machine or whether it should get offloaded to the uploader daemon.
+        If False, uploading will occur on the daemon.
+        
+        Simply return the value set in the config.yml.  In the future this option
+        may be exposed in the UI
+        '''
+        return CONFIG.get("local_upload")
+
+
+
     def launch_result_dialog(self, response_code, response):
 
         # If the job submitted successfully
