@@ -373,7 +373,7 @@ class Downloader(object):
 
         self.api_client = api_client.ApiClient()
 
-        self.thread_count = thread_count or CONFIG['thread_count']
+        self.thread_count = int(thread_count or CONFIG['thread_count'])
         self.logger.debug("thread_count: %s", self.thread_count)
 
         self.location = location or CONFIG.get("location")
@@ -1182,9 +1182,9 @@ def prepare_dest_dirpath(dir_path):
 
 @dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_next_download(location, endpoint, client):
-    json_data = json.dumps({'location': location})
-#     logger.debug('json_data is: %s', json_data)
-    response_string, response_code = client.make_request(endpoint, data=json_data)
+    params = {'location': location}
+    #logger.debug('params: %s', params)
+    response_string, response_code = client.make_request(endpoint, params=params)
 #     logger.debug("response code is:\n%s" % response_code)
 #     logger.debug("response data is:\n%s" % response_string)
     if response_code != 201:
