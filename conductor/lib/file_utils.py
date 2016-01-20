@@ -21,6 +21,7 @@ PATH_EXPRESSIONS = [RX_HASH, RX_PERCENT, RX_UDIM_MARI, RX_UDIM_MUDBOX_L,
 logger = conductor.setup.logger
 
 
+
 def separate_path(path, no_extension=False):
     '''
     Seperate the given path into three pieces:
