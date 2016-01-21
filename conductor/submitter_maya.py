@@ -148,15 +148,19 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         self.extended_widget.refreshUi()
 
         # Set the defaults collected
-        for ui_attr in self.defaults:
-            if not self.defaults[ui_attr]:
-                continue
-            if ui_attr.endswith("cmbx"):
-                getattr(self, ui_attr).setCurrentIndex(self.defaults[ui_attr])
-            elif ui_attr.endswith("chkbx"):
-                getattr(self, ui_attr).setChecked(self.defaults[ui_attr])
-            elif ui_attr.endswith("lnedt"):
-                getattr(self, ui_attr).setText(self.defaults[ui_attr])
+        try: 
+            for ui_attr in self.defaults:
+                if not self.defaults[ui_attr]:
+                    continue
+                if ui_attr.endswith("cmbx"):
+                    getattr(self, ui_attr).setCurrentIndex(int(self.defaults[ui_attr]))
+                elif ui_attr.endswith("chkbx"):
+                    getattr(self, ui_attr).setChecked(self.defaults[ui_attr])
+                elif ui_attr.endswith("lnedt"):
+                    getattr(self, ui_attr).setText(self.defaults[ui_attr])
+        except:
+            pass
+            
         if not self.ui_output_path_lnedt.text():
             self.ui_output_path_lnedt.setText(maya_utils.get_image_dirpath())
 
