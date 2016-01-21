@@ -29,6 +29,7 @@ TODO:
 
 logger = logging.getLogger(__name__)
 
+
 class MayaWidget(QtGui.QWidget):
 
     # The .ui designer filepath
@@ -137,51 +138,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def __init__(self, parent=None):
         super(MayaConductorSubmitter, self).__init__(parent=parent)
         self.setMayaWindow()
-        # self.refreshUi()
-
-    def initializeUi(self):
-        super(MayaConductorSubmitter, self).initializeUi()
-        self.getDefaults()
-
-        start, end = maya_utils.get_frame_range()[0]
-        self.setFrameRange(start, end)
-        self.extended_widget.refreshUi()
-
-        # Set the defaults collected
-        try:
-            for ui_attr in self.defaults:
-                if not self.defaults[ui_attr]:
-                    continue
-                if ui_attr.endswith("cmbx"):
-                    getattr(self, ui_attr).setCurrentIndex(int(self.defaults[ui_attr]))
-                elif ui_attr.endswith("chkbx"):
-                    getattr(self, ui_attr).setChecked(self.defaults[ui_attr])
-                elif ui_attr.endswith("lnedt"):
-                    getattr(self, ui_attr).setText(self.defaults[ui_attr])
-        except:
-            pass
-
-        if not self.ui_output_path_lnedt.text():
-            self.ui_output_path_lnedt.setText(maya_utils.get_image_dirpath())
-
-    def closeEvent(self, event):
-        self.saveDefaults()
-
-    #  Get any defaults that may exist for this user
-    def getDefaults(self):
-        self.defaults = {}
-
-        default_name = maya_utils.get_maya_scene_filepath()
-        self.getDefaultValues(default_name, submitter.DEFAULT_ATTRS)
-        self.getDefaultValues("Last", submitter.LAST_ATTRS)
-
-    def getDefaultValues(self, default_name, attr_list):
-        settings = QtCore.QSettings("Conductor", "Submitter")
-        settings.beginGroup(default_name)
-        for ui_attr in attr_list:
-            if ui_attr not in self.defaults or not self.defaults[ui_attr]:
-                self.defaults[ui_attr] = settings.value(ui_attr)
-        settings.endGroup()
+        self.refreshUi()
+        self.loadUserSettings()
 
     def setMayaWindow(self):
         '''
@@ -193,11 +151,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         self.setWindowFlags(QtCore.Qt.Window)
 
     def refreshUi(self):
-
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
-        self.ui_output_path_lnedt.setText(maya_utils.get_image_dirpath())
+        self.setOutputDir(maya_utils.get_image_dirpath())
 
 
     def getExtendedWidget(self):
@@ -319,26 +276,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                 "dependencies":dependencies,
                 "enforced_md5s":enforced_md5s}
 
-    def saveDefaults(self):
-        default_name = maya_utils.get_maya_scene_filepath()
-        self.storeDefaultSettings(default_name)
-        self.storeDefaultSettings("Last")
-
-    def storeDefaultSettings(self, default_name):
-        settings = QtCore.QSettings("Conductor", "Submitter")
-        settings.beginGroup(default_name)
-        for ui_attr in submitter.DEFAULT_ATTRS:
-            if ui_attr.endswith("cmbx"):
-                settings.setValue(ui_attr, getattr(self, ui_attr).currentIndex())
-            elif ui_attr.endswith("chkbx"):
-                settings.setValue(ui_attr, getattr(self, ui_attr).isChecked())
-            elif ui_attr.endswith("lnedt"):
-                settings.setValue(ui_attr, getattr(self, ui_attr).text())
-
-            # settings.setValue(ui_attr, getattr(self, ui_attr))
-        if settings.value("ui_output_path_lnedt") == maya_utils.get_image_dirpath():
-            settings.setValue("ui_output_path_lnedt", "")
-        settings.endGroup()
 
     def getDockerImage(self):
         '''
@@ -453,7 +390,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["docker_image"] = self.getDockerImage()
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["notify"] = self.ui_notify_lnedt.text()
-        conductor_args["output_path"] = self.ui_output_path_lnedt.text()
+        conductor_args["output_path"] = self.getOutputDir()
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
         # Grab the file dependencies from data (note that this comes from the presubmission phase
@@ -478,7 +415,11 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return super(MayaConductorSubmitter, self).runConductorSubmission(data)
 
 
-
+    def getSourceFilepath(self):
+        '''
+        Return the currently opened maya fule
+        '''
+        return maya_utils.get_maya_scene_filepath()
 
 
 class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):

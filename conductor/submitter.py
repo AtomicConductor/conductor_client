@@ -18,10 +18,6 @@ from conductor import submitter_resources  # This is a required import  so that 
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
-DEFAULT_ATTRS = ["ui_notify_lnedt", "ui_start_frame_lnedt", "ui_end_frame_lnedt",
-                 "ui_custom_lnedt", "ui_instance_type_cmbx", "ui_resource_lnedt",
-                 "ui_output_path_lnedt"]
-LAST_ATTRS = ["ui_notify_lnedt", "ui_instance_type_cmbx", "ui_resource_lnedt"]
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +25,6 @@ logger = logging.getLogger(__name__)
 TODO:
 1. Create qt resource package or fix filepaths for all images to be set during code execution
 2. about menu? - provide link to studio's conductor url (via yaml config file) 
-4. rename files to "maya.py" and "nuke.py" ??
 5. consider conforming all code to camel case (including .ui widgets). 
 6. Consider adding validation to the base class so that inheritance can be used.
 7. tool tips!  - ask greg about a tool tip for "resource"
@@ -38,7 +33,6 @@ TODO:
     nuke-render  (what flags are available?)
     maya2015Render  (what flags are available?)
 10: validate resource string only [a-z0-9-]
-11: Conductor instance types should be queried from config file (or the web?)
 '''
 
 class ConductorSubmitter(QtGui.QMainWindow):
@@ -56,8 +50,11 @@ class ConductorSubmitter(QtGui.QMainWindow):
     # .ui designer filepath
     _ui_filepath = os.path.join(RESOURCES_DIRPATH, 'submitter.ui')
 
+    # company name
+    company_name = "Conductor"
+
     # The text in the title bar of the UI
-    _window_title = "Conductor"
+    _window_title = company_name
 
     # The instance type that is set by default in the UI. This integer
     # corresponds to the core count of the conductor instance type
@@ -66,15 +63,20 @@ class ConductorSubmitter(QtGui.QMainWindow):
     link_color = "rgb(200,100,100)"
 
     def __init__(self, parent=None):
+        '''
+        1. Load the ui file
+        2. Initialize widgets (set behavior, populate options, resize/reformat)
+        3. Load any user settings to restore widget values from user preferences 
+        '''
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
         self.initializeUi()
+
 
     def initializeUi(self):
         '''
         Initialize ui properties/behavior
         '''
-        self.defaults = self.getDefaults()
 
         # Set the start/end fields to be restricted to integers only
         self.ui_start_frame_lnedt.setValidator(QtGui.QIntValidator())
@@ -107,16 +109,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Set the keyboard focus on the frame range radio button
         self.ui_start_end_rdbtn.setFocus()
-
-        self.ui_choose_path_btn.clicked.connect(self.browseOutput)
-
-
-    def browseOutput(self):
-        directory = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory"))
-        if not directory:
-            return
-        directory = re.sub("\\\\", "/", directory)
-        self.ui_output_path_lnedt.setText(directory)
 
 
     def refreshUi(self):
@@ -291,6 +283,21 @@ class ConductorSubmitter(QtGui.QMainWindow):
         Return the UI's Resurce field
         '''
         return str(self.ui_resource_lnedt.text())
+
+
+    def setOutputDir(self, dirpath):
+        '''
+        Set the UI's Output Directory field
+        '''
+        self.ui_output_directory_lnedt.setText(dirpath)
+
+
+    def getOutputDir(self):
+        '''
+        Return the UI's Output Directory field
+        '''
+        return str(self.ui_output_directory_lnedt.text()).replace("\\", "/")
+
 
     def generateConductorArgs(self, args):
         '''
@@ -468,12 +475,17 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
 
 
-
     @QtCore.Slot(name="on_ui_refresh_tbtn_clicked")
     def on_ui_refresh_tbtn_clicked(self):
         self.refreshUi()
 
 
+    @QtCore.Slot(name="on_ui_choose_output_path_pbtn_clicked")
+    def on_ui_choose_output_path_pbtn_clicked(self):
+
+        dirpath = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory"))
+        if dirpath:
+            self.setOutputDir(dirpath)
 
     def getFrameRangeString(self):
         if self.ui_start_end_rdbtn.isChecked():
@@ -507,6 +519,73 @@ class ConductorSubmitter(QtGui.QMainWindow):
         ui.show()
         app.exec_()
 
+
+    def getUserSettingWidgets(self):
+        '''
+        Return a list of widget objects that are appropriate for restoring their
+        state (values) from a user's preference file. These widgets are identified 
+        by a dynamic property that has been set on them via Qt Designer.
+        The property name is "isUserSetting" and it's a bool which should be 
+        set to True.
+        '''
+        user_setting_identifier = "isUserSetting"
+        return pyside_utils.get_widgets_by_property(self,
+                                                    user_setting_identifier,
+                                                    match_value=True,
+                                                    property_value=True)
+
+
+    def getSourceFilepath(self):
+        '''
+        Return the filepath for the currently open file. This is  the currently
+        opened maya/katana/nuke file, etc
+        '''
+
+        class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
+        message = "%s not implemented. Please override method as desribed in its docstring" % class_method
+        raise NotImplementedError(message)
+
+
+    def loadUserSettings(self):
+        '''
+        Read any user preferences that may have been stored for the currently 
+        opened source file (maya/katana/nuke file, etc) and apply those values
+        to the widgets. These widgets are identified 
+        by a dynamic property that has been set on them via Qt Designer.
+        The property name is "isUserSetting" and it's a bool which should be 
+        set to True.
+        '''
+        try:
+            source_filepath = self.getSourceFilepath()
+            usersetting_widgets = self.getUserSettingWidgets()
+            pyside_utils.UiUserSettings.loadUserSettings(company_name=self.company_name,
+                                                         application_name=self.__class__.__name__,
+                                                         group_name=source_filepath,
+                                                         widgets=usersetting_widgets)
+        except:
+            logger.exception("Unable to apply user settings:")
+
+    def saveUserSettings(self):
+        '''
+        Save current widget settings to the user's preference file.  These settings
+        are recorded per source file (maya/katana/nuke file, etc).
+        '''
+        try:
+            source_filepath = self.getSourceFilepath()
+            usersetting_widgets = self.getUserSettingWidgets()
+            pyside_utils.UiUserSettings.saveUserSettings(company_name=self.company_name,
+                                                         application_name=self.__class__.__name__,
+                                                         group_name=source_filepath,
+                                                         widgets=usersetting_widgets)
+        except:
+            logger.exception("Unable to save user settings:")
+
+    def closeEvent(self, event):
+        '''
+        When the Conductor UI is closed, save the user settings.
+        '''
+        self.saveUserSettings()
+        super(ConductorSubmitter, self).closeEvent(event)
 
 
 

@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from PySide import QtGui, QtCore
@@ -13,7 +14,7 @@ except ImportError, e:
 from conductor import CONFIG, submitter
 from conductor.lib import file_utils, nuke_utils, pyside_utils, common, api_client, loggeria
 
-
+logger = logging.getLogger(__name__)
 
 '''
 TODO:
@@ -105,9 +106,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
     def __init__(self, parent=None):
         super(NukeConductorSubmitter, self).__init__(parent=parent)
         self.refreshUi()
-
-    def initializeUi(self):
-        super(NukeConductorSubmitter, self).initializeUi()
+        self.loadUserSettings()
 
 
     def refreshUi(self):
@@ -132,7 +131,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = ["-X %s" % write_node for write_node in write_nodes]
-        nuke_scriptpath = nuke_utils.get_nuke_script_path()
+        nuke_scriptpath = self.getSourceFilepath()
         cmd = base_cmd % (" ".join(write_nodes_args), nuke_scriptpath)
         return cmd
 
@@ -157,7 +156,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         dependencies = nuke_utils.collect_dependencies(write_nodes, dependency_knobs)
-        dependencies.append(nuke_utils.get_nuke_script_path())
+        dependencies.append(self.getSourceFilepath())
         return dependencies
 
 
@@ -302,9 +301,13 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
         # If an "abort" key has a True value then abort submission
         if data.get("abort"):
-            print "Conductor: Submission aborted"
+            logger.warning("Conductor: Submission aborted")
             return
 
         return super(NukeConductorSubmitter, self).runConductorSubmission(data)
 
-
+    def getSourceFilepath(self):
+        '''
+        Return the currently opened nuke script
+        '''
+        return nuke_utils.get_nuke_script_filepath()
