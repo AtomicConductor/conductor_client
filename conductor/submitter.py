@@ -507,11 +507,7 @@ def get_conductor_instance_types():
     TODO: This information should probably be put into and read from an external
           file (yaml, json, etc) 
     '''
-    instances = [{"cores": 2, "flavor": "highcpu", "description": " 2 core 1.8GB Mem"},
-                 {"cores": 2, "flavor": "standard", "description": " 2 core,  7.5GB Mem"},
-                 {"cores": 2, "flavor": "highmem", "description": " 2 core, 13.0GB Mem"},
-                 {"cores": 4, "flavor": "highcpu", "description": " 4 core, 3.6GB Mem"},
-                 {"cores": 4, "flavor": "standard", "description": " 4 core, 15.0GB Mem"},
+    instances = [{"cores": 4, "flavor": "standard", "description": " 4 core, 15.0GB Mem"},
                  {"cores": 4, "flavor": "highmem", "description": " 4 core, 26.0GB Mem"},
                  {"cores": 8, "flavor": "highcpu", "description": " 8 core, 7.20GB Mem"},
                  {"cores": 8, "flavor": "standard", "description": " 8 core, 30.0GB Mem"},
