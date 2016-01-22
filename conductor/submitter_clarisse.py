@@ -20,11 +20,7 @@ import pyqt_clarisse
 logger = logging.getLogger(__name__)
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
-INSTANCES = [{"cores": 2, "flavor": "highcpu", "description": " 2 core 1.8GB Mem"},
-            {"cores": 2, "flavor": "standard", "description": " 2 core,  7.5GB Mem"},
-            {"cores": 2, "flavor": "highmem", "description": " 2 core, 13.0GB Mem"},
-            {"cores": 4, "flavor": "highcpu", "description": " 4 core, 3.6GB Mem"},
-            {"cores": 4, "flavor": "standard", "description": " 4 core, 15.0GB Mem"},
+INSTANCES = [{"cores": 4, "flavor": "standard", "description": " 4 core, 15.0GB Mem"},
             {"cores": 4, "flavor": "highmem", "description": " 4 core, 26.0GB Mem"},
             {"cores": 8, "flavor": "highcpu", "description": " 8 core, 7.20GB Mem"},
             {"cores": 8, "flavor": "standard", "description": " 8 core, 30.0GB Mem"},
@@ -83,7 +79,7 @@ class ClarisseConductorSubmitter(object):
             self.ui.ui_instance_type_cmbx.addItem(instance_info['description'], qv)
 
         # item_idx = self.ui.ui_instance_type_cmbx.findData({"cores": 16, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
-        item_idx = 10
+        item_idx = 6
         if item_idx == -1:
             raise Exception("Could not find combobox entry for core count: %s!"
                             "This should never happen!" % core_count)
