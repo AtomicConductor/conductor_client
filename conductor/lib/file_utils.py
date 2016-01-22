@@ -1,5 +1,10 @@
-import os, re, sys, glob, stat
-import conductor.setup
+import logging
+import os
+import re
+import sys
+import glob
+import stat
+
 
 
 # Regular expressions for different path expressions that are supported
@@ -18,7 +23,7 @@ PATH_EXPRESSIONS = [RX_HASH, RX_PERCENT, RX_UDIM_MARI, RX_UDIM_MUDBOX_L,
                     RX_UDIM_MUDBOX_U, RX_UDIM_VRAY_L, RX_UDIM_VRAY_U, RX_HOUDINI,
                     RX_ASTERISK]
 
-logger = conductor.setup.logger
+logger = logging.getLogger(__name__)
 
 
 

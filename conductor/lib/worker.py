@@ -6,11 +6,11 @@ import traceback
 import threading
 import logging
 
-import conductor, conductor.setup
+import conductor
 
-from conductor.setup import CONFIG, logger
 from conductor.lib import api_client, common
 
+logger = logging.getLogger(__name__)
 
 '''
 This is used to signal to workers if work should continue or not

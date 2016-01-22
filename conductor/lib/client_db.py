@@ -1,14 +1,14 @@
 import os
 import datetime
+import logging
 import sqlite3
 import tempfile
 
 from conductor.lib import file_utils, common
-import conductor.setup
 
 DB_FILENAME = "conductor_db"
 
-logger = conductor.setup.logger
+logger = logging.getLogger(__name__)
 
 
 def get_default_db_filepath():

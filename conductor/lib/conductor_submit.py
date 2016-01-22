@@ -3,11 +3,10 @@
 """ Command Line General Submitter for sending jobs and uploads to Conductor
 
 """
-
-
 import getpass
 import imp
 import json
+import logging
 import os
 import re
 import sys
@@ -19,12 +18,11 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
-import conductor.setup
-from conductor.lib import file_utils, api_client, uploader
+from conductor import CONFIG
+from conductor.lib import file_utils, api_client, uploader, loggeria
 
+logger = logging.getLogger(__name__)
 
-logger = conductor.setup.logger
-CONFIG = conductor.setup.CONFIG
 
 class Submit():
     """ Conductor Submission
@@ -93,7 +91,6 @@ class Submit():
             self.notify["emails"].extend(re.split("/s*,*/s*", CONFIG.get('notify')))
 
         logger.debug("Consumed args")
-
 
     @classmethod
     def resolve_arg(cls, arg_name, args, config):
@@ -258,6 +255,12 @@ class BadArgumentError(ValueError):
 def run_submit(args):
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
+
+    # Set up logging
+    log_level = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
+
     logger.debug('parsed_args is %s', args_dict)
     submitter = Submit(args_dict)
     response, response_code = submitter.main()
@@ -268,3 +271,13 @@ def run_submit(args):
     else:
         logger.error("Submission Failure. Response code: %s", response_code)
         sys.exit(1)
+
+
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_submit_log")
+    loggeria.setup_conductor_logging(logger_level=level,
+                                     console_formatter=loggeria.FORMATTER_VERBOSE,
+                                     log_filepath=log_filepath)
+

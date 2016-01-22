@@ -12,47 +12,18 @@ import base64
 import yaml
 from functools import wraps
 
-
-def setup_logger():
-    """ This function is called when this file is imported!
-    Returns a general formatted logging object.
-    """
-    logger = logging.getLogger("ConductorClient")
-    if os.environ.has_key('CONDUCTOR_DEVELOPMENT'):
-        logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s%(levelname)8s  %(threadName)s:  %(message)s')
-    else:
-        logger.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s %(name)s %(message)s', "%Y-%m-%d %H:%M:%S")
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-    return logger
-
-
-
-# Global logger object, don't use this object directly.
-# It is preferred to use the conductor.logger in the conductor __init__.py
-# except within this file
-LOGGER = setup_logger()
-
+logger = logging.getLogger(__name__)
 
 # Use this global variable across all modules to query whether the the SIGINT signal has been triggered
 SIGINT_EXIT = False
 def signal_handler(sig_number, stack_frame):
-    LOGGER.debug('in signal_handler. setting common.SIGINT_EXIT to True')
+    logger.debug('in signal_handler. setting common.SIGINT_EXIT to True')
     global SIGINT_EXIT
     SIGINT_EXIT = True
 
 def register_sigint_signal_handler(signal_handler=signal_handler):
-    LOGGER.debug("REGISTERING SIGNAL HANDLER")
+    logger.debug("REGISTERING SIGNAL HANDLER")
     signal.signal(signal.SIGINT, signal_handler)
-
-
-# ##
-# Global Functions
-# ##
 
 
 def on_windows():
@@ -64,9 +35,9 @@ def on_windows():
 
 def retry(function, retry_count=5):
     def check_for_early_release(error):
-        LOGGER.debug('checking for early_release. SIGINT_EXIT is %s' % SIGINT_EXIT)
+        logger.debug('checking for early_release. SIGINT_EXIT is %s' % SIGINT_EXIT)
         if SIGINT_EXIT:
-            LOGGER.debug('releasing in retry')
+            logger.debug('releasing in retry')
             raise error
 
     # disable retries in testing
@@ -76,26 +47,26 @@ def retry(function, retry_count=5):
     i = 0
     while True:
         try:
-            # LOGGER.debug('trying to run %s' % function)
+            # logger.debug('trying to run %s' % function)
             return_values = function()
         except Exception, e:
-            LOGGER.debug('caught error')
-            LOGGER.debug('failed due to: \n%s' % traceback.format_exc())
+            logger.debug('caught error')
+            logger.debug('failed due to: \n%s' % traceback.format_exc())
             if i < retry_count:
                 check_for_early_release(e)
                 # exponential backoff with 250ms base
                 sleep_time_in_ms = 250 * int(math.pow(2, i))
                 sleep_time = sleep_time_in_ms / 1000.0
-                LOGGER.debug('retrying after %s seconds' % sleep_time)
+                logger.debug('retrying after %s seconds' % sleep_time)
                 time.sleep(sleep_time)
                 i += 1
                 check_for_early_release(e)
                 continue
             else:
-                LOGGER.debug('exceeded %s retries. throwing error...' % retry_count)
+                logger.debug('exceeded %s retries. throwing error...' % retry_count)
                 raise e
         else:
-            # LOGGER.debug('ran %s ok' % function)
+            # logger.debug('ran %s ok' % function)
             return return_values
 
 
@@ -109,12 +80,12 @@ def dec_timer_exit(func):
         start_time = time.time()
         result = func(*a, **kw)
         finish_time = '%s :%.2f seconds' % (func_name, time.time() - start_time)
-        LOGGER.info(finish_time)
+        logger.info(finish_time)
         return result
     return wrapper
 
 def run(cmd):
-    LOGGER.debug("about to run command: " + cmd)
+    logger.debug("about to run command: " + cmd)
     command = subprocess.Popen(
         cmd,
         shell=True,
@@ -161,7 +132,7 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, st
         curtime = time.time()
         progress = int(((buffer_count * blocksize) / float(file_size)) * 100)
         if poll_seconds and curtime - last_time >= poll_seconds:
-            LOGGER.debug("MD5 hashing %s%% (size %s bytes): %s ", progress, file_size, filepath)
+            logger.debug("MD5 hashing %s%% (size %s bytes): %s ", progress, file_size, filepath)
             last_time = curtime
 
         if state:
@@ -171,7 +142,7 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, st
 
     md5 = hash_obj.digest()
 
-    LOGGER.debug("MD5 hashing 100%% (size %s bytes): %s ", file_size, filepath)
+    logger.debug("MD5 hashing 100%% (size %s bytes): %s ", file_size, filepath)
     if base_64:
         return base64.b64encode(md5)
     return md5
@@ -196,21 +167,19 @@ def base_dir():
 
 class Config():
     required_keys = ['account']
-    default_config = {
-        # TODO
-        'base_url': 'atomic-light-001.appspot.com',
-        'thread_count': (multiprocessing.cpu_count() * 2),
-        'instance_cores': 16,
-        'instance_flavor': "standard",
-        'resource': 'default',
-        'priority': 5,
-        'local_upload': True,
-        'md5_caching': True,
-    }
+    default_config = {'base_url': 'atomic-light-001.appspot.com',
+                      'thread_count': (multiprocessing.cpu_count() * 2),
+                      'instance_cores': 16,
+                      'instance_flavor': "standard",
+                      'resource': 'default',
+                      'priority': 5,
+                      'local_upload': True,
+                      'md5_caching': True,
+                      'log_level': "INFO"}
 
 
     def __init__(self):
-        LOGGER.debug('base dir is %s' % base_dir())
+        logger.debug('base dir is %s' % base_dir())
 
         # create config. precedence is ENV, CLI, default
         combined_config = self.default_config
@@ -227,7 +196,7 @@ class Config():
 
         self.validate_client_token(combined_config)
         self.config = combined_config
-        LOGGER.debug('config is:\n%s' % self.config)
+        logger.debug('config is:\n%s' % self.config)
 
 
     def validate_client_token(self, config):
@@ -246,7 +215,7 @@ class Config():
             message += 'either insert one there, set token_path to a valid token,\n'
             message += 'or set the CONDUCTOR_TOKEN_PATH env variable to point to a valid token\n'
             message += 'refusing to continue'
-            LOGGER.error(message)
+            logger.error(message)
             raise ValueError(message)
         config['conductor_token'] = conductor_token
 
@@ -278,11 +247,11 @@ class Config():
 
     def get_user_config(self):
         config_file = self.get_config_file_path()
-        LOGGER.debug('using config: %s' % config_file)
+        logger.debug('using config: %s' % config_file)
 
 
         if os.path.isfile(config_file):
-            LOGGER.debug('loadinf config from: %s', config_file)
+            logger.debug('loadinf config from: %s', config_file)
             try:
                 with open(config_file, 'r') as file:
                     config = yaml.load(file)
@@ -291,30 +260,30 @@ class Config():
                 message += 'please either create one or set the CONDUCTOR_CONFIG\n'
                 message += 'environment variable to a valid config file\n'
                 message += 'see %s for an example' % os.path.join(base_dir(), 'config.example.yml')
-                LOGGER.error(message)
+                logger.error(message)
 
                 raise ValueError(message)
         else:
-            LOGGER.warn('config file %s does not exist', config_file)
+            logger.warn('config file %s does not exist', config_file)
             return {}
 
 
         if config.__class__.__name__ != 'dict':
             message = 'config found at %s is not in proper yaml syntax' % config_file
-            LOGGER.error(message)
+            logger.error(message)
             raise ValueError(message)
 
-        LOGGER.debug('config is %s' % config)
-        LOGGER.debug('config.__class__ is %s' % config.__class__)
+        logger.debug('config is %s' % config)
+        logger.debug('config.__class__ is %s' % config.__class__)
         return config
 
     def verify_required_params(self, config):
-        LOGGER.debug('config is %s' % config)
+        logger.debug('config is %s' % config)
         for required_key in self.required_keys:
             if not required_key in config:
                 message = "required param '%s' is not set in the config\n" % required_key
                 message += "please either set it or export CONDUCTOR_%s to the proper value" % required_key.upper()
-                LOGGER.error(message)
+                logger.error(message)
                 raise ValueError(message)
 class Auth:
     pass
