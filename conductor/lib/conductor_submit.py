@@ -279,5 +279,6 @@ def set_logging(level=None, log_dirpath=None):
         log_filepath = os.path.join(log_dirpath, "conductor_submit_log")
     loggeria.setup_conductor_logging(logger_level=level,
                                      console_formatter=loggeria.FORMATTER_VERBOSE,
+                                     file_formatter=loggeria.FORMATTER_VERBOSE,
                                      log_filepath=log_filepath)
 

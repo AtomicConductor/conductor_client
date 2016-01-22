@@ -619,6 +619,7 @@ def set_logging(level=None, log_dirpath=None):
         log_filepath = os.path.join(log_dirpath, "conductor_ul_log")
     loggeria.setup_conductor_logging(logger_level=level,
                                      console_formatter=LOG_FORMATTER,
+                                     file_formatter=LOG_FORMATTER,
                                      log_filepath=log_filepath)
 
 def run_uploader(args):
