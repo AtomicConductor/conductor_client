@@ -186,6 +186,7 @@ class Config():
         combined_config.update(self.get_user_config())
         combined_config.update(self.get_environment_config())
 
+
         # verify that we have the required params
         self.verify_required_params(combined_config)
 
@@ -222,19 +223,37 @@ class Config():
 
 
 
-    # look for any environment settings that start with CONDUCTOR_
+
     def get_environment_config(self):
+        '''
+        Look for any environment settings that start with CONDUCTOR_
+        Cast any variables to bools if necessary
+        '''
+        prefix = 'CONDUCTOR_'
+        skipped_variables = ['CONDUCTOR_CONFIG']
         environment_config = {}
-        for env in os.environ:
-            if env.startswith('CONDUCTOR_'):
-                # skip these options
-                if env in ['CONDUCTOR_DEVELOPMENT', 'CONDUCTOR_CONFIG']:
-                    continue
-                # if we find a match, strip the conductor_ prefix and downcase it
-                config_name = env[10:].lower()
-                environment_config[config_name] = os.environ[env]
+        for var_name, var_value in os.environ.iteritems():
+            # skip these options
+            if not var_name.startswith(prefix) or var_name in skipped_variables:
+                continue
+
+            config_key_name = var_name[len(prefix):].lower()
+            environment_config[config_key_name] = self._process_var_value(var_value)
 
         return environment_config
+
+    def _process_var_value(self, env_var):
+        '''
+        Read the given value (which was read from an environment variable, and
+        process it onto an appropriate value for the config.yml file.
+        1. cast bool strings into actual python bools
+        2. anything else... ?
+        '''
+        bool_values = {"true": True,
+                       "false": False}
+
+        return bool_values.get(env_var.lower(), env_var)
+
 
     def get_config_file_path(self, config_file=None):
         default_config_file = os.path.join(base_dir(), 'config.yml')
