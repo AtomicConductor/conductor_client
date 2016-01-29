@@ -1291,7 +1291,8 @@ def run_downloader(args):
     args_dict = vars(args)
 
     # Set up logging
-    log_level = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level = loggeria.LEVEL_MAP.get(log_level_name)
     logger.debug('Downloader parsed_args is %s', args_dict)
     log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
     set_logging(log_level, log_dirpath)
