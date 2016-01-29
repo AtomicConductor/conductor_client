@@ -346,7 +346,7 @@ def set_logging(level=None, log_dirpath=None):
     log_filepath = None
     if log_dirpath:
         log_filepath = os.path.join(log_dirpath, "conductor_dl_log")
-    loggeria.setup_conductor_logging(main_level=level,
+    loggeria.setup_conductor_logging(logger_level=level,
                                      console_formatter=LOG_FORMATTER,
                                      file_formatter=LOG_FORMATTER,
                                      log_filepath=log_filepath)
