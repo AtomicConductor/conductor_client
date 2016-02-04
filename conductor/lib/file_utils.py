@@ -85,14 +85,14 @@ def process_dependencies(paths):
 
 
 
-def process_upload_filepaths(paths):
+def process_upload_filepaths(paths, strict=True):
     '''
     Given the list of paths, process each one, ultimately returning a flattened
     list of all processed paths
     '''
     processed_paths = []
     for path in paths:
-        processed_paths.extend(process_upload_filepath(path))
+        processed_paths.extend(process_upload_filepath(path, strict=strict))
 
     return processed_paths
 
