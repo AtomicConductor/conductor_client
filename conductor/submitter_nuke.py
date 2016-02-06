@@ -60,7 +60,7 @@ class NukeWidget(QtGui.QWidget):
         '''
         Return the names of the write nodes that are selected in the UI
         '''
-        return [item.text(0)for item in self.ui_write_nodes_trwgt.selectedItems()]
+        return [str(item.text(0)) for item in self.ui_write_nodes_trwgt.selectedItems()]
 
     def getUploadOnlyBool(self):
         '''
@@ -108,12 +108,15 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         self.refreshUi()
         self.loadUserSettings()
 
+    def initializeUi(self):
+        super(NukeConductorSubmitter, self).initializeUi()
+        # Hide the output path widget.  Not sure if this is safe to expose yet.  I don't think it will work for nuke.
+        self.ui_output_path_widget.hide()
 
     def refreshUi(self):
         start, end = nuke_utils.get_frame_range()
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
-
 
     def getExtendedWidget(self):
         return NukeWidget()
@@ -193,6 +196,19 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         raw_dependencies = self.collectDependencies()
+
+        # If uploading locally (i.e. not using  uploader daemon
+        if self.getLocalUpload():
+            # Don't need to enforce md5s for the daemon (don't want to do unnessary md5 hashing here)
+            enforced_md5s = {}
+        else:
+            # Get all files that we want to have integrity enforcement when uploading via the daemon
+            enforced_md5s = self.getEnforcedMd5s()
+
+        # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
+        raw_dependencies.extend(enforced_md5s.keys())
+
+
         dependencies = file_utils.process_dependencies(raw_dependencies)
         output_path, write_paths = self.getOutputPath()
         raw_data = {"dependencies":dependencies,
@@ -201,7 +217,8 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         is_valid = self.runValidation(raw_data)
         return {"abort":not is_valid,
                 "dependencies":dependencies,
-                "output_path":output_path}
+                "output_path":output_path,
+                "enforced_md5s":enforced_md5s}
 
 
     def getDockerImage(self):
@@ -227,6 +244,43 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
         return docker_image
 
+    def getJobTitle(self):
+        '''
+        Generate and return the title to be given to the job.  This is the title
+        that will be displayed in the webUI.
+                
+        Construct the job title by using the software name (Nuke), followed by
+        the filename of nuke file (excluding directory path), followed by the
+        write nodes being rendered.  If all of the write nodes in the nuke 
+        file are being rendered then don't list any of them. 
+        
+        Nuke - <nuke scriptname> - <writenodes> 
+        
+        example: "Nuke - my_nuke_script.nk - beauty, shadow, spec"
+        '''
+        nuke_filepath = self.getSourceFilepath()
+        _, nuke_filename = os.path.split(nuke_filepath)
+
+        # Cross-reference all write nodes in the nuke script with
+        # the write nodes that the user has selected in the UI.  If there is
+        # a 1:1 match, then don't list any write nodes in the job title (as
+        # it is assumed that all will be rendered).  If there is not a 1:1
+        # match, then add the write nodes to the title which the user has
+        # selected in the UI
+        selected_write_nodes = self.extended_widget.getSelectedWriteNodes()
+        all_write_nodes = nuke_utils.get_all_write_nodes().keys()
+
+        # If all write nodes are being rendered, then don't specify them in the job title
+        if set(selected_write_nodes) == set(all_write_nodes):
+            write_node_str = ""
+        # Otherwise specify the user-selected layers in the job title
+        else:
+            write_node_str = " - " + ", ".join(selected_write_nodes)
+
+        title = "Nuke - %s%s" % (nuke_filename, write_node_str)
+        return title
+
+
     def runValidation(self, raw_data):
         '''
         This is an added method (i.e. not a base class override), that allows
@@ -246,7 +300,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         if invalid_filepaths:
             message = "Found invalid filepaths:\n\n%s" % "\n\n".join(invalid_filepaths)
             pyside_utils.launch_error_box("Invalid filepaths!", message, parent=self)
-            return
+            raise Exception(message)
 
 
         # ## Validate that there is a common root path across all of the Write
@@ -255,7 +309,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         if not output_path:
             message = "No common/shared output directory. All output files should share a common root!\n\nOutput files:\n    %s" % "\n   ".join(write_paths)
             pyside_utils.launch_error_box("No common output directory!", message, parent=self)
-            return
+            raise Exception(message)
 
         return True
 
@@ -281,18 +335,21 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args = {}
         conductor_args["cmd"] = self.generateConductorCmd()
         conductor_args["cores"] = self.getInstanceType()['cores']
+        conductor_args["env"] = self.getEnvironment()
+        conductor_args["job_title"] = self.getJobTitle()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
+        # Grab the enforced md5s files from data (note that this comes from the presubmission phase
+        conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["docker_image"] = self.getDockerImage()
+        conductor_args["local_upload"] = self.getLocalUpload()
+        conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = data["output_path"]
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
-
-        # if there are any dependencies, generate a dependendency manifest and add it as an argument
-        dependency_filepaths = data["dependencies"].keys()
-        if dependency_filepaths:
-            conductor_args["upload_paths"] = dependency_filepaths
+        # Grab the file dependencies from data (note that this comes from the presubmission phase
+        conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
 
         return conductor_args
 
@@ -302,7 +359,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # If an "abort" key has a True value then abort submission
         if data.get("abort"):
             logger.warning("Conductor: Submission aborted")
-            return
+            return data
 
         return super(NukeConductorSubmitter, self).runConductorSubmission(data)
 

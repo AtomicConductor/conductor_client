@@ -270,7 +270,7 @@ class Config():
 
 
         if os.path.isfile(config_file):
-            logger.debug('loadinf config from: %s', config_file)
+            logger.debug('loading config: %s', config_file)
             try:
                 with open(config_file, 'r') as file:
                     config = yaml.load(file)
@@ -304,5 +304,23 @@ class Config():
                 message += "please either set it or export CONDUCTOR_%s to the proper value" % required_key.upper()
                 logger.error(message)
                 raise ValueError(message)
+
+
+def load_resources_file():
+    '''
+    Return the resource yaml file as a dict
+    '''
+    resources_filepath = os.path.join(base_dir(), "conductor", "resources", "resources.yml")
+    with open(resources_filepath, 'r') as file_:
+        return yaml.load(file_)
+
+def get_conductor_instance_types():
+    '''
+    Get the list of available instances types from the resources.yml file
+    '''
+    resources = load_resources_file()
+    return resources.get("instance_types") or []
+
+
 class Auth:
     pass

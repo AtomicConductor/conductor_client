@@ -170,7 +170,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         base_cmd = "-rd /tmp/render_output/ -s %%f -e %%f %s %s"
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
-        maya_filepath = maya_utils.get_maya_scene_filepath()
+        maya_filepath = self.getSourceFilepath()
         cmd = base_cmd % (render_layer_args, maya_filepath)
         return cmd
 
@@ -183,58 +183,16 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return maya_utils.collect_dependencies(maya_utils.dependency_attrs)
 
 
-
-    def getEnforcedMd5s(self):
+    def getEnvironment(self):
         '''
-        Note that this is only relevant when local_upload=False.
-        
-        Return a dictionary of any filepaths and their corresponding md5 hashes
-        that should be verified before uploading to cloud storage.  
-        
-        When local_upload is False, uploading files to cloud storage is handled
-        by an uploader daemon. Because there can be a time delay between when
-        a user has pressed "submit" and when the daemon actually goes to upload
-        the files to cloud storage, there is the possibility that files have
-        actually changes on disk.  For example, a user may submit 3 jobs to
-        conductor within 7 seconds of one another, by quickly rotating the camera, 
-        saving the maya scene on top of itself, and pressing "Submit" (and doing
-        this three time).  Though this is probably not a great workflow, 
-        it's something that needs to be guarded against.
-        
-        This method returns a dictionary of filepaths and and their corresponding 
-        md5 hashes, which is used by the uploader daemon when uploading the files
-        to conductor. The daemon will do its own md5 hash of all files in 
-        this dictionary,and match it against the md5s that the dictionary provides.
-        If the uploader finds a mismatch then it fails the upload process (and
-        fails the job).
-        
-        Generally there is gray area as to what is considered "acceptable" for
-        files being changed from underneath the feet of the artist.  Because a source file (such
-        as a maya scene or katana file, for example), has many external dependencies
-        (such as texture files, alembic, etc), those depencies could possibly be 
-        changed on disk by the time the uploader get a chance to upload them to Conductor. 
-        As a compromise on attempting to create an exact snapshot of the state 
-        of ALL files on disk (i.e. md5 hashes)that a job requires at the moment 
-        the artist presses "submit", Conductor only guarantees exact file integrity
-        on the source file (maya/katana file).  That source file's dependencies
-        are NOT guaranteed to match md5s.  In otherwords, a texture file or alembic cache file
-        is not md5 checked to ensure it matches the md5 of when the user pressed
-        "submit".  Only the maya file is.       
+        Return a dictionary of environment variables to use for the Job's
+        environment
         '''
-        # Create a list of files that we want to guarantee to be in the same
-        # state when uploading to conductor.  These files will need to md5 hashed here/now.
-        # This is potentially TIME CONSUMING (if the files are large and plenty).
-        enforced_files = []
-        enforced_files.append(maya_utils.get_maya_scene_filepath())
-
-        # Generate md5s to dictionary
-        enforced_md5s = {}
-        for filepath in enforced_files:
-            logger.info("md5 hashing: %s", filepath)
-            enforced_md5s[filepath] = common.generate_md5(filepath, base_64=True)
-
-        return enforced_md5s
-
+        environment = super(MayaConductorSubmitter, self).getEnvironment()
+        ocio_config = maya_utils.get_ocio_config()
+        if ocio_config:
+            environment.update({"OCIO": ocio_config})
+        return environment
 
 
     def runPreSubmission(self):
@@ -310,7 +268,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         
         example: "MAYA - my_maya_scene.ma - beauty, shadow, spec"
         '''
-        maya_filepath = maya_utils.get_maya_scene_filepath()
+        maya_filepath = self.getSourceFilepath()
         _, maya_filename = os.path.split(maya_filepath)
 
         # Cross-reference all renderable renderlayers in the maya scene with
@@ -381,6 +339,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args = {}
         conductor_args["cmd"] = self.generateConductorCmd()
         conductor_args["cores"] = self.getInstanceType()['cores']
+        conductor_args["env"] = self.getEnvironment()
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
@@ -389,19 +348,12 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["docker_image"] = self.getDockerImage()
         conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["notify"] = self.ui_notify_lnedt.text()
+        conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
-
-        # TODO:(LWS) This should get moved to a method that is called self.getEnvironment().
-        ocio_config = maya_utils.get_ocio_config()
-        if ocio_config != "":
-            logger.info("Setting OCIO environment variable...")
-            conductor_args["env"] = {"OCIO": ocio_config}
-
         return conductor_args
 
 
@@ -417,7 +369,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     def getSourceFilepath(self):
         '''
-        Return the currently opened maya fule
+        Return the currently opened maya file
         '''
         return maya_utils.get_maya_scene_filepath()
 

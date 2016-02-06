@@ -5,7 +5,6 @@ import inspect
 import traceback
 from PySide import QtGui, QtCore
 import imp
-import re
 
 try:
     imp.find_module('conductor')
@@ -13,7 +12,7 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG
-from conductor.lib import  conductor_submit, pyside_utils
+from conductor.lib import  conductor_submit, pyside_utils, common
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -185,9 +184,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def populateInstanceTypeCmbx(self):
         '''
-        Populate the 
+        Populate the Instance combobox with all of the available instance types
         '''
-        instance_types = get_conductor_instance_types()
+        instance_types = common.get_conductor_instance_types()
         self.ui_instance_type_cmbx.clear()
         for instance_info in instance_types:
             self.ui_instance_type_cmbx.addItem(instance_info['description'], userData=instance_info)
@@ -299,6 +298,18 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return str(self.ui_output_directory_lnedt.text()).replace("\\", "/")
 
 
+    def getNotifications(self):
+        '''
+        Return the UI's Notificaiton field
+        '''
+        return str(self.ui_notify_lnedt.text())
+
+    def setNotifications(self, value):
+        '''
+        Set the UI's Notification field to the given value
+        '''
+        self.ui_notify_lnedt.setText(str(value))
+
     def generateConductorArgs(self, args):
         '''
         Return a dictionary which contains the necessary conductor argument names
@@ -357,6 +368,16 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return CONFIG.get("docker_image")
 
 
+    def getEnvironment(self):
+        '''
+        Return a dictionary of environment variables to use for the Job's
+        environment
+        '''
+        #  Get any environment variable settings from config.yml
+        environment = CONFIG.get("environment") or {}
+        assert isinstance(environment, dict), "Not a dictionary: %s" % environment
+        return environment
+
     def getForceUploadBool(self):
         '''
         Return whether the "Force Upload" checkbox is checked on or off.
@@ -402,7 +423,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         may be exposed in the UI
         '''
         return CONFIG.get("local_upload")
-
 
 
     def launch_result_dialog(self, response_code, response):
@@ -587,31 +607,56 @@ class ConductorSubmitter(QtGui.QMainWindow):
         self.saveUserSettings()
         super(ConductorSubmitter, self).closeEvent(event)
 
+    def getEnforcedMd5s(self):
+        '''
+        Note that this is only relevant when local_upload=False.
+        
+        Return a dictionary of any filepaths and their corresponding md5 hashes
+        that should be verified before uploading to cloud storage.  
+        
+        When local_upload is False, uploading files to cloud storage is handled
+        by an uploader daemon. Because there can be a time delay between when
+        a user has pressed "submit" and when the daemon actually goes to upload
+        the files to cloud storage, there is the possibility that files have
+        actually changes on disk.  For example, a user may submit 3 jobs to
+        conductor within 7 seconds of one another, by quickly rotating the camera, 
+        saving the maya scene on top of itself, and pressing "Submit" (and doing
+        this three time).  Though this is probably not a great workflow, 
+        it's something that needs to be guarded against.
+        
+        This method returns a dictionary of filepaths and and their corresponding 
+        md5 hashes, which is used by the uploader daemon when uploading the files
+        to conductor. The daemon will do its own md5 hash of all files in 
+        this dictionary,and match it against the md5s that the dictionary provides.
+        If the uploader finds a mismatch then it fails the upload process (and
+        fails the job).
+        
+        Generally there is gray area as to what is considered "acceptable" for
+        files being changed from underneath the feet of the artist.  Because a source file (such
+        as a maya scene or katana file, for example), has many external dependencies
+        (such as texture files, alembic, etc), those depencies could possibly be 
+        changed on disk by the time the uploader get a chance to upload them to Conductor. 
+        As a compromise on attempting to create an exact snapshot of the state 
+        of ALL files on disk (i.e. md5 hashes)that a job requires at the moment 
+        the artist presses "submit", Conductor only guarantees exact file integrity
+        on the source file (maya/katana file).  That source file's dependencies
+        are NOT guaranteed to match md5s.  In otherwords, a texture file or alembic cache file
+        is not md5 checked to ensure it matches the md5 of when the user pressed
+        "submit".  Only the maya file is.       
+        '''
+        # Create a list of files that we want to guarantee to be in the same
+        # state when uploading to conductor.  These files will need to md5 hashed here/now.
+        # This is potentially TIME CONSUMING (if the files are large and plenty).
+        enforced_files = []
+        enforced_files.append(self.getSourceFilepath())
 
+        # Generate md5s to dictionary
+        enforced_md5s = {}
+        for filepath in enforced_files:
+            logger.info("md5 hashing: %s", filepath)
+            enforced_md5s[filepath] = common.generate_md5(filepath, base_64=True)
 
-
-def get_conductor_instance_types():
-    '''
-    Return a dictionary which represents the different Conductor instance
-    types available.  They key is the "core count" (which gets fed into
-    Conductor's Submit object as an argument), and the value is the string that
-    will appear in the ui to describe the instance type.
-    
-    TODO: This information should probably be put into and read from an external
-          file (yaml, json, etc) 
-    '''
-    instances = [{"cores": 4, "flavor": "standard", "description": " 4 core, 15.0GB Mem"},
-                 {"cores": 4, "flavor": "highmem", "description": " 4 core, 26.0GB Mem"},
-                 {"cores": 8, "flavor": "highcpu", "description": " 8 core, 7.20GB Mem"},
-                 {"cores": 8, "flavor": "standard", "description": " 8 core, 30.0GB Mem"},
-                 {"cores": 8, "flavor": "highmem", "description": " 8 core, 52.0GB Mem"},
-                 {"cores": 16, "flavor": "highcpu", "description": "16 core, 14.4GB Mem"},
-                 {"cores": 16, "flavor": "standard", "description": "16 core, 60.0GB Mem"},
-                 {"cores": 16, "flavor": "highmem", "description": "16 core, 104GB Mem"},
-                 {"cores": 32, "flavor": "highcpu", "description": "32 core, 28.8GB Mem"},
-                 {"cores": 32, "flavor": "standard", "description": "32 core, 120GB Mem"},
-                 {"cores": 32, "flavor": "highmem", "description": "32 core, 208GB Mem"}]
-    return instances
+        return enforced_md5s
 
 
 
