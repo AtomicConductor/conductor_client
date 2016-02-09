@@ -40,4 +40,5 @@ auth
 # config
 config.yml
 
-#
+# pycharm
+.idea
