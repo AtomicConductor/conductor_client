@@ -277,7 +277,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         else:
             write_node_str = " - " + ", ".join(selected_write_nodes)
 
-        title = "Nuke - %s%s" % (nuke_filename, write_node_str)
+        title = "NUKE - %s%s" % (nuke_filename, write_node_str)
         return title
 
 
