@@ -238,7 +238,7 @@ class FilesDB(TableDB):
                 ##### SIZE #####
                 # the size of the file (in bytes)
                 {"name": "size",
-                "python_type": int,
+                "python_type": (int, long),
                 "sqlite_type": "INTEGER"},
 
                 ##### MD5 #####
