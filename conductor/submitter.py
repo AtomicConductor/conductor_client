@@ -660,6 +660,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
 
 
+
 if __name__ == "__main__":
     app = QtGui.QApplication.instance()
     if app is None:
