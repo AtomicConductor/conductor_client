@@ -127,7 +127,7 @@ def get_node_dependencies(node, types=(), _dependencies=()):
 
 
 
-def get_nuke_script_path():
+def get_nuke_script_filepath():
     filepath = nuke.root().name()
     if not filepath or not os.path.isfile(filepath):
         raise Exception("Nuke script has not been saved to a file location.  Please save file before submitting to Conductor.")

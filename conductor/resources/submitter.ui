@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>456</height>
+    <width>418</width>
+    <height>455</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -160,7 +160,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <property name="margin">
-         <number>0</number>
+         <number>9</number>
         </property>
         <item>
          <widget class="QGroupBox" name="ui_framerange_grpbx">
@@ -200,6 +200,9 @@
                    <property name="checked">
                     <bool>true</bool>
                    </property>
+                   <property name="isUserSetting" stdset="0">
+                    <bool>true</bool>
+                   </property>
                   </widget>
                  </item>
                  <item>
@@ -219,6 +222,9 @@
                    </property>
                    <property name="text">
                     <string>Custom</string>
+                   </property>
+                   <property name="isUserSetting" stdset="0">
+                    <bool>true</bool>
                    </property>
                   </widget>
                  </item>
@@ -265,6 +271,9 @@
                          </property>
                          <property name="value">
                           <number>1</number>
+                         </property>
+                         <property name="isUserSetting" stdset="0">
+                          <bool>true</bool>
                          </property>
                         </widget>
                        </item>
@@ -320,6 +329,9 @@
                       <property name="alignment">
                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                       </property>
+                      <property name="isUserSetting" stdset="0">
+                       <bool>true</bool>
+                      </property>
                      </widget>
                     </item>
                     <item>
@@ -367,6 +379,9 @@
                       <property name="alignment">
                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                       </property>
+                      <property name="isUserSetting" stdset="0">
+                       <bool>true</bool>
+                      </property>
                      </widget>
                     </item>
                    </layout>
@@ -389,6 +404,9 @@
     - frame range, e.g &quot;1001-1006&quot;
     - frame range with frame skipping. e.g: &quot;1001-1006x2&quot;
     - or a mixture, e.g &quot;1001, 1005-1010, 1020-1030x5&quot;</string>
+                      </property>
+                      <property name="isUserSetting" stdset="0">
+                       <bool>true</bool>
                       </property>
                      </widget>
                     </item>
@@ -440,6 +458,9 @@
                 <property name="currentIndex">
                  <number>-1</number>
                 </property>
+                <property name="isUserSetting" stdset="0">
+                 <bool>true</bool>
+                </property>
                </widget>
               </item>
              </layout>
@@ -462,7 +483,11 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="ui_resource_lnedt"/>
+               <widget class="QLineEdit" name="ui_resource_lnedt">
+                <property name="isUserSetting" stdset="0">
+                 <bool>true</bool>
+                </property>
+               </widget>
               </item>
              </layout>
             </widget>
@@ -532,99 +557,113 @@
        <attribute name="title">
         <string>Advanced</string>
        </attribute>
-       <widget class="QLabel" name="label_7">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>70</y>
-          <width>151</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Notify on job completion:</string>
-        </property>
-       </widget>
-       <widget class="QLineEdit" name="ui_notify_lnedt">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>90</y>
-          <width>301</width>
-          <height>21</height>
-         </rect>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
-       <widget class="QWidget" name="widget" native="true">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>10</y>
-          <width>361</width>
-          <height>61</height>
-         </rect>
-        </property>
-        <widget class="QLabel" name="label_5">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>91</width>
-           <height>16</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Output Path:</string>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="ui_output_path_lnedt">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>20</y>
-           <width>231</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="readOnly">
-          <bool>false</bool>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="ui_choose_path_btn">
-         <property name="geometry">
-          <rect>
-           <x>240</x>
-           <y>23</y>
-           <width>71</width>
-           <height>15</height>
-          </rect>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Choose</string>
-         </property>
-        </widget>
-       </widget>
+       <layout class="QVBoxLayout" name="verticalLayout_9">
+        <item>
+         <widget class="QWidget" name="ui_output_path_widget" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Output Directory</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget_2" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <property name="margin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLineEdit" name="ui_output_directory_lnedt">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="readOnly">
+                 <bool>false</bool>
+                </property>
+                <property name="isUserSetting" stdset="0">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="ui_choose_output_path_pbtn">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Choose</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="ui_notify_widget" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_8">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Notify on job completion</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="ui_notify_lnedt">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="isUserSetting" stdset="0">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>

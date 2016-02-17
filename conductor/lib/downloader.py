@@ -8,6 +8,7 @@ import collections
 import errno
 import imp
 import json
+import logging
 import os
 import multiprocessing
 import ntpath
@@ -24,11 +25,13 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
-from conductor.lib import common, api_client, worker
-from conductor.setup import logger, CONFIG
+from conductor import CONFIG
+from conductor.lib import common, api_client, worker, loggeria
+
+logger = logging.getLogger(__name__)
 
 CHUNK_SIZE = 1024
-
+LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
 
 class DownloadWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
@@ -51,7 +54,7 @@ class DownloadWorker(worker.ThreadWorker):
             pass
         return True
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         try:
             download_id = 0
             download_id = job.get('download_id', 0)
@@ -66,7 +69,6 @@ class DownloadWorker(worker.ThreadWorker):
     def _do_work(self, job):
         download_id = job['download_id']
         files = job['files']
-        destination = job['destination']
         done = [False]
         bytes_downloaded = [0]
         total_size = 0
@@ -80,46 +82,46 @@ class DownloadWorker(worker.ThreadWorker):
         for file_info in files:
             logger.debug("file_info: %s", file_info)
             url = file_info['url']
-            path = file_info['path']
+            relative_path = file_info['relative_path']
             md5 = file_info['md5']
 
-            if self.output_path:
-                logger.debug('using output_path %s', self.output_path)
-                path = re.sub(destination, self.output_path, path)
-                logger.debug('set new path to: %s', path)
+            output_dir = self.output_path or file_info.get('output_dir') or file_info.get('destination')
+            logger.debug('using output dir %s', output_dir)
+            filepath = os.path.join(output_dir, relative_path)
+            logger.debug('filepath: %s', filepath)
 
-            self.process_download(path, url, md5, bytes_downloaded)
+            self.process_download(filepath, url, md5, bytes_downloaded)
 
         done[0] = True
         logger.debug('waiting for reporter thread')
         reporter.join()
 
-    def process_download(self, path, url, md5, bytes_downloaded):
+    def process_download(self, filepath, url, md5, bytes_downloaded):
         '''
         For the given file information, download the file to disk.  Check whether
         the file already exists and matches the expected md5 before downloading.
         '''
-        logger.debug('checking for existing file %s', path)
+        logger.debug('checking for existing file %s', filepath)
 
         # If the file already exists on disk
-        if os.path.isfile(path):
-            local_md5 = common.get_base64_md5(path)
+        if os.path.isfile(filepath):
+            local_md5 = common.get_base64_md5(filepath)
             # If the local md5 matchs the expected md5 then no need to download. Skip to next file
             if md5 == local_md5:
-                logger.info('Existing file is up to date: %s', path)
+                logger.info('Existing file is up to date: %s', filepath)
                 return
 
             logger.debug('md5 does not match existing file: %s vs %s', md5, local_md5)
 
-            logger.debug('Deleting dirty file: %s', path)
-            common.retry(lambda: os.remove(path))
+            logger.debug('Deleting dirty file: %s', filepath)
+            common.retry(lambda: os.remove(filepath))
 
         # download the file
-        common.retry(lambda: download_file(url, path, bytes_downloaded))
+        common.retry(lambda: download_file(url, filepath, bytes_downloaded))
 
         # Set file permissions
         logger.debug('setting file perms to 666')
-        os.chmod(path, 0666)
+        os.chmod(filepath, 0666)
 
 
     def report_loop(self, download_id, total_size, bytes_downloaded, done):
@@ -166,7 +168,14 @@ class DownloadWorker(worker.ThreadWorker):
 
 
 def download_file(download_url, path, bytes_downloaded):
-    mkdir_p(os.path.dirname(path))
+    dirpath = os.path.dirname(path)
+    safe_mkdirs(dirpath)
+    try:
+        # make path world writable
+        os.chmod(dirpath, 0777)
+    except:
+        logger.warning("unable chmod: %s", path)
+
     logger.info('Downloading: %s', path)
     request = requests.get(download_url, stream=True)
     with open(path, 'wb') as file_pointer:
@@ -198,6 +207,18 @@ def mkdir_p(path):
     os.chmod(path, 0777)
 
     return True
+
+def safe_mkdirs(dirpath):
+    '''
+    Create the given directory.  If it already exists, suppress the exception.
+    This function is useful when handling concurrency issues where it's not
+    possible to reliably check whether a directory exists before creating it.
+    '''
+    try:
+        os.makedirs(dirpath)
+    except OSError:
+        if not os.path.isdir(dirpath):
+            raise
 
 
 
@@ -301,12 +322,10 @@ class Download(object):
                     raise ValueError("you need to specify a job_id when passing a task_id")
                 params = {'tid': task_id}
             else:
-                params = None
+                params = {'location': self.location}
             logger.debug('params is: %s', params)
 
-            json_data = json.dumps({'location': self.location})
-            logger.debug('json_data is: %s', json_data)
-            response_string, response_code = self.api_helper.make_request(endpoint, data=json_data, params=params)
+            response_string, response_code = self.api_helper.make_request(endpoint, params=params)
             logger.debug("response code is:\n%s" % response_code)
             logger.debug("response data is:\n%s" % response_string)
 
@@ -322,6 +341,16 @@ class Download(object):
             logger.error(traceback.format_exc())
             return None
 
+
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_dl_log")
+    loggeria.setup_conductor_logging(logger_level=level,
+                                     console_formatter=LOG_FORMATTER,
+                                     file_formatter=LOG_FORMATTER,
+                                     log_filepath=log_filepath)
+
 def run_downloader(args):
     '''
     Start the downloader process. This process will run indefinitely, polling
@@ -329,11 +358,15 @@ def run_downloader(args):
     '''
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
+
+    # Set up logging
+    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level = loggeria.LEVEL_MAP.get(log_level_name)
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
+
     logger.debug('Downloader parsed_args is %s', args_dict)
     downloader = Download(args_dict)
     downloader.main(job_ids=args_dict.get('job_id'))
 
-if __name__ == "__main__":
-    exit(1)
-    print 'args are %s' % args
-    run_downloader(args)
+

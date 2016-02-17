@@ -13,9 +13,8 @@ try:
 except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-import conductor
-from conductor.setup import *
-from conductor.lib import conductor_submit, downloader, downloader2, uploader
+
+from conductor.lib import conductor_submit, downloader, downloader2, uploader, loggeria
 
 
 def parse_args():
@@ -173,6 +172,18 @@ def parse_args():
     submit_parser.add_argument("--notify",
                                help="Who to notify when job is complete")
 
+    submit_parser.add_argument("--log_level",
+                               choices=loggeria.LEVELS,
+                               help="The logging level to display")
+
+    submit_parser.add_argument("--log_dir",
+                               help=("When provided, will write a log file to "
+                                     "the provided directory. This will be a "
+                                     "rotating log, creating a new log file "
+                                     "everyday, while storing the last 7 days "
+                                     "of logs"))
+
+
     submit_parser.set_defaults(func=run_submit)
 
 
@@ -209,6 +220,16 @@ def parse_args():
             default=None)
 
 
+    uploader_parser.add_argument("--log_level",
+                                 choices=loggeria.LEVELS,
+                                 help="The logging level to display")
+
+    uploader_parser.add_argument("--log_dir",
+                                 help=("When provided, will write a log file to "
+                                       "the provided directory. This will be a "
+                                       "rotating log, creating a new log file "
+                                       "everyday, while storing the last 7 days "
+                                       "of logs"))
 
     uploader_parser.set_defaults(func=run_uploader)
 
@@ -227,7 +248,9 @@ def parse_args():
                                   formatter_class=argparse.RawTextHelpFormatter)
 
     downloader_parser.add_argument("--job_id",
-                                  help="Manually download output for this job",
+                                  help=("The job id(s) to download. When specified "
+                                        "will only download those jobs and terminate "
+                                        "afterwards"),
                                   action='append')
 
     downloader_parser.add_argument("--task_id",
@@ -239,8 +262,24 @@ def parse_args():
     downloader_parser.add_argument("--location",
                                    help=('An optional string to indicate which location this downloader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader process running. This location argument allows each downloader to target specific jobs (to download upon job-completion) that match its appropriate location.  Essentially this allows the location of which a job was submitted from to also be the destination in which to deliver completed renders to (which would typically be the desired behavior).'))
 
-    downloader_parser.add_argument("--experimental",
-                                   help=('Run an experimental version of the downloader'),
+    downloader_parser.add_argument("--log_level",
+                                   choices=loggeria.LEVELS,
+                                   help="The logging level to display")
+
+    downloader_parser.add_argument("--log_dir",
+                                   help=("When provided, will write a log file to "
+                                        "the provided directory. This will be a "
+                                        "rotating log, creating a new log file "
+                                        "everyday, while storing the last 7 days "
+                                        "of logs"))
+
+
+    downloader_parser.add_argument("--thread_count",
+                                   type=int,
+                                   help=('The number of threads that should download simultaneously'))
+
+    downloader_parser.add_argument("--alt",
+                                   help=('Run an alternative version of the downloader'),
                                    action='store_true')
 
     downloader_parser.set_defaults(func=run_downloader)
@@ -299,6 +338,15 @@ class ValidateArgEnv(argparse.Action):
         setattr(namespace, self.dest, env_variables)
 
 
+class CastLogLevelName(argparse.Action):
+    '''
+    Cast a log level name to it's contstant value, e.g.
+        "INFO" --> logging.INFO
+    '''
+    def __call__(self, parser, namespace, values, option_string):
+        setattr(namespace, self.dest, loggeria.LEVEL_MAP[values])
+
+
 
 def run_submit(args):
     conductor_submit.run_submit(args)
@@ -309,10 +357,10 @@ def run_uploader(args):
 
 
 def run_downloader(args):
-    if vars(args).get('experimental'):
-      downloader2.run_downloader(args)
-    else:
-      downloader.run_downloader(args)
+    if vars(args).get("alt"):
+        return downloader.run_downloader(args)
+    return downloader2.run_downloader(args)
+
 
 
 if __name__ == '__main__':

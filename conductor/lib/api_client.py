@@ -1,19 +1,17 @@
 import json
+import logging
 import requests
 import urlparse
 
-import conductor.setup
+from conductor import CONFIG
 from conductor.lib import common
 
-logger = conductor.setup.logger
-CONFIG = conductor.setup.CONFIG
-
+logger = logging.getLogger(__name__)
 
 # TODO:
 # appspot_dot_com_cert = os.path.join(common.base_dir(),'auth','appspot_dot_com_cert2')
 # load appspot.com cert into requests lib
 # verify = appspot_dot_com_cert
-
 
 class ApiClient():
 
@@ -29,16 +27,18 @@ class ApiClient():
                                     params=params,
                                     data=data)
 
-        logger.debug("verb: %s", verb)
-        logger.debug("conductor_url: %s", conductor_url)
-        logger.debug("headers: %s", headers)
-        logger.debug("params: %s", params)
-        logger.debug("data: %s", data)
+#         logger.debug("verb: %s", verb)
+#         logger.debug("conductor_url: %s", conductor_url)
+#         logger.debug("headers: %s", headers)
+#         logger.debug("params: %s", params)
+#         logger.debug("data: %s", data)
 
         # trigger an exception to be raised for 4XX or 5XX http responses
         if raise_on_error:
             response.raise_for_status()
 
+#         logger.debug('response.status_code: %s', response.status_code)
+#         logger.debug('response.text is: %s', response.text)
         return response
 
     def make_request(self, uri_path="/", headers=None, params=None, data=None,
@@ -51,17 +51,17 @@ class ApiClient():
         # TODO: set Content Content-Type to json if data arg
         if not headers:
             headers = {'Content-Type':'application/json'}
-        logger.debug('headers are: %s', headers)
-        logger.debug('data is: %s' % data)
-        logger.debug("params is %s" % params)
-        logger.debug("uri path is %s" % uri_path)
+#         logger.debug('headers are: %s', headers)
+#         logger.debug('data is: %s' % data)
+#         logger.debug("params is %s" % params)
+#         logger.debug("uri path is %s" % uri_path)
 
         headers['Authorization'] = "Token %s" % CONFIG['conductor_token']
 
         # Construct URL
         if not conductor_url:
             conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
-        logger.debug('conductor_url: %s', conductor_url)
+#         logger.debug('conductor_url: %s', conductor_url)
 
         if not verb:
             if data:
@@ -75,8 +75,7 @@ class ApiClient():
                                                             raise_on_error=raise_on_error))
 
 
-        # logger.debug('response.status_code: %s', response.status_code)
-        # logger.debug('response.text is: %s', response.text)
+
         return response.text, response.status_code
 
 

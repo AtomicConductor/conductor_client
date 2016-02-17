@@ -1,20 +1,21 @@
 import collections
+import os
 import Queue
 import thread
 import traceback
 import threading
+import logging
 
-import conductor, conductor.setup
+import conductor
 
-from conductor.setup import CONFIG, logger
 from conductor.lib import api_client, common
 
+logger = logging.getLogger(__name__)
 
 '''
 This is used to signal to workers if work should continue or not
 '''
 WORKING = True
-
 
 class Reporter():
     def __init__(self, metric_store=None):
@@ -42,7 +43,7 @@ class Reporter():
             return self.thread
 
         logger.debug('starting reporter thread')
-        thd = threading.Thread(target=self.target)
+        thd = threading.Thread(target=self.target, name=self.__class__.__name__)
         thd.daemon = True
         thd.start()
         self.thread = thd
@@ -50,15 +51,17 @@ class Reporter():
 
 
 
-'''
-Abstract worker class.
 
-The class defines the basic function and data structures that all workers need.
+class ThreadWorker(object):
+    '''
+    Abstract worker class.
+    
+    The class defines the basic function and data structures that all workers need.
+    
+    TODO: move this into it's own lib
+    '''
 
-TODO: move this into it's own lib
-'''
-class ThreadWorker():
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
 
         # the in_queue provides work for us to do
         self.in_queue = kwargs['in_queue']
@@ -70,7 +73,7 @@ class ThreadWorker():
         self.error_queue = kwargs['error_queue']
 
         # set the thread count (default: 1)
-        self.thread_count = int(kwargs.get('thread_count',1))
+        self.thread_count = int(kwargs.get('thread_count', 1))
 
         # an optional metric store to share counters between threads
         self.metric_store = kwargs['metric_store']
@@ -78,27 +81,31 @@ class ThreadWorker():
         # create a list to hold the threads that we create
         self.threads = []
 
-    '''
-    This ineeds to be implmented for each worker type. The work task from
-    the in_queue is passed as the job argument.
 
-    Returns the result to be passed to the out_queue
-    '''
+
+
     def do_work(self, job):
+        '''
+        This ineeds to be implmented for each worker type. The work task from
+        the in_queue is passed as the job argument.
+    
+        Returns the result to be passed to the out_queue
+        '''
+
         raise NotImplementedError
 
-    def PosionPill(self):
-        return 'PosionPill'
+    def PoisonPill(self):
+        return 'PoisonPill'
 
-    def check_for_posion_pill(self, job):
-        if job == self.PosionPill():
+    def check_for_poison_pill(self, job):
+        if job == self.PoisonPill():
             self.mark_done()
             exit()
 
     def kill(self, block=False):
         logger.debug('killing workers %s', self.__class__.__name__)
         for _ in self.threads:
-            self.in_queue.put(self.PosionPill())
+            self.in_queue.put(self.PoisonPill())
 
         if block:
             for index, thd in enumerate(self.threads):
@@ -115,25 +122,25 @@ class ThreadWorker():
         self.kill(True)
 
     # Basic thread target loop.
-    def target(self):
+    def target(self, thread_int):
         # logger.debug('on target')
         while not common.SIGINT_EXIT:
             try:
                 # this will block until work is found
                 job = self.in_queue.get(True)
 
-                # exit if we were passed 'PosionPill'
-                self.check_for_posion_pill(job)
+                # exit if we were passed 'PoisonPill'
+                self.check_for_poison_pill(job)
 
                 # start working on job
                 try:
                     output = None
-                    output = self.do_work(job)
+                    output = self.do_work(job, thread_int)
                 except Exception, e:
                     if self.error_queue:
                         self.mark_done()
                         error_message = traceback.format_exc()
-                        logger.error('hit error: \n')
+                        logger.error('[thread %s]Hit error: \n', thread_int)
                         self.error_queue.put(error_message)
                         break
                     else:
@@ -147,26 +154,26 @@ class ThreadWorker():
                 self.mark_done()
 
             except Exception:
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
-                logger.error('+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=')
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
+                logger.error('[thread %s]+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=', thread_int)
                 logger.error(traceback.print_exc())
                 logger.error(traceback.format_exc())
 
-    '''
-    Start number_of_threads threads.
-    '''
     def start(self):
+        '''
+        Start number_of_threads threads.
+        '''
         if self.threads:
             logger.error('threads already started. will not start more')
             return self.threads
 
-        for i in range(self.thread_count):
-            logger.debug('starting thread %s', i)
+        for thread_int in range(self.thread_count):
+            logger.debug('starting thread %s', thread_int)
             # thread will begin execution on self.target()
-            thd = threading.Thread(target=self.target)
+            thd = threading.Thread(target=self.target, args=(thread_int,), name=self.__class__.__name__)
 
             # make sure threads don't stop the program from exiting
             thd.daemon = True
@@ -221,7 +228,6 @@ class MetricStore():
         return True
 
     def start(self):
-
         '''
         needs to be single-threaded for atomic updates
         '''
@@ -229,7 +235,7 @@ class MetricStore():
             logger.debug('metric_store already started')
             return None
         logger.debug('starting metric_store')
-        thd = threading.Thread(target=self.target)
+        thd = threading.Thread(target=self.target, name=self.__class__.__name__)
         thd.daemon = True
         thd.start()
         self.started = True
@@ -322,6 +328,7 @@ class MetricStore():
             self.update_queue.task_done()
 
 
+
 class JobManager():
     '''
 
@@ -360,6 +367,7 @@ class JobManager():
         global WORKING
         WORKING = False
         for worker in self.workers:
+            logger.debug("Killing worker: %s", worker)
             worker.kill(block=False)
 
     def kill_reporters(self):
@@ -389,7 +397,7 @@ class JobManager():
 
     def start_error_handler(self):
         logger.debug('creating error handler thread')
-        thd = threading.Thread(target=self.error_handler_target)
+        thd = threading.Thread(target=self.error_handler_target, name="ErrorThread")
         thd.daemon = True
         thd.start()
         return None
@@ -439,6 +447,7 @@ class JobManager():
             kwargs['metric_store'] = self.metric_store
 
             worker = worker_class(*args, **kwargs)
+
             logger.debug('starting worker %s', worker_class.__name__)
             worker_threads = worker.start()
             self.workers.append(worker)

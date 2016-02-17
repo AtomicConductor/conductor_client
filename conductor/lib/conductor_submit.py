@@ -3,11 +3,10 @@
 """ Command Line General Submitter for sending jobs and uploads to Conductor
 
 """
-
-
 import getpass
 import imp
 import json
+import logging
 import os
 import re
 import sys
@@ -19,12 +18,11 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
-import conductor.setup
-from conductor.lib import file_utils, api_client, uploader
+from conductor import CONFIG
+from conductor.lib import file_utils, api_client, uploader, loggeria
 
+logger = logging.getLogger(__name__)
 
-logger = conductor.setup.logger
-CONFIG = conductor.setup.CONFIG
 
 class Submit():
     """ Conductor Submission
@@ -49,9 +47,8 @@ class Submit():
         self.output_path = args.get('output_path')
         self.upload_file = args.get('upload_file')
         self.upload_only = args.get('upload_only')
-        self.postcmd = args.get('postcmd')
-        self.force = args.get('force')
-        self.job_title = args.get('job_title')
+        self.job_title = args.get('job_title') or ""
+        self.enforced_md5s = args.get("enforced_md5s") or {}
 
         # Apply client config values in cases where arguments have not been passed in
         self.cores = args.get('cores', CONFIG["instance_cores"])
@@ -93,7 +90,6 @@ class Submit():
             self.notify["emails"].extend(re.split("/s*,*/s*", CONFIG.get('notify')))
 
         logger.debug("Consumed args")
-
 
     @classmethod
     def resolve_arg(cls, arg_name, args, config):
@@ -184,8 +180,6 @@ class Submit():
 
             if self.priority:
                 submit_dict['priority'] = self.priority
-            if self.postcmd:
-                submit_dict['postcmd'] = self.postcmd
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
             if self.environment:
@@ -204,23 +198,69 @@ class Submit():
 
 
     def main(self):
+        '''
+        Submitting a job happens in a few stages:
+            1. Gather depedencies and parameters for the job
+            2. Upload dependencies to cloud storage (requires md5s of dependencies)
+            3. Submit job to conductor (listing the dependencies and their corresponding md5s)
+            
+        In order to give flexibility to customers (because a customer may consist
+        of a single user or a large team of users), there are two options avaiable
+        that can dicate how these job submission stages are executed.
+        In a simple single-user case, a user's machine can doe all three
+        of the job submission stages.  Simple.  We call this local_upload=True.
+        
+        However, when there are multiple users, there may be a desire to funnel
+        the "heavier" job submission duties (such as md5 checking and dependency 
+        uploading) onto one dedicated machine (so as not to bog down
+        the artist's machine). This is called local_upload=False. This results 
+        in stage 1 being performed on the artist's machine (dependency gathering), while 
+        handing over stage 2 and 3 to an uploader daemon.  This is achieved by
+        the artist submitting a "partial" job, which only lists the dependencies
+        that it requires (omitting the md5 hashes). In turn, the uploader daemon
+        listens for these partial jobs, and acts upon them, by reading each job's
+        listed dependencies (the filepaths that were recorded during the "partial" 
+        job submission).  The uploader then  md5 checks each dependency file from it's local
+        disk, then uploads the file to cloud storage (if necesseary), and finally "completes"
+        the partial job submission by providing the full mapping dictionary of
+        each dependency filepath and it's corresponing md5 hash. Once the job
+        submission is completed, conductor can start acting on the job (executing
+        tasks, etc).
+        
+        '''
+
+        # Get the list of file dependencies
         upload_files = self.get_upload_files()
-        md5_only = not self.local_upload
 
         # Create a dictionary of upload_files with None as the values.
         upload_files = dict([(path, None) for path in upload_files])
-        uploader_args = {"location":self.location,
-                         "database_filepath":self.database_filepath,
-                         "md5_caching": self.md5_caching}
 
-        uploader_ = uploader.Uploader(uploader_args)
-        upload_error_message = uploader_.handle_upload_response(upload_files, md5_only=md5_only)
-        if upload_error_message:
-            raise Exception("Could not upload files:\n%s" % upload_error_message)
+        # If opting to upload locally (i.e. from this machine) then run the uploader now
+        # This will do all of the md5 hashing and uploading files to the conductor (if necesary).
+        if self.local_upload:
+            uploader_args = {"location":self.location,
+                             "database_filepath":self.database_filepath,
+                             "md5_caching": self.md5_caching}
+            uploader_ = uploader.Uploader(uploader_args)
+            upload_error_message = uploader_.handle_upload_response(upload_files)
+            if upload_error_message:
+                raise Exception("Could not upload files:\n%s" % upload_error_message)
+            # Get the resulting dictionary of the file's and their corresponding md5 hashes
+            upload_files = uploader_.return_md5s()
 
-        upload_file_dict = uploader_.return_md5s()
-        # Submit the job to conductor
-        response, response_code = self.send_job(upload_file_dict)
+        # If the NOT uploading locally (i.e. offloading the work to the uploader daemon
+        else:
+            # update the upload_files dictionary with md5s that should be enforced
+            # this will override the None values with actual md5 hashes
+            for filepath, md5 in self.enforced_md5s.iteritems():
+                processed_filepaths = file_utils.process_upload_filepath(filepath)
+                assert len(processed_filepaths) == 1, "Did not get exactly one filepath: %s" % processed_filepaths
+                upload_files[processed_filepaths[0]] = md5
+
+        # Submit the job to conductor. upload_files may have md5s included in dictionary or may not.
+        # Any md5s that are incuded, are expected to be checked against if/when the uploader
+        # daemon goes to upload them. If they do not match what is on disk, the uploader will fail the job
+        response, response_code = self.send_job(upload_files)
         return json.loads(response), response_code
 
     def get_upload_files(self):
@@ -258,6 +298,12 @@ class BadArgumentError(ValueError):
 def run_submit(args):
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
+
+    # Set up logging
+    log_level = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
+
     logger.debug('parsed_args is %s', args_dict)
     submitter = Submit(args_dict)
     response, response_code = submitter.main()
@@ -268,3 +314,14 @@ def run_submit(args):
     else:
         logger.error("Submission Failure. Response code: %s", response_code)
         sys.exit(1)
+
+
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_submit_log")
+    loggeria.setup_conductor_logging(logger_level=level,
+                                     console_formatter=loggeria.FORMATTER_VERBOSE,
+                                     file_formatter=loggeria.FORMATTER_VERBOSE,
+                                     log_filepath=log_filepath)
+

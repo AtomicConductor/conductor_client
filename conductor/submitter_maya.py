@@ -1,6 +1,7 @@
 
 import os
 import imp
+import logging
 import sys
 import uuid
 from PySide import QtGui, QtCore
@@ -12,10 +13,9 @@ try:
 except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import conductor
-import conductor.setup
-from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common
-from conductor import submitter
+from conductor import CONFIG, submitter
+from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria
+
 
 
 
@@ -27,7 +27,8 @@ TODO:
 5. Validate the maya file has been saved
 '''
 
-logger = conductor.setup.logger
+logger = logging.getLogger(__name__)
+
 
 class MayaWidget(QtGui.QWidget):
 
@@ -137,47 +138,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def __init__(self, parent=None):
         super(MayaConductorSubmitter, self).__init__(parent=parent)
         self.setMayaWindow()
-        # self.refreshUi()
-
-    def initializeUi(self):
-        super(MayaConductorSubmitter, self).initializeUi()
-        self.getDefaults()
-
-        start, end = maya_utils.get_frame_range()[0]
-        self.setFrameRange(start, end)
-        self.extended_widget.refreshUi()
-
-        # Set the defaults collected
-        for ui_attr in self.defaults:
-            if not self.defaults[ui_attr]:
-                continue
-            if ui_attr.endswith("cmbx"):
-                getattr(self, ui_attr).setCurrentIndex(self.defaults[ui_attr])
-            elif ui_attr.endswith("chkbx"):
-                getattr(self, ui_attr).setChecked(self.defaults[ui_attr])
-            elif ui_attr.endswith("lnedt"):
-                getattr(self, ui_attr).setText(self.defaults[ui_attr])
-        if not self.ui_output_path_lnedt.text():
-            self.ui_output_path_lnedt.setText(maya_utils.get_image_dirpath())
-
-    def closeEvent(self, event):
-        self.saveDefaults()
-
-    #  Get any defaults that may exist for this user
-    def getDefaults(self):
-        self.defaults = {}
-
-        default_name = maya_utils.get_maya_scene_filepath()
-        self.getDefaultValues(default_name, submitter.DEFAULT_ATTRS)
-        self.getDefaultValues("Last", submitter.LAST_ATTRS)
-
-    def getDefaultValues(self, default_name, attr_list):
-        settings = QtCore.QSettings("Conductor", "Submitter")
-        settings.beginGroup(default_name)
-        for ui_attr in attr_list:
-            if ui_attr not in self.defaults or not self.defaults[ui_attr]:
-                self.defaults[ui_attr] = settings.value(ui_attr)
-        settings.endGroup()
+        self.refreshUi()
+        self.loadUserSettings()
 
     def setMayaWindow(self):
         '''
@@ -189,11 +151,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         self.setWindowFlags(QtCore.Qt.Window)
 
     def refreshUi(self):
-
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
-        self.ui_output_path_lnedt.setText(maya_utils.get_image_dirpath())
+        self.setOutputDir(maya_utils.get_image_dirpath())
 
 
     def getExtendedWidget(self):
@@ -209,7 +170,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         base_cmd = "-rd /tmp/render_output/ -s %%f -e %%f %s %s"
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
-        maya_filepath = maya_utils.get_maya_scene_filepath()
+        maya_filepath = self.getSourceFilepath()
         cmd = base_cmd % (render_layer_args, maya_filepath)
         return cmd
 
@@ -222,13 +183,25 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return maya_utils.collect_dependencies(maya_utils.dependency_attrs)
 
 
+    def getEnvironment(self):
+        '''
+        Return a dictionary of environment variables to use for the Job's
+        environment
+        '''
+        environment = super(MayaConductorSubmitter, self).getEnvironment()
+        ocio_config = maya_utils.get_ocio_config()
+        if ocio_config:
+            environment.update({"OCIO": ocio_config})
+        return environment
+
+
     def runPreSubmission(self):
         '''
         Override the base class (which is an empty stub method) so that a 
         validation pre-process can be run.  If validation fails, then indicate
         that the the submission process should be aborted.   
         
-        We also collect dependencies (and asdasdss) at this point and pass that
+        We also collect dependencies  at this point and pass that
         data along...
         In order to validate the submission, dependencies must be collected
         and inspected. Because we don't want to unnessarily collect dependencies
@@ -237,33 +210,30 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         raw_dependencies = self.collectDependencies()
+
+
+        # If uploading locally (i.e. not using  uploader daemon
+        if self.getLocalUpload():
+            # Don't need to enforce md5s for the daemon (don't want to do unnessary md5 hashing here)
+            enforced_md5s = {}
+        else:
+            # Get all files that we want to have integrity enforcement when uploading via the daemon
+            enforced_md5s = self.getEnforcedMd5s()
+
+        # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
+        raw_dependencies.extend(enforced_md5s.keys())
+
+        # Process all of the dependendencies. This will create a dictionary of dependencies, and whether they are considred Valid or not (bool)
         dependencies = file_utils.process_dependencies(raw_dependencies)
+
+
         raw_data = {"dependencies":dependencies}
 
         is_valid = self.runValidation(raw_data)
         return {"abort":not is_valid,
-                "dependencies":dependencies}
+                "dependencies":dependencies,
+                "enforced_md5s":enforced_md5s}
 
-    def saveDefaults(self):
-        default_name = maya_utils.get_maya_scene_filepath()
-        self.storeDefaultSettings(default_name)
-        self.storeDefaultSettings("Last")
-
-    def storeDefaultSettings(self, default_name):
-        settings = QtCore.QSettings("Conductor", "Submitter")
-        settings.beginGroup(default_name)
-        for ui_attr in submitter.DEFAULT_ATTRS:
-            if ui_attr.endswith("cmbx"):
-                settings.setValue(ui_attr, getattr(self, ui_attr).currentIndex())
-            elif ui_attr.endswith("chkbx"):
-                settings.setValue(ui_attr, getattr(self, ui_attr).isChecked())
-            elif ui_attr.endswith("lnedt"):
-                settings.setValue(ui_attr, getattr(self, ui_attr).text())
-
-            # settings.setValue(ui_attr, getattr(self, ui_attr))
-        if settings.value("ui_output_path_lnedt") == maya_utils.get_image_dirpath():
-            settings.setValue("ui_output_path_lnedt", "")
-        settings.endGroup()
 
     def getDockerImage(self):
         '''
@@ -298,7 +268,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         
         example: "MAYA - my_maya_scene.ma - beauty, shadow, spec"
         '''
-        maya_filepath = maya_utils.get_maya_scene_filepath()
+        maya_filepath = self.getSourceFilepath()
         _, maya_filename = os.path.split(maya_filepath)
 
         # Cross-reference all renderable renderlayers in the maya scene with
@@ -369,26 +339,21 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args = {}
         conductor_args["cmd"] = self.generateConductorCmd()
         conductor_args["cores"] = self.getInstanceType()['cores']
+        conductor_args["env"] = self.getEnvironment()
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
+        # Grab the enforced md5s files from data (note that this comes from the presubmission phase
+        conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["docker_image"] = self.getDockerImage()
-        conductor_args["output_path"] = self.ui_output_path_lnedt.text()
+        conductor_args["local_upload"] = self.getLocalUpload()
+        conductor_args["notify"] = self.getNotifications()
+        conductor_args["output_path"] = self.getOutputDir()
         conductor_args["resource"] = self.getResource()
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
-        conductor_args["notify"] = self.ui_notify_lnedt.text()
-
-        ocio_config = maya_utils.get_ocio_config()
-        if ocio_config != "":
-            print("Setting OCIO environment variable...")
-            conductor_args["env"] = {"OCIO": ocio_config}
-
-        # if there are any dependencies, generate a dependendency manifest and add it as an argument
-        dependency_filepaths = data["dependencies"].keys()
-        if dependency_filepaths:
-            conductor_args["upload_paths"] = dependency_filepaths
-
+        # Grab the file dependencies from data (note that this comes from the presubmission phase
+        conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
         return conductor_args
 
 
@@ -396,13 +361,17 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         # If an "abort" key has a True value then abort submission
         if data.get("abort"):
-            logger.info("Conductor: Submission aborted")
+            logger.warning("Conductor: Submission aborted")
             return data
 
         return super(MayaConductorSubmitter, self).runConductorSubmission(data)
 
 
-
+    def getSourceFilepath(self):
+        '''
+        Return the currently opened maya file
+        '''
+        return maya_utils.get_maya_scene_filepath()
 
 
 class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):

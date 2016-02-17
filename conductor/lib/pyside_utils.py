@@ -1,5 +1,9 @@
+import logging
 from functools import wraps
 from PySide import QtGui, QtCore, QtUiTools
+
+
+logger = logging.getLogger(__name__)
 
 class UiLoader(QtUiTools.QUiLoader):
     '''
@@ -150,6 +154,21 @@ def launch_error_box(title, message, parent=None):
 
 
 
+def get_widgets_by_property(widget, property_name, match_value=False, property_value=None):
+    '''
+    For the given widget, return all child widgets (and potentially the original widget),
+    which have a property of the given property_name.  
+    Optionally, return only those widgets whose given property matches the given
+    property_value 
+    '''
+    widgets = []
+    for widget_ in widget.findChildren(QtGui.QWidget):
+        if property_name in widget_.dynamicPropertyNames():
+            # If we're not matching against the property value, or if the property value is of the given value, then use it
+            if not match_value or widget_.property(property_name) == property_value:
+                widgets.append(widget_)
+    return widgets
+
 
 class CheckBoxTreeWidget(QtGui.QTreeWidget):
     '''
@@ -260,8 +279,273 @@ class CheckBoxTreeWidget(QtGui.QTreeWidget):
 
 
 
+
+
 def get_qt_check_flag(is_checked):
     if is_checked:
         return QtCore.Qt.Checked
     return QtCore.Qt.Unchecked
+
+
+
+class UiUserSettings(object):
+    '''
+    Facilitates the saving and loading of user preferences (from and to disk),
+    and the application of those settings to the UI.  The idea is that the UI can
+    have it's state recorded, and then be restored to that state at a later point. 
+
+    Settings are recorded per context, where a context is the currently opened 
+    maya/katana/nuke/etc file. So every file that's opened in maya (or whateve), 
+    can have settings recorded for it. 
+    
+    In Qt lingo the context is called a "group" (in QSettings).  We name the group
+    using the filepath for the currently opened maya/katana/nuke/etc file. 
+    All groups of settings are written to the same preference file (the file can 
+    hold many groups).
+    
+    Because this class must read widget values and write those values to a text 
+    file and conversely, read those values from a text file and apply them back
+    to the widgets, there needs to be binding/mapping of getters/setters so
+    that different widget types can properly read/set the values from/to the
+    preferences file.
+    '''
+
+    # Random unlikely character combination to escape special characters with
+    encoder = "^||^"
+
+
+    @classmethod
+    def loadUserSettings(cls, company_name, application_name, group_name, widgets):
+        '''
+        Load user settings for the given group that are found in the qt prefs file. 
+        The prefs file is located/created via the company_name and application_name.
+               
+        company_name: str. Dictates the subdirecty directory name of where the 
+                      settings file is found on disk
+                      
+        application_name: str. Dictates the name of the settings file (excluding
+                               directory path)
+                  
+        group_name: str.  The group name for which to load the settings for. This
+                          can be anything you want.  Just remember what it was
+                          so that you can use it to restore setting later.    
+        
+        widgets: list of Qt Widget objects to have settings loaded for.
+        '''
+        qsettings = QtCore.QSettings(company_name, application_name)
+
+        logger.debug("Loading settings for: %s", group_name)
+        group_name = cls.encodeGroupName(group_name)
+
+        qsettings.beginGroup(group_name)
+        for widget_name in qsettings.childKeys():
+            widget_value = qsettings.value(widget_name)
+            if widget_value != None:
+                cls.restoreWidgetValue(widget_name, widget_value, widgets)
+        qsettings.endGroup()
+
+    @classmethod
+    def saveUserSettings(cls, company_name, application_name, group_name, widgets):
+        '''
+        Save user settings for the given group to the qt prefs file. 
+        The prefs file is located/created via the company_name and application_name.
+               
+        company_name: str. Dictates the subdirecty directory name of where the 
+                      settings file is saved to disk
+                      
+        application_name: str. Dictates the name of the settings file (excluding
+                               directory path)
+                  
+        group_name: str.  The group name for which to save the settings for. This
+                          can be anything you want.  Just remember what it was
+                          so that you can use it to restore setting later.    
+        
+        widgets: list of Qt Widget objects to have settings save for.
+        '''
+        qsettings = QtCore.QSettings(company_name, application_name)
+        logger.debug("Saving settings for: %s", group_name)
+        group_name = cls.encodeGroupName(group_name)
+        qsettings.beginGroup(group_name)
+
+        for widget in widgets:
+            widget_name = widget.objectName()
+            widget_value = cls.getWidgetValue(widget)
+            qsettings.setValue(widget_name, widget_value)
+
+        qsettings.endGroup()
+
+        logger.debug("User settings written to: %s" % qsettings.fileName())
+
+    @classmethod
+    def encodeGroupName(cls, group_name):
+        '''
+        Unfortunately qsettings uses the "/" as a special character to indicate
+        nested keys in a group name.  We happen to want to use forward slashes
+        in our keys to express filepath, so we swap out the forward slash with
+        different set of characters (i.e. "encode" the "/" to something else)
+        '''
+        return group_name.replace("/", cls.encoder)
+
+    @classmethod
+    def getWidgetValue(cls, widget):
+        '''
+        Return the value for the given widget object.  Because a widget can be
+        of any class, and every widget class has different methods for retrieving
+        its values, this function uses a mapping of different getter functions
+        for each widget type.  More widget types may need to be added to this 
+        mapping in the future.
+        '''
+        widget_type = type(widget)
+        getter_map = {QtGui.QLineEdit: cls.getLineEditValue,
+                      QtGui.QComboBox: cls.getComboBoxValue,
+                      QtGui.QCheckBox: cls.getCheckboxValue,
+                      QtGui.QSpinBox: cls.getSpinboxValue,
+                      QtGui.QRadioButton: cls.getRadioButtonValue}
+
+
+        getter_func = getter_map.get(widget_type)
+        if not getter_func:
+            raise Exception("No getter function mapped for widget class: %s", widget_type)
+        return getter_func(widget)
+
+    @classmethod
+    def restoreWidgetValue(cls, widget_name, widget_value, widgets):
+        '''
+        
+        Set the given value on the widget of the given name.  Because a widget can be
+        of any class, and every widget class has different methods for setting
+        its values, this function uses a mapping of different setter functions
+        for each widget type.  More widget types may need to be added to this 
+        mapping in the future.
+        
+        
+        widget_name: the name of the widget, e.g. QWidget.objectName()
+        widget_value: the value to set the widget to. This value comes from
+                      the settings file.
+        
+        '''
+
+
+        setter_map = {QtGui.QLineEdit: cls.setLineEditValue,
+                      QtGui.QComboBox: cls.setComboBoxValue,
+                      QtGui.QCheckBox: cls.setCheckboxValue,
+                      QtGui.QSpinBox: cls.setSpinboxValue,
+                      QtGui.QRadioButton: cls.setRadioButtonValue}
+
+        widget = cls.getWidgetByName(widget_name, widgets)
+        widget_type = type(widget)
+
+        setter_func = setter_map.get(widget_type)
+        if not setter_func:
+            raise Exception("No setter function mapped for widget class: %s", widget_type)
+        return setter_func(widget, widget_value)
+
+    @classmethod
+    def getWidgetByName(cls, widget_name, widgets):
+        '''
+        From the given list of widget objects, return the widget object that has
+        the given widget name.  Raise an exception if it cannot be found
+        '''
+        for widget in widgets:
+            if widget.objectName() == widget_name:
+                return widget
+        raise Exception("Expected widget %s not found: %s" % widget_name)
+
+    @classmethod
+    def getLineEditValue(cls, lineedit):
+        '''
+        Define getter function for QLineEdit widgets
+        '''
+        return str(lineedit.text())
+
+    @classmethod
+    def setLineEditValue(cls, lineedit, value):
+        '''
+        Define setter function for QLineEdit widgets
+        '''
+        # Ensure that value is cast to a string first
+        lineedit.setText(str(value))
+
+    @classmethod
+    def getComboBoxValue(cls, combobox):
+        '''
+        Define getter function for QComobobox widgets
+        '''
+        return combobox.currentIndex()
+
+    @classmethod
+    def setComboBoxValue(cls, combobox, value):
+        '''
+        Define setter function for QComobobox widgets
+        '''
+        # Ensure that value is cast to an int first
+        combobox.setCurrentIndex(int(value))
+
+    @classmethod
+    def getRadioButtonValue(cls, radiobutton):
+        '''
+        Define getter function for QRadioButton widgets
+        '''
+        return radiobutton.isChecked()
+
+    @classmethod
+    def setRadioButtonValue(cls, radiobutton, value):
+        '''
+        Define setter function for QRadioButton widgets.
+        Since the value comes from qsettings (which casts bools to strings and 
+        lowercase), we  have to do a little processing.
+        '''
+        value_lower = value.lower()
+
+        if value_lower == "false":
+            value = False
+        elif value_lower == "true":
+            value = True
+        else:
+            raise Exception("Got unexpected radiobutton value: %s", value)
+
+        radiobutton.setChecked(value)
+
+    @classmethod
+    def getCheckboxValue(cls, checkbox):
+        '''
+        Define getter function for QCheckbox widgets
+        '''
+        return checkbox.isChecked()
+
+    @classmethod
+    def setCheckboxValue(cls, checkbox, value):
+        '''
+        Define setter function for QCheckbox widgets
+        Since the value comes from qsettings (which casts bools to strings and 
+        lowercase), we  have to do a little processing.
+        '''
+        value_lower = value.lower()
+
+        if value_lower == "false":
+            value = False
+        elif value_lower == "true":
+            value = True
+        else:
+            raise Exception("Got unexpected checkbox value: %s", value)
+
+        checkbox.setChecked(value)
+
+    @classmethod
+    def setSpinboxValue(cls, spinbox, value):
+        '''
+        Define setter function for QSpinBox widgets
+        '''
+
+        spinbox.setValue(int(value))
+
+    @classmethod
+    def getSpinboxValue(cls, spinbox):
+        '''
+        Define getter function for QSpinBox widgets
+        '''
+        return spinbox.value()
+
+
+
 

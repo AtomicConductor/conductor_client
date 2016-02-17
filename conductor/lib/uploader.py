@@ -4,6 +4,7 @@ import time
 import ast
 import json
 import hashlib
+import logging
 import os
 import Queue
 import sys
@@ -15,8 +16,13 @@ import requests
 import urllib
 import collections
 
-from conductor.setup import CONFIG, logger
-from conductor.lib import api_client, common, worker, file_utils, client_db
+from conductor import CONFIG
+from conductor.lib import api_client, common, worker, client_db, loggeria
+
+LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
+
+logger = logging.getLogger(__name__)
+
 
 class MD5Worker(worker.ThreadWorker):
     '''
@@ -30,19 +36,22 @@ class MD5Worker(worker.ThreadWorker):
         self.database_filepath = kwargs.get('database_filepath')
         worker.ThreadWorker.__init__(self, *args, **kwargs)
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         logger.debug('job is %s', job)
         filename, submission_time_md5 = job
         assert isinstance(filename, (str, unicode)), "Filepath not of expected type. Got %s" % type(filename)
         filename = str(filename)
         current_md5 = self.get_md5(filename)
         # if a submission time md5 was provided then check against it
-        if submission_time_md5 and current_md5 != submission_time_md5:
-            message = 'MD5 of %s has changed since submission\n' % filename
-            message += 'submitted md5: %s\n' % submission_time_md5
-            message += 'current md5:   %s' % current_md5
-            logger.error(message)
-            # raise message
+        if submission_time_md5:
+            logger.info("Enforcing md5 match: %s for: %s", submission_time_md5, filename)
+            if current_md5 != submission_time_md5:
+                message = 'MD5 of %s has changed since submission\n' % filename
+                message += 'submitted md5: %s\n' % submission_time_md5
+                message += 'current md5:   %s\n' % current_md5
+                message += 'This is likely due to the file being written to after the user submitted the job but before it got uploaded to conductor'
+                logger.error(message)
+                raise Exception(message)
         self.metric_store.set_dict('file_md5s', filename, current_md5)
         return (filename, current_md5)
 
@@ -96,10 +105,10 @@ class MD5OutputWorker(worker.ThreadWorker):
         self.wait_time = 1
         self.batch = {}
 
-    def check_for_posion_pill(self, job):
+    def check_for_poison_pill(self, job):
         ''' we need to make sure we ship the last batch before we terminate '''
-        if job == self.PosionPill():
-            logger.debug('md5outputworker got posion pill')
+        if job == self.PoisonPill():
+            logger.debug('md5outputworker got poison pill')
             self.ship_batch()
             self.mark_done()
             thread.exit()
@@ -111,14 +120,14 @@ class MD5OutputWorker(worker.ThreadWorker):
             self.put_job(json.dumps(self.batch))
             self.batch = {}
 
-    def target(self):
+    def target(self, thread_int):
 
         while not common.SIGINT_EXIT:
             try:
                 # block on the queue with a self.wait_time second timeout
                 file_md5_tuple = self.in_queue.get(True, self.wait_time)
 
-                self.check_for_posion_pill(file_md5_tuple)
+                self.check_for_poison_pill(file_md5_tuple)
 
                 # add (filepath: md5) to the batch dict
                 self.batch[file_md5_tuple[0]] = file_md5_tuple[1]
@@ -171,7 +180,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         else:
             raise Exception('could not make request to /api/files/get_upload_urls')
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         logger.debug('getting upload urls for %s', job)
         url_list = common.retry(lambda: self.make_request(job))
         return url_list
@@ -192,7 +201,7 @@ class FileStatWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         '''
         Job is a dict of filepath: signed_upload_url pairs.
         The FileStatWorker iterates through the dict.
@@ -242,7 +251,7 @@ class UploadWorker(worker.ThreadWorker):
                 # report upload progress
                 self.metric_store.increment('bytes_uploaded', len(data), filename)
 
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         filename = job[0]
         upload_url = job[1]
         md5 = self.metric_store.get_dict('file_md5s', filename)
@@ -480,15 +489,15 @@ class Uploader():
         thd.start()
 
 
-    def mark_upload_finished(self, upload_id):
-        finish_dict = {
-            'upload_id':upload_id,
-            'status': 'server_pending',
-        }
-        resp_str, resp_code = self.api_client.make_request(
-            '/uploads/%s/finish' % upload_id,
-            data=json.dumps(finish_dict),
-            verb='POST')
+    def mark_upload_finished(self, upload_id, upload_files):
+
+        data = {'upload_id':upload_id,
+                'status': 'server_pending',
+                'upload_files': upload_files}
+
+        resp_str, resp_code = self.api_client.make_request('/uploads/%s/finish' % upload_id,
+                                                           data=json.dumps(data),
+                                                           verb='POST')
         return True
 
 
@@ -504,49 +513,52 @@ class Uploader():
         return True
 
     def handle_upload_response(self, upload_files, upload_id=None, md5_only=False):
-        # reset counters
-        self.num_files_to_process = len(upload_files)
-        self.job_start_time = int(time.time())
-        self.upload_id = upload_id
-        self.job_failed = False
-        # signal the reporter to start working
-        self.working = True
+        try:
+            # reset counters
+            self.num_files_to_process = len(upload_files)
+            self.job_start_time = int(time.time())
+            self.upload_id = upload_id
+            self.job_failed = False
+            # signal the reporter to start working
+            self.working = True
 
-        self.prepare_workers()
+            self.prepare_workers()
 
-        # print out info
-        logger.info('upload_files contains %s files like:', len(upload_files))
-        logger.info('\t%s', "\n\t".join(upload_files.keys()[:5]))
+            # print out info
+            logger.info('upload_files contains %s files like:', len(upload_files))
+            logger.info('\t%s', "\n\t".join(upload_files.keys()[:5]))
 
-        # create worker pools
-        self.manager = self.create_manager(md5_only)
+            # create worker pools
+            self.manager = self.create_manager(md5_only)
 
-        # create reporters
-        logger.debug('creating report status thread...')
-        self.create_report_status_thread()
-        logger.info('creating console status thread...')
-        self.create_print_status_thread()
+            # create reporters
+            logger.debug('creating report status thread...')
+            self.create_report_status_thread()
+            logger.info('creating console status thread...')
+            self.create_print_status_thread()
 
-        # load tasks into worker pools
-        for path, md5 in upload_files.iteritems():
-            self.manager.add_task((path, md5))
+            # load tasks into worker pools
+            for path, md5 in upload_files.iteritems():
+                self.manager.add_task((path, md5))
 
-        # wait for work to finish
-        output = self.manager.join()
+            # wait for work to finish
+            error_message = self.manager.join()
+            logger.debug("error_message: %s", error_message)
 
-        # signal to the reporter to stop working
-        self.working = False
-        logger.info('done uploading files')
+            # signal to the reporter to stop working
+            self.working = False
+            logger.info('done uploading files')
 
-        # report upload status
-        if output:
-            if upload_id:
-                self.mark_upload_failed(output, upload_id)
-            return "\n".join(output)
-        else:
-            if upload_id:
-                self.mark_upload_finished(upload_id)
-            return None
+            if error_message:
+                return "\n".join(error_message)
+
+            if self.upload_id:
+                finished_upload_files = self.return_md5s()
+                self.mark_upload_finished(self.upload_id, finished_upload_files)
+
+        except:
+            return traceback.format_exc()
+
 
 
     def main(self, run_one_loop=False):
@@ -588,7 +600,9 @@ class Uploader():
                 upload_id = json_data['upload_id']
                 logger.info('upload_id is %s', upload_id)
 
-                self.handle_upload_response(upload_files, upload_id)
+                error_message = self.handle_upload_response(upload_files, upload_id)
+                if error_message:
+                    self.mark_upload_failed(error_message, upload_id)
 
             except Exception, e:
                 logger.error('hit exception %s', e)
@@ -607,6 +621,15 @@ class Uploader():
         return self.manager.metric_store.get_dict('file_md5s')
 
 
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_ul_log")
+    loggeria.setup_conductor_logging(logger_level=level,
+                                     console_formatter=LOG_FORMATTER,
+                                     file_formatter=LOG_FORMATTER,
+                                     log_filepath=log_filepath)
+
 def run_uploader(args):
     '''
     Start the uploader process. This process will run indefinitely, polling
@@ -614,8 +637,14 @@ def run_uploader(args):
     '''
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
-    logger.debug('Uploader parsed_args is %s', args_dict)
 
+    # Set up logging
+    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level = loggeria.LEVEL_MAP.get(log_level_name)
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
+
+    logger.debug('Uploader parsed_args is %s', args_dict)
     resolved_args = resolve_args(args_dict)
     uploader = Uploader(resolved_args)
     uploader.main()
@@ -670,6 +699,8 @@ def resolve_arg(arg_name, args, config):
         return value
     # Otherwise use the value in the config if it's there, otherwise default to None
     return config.get(arg_name)
+
+
 
 
 # @common.dec_timer_exit
