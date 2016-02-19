@@ -17,10 +17,6 @@ global proc shelf_Conductor () {
         -align "center" 
         -label "Load UI" 
         -labelOffset 0
-        -rotation 0
-        -flipX 0
-        -flipY 0
-        -useAlpha 1
         -font "plainLabelFont" 
         -overlayLabelColor 0.8 0.8 0.8 
         -overlayLabelBackColor 0 0 0 0.2 
@@ -29,7 +25,7 @@ global proc shelf_Conductor () {
         -style "iconOnly" 
         -marginWidth 1
         -marginHeight 1
-        -command "from conductor import submitter_maya\nsubmitter_maya.MayaConductorSubmitter.runUi()" 
+        -command "from conductor import submitter_afmaya\nsubmitter_afmaya.AFMayaConductorSubmitter.runUi()" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1

@@ -148,7 +148,7 @@ class KatanaConductorSubmitter(QtGui.QMainWindow):
         self.ui_advanced_wgt.hide()
 
         # Hide output path.  Don't let the user dictate this. This will make the collection of the render fail on render node.
-        self.ui_output_directory_lnedt.hide()
+        self.ui_output_path_widget.hide()
 
         # shrink UI to be as small as can be
         self.adjustSize()
