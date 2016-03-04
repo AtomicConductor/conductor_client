@@ -83,12 +83,17 @@ class Submit():
         self.location = args.get('location') or CONFIG.get("location")
         self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
 
-        self.notify = { "emails": []}
+        self.notify = { "emails": [],
+                        "slack": []}
         if args.get('notify'):
-            self.notify["emails"].extend(re.split("/s*,*/s*", args.get('notify')))
+            self.notify["emails"].extend(re.split(",", args.get('notify')))
         if CONFIG.get('notify'):
-            self.notify["emails"].extend(re.split("/s*,*/s*", CONFIG.get('notify')))
-
+            self.notify["emails"].extend(re.split(",", CONFIG.get('notify')))
+        if args.get('slack_notify'):
+            self.notify["slack"].extend(re.split(",", args.get('slack_notify')))
+        if CONFIG.get('slack_notify'):
+            self.notify["slack"].extend(re.split(",", CONFIG.get('slack_notify')))
+        logger.debug("Notify is %s" % self.notify)
         logger.debug("Consumed args")
 
     @classmethod
