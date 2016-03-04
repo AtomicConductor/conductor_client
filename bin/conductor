@@ -172,6 +172,9 @@ def parse_args():
     submit_parser.add_argument("--notify",
                                help="Who to notify when job is complete")
 
+    submit_parser.add_argument("--slack_notify",
+                               help="Slack recipients to notify when job is complete")
+
     submit_parser.add_argument("--log_level",
                                choices=loggeria.LEVELS,
                                help="The logging level to display")
