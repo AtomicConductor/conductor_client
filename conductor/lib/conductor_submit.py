@@ -11,6 +11,7 @@ import os
 import re
 import sys
 import time
+import types
 
 try:
     imp.find_module('conductor')
@@ -32,6 +33,9 @@ class Submit():
     Help:
         $ python conductor_submit.py -h
     """
+    metadata_types = types.StringTypes
+
+
     def __init__(self, args):
         logger.debug("Init Submit")
         self.timeid = int(time.time())
@@ -72,6 +76,9 @@ class Submit():
         self.database_filepath = self.resolve_arg(args, 'database_filepath', "")
         logger.debug("database_filepath: %s", self.database_filepath)
 
+        self.docker_image = self.resolve_arg(args, 'docker_image', "")
+        logger.debug("docker_image: %s", self.docker_image)
+
         self.enforced_md5s = self.resolve_arg(args, 'enforced_md5s', {})
         logger.debug("enforced_md5s: %s", self.enforced_md5s)
 
@@ -92,6 +99,11 @@ class Submit():
 
         self.machine_flavor = self.resolve_arg(args, 'machine_type', "")
         logger.debug("machine_flavor: %s", self.machine_flavor)
+
+        metadata = self.resolve_arg(args, 'metadata', {}, combine_config=True)
+        self.metadata = self.cast_metadata(metadata, strict=False)
+        logger.debug("metadata: %s", self.metadata)
+
 
         self.md5_caching = self.resolve_arg(args, 'md5_caching', True)
         logger.debug("md5_caching: %s", self.md5_caching)
@@ -153,6 +165,12 @@ class Submit():
         value will replace any keys that clash with keys from the config value.
         
         If the argument nor the config have a value, then use the provided default value
+        
+        
+        combine_config: bool. Indicates whether to combine the argument value
+                        with the config value. This will only ever occur if
+                        both values are present. 
+        
         
         
         The order of resolution is:
@@ -262,6 +280,7 @@ class Submit():
         submit_dict['local_upload'] = self.local_upload
         submit_dict['job_title'] = self.job_title
         submit_dict['notify'] = self.notify
+        submit_dict['metadata'] = self.metadata
 
         if upload_files:
             submit_dict['upload_files'] = upload_files
@@ -298,7 +317,9 @@ class Submit():
             logger.debug("\t%s: %s", arg_name, arg_value)
 
         logger.info("Sending Job...")
-        response, response_code = self.api_client.make_request(uri_path="jobs/", data=json.dumps(submit_dict))
+        response, response_code = self.api_client.make_request(uri_path="jobs/",
+                                                               data=json.dumps(submit_dict),
+                                                               raise_on_error=False)
         if response_code not in [201, 204]:
             raise Exception("Job Submission failed: Error %s ...\n%s" % (response_code, response))
         return response, response_code
@@ -396,6 +417,76 @@ class Submit():
         with open(upload_filepath, 'r') as file_:
             logger.debug('opening file')
             return [line.strip() for line in file_.readlines]
+
+    @classmethod
+    def cast_metadata(cls, metadata, strict=False):
+        '''
+        Ensure that the data types in the given metadata are of the proper type
+        (str or unicode). If strict is False, automatically cast (and warn)
+        any values which do not conform.  If strict is True, do not cast values,
+        simply raise an exception.  
+        '''
+
+        # Create a new metadata dictionary to return
+        casted_metadata = {}
+
+        # reusable error/warning message
+        error_msg = 'Metadata %%s %%s is not of a supported type. Got %%s. Expected %s' % " or ".join([type_.__name__ for type_ in cls.metadata_types])
+
+        for key, value in metadata.iteritems():
+
+            key_type = type(key)
+            if key_type not in cls.metadata_types:
+                msg = error_msg % ("key", key, key_type)
+                if strict:
+                    raise Exception(msg)
+                logger.warning(msg + ".  Auto casting value...")
+                key = cls.cast_metadata_value(key)
+
+            value_type = type(value)
+            if value_type not in cls.metadata_types:
+                msg = error_msg % ("value", value, value_type)
+                if strict:
+                    raise Exception(msg)
+                logger.warning(msg + ".  Auto casting value...")
+                value = cls.cast_metadata_value(value)
+
+            # This should never happen, but need to make sure that the casting
+            # process doesn't cause the original keys to collide with one another
+            if key in casted_metadata:
+                raise Exception("Metadata key collision due to casting: %s", key)
+            casted_metadata[key] = value
+
+        return casted_metadata
+
+
+    @classmethod
+    def cast_metadata_value(cls, value):
+        '''
+        Attempt to cast the given value to a unicode string
+        '''
+
+        # All the types that are supported for casting to metadata type
+        cast_types = (bool, int, long, float, str, unicode)
+
+
+        value_type = type(value)
+
+        cast_error = "Cannot cast metadata value %s (%s) to unicode" % (value, value_type)
+
+        # If the value's type is not one that can be casted, then raise an exception
+        if value_type not in cast_types:
+            raise Exception(cast_error)
+
+        # Otherwise, attempt to cast the value to unicode
+        try:
+            return unicode(value)
+        except:
+            cast_error = "Casting failure. " + cast_error
+            logger.error(cast_error)
+            raise
+
+
 
 
 class BadArgumentError(ValueError):

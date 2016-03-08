@@ -2,6 +2,7 @@
 
 import argparse
 import imp
+import json
 import os
 import re
 import sys
@@ -79,6 +80,11 @@ def parse_args():
              "\t--environment PYTHONPATH=\"c:\\My Documents\";%%PYTHONPATH%%;$PYTHONPATH"),
         nargs="*",
         action=ValidateArgEnv)
+
+    submit_parser.add_argument("--metadata",
+        help=("Specify metadata dictionary. Note that it's best to wrap this dictionary"
+              " in single quotes,\n e.g. --metadata '{\"project\":\"Scrooge\"}'"),
+        type=json.loads) # use the json loads function to parse dict
 
     submit_parser.add_argument("--force",
                                help="Do not check for existing uploads, force a new upload",
