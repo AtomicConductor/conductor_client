@@ -86,14 +86,20 @@ class Submit():
         self.notify = { "emails": [],
                         "slack": []}
         if args.get('notify'):
-            self.notify["emails"].extend(re.split(",", args.get('notify')))
+            self.notify["emails"].extend(args.get('notify'))
         if CONFIG.get('notify'):
-            self.notify["emails"].extend(re.split(",", CONFIG.get('notify')))
+            if len(CONFIG.get('notify').split()) == 1:
+                self.notify["emails"].append(CONFIG.get('notify'))
+            else:
+                self.notify["emails"].extend(CONFIG.get('notify').split())
         if args.get('slack_notify'):
-            self.notify["slack"].extend(re.split(",", args.get('slack_notify')))
+            self.notify["slack"].extend(args.get('slack_notify'))
         if CONFIG.get('slack_notify'):
-            self.notify["slack"].extend(re.split(",", CONFIG.get('slack_notify')))
-        logger.debug("Notify is %s" % self.notify)
+            if len(CONFIG.get('notify').split()) == 1:
+                self.notify["slack"].append(CONFIG.get('slack_notify'))
+            else:
+                self.notify["slack"].extend(CONFIG.get('slack_notify'))
+
         logger.debug("Consumed args")
 
     @classmethod
