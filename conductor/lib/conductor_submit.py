@@ -41,47 +41,82 @@ class Submit():
 
 
     def consume_args(self, args):
-        self.raw_command = args.get('cmd') or ''
-        self.user = args.get('user') or getpass.getuser()
-        self.frames = args.get('frames')
-        self.output_path = args.get('output_path')
-        self.upload_file = args.get('upload_file')
-        self.upload_only = args.get('upload_only')
-        self.job_title = args.get('job_title') or ""
-        self.enforced_md5s = args.get("enforced_md5s") or {}
+        '''
+        "Consume" the give arguments (which have been parsed by argparse).
+        For arguments that have not been specified by the user via the command
+        line, default to reasonable values.  
+        If inherit_config is True, then default unspecified arguments to those
+        values found in the config.yml file.
+        
+        1. Use the argument provided by the user via the command line.  Note that
+           this may be a non-True value, such as False or 0.  So the only way
+           to know whether the argument was provided by the user is to check
+           whether is value is not None (which implies that argparse arguments
+           should not be configured to give a default value when the user has
+           not specified them).
+           
+       2. If the user has not provided the argument, and if inherit_config is
+          True, then use the value found in the config.  
+          
+       3. If inherit_config is False or the the value in the config doesn't 
+          exist, then default to an empty or non-True value.
+        
+        '''
 
-        # Apply client config values in cases where arguments have not been passed in
-        self.cores = args.get('cores', CONFIG["instance_cores"])
-        self.machine_flavor = args.get('machine_type') or CONFIG["instance_flavor"]
+        self.command = self.resolve_arg(args, 'cmd', "")
+        logger.debug("command: %s", self.command)
 
-        self.resource = args.get('resource', CONFIG["resource"])
-        self.priority = args.get('priority', CONFIG["priority"])
+        self.cores = self.resolve_arg(args, 'cores', 8)
+        logger.debug("cores: %s", self.cores)
 
-        # Get any upload files/dirs listed in the config.yml
-        self.upload_paths = CONFIG.get('upload_paths') or []
-        assert isinstance(self.upload_paths, list), "Not a list: %s" % self.upload_paths
-        # Append any upload files/dirs specified via the command line
-        self.upload_paths.extend(args.get('upload_paths') or [])
-        logger.debug("Upload_paths: %s", self.upload_paths)
-
-        #  Get any environment variable settings from config.yml
-        self.environment = CONFIG.get("environment") or {}
-        assert isinstance(self.environment, dict), "Not a dictionary: %s" % self.environment
-        # Then override any that were specified in the command line
-        self.environment.update(args.get('env', {}))
-        logger.debug("environment: %s", self.environment)
-
-        self.local_upload = self.resolve_arg("local_upload", args, CONFIG)
-        logger.debug("local_upload: %s", self.local_upload)
-
-        self.md5_caching = self.resolve_arg("md5_caching", args, CONFIG)
-        logger.debug("md5_caching: %s", self.md5_caching)
-
-        self.database_filepath = self.resolve_arg("database_filepath", args, CONFIG)
+        self.database_filepath = self.resolve_arg(args, 'database_filepath', "")
         logger.debug("database_filepath: %s", self.database_filepath)
 
-        self.location = args.get('location') or CONFIG.get("location")
-        self.docker_image = args.get('docker_image') or CONFIG.get("docker_image")
+        self.enforced_md5s = self.resolve_arg(args, 'enforced_md5s', {})
+        logger.debug("enforced_md5s: %s", self.enforced_md5s)
+
+        self.environment = self.resolve_arg(args, 'environment', {}, combine_config=True)
+        logger.debug("environment: %s", self.environment)
+
+        self.frames = self.resolve_arg(args, 'frames', "")
+        logger.debug("frames: %s", self.frames)
+
+        self.job_title = self.resolve_arg(args, 'job_title', "")
+        logger.debug("job_title: %s", self.job_title)
+
+        self.local_upload = self.resolve_arg(args, 'local_upload', True)
+        logger.debug("local_upload: %s", self.local_upload)
+
+        self.location = self.resolve_arg(args, 'location', "")
+        logger.debug("location: %s", self.location)
+
+        self.machine_flavor = self.resolve_arg(args, 'machine_type', "")
+        logger.debug("machine_flavor: %s", self.machine_flavor)
+
+        self.md5_caching = self.resolve_arg(args, 'md5_caching', True)
+        logger.debug("md5_caching: %s", self.md5_caching)
+
+        self.output_path = self.resolve_arg(args, 'output_path', "")
+        logger.debug("output_path: %s", self.output_path)
+
+        self.priority = self.resolve_arg(args, 'priority', 5)
+        logger.debug("priority: %s", self.priority)
+
+        self.resource = self.resolve_arg(args, 'resource', "")
+        logger.debug("resource: %s", self.resource)
+
+        self.upload_file = self.resolve_arg(args, 'upload_file', "")
+        logger.debug("upload_file: %s", self.upload_file)
+
+        self.upload_only = self.resolve_arg(args, 'upload_only', False)
+        logger.debug("upload_only: %s", self.upload_only)
+
+        self.upload_paths = self.resolve_arg(args, 'upload_paths', [], combine_config=True)
+        logger.debug("upload_paths: %s", self.upload_paths)
+
+        self.user = self.resolve_arg(args, 'user', getpass.getuser())
+        logger.debug("user: %s", self.user)
+
 
         self.notify = { "emails": [],
                         "slack": []}
@@ -102,25 +137,86 @@ class Submit():
 
         logger.debug("Consumed args")
 
+
     @classmethod
-    def resolve_arg(cls, arg_name, args, config):
+    def resolve_arg(cls, args, arg_name, default, combine_config=False):
         '''
-        Helper function to resolve the value of an argument.
+        Helper function to resolve the value of an argument.  The general premise
+        is as follows:
+        If an argument value was provided then use it.  However, if the combine_config,
+        bool is True, then we want to combine that value with the value found in
+        the config.  This only works with argument types which can be combined,
+        such as lists or dictionaries. In terms of which value trumps the other,
+        the argument value will always trump the config value. For example,
+        if the config declared a dictionary value, and the argument also provided
+        a dictionary value, they would both be combined, however, the argument
+        value will replace any keys that clash with keys from the config value.
+        
+        If the argument nor the config have a value, then use the provided default value
+        
+        
         The order of resolution is:
         1. Check whether the user explicitly specified the argument when calling/
-           instantiating the class. If so, then use it, otherwise...
-        2. Attempt to read it from the config.yml. If it's there, then use it, otherwise...
-        3. return None
+           instantiating the class.  This is indicated by whether the argument's 
+           value is set to None or not. If the value is not None, then use it (
+           combining it with the config value if appropriate)
+           
+        2. If the specified argument does not have value (i.e. it's None), then
+           use the value found in the config. 
+        
+        3. If the config does not define the expected argument then use the default
+           argument
 
         '''
+
+        # Map a combine operation by type
+        combine_op = {dict: dict.update,
+                      list: list.extend}
+
         # Attempt to read the value from the args
-        value = args.get(arg_name)
-        # If the arg is not None, it indicates that the arg was explicity
-        # specified by the caller/user, and it's value should be used
-        if value != None:
-            return value
-        # Otherwise use the value in the config if it's there, otherwise default to None
-        return config.get(arg_name)
+        arg_value = args.get(arg_name)
+
+        # This admittedly gets super convoluted..but not sure if it can be written any clearer...
+
+        # If the config contains the argument name...
+        if arg_name in CONFIG:
+            config_value = CONFIG[arg_name]
+
+            # If the arg value is  None, it indicates that the arg was not
+            # explicity set. And if the config lists a value,then use it.
+            # Note that it's valid that the config may state a non-True value (i.e. 0, False, etc)
+            if arg_value == None:
+                return config_value
+
+            # IF we're here, then it means that the arg_Value is not None, so
+            # simple check whehter we're combining its value with the the config
+            # value.  If not, simply return the arg_value
+            if not combine_config:
+                return arg_value
+
+            # If we're here, then it means that the arg_value is not None, and that
+            # we're combining that value with the value found in the config.
+            # Get the combine operation (update if dict, or extend if list)
+            combine_op_ = combine_op.get(type(arg_value))
+            # Ensure that the two values to be combined are or the proper type
+            assert combine_op_, "Cannot combine data types of %s" % type(arg_value)
+            assert type(config_value) == type(arg_value), "Cannot combine differing data types: %s, %s" % (config_value, arg_value)
+
+            # because we're updating a list or dict from the config object, it will mutate. Make a copy first
+            config_value = type(config_value)(config_value)
+            # Call the Update or extend
+            combine_op_(config_value, arg_value)
+            return config_value
+
+        # If the the config doesn't have a value
+        else:
+            # if the argument value is not None the simply return it
+            if arg_value != None:
+                return arg_value
+
+            # if the arg_value is None then return the default argument
+            return default
+
 
 
     def validate_args(self):
@@ -128,7 +224,7 @@ class Submit():
         Ensure that the combination of arguments don't result in an invalid job/request
         '''
         # TODO: Clean this shit up
-        if self.raw_command and self.frames:
+        if self.command and self.frames:
             pass
 
         elif self.upload_only and (self.upload_file or self.upload_paths):
@@ -185,7 +281,7 @@ class Submit():
 
             submit_dict.update({'resource':self.resource,
                                 'frame_range':self.frames,
-                                'command':self.raw_command,
+                                'command':self.command,
                                 'cores':self.cores,
                                 'machine_flavor':self.machine_flavor})
 
