@@ -2,17 +2,6 @@ import logging, os, re, yaml
 import functools
 from maya import cmds
 
-dependency_attrs = {'file':['fileTextureName'],
-                     'af_alembicDeform':['fileName'],
-                     'AlembicNode':['abc_File'],
-                     'VRayMesh':['fileName'],
-                     'VRaySettingsNode':['ifile', 'fnm'],
-                     'CrowdProxyVRay':['cacheFileDir', 'camFilePath'],
-                     'CrowdManagerNode':['escod', 'efbxod', 'eabcod', 'eribod', 'emrod', 'evrod', 'eassod', 'cam'],
-                     'xgmPalette':['xfn'],
-                     'VRayVolumeGrid':['if']
-                    }
-
 logger = logging.getLogger(__name__)
 
 def dec_undo(func):

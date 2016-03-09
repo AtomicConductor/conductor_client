@@ -10,3 +10,37 @@ instance_types:
     - {cores: 32, flavor: highcpu,  description: "32 core, 28.8GB Mem"}
     - {cores: 32, flavor: standard, description: "32 core, 120GB Mem"}
     - {cores: 32, flavor: highmem,  description: "32 core, 208GB Mem"}
+
+
+ # A dictionary of maya node types and their corresponing attributes name(s) for
+ # seeking out file dependencies (external filepaths)
+maya_dependency_attrs:
+    aiImage: # Arnold
+        - filename
+    aiPhotometricLight: # Arnold
+        - aiFilename
+    AlembicNode: # Alembic (now maya builtin?)
+        - abc_File
+    CrowdProxyVRay: # Golaem
+        - cacheFileDir
+        - camFilePath
+    CrowdManagerNode: # Golaem
+        - escod
+        - efbxod
+        - eabcod
+        - eribod
+        - emrod
+        - evrod
+        - eassod
+        - cam   
+    file: # maya builtin
+        - fileTextureName
+    xgmPalette: # XGen (now maya builtin?)
+        - xfn
+    VRayMesh: # VRay
+        - fileName
+    VRaySettingsNode: # VRay
+        - ifile
+        - fnm        
+    VRayVolumeGrid: #VRay
+        - if
