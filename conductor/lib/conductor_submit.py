@@ -94,8 +94,6 @@ class Submit():
         if CONFIG.get('slack_notify'):
             self.notify["slack"].extend(CONFIG.get('slack_notify'))
 
-        logger.debug(self.notify)
-        exit()
         logger.debug("Consumed args")
 
     @classmethod
