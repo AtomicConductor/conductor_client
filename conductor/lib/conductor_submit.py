@@ -142,6 +142,7 @@ class Submit():
         logger.debug("notify: %s", self.notify)
         logger.debug(self.notify)
         exit()
+
         logger.debug("Consumed args")
 
     @classmethod
