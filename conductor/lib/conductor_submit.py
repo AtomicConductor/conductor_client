@@ -129,20 +129,10 @@ class Submit():
         self.user = self.resolve_arg(args, 'user', getpass.getuser())
         logger.debug("user: %s", self.user)
 
-
-        self.notify = { "emails": [],
-                        "slack": []}
-        if args.get('notify'):
-            self.notify["emails"].extend(args.get('notify'))
-        if CONFIG.get('notify'):
-            self.notify["emails"].extend(CONFIG.get('notify'))
-        if args.get('slack_notify'):
-            self.notify["slack"].extend(args.get('slack_notify'))
-        if CONFIG.get('slack_notify'):
-            self.notify["slack"].extend(CONFIG.get('slack_notify'))
-
+        self.notify = { "emails": self.resolve_arg(args, 'notify', [], combine_config=True),
+                        "slack": self.resolve_arg(args, 'slack_notify', [], combine_config=True)}
+        logger.debug("notify: %s", self.notify)
         logger.debug("Consumed args")
-
 
     @classmethod
     def resolve_arg(cls, args, arg_name, default, combine_config=False):
