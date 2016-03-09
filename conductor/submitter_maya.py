@@ -179,8 +179,11 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
         Generate a list of filepaths that the current maya scene is dependent on.
         '''
-        # A dict of maya node types and their attributes to query for dependency filepaths
-        return maya_utils.collect_dependencies(maya_utils.dependency_attrs)
+        # Get all of the node types and attributes to query for external filepaths on
+        resources = common.load_resources_file()
+        dependency_attrs = resources.get("maya_dependency_attrs") or {}
+
+        return maya_utils.collect_dependencies(dependency_attrs)
 
 
     def getEnvironment(self):
