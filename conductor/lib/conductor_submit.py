@@ -135,18 +135,14 @@ class Submit():
         if args.get('notify'):
             self.notify["emails"].extend(args.get('notify'))
         if CONFIG.get('notify'):
-            if len(CONFIG.get('notify').split()) == 1:
-                self.notify["emails"].append(CONFIG.get('notify'))
-            else:
-                self.notify["emails"].extend(CONFIG.get('notify').split())
+            self.notify["emails"].extend(CONFIG.get('notify'))
         if args.get('slack_notify'):
             self.notify["slack"].extend(args.get('slack_notify'))
         if CONFIG.get('slack_notify'):
-            if len(CONFIG.get('notify').split()) == 1:
-                self.notify["slack"].append(CONFIG.get('slack_notify'))
-            else:
-                self.notify["slack"].extend(CONFIG.get('slack_notify'))
+            self.notify["slack"].extend(CONFIG.get('slack_notify'))
 
+        logger.debug(self.notify)
+        exit()
         logger.debug("Consumed args")
 
 
