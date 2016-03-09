@@ -119,8 +119,10 @@ def parse_args():
                   '"location1" or "location2") when submitting jobs (and when '
                   'running a downloader or uploader command).'))
 
+    #  TODO: We should remove this arg
     submit_parser.add_argument("--machine_type",
-                               help='Type of machine to run on ("standard", "highmem", or "highcpu")')
+                               help='Type of machine to run on ("standard", "highmem", or "highcpu")',
+                               default="standard")
 
     submit_parser.add_argument("--md5_caching",
             help=("Use cached md5s. This can dramatically improve the uploading "
