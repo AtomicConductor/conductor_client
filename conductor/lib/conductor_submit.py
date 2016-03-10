@@ -97,13 +97,12 @@ class Submit():
         self.location = self.resolve_arg(args, 'location', "")
         logger.debug("location: %s", self.location)
 
-        self.machine_flavor = self.resolve_arg(args, 'machine_type', "")
+        self.machine_flavor = self.resolve_arg(args, 'machine_type', "standard")
         logger.debug("machine_flavor: %s", self.machine_flavor)
 
         metadata = self.resolve_arg(args, 'metadata', {}, combine_config=True)
         self.metadata = self.cast_metadata(metadata, strict=False)
         logger.debug("metadata: %s", self.metadata)
-
 
         self.md5_caching = self.resolve_arg(args, 'md5_caching', True)
         logger.debug("md5_caching: %s", self.md5_caching)
