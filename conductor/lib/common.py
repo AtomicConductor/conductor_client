@@ -308,9 +308,23 @@ class Config():
 
 def load_resources_file():
     '''
-    Return the resource yaml file as a dict
+    Return the resource yaml file as a dict.
+    
+    If the $CONDUCTOR_RESOURCES_PATH environment variable is set, then use it
+    to find load the resource file from. Otherwise look for it in the default 
+    location.
+
+    TODO:(lws) the resource filepath should also be able to be dictated in the config
+    But can't check that here because this module (common.py) should not
+    have any imports from the conductor package, i.e. this module creates the
+    config, and therefore cannot be reliant on the config.  
     '''
-    resources_filepath = os.path.join(base_dir(), "conductor", "resources", "resources.yml")
+
+    resources_filepath = os.environ.get("CONDUCTOR_RESOURCES_PATH")
+
+    if not resources_filepath:
+        resources_filepath = os.path.join(base_dir(), "conductor", "resources", "resources.yml")
+
     with open(resources_filepath, 'r') as file_:
         return yaml.load(file_)
 
