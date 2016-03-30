@@ -179,8 +179,11 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
         Generate a list of filepaths that the current maya scene is dependent on.
         '''
-        # A dict of maya node types and their attributes to query for dependency filepaths
-        return maya_utils.collect_dependencies(maya_utils.dependency_attrs)
+        # Get all of the node types and attributes to query for external filepaths on
+        resources = common.load_resources_file()
+        dependency_attrs = resources.get("maya_dependency_attrs") or {}
+
+        return maya_utils.collect_dependencies(dependency_attrs)
 
 
     def getEnvironment(self):
@@ -339,7 +342,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args = {}
         conductor_args["cmd"] = self.generateConductorCmd()
         conductor_args["cores"] = self.getInstanceType()['cores']
-        conductor_args["env"] = self.getEnvironment()
+        conductor_args["environment"] = self.getEnvironment()
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase

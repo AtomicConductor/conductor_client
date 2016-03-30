@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import argparse
-import getpass
 import imp
+import json
 import os
 import re
 import sys
@@ -55,32 +55,36 @@ def parse_args():
     submit_parser.add_argument("--docker_image",
                                help="docker image to run render in")
 
-    submit_parser.add_argument("--env",
+    submit_parser.add_argument("--environment",
         help=(r"Specify environment variable statements to be executed on Conductor's "
              "render instance.\n\n"
              "Example:\n"
-             "\t--env PYTHONPATH=/home/user/steve/python:/home/user/marry/python\n\n"
+             "\t--environment PYTHONPATH=/home/user/steve/python:/home/user/marry/python\n\n"
 
              "Multipe environment variable statements can be made by separating them with a space:\n"
-             "\t--env PYTHONPATH=/home/user/marry PATH=/home/usr/bin\n\n"
+             "\t--environment PYTHONPATH=/home/user/marry PATH=/home/usr/bin\n\n"
 
              "Appending to Conductor's existing environment variables is also possible.  "
              "Note that the referenced environment variable is encapsulated by single quotes "
              "so that it does not get evaluated until it is executed on Conductor's render instance:\n"
-             "\t--env PYTHONPATH=/tmp:/home/user:'$PYTHONPATH'\n\n"
+             "\t--environment PYTHONPATH=/tmp:/home/user:'$PYTHONPATH'\n\n"
              "However, it may be desirable to both evaluate your local environment variable "
              "AND also append it to Conductor's own. Note that one PYTHONPATH is"
              " contained with single quotes while the other is not:\n"
-             "\t--env PYTHONPATH=/tmp:/home/user:$PYTHONPATH:'$PYTHONPATH'\n\n"
+             "\t--environment PYTHONPATH=/tmp:/home/user:$PYTHONPATH:'$PYTHONPATH'\n\n"
              "Note that the syntax for Windows clients will look different in some "
              "places, but it's important to remember that ultimately these environment "
              "variable statements will be executed on a linux platform on Conductor, "
              "which means that when referencing Conductor\'s environment variable, "
              "A dollar sign syntax must be used:\n"
-             "\t--env PYTHONPATH=\"c:\\My Documents\";%%PYTHONPATH%%;$PYTHONPATH"),
+             "\t--environment PYTHONPATH=\"c:\\My Documents\";%%PYTHONPATH%%;$PYTHONPATH"),
         nargs="*",
-        default={},
         action=ValidateArgEnv)
+
+    submit_parser.add_argument("--metadata",
+        help=("Specify metadata dictionary. Note that it's best to wrap this dictionary"
+              " in single quotes,\n e.g. --metadata '{\"project\":\"Scrooge\"}'"),
+        type=json.loads) # use the json loads function to parse dict
 
     submit_parser.add_argument("--force",
                                help="Do not check for existing uploads, force a new upload",
@@ -115,6 +119,7 @@ def parse_args():
                   '"location1" or "location2") when submitting jobs (and when '
                   'running a downloader or uploader command).'))
 
+    #  TODO: We should remove this arg
     submit_parser.add_argument("--machine_type",
                                help='Type of machine to run on ("standard", "highmem", or "highcpu")')
 
@@ -161,16 +166,19 @@ def parse_args():
                                action='store_true')
 
     submit_parser.add_argument("--upload_paths",
-                               default=[],
                                help="Paths to upload",
                                nargs="*")
 
     submit_parser.add_argument("--user",
-                               help="Username to submit as",
-                               default=getpass.getuser())
+                               help="Username to submit as")
 
     submit_parser.add_argument("--notify",
-                               help="Who to notify when job is complete")
+                               help="Who to notify when job is complete",
+                               nargs="+")
+
+    submit_parser.add_argument("--slack_notify",
+                               help="Slack recipients to notify when job is complete",
+                               nargs="+")
 
     submit_parser.add_argument("--log_level",
                                choices=loggeria.LEVELS,
