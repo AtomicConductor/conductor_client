@@ -19,6 +19,8 @@ maya_dependency_attrs:
         - filename
     aiPhotometricLight: # Arnold
         - aiFilename
+    aiStandIn: # Arnold
+        - dso
     AlembicNode: # Alembic (now maya builtin?)
         - abc_File
     CrowdProxyVRay: # Golaem
