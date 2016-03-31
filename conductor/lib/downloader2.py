@@ -469,7 +469,6 @@ class Downloader(object):
 
         # Record all of the original threads immediately so that we can monitor their state change
         self._original_threads = threading.enumerate()
-
         return thread_states
 
     def print_uptime(self):
@@ -774,7 +773,6 @@ class Downloader(object):
 
 
 
-
         # IF the daemont is terminated, clean up the active Download, resetting
         # it's status on the app
         logger.debug("Exiting thread. Cleaning up state for Download: ")
@@ -783,7 +781,6 @@ class Downloader(object):
         self.report_download_status(task_download_state)
         downloading_queue.get(block=True)
         downloading_queue.task_done()
-
 
 
 
