@@ -6,6 +6,7 @@ import os
 import platform
 import signal
 import subprocess
+import sys
 import time
 import traceback
 import base64
@@ -83,6 +84,35 @@ def dec_timer_exit(func):
         logger.info(finish_time)
         return result
     return wrapper
+
+def dec_catch_exception(raise_=False):
+
+    '''
+    DECORATOR
+    Wraps the decorated function/method so that if the function raises an
+    exception, the exception will be caught, it's message will be printed, and
+    optionally the function will return (suppressing the exception) .
+    '''
+    def catch_decorator(func):
+
+        @wraps(func)
+        def wrapper(*args, **kwds):
+            try:
+                return func(*args, **kwds)
+            except:
+                func_name = getattr(func, "__name__", "<Unknown function>")
+                stack_str = "".join(traceback.format_exception(*sys.exc_info()))
+                msg = ('\n#############################################\n'
+                       'Failed to call "%s". Caught traceback stack:\n'
+                       '%s\n'
+                       '#############################################' % (func_name, stack_str))
+                logger.error(msg)
+                if raise_:
+                    raise
+        return wrapper
+    return catch_decorator
+
+
 
 def run(cmd):
     logger.debug("about to run command: " + cmd)
