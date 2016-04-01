@@ -554,9 +554,10 @@ class Downloader(object):
         logger.debug("EXITING populate_pending_queue")
 
     def nap(self):
-        if not common.SIGINT_EXIT:
+        while not common.SIGINT_EXIT:
 #             print "Sleeping4 for %s" % self.naptime
             time.sleep(self.naptime)
+            return
 
 
 
@@ -725,11 +726,21 @@ class Downloader(object):
                 # Explicity call report_download_status to tell the app the status
                 # of the Download.  We can't always rely on the reporter in the
                 # thread because it only pings the app every x seconds.
-                if task_download_state.task_download.get("download_id"):
-                    self.report_download_status(task_download_state.task_download.get("download_id"),
-                                                task_download_state.get_entity_status(),
-                                                task_download_state.task_download.get('size'),
-                                                task_download_state.get_bytes_downloaded())
+                download_id = task_download_state.task_download.get("download_id")
+                if download_id:
+
+                    # Make sure this doesn't throw an exception. Don't want to kill the thread!!
+                    try:
+                        self.report_download_status(download_id,
+                                                    task_download_state.get_entity_status(),
+                                                    task_download_state.task_download.get('size'),
+                                                    task_download_state.get_bytes_downloaded())
+                    except:
+                        # I think the worst that could happen is that the Download
+                        # may not get it's status changed to "downloaded".  This will
+                        # eventually get cleaned up by the cron, and prompt a redownloading
+                        logger.exception("Failed to report final status for Download %s, due to error", download_id)
+
                 task_download_state.reset()
 
                 # Remove the Download from the downloading queue.
@@ -777,7 +788,7 @@ class Downloader(object):
             sleep_time = 5
             # logger.debug("sleeping6: %s", sleep_time)
             time.sleep(sleep_time)
-            
+
             # Check to make sure that that the downloader thread that this reporter thread
             # is reporting about is still alive. Otherwise exit the reporter loop
             if not downloader_thread.is_alive():
@@ -996,7 +1007,7 @@ class Downloader(object):
             logger.info('##### THREADS ALIVE #### (%s):\n\t%s', len(thread_names), "\n\t".join(thread_names))
             self._threads_alive = thread_names
         else:
-            logger.info('##### THREADS ALIVE #### [No changes]')
+            logger.info('##### THREADS ALIVE #### [No changes] (%s)', len(thread_names))
 
 
     def _print_download_history(self):
