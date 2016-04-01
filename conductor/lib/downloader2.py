@@ -366,6 +366,9 @@ class Downloader(object):
     # Record last download history
     _download_history = None
 
+    # record the original threads that started
+    _original_threads = None
+
     # record last threads alive
     _threads_alive = None
 
@@ -439,7 +442,11 @@ class Downloader(object):
         task_download_states = self.start_download_threads(self.downloading_queue, self.pending_queue)
         thread_states = {"task_downloads":task_download_states}
 
+
         self.start_summary_thread(thread_states, interval=summary_interval)
+
+        # Record all of the original threads immediately so that we can monitor their state change
+        self._original_threads = threading.enumerate()
 
         return thread_states
 
@@ -523,35 +530,37 @@ class Downloader(object):
 
         while True:
 
+            try:
 
-            # If the queue is full, then sleep
-            if pending_queue.qsize() >= self.thread_count:
-#                 logger.debug('Pending download queue is full (%s Downloads). Not adding any more Downloads' % self.thread_count)
-#                 sleep_time = 0.5
-#                 logger.debug("sleeping3: %s", sleep_time)
-#                 time.sleep(sleep_time)
-                continue
+                # If the queue is full, then sleep
+                if pending_queue.qsize() >= self.thread_count:
+    #                 logger.debug('Pending download queue is full (%s Downloads). Not adding any more Downloads' % self.thread_count)
+    #                 sleep_time = 0.5
+    #                 logger.debug("sleeping3: %s", sleep_time)
+    #                 time.sleep(sleep_time)
+                    continue
 
-            # Get the the next download
-            download = self.get_next_download()
-#             logger.debug('download: %s', download)
+                # Get the the next download
+                download = self.get_next_download()
+    #             logger.debug('download: %s', download)
 
-            # If there is not a download, then sleep
-            if not download:
-#                 logger.debug('No more downloads to queue. sleeping...')
+                # If there is not a download, then sleep
+                if not download:
+    #                 logger.debug('No more downloads to queue. sleeping...')
+                    self.nap()
+                    continue
+
+                # Ensure that this Download is not already in the pending/downloading queues
+                if _in_queue(pending_queue, download, "download_id") or  _in_queue(downloading_queue, download, "download_id"):
+                    logger.warning("Omitting Redundant Download: %s", download)
+                    continue
+
+                # Add the download to the pending queue
+                logger.debug("adding to pending queue: %s", download)
+                self.pending_queue.put(download)
+            except:
+                logger.exception("Exception occurred in QueueThead:\n")
                 self.nap()
-                continue
-
-            # Ensure that this Download is not already in the pending/downloading queues
-            if _in_queue(pending_queue, download, "download_id") or  _in_queue(downloading_queue, download, "download_id"):
-                logger.warning("Omitting Redundant Download: %s", download)
-                continue
-
-            # Add the download to the pending queue
-            logger.debug("adding to pending queue: %s", download)
-            self.pending_queue.put(download)
-
-        logger.debug("EXITING populate_pending_queue")
 
     def nap(self):
         while not common.SIGINT_EXIT:
@@ -992,6 +1001,7 @@ class Downloader(object):
                 self._print_download_history()
                 self._print_pending_queue()
                 self._print_active_downloads(thread_states)
+                self._print_dead_thread_warnings()
             except:
                 logger.exception("Failed to report Summary")
 
@@ -1001,6 +1011,7 @@ class Downloader(object):
         '''
         Print all running thread names
         '''
+
         thread_names = sorted([thead.name for thead in threading.enumerate()], key=str.lower)
         # Only print the history if it is different from before
         if thread_names != self._threads_alive:
@@ -1008,6 +1019,12 @@ class Downloader(object):
             self._threads_alive = thread_names
         else:
             logger.info('##### THREADS ALIVE #### [No changes] (%s)', len(thread_names))
+
+
+    def _print_dead_thread_warnings(self):
+        dead_threads = set(self._original_threads).difference(set(threading.enumerate()))
+        if dead_threads:
+            logger.error("#### DEAD THREADS ####   THIS SHOULD NEVER HAPPEN!\n\t%s", "\n\t".join([str(thread) for thread in dead_threads]))
 
 
     def _print_download_history(self):
@@ -1164,62 +1181,6 @@ class Downloader(object):
         table.title = "##### DOWNLOAD HISTORY ##### %s" % (("(last %s files)" % self.history_queue_max) if self.history_queue_max else "")
 
         return table.make_table_str()
-
-
-#     def construct_file_downloads_history_summary(self, file_download_history):
-#
-#         '''
-#         #### DOWNLOAD HISTORY #####
-#
-#
-#         6227709558521856 Job 08285 Task 001 20MB  CACHED /work/renders/light_v001/beauty/deep_lidar.deep.0005.exr  <timestamp>
-#         7095580349853434 Job 08285 Task 002 10MB  DL     /work/renders/spider_fly01/beauty/deep_lidar.deep.0005.exr  <timestamp>
-#         5343402947290140 Job 08284 Task 001 5MB   DL     /work/renders/light_v002/data/light_002.deep.0005.exr  <timestamp>
-#
-#         '''
-#         summary = "##### DOWNLOAD HISTORY ##### %s\n" % (("(last %s files)" % self.history_queue_max) if self.history_queue_max else "")
-#
-#         for file_download_state in file_download_history:
-#             summary += "\n%s" % self.construct_file_download_history(file_download_state)
-#
-#         summary += "\n"
-#         return summary
-
-
-
-
-
-#     def construct_file_download_history(self, file_download_state):
-#         '''
-#         6227709558521856 Job 08285 Task 001 20MB Thread-7 CACHED /work/renders/light_v001/beauty/deep_lidar.deep.0005.exr  <timestamp>  10 minutes
-#         '''
-#
-#         jid = file_download_state.file_info["job_id"]
-#         tid = file_download_state.file_info["task_id"]
-#         file_size = file_download_state.file_info["size"]
-#         thread_name = file_download_state.thread_name
-#         download_id = file_download_state.download_id
-#         filepath = file_download_state.filepath
-#
-#
-#         human_size = get_human_bytes(file_size)
-#         duration = file_download_state.get_duration()
-#         human_duration = get_human_duration(duration)
-#         human_timestamp = get_human_timestamp(file_download_state.time_completed)
-#         cached = "CACHED" if file_download_state.use_existing else "DL    "
-#
-#
-#         summary = "%s  %s  Job %s  Task %s  %s  %s  %s  %s  %s" % (human_timestamp,
-#                                                                    download_id,
-#                                                                    jid,
-#                                                                    tid,
-#                                                                    human_size.rjust(9),
-#                                                                    cached.ljust(6),
-#                                                                    human_duration,
-#                                                                    thread_name.ljust(9),
-#                                                                    filepath)
-#         return summary
-
 
 
 
