@@ -27,6 +27,7 @@ import traceback
 import urllib2
 import hashlib
 
+
 try:
     imp.find_module('conductor')
 except ImportError, e:
@@ -93,6 +94,25 @@ def dec_retry(retry_exceptions=Exception, tries=8, static_sleep=None):
             return f(*args, **kwargs)
         return retry_
     return retry_decorator
+
+
+def random_exeption(percentage_chance):
+    if random.random() < percentage_chance:
+        raise Exception("Random exception raised (%s percent chance)" % percentage_chance)
+    logger.debug("Skipped random exception (%s chance)", percentage_chance)
+
+def dec_random_exception(percentage_chance):
+    '''
+    DECORATOR for creating random exceptions for the wrapped function.
+    This is used for simluating errors to test downloader recovery behavior/robustness
+    '''
+    def catch_decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwds):
+            random_exeption(percentage_chance)
+            return func(*args, **kwds)
+        return wrapper
+    return catch_decorator
 
 
 
@@ -630,9 +650,13 @@ class Downloader(object):
         self.start_reporter_thread(task_download_state)
 
         while not common.SIGINT_EXIT:
+            task_download = None
+
             try:
-                # Get the next task download from the queue.
+                # Get the next task download from the pending queue.
                 task_download = pending_queue.get(block=True)
+
+                # Tell the pending queue that the task has been completed (to remove the task from the queue)
                 pending_queue.task_done()
 
                 # Transfer the task download into the downloading queue
@@ -647,24 +671,16 @@ class Downloader(object):
                 task_download_state.initialize(task_download)
                 task_download_state.status = TaskDownloadState.STATE_DOWNLOADING
 
-                # Explicity report the Download status (as "downloading") to the app
-                self.report_download_status(task_download_state.task_download["download_id"],
-                                            task_download_state.get_entity_status(),
-                                            task_download_state.task_download["size"],
-                                            task_download_state.get_bytes_downloaded())
+                # Explicity report the Download status (to indicate that it's now "downloading"
+                self.report_download_status(task_download_state)
 
                 output_dir = task_download['output_dir']
                 logger.info("output directory: %s", output_dir)
+
                 if self.output_dir:
                     output_dir = self.output_dir
                     logger.info("Overriding default output directory: %s", output_dir)
-            except:
-                logger.exception("Exception occurred:\n")
-                time.sleep(5)
-                continue
 
-
-            try:
 
                 for file_info in task_download['files']:
 #                     logger.debug("file_info: %s", file_info)
@@ -717,53 +733,47 @@ class Downloader(object):
 
                 # Update the status downloaded
                 task_download_state.status = TaskDownloadState.STATE_COMPLETE
-
-
-
-            except:
-                logger.exception("Failed to download Download %s", task_download.get('download_id'))
-                logger.debug("Putting Download back on queue: %s", task_download)
-                pending_queue.put(task_download)
-                self.reset_download_status(task_download_state.task_download.get('download_id'),
-                                           task_download_state.task_download.get('size'))
-
-            finally:
-
-
-
-#                 logger.debug("Finished Task Download: %s\n%s", task_download, task_download_state.task_download)
-                # Explicity call report_download_status to tell the app the status
-                # of the Download.  We can't always rely on the reporter in the
-                # thread because it only pings the app every x seconds.
-                download_id = task_download_state.task_download.get("download_id")
-                if download_id:
-
-                    # Make sure this doesn't throw an exception. Don't want to kill the thread!!
-                    try:
-                        self.report_download_status(download_id,
-                                                    task_download_state.get_entity_status(),
-                                                    task_download_state.task_download.get('size'),
-                                                    task_download_state.get_bytes_downloaded())
-                    except:
-                        # I think the worst that could happen is that the Download
-                        # may not get it's status changed to "downloaded".  This will
-                        # eventually get cleaned up by the cron, and prompt a redownloading
-                        logger.exception("Failed to report final status for Download %s, due to error", download_id)
-
-                task_download_state.reset()
-
-                # Remove the Download from the downloading queue.
+                # Remove theDownload from the downloading queue.
                 downloading_queue.get(block=False)
                 downloading_queue.task_done()
 
+
+            except:
+                if task_download:
+                    task_download_state.reset_bytes_downloaded()
+                    task_download_state.status = TaskDownloadState.STATE_ERROR
+                    logger.exception("Failed to download Download %s", task_download.get('download_id'))
+                    logger.debug("Putting Download back on queue: %s", task_download)
+                    pending_queue.put(task_download)
+
+            # Explicity call report_download_status to tell the app the status
+            # of the Download.  We can't always rely on the reporter in the
+            # thread because it only pings the app every x seconds.
+
+            # Make sure this doesn't throw an exception. Don't want to kill the thread.
+            try:
+                self.report_download_status(task_download_state)
+            except:
+                # I think the worst that could happen is that the Download
+                # may not get it's status changed to "downloaded".  This will
+                # eventually get cleaned up by the cron, and prompt a redownloading
+                download_id = task_download_state.task_download.get("download_id")
+                logger.exception("Failed to report final status for Download %s, due to error", download_id)
+
+            # Reset The task_download_state object
+            task_download_state.reset()
+
+
+
+
         # IF the daemont is terminated, clean up the active Download, resetting
         # it's status on the app
-        if common.SIGINT_EXIT:
-            logger.debug("Exiting thread. Cleaning up state for Download: ")
-            self.reset_download_status(task_download_state.task_download.get('download_id'),
-                                       task_download_state.task_download.get('size'))
-            downloading_queue.get(block=True)
-            downloading_queue.task_done()
+        logger.debug("Exiting thread. Cleaning up state for Download: ")
+        task_download_state.reset_bytes_downloaded()
+        task_download_state.status = TaskDownloadState.STATE_ERROR
+        self.report_download_status(task_download_state)
+        downloading_queue.get(block=True)
+        downloading_queue.task_done()
 
 
 
@@ -783,10 +793,7 @@ class Downloader(object):
 
                 if task_download_state.task_download != None:
                     bytes_downloaded = task_download_state.get_bytes_downloaded()
-                    response_string, response_code = self.report_download_status(task_download_state.task_download.get("download_id"),
-                                                                                task_download_state.get_entity_status(),
-                                                                                task_download_state.task_download.get('size'),
-                                                                                 bytes_downloaded)
+                    response_string, response_code = self.report_download_status(task_download_state)
             except:
                 logger.exception("failed to report download status")
 
@@ -805,6 +812,7 @@ class Downloader(object):
                              downloader_thread.name, threading.current_thread().name)
                 return
 
+#     @dec_random_exception(percentage_chance=0.05)
     @dec_retry(tries=3, static_sleep=1)
     def download_file(self, url, local_filepath, md5, file_state):
         '''
@@ -849,7 +857,7 @@ class Downloader(object):
         chmod(local_filepath, 0666)
 
 
-
+#     @dec_random_exception(percentage_chance=0.05)
     def add_to_history(self, file_download_state):
 
         self.history_queue.put(file_download_state, block=False)
@@ -860,37 +868,23 @@ class Downloader(object):
                 self.history_queue.get(block=False)
 
 
-
-
+#     @dec_random_exception(percentage_chance=0.05)
     @dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
-    def report_download_status(self, download_id, status, download_size, bytes_downloaded):
-        assert status in TaskDownloadState.ENTITY_STATES.values(), status
+    def report_download_status(self, task_download_state):
+        download_id = task_download_state.task_download.get("download_id")
         if not download_id:
             return None, None
 
         data = {'download_id': download_id,
-                'status': status,
-                'bytes_downloaded': bytes_downloaded,
-                'bytes_to_download': download_size}
+                'status': task_download_state.get_entity_status(),
+                'bytes_downloaded': task_download_state.get_bytes_downloaded(),
+                'bytes_to_download': task_download_state.task_download.get('size') or 0}
 
 #         logger.debug("data: %s", data)
 #         if data["status"] == "downloaded":
 #             print "********DOWNLOADED: %s ********************" % download_id
         return  self.api_client.make_request(self.endpoint_downloads_status,
                                                                       data=json.dumps(data))
-
-    def reset_download_status(self, download_id, download_size):
-        '''
-        Tell the app the the give Download is now in a pending state and reset
-        the bytes trasnferred to zero
-        '''
-
-        return self.report_download_status(download_id,
-                                           status="pending",
-                                           download_size=download_size,
-                                           bytes_downloaded=0)
-
-
 
     def print_summary(self, thread_states, interval):
         '''
@@ -1184,7 +1178,7 @@ class Downloader(object):
 
 
 
-
+# @dec_random_exception(percentage_chance=0.05)
 @dec_retry(tries=3, static_sleep=1)
 def delete_file(filepath):
     os.remove(filepath)
@@ -1204,7 +1198,7 @@ def prepare_dest_dirpath(dir_path):
     chmod(dir_path, 0777)
 
 
-
+# @dec_random_exception(percentage_chance=0.05)
 @dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_next_download(location, endpoint, client):
     params = {'location': location}
@@ -1234,6 +1228,7 @@ def _get_job_download(endpoint, client, jid, tid):
 
 
 
+# @dec_random_exception(percentage_chance=0.05)
 @dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def download_file(download_url, filepath, poll_rate=2, state=None):
     '''
@@ -1292,7 +1287,7 @@ def safe_mkdirs(dirpath):
 
 
 
-
+# @dec_random_exception(percentage_chance=0.05)
 def _in_queue(queue, item_dict, key):
     '''
     Helper function
@@ -1401,4 +1396,6 @@ def get_human_timestamp(seconds_since_epoch):
     convert the given seconds since epoch (float)
     '''
     return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
+
+
 
