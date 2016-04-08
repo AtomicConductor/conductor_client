@@ -137,8 +137,6 @@ class Submit():
                         "slack": self.resolve_arg(args, 'slack_notify', [], combine_config=True)}
         logger.debug("notify: %s", self.notify)
 
-        logger.debug(self.notify)
-        exit()
         logger.debug("Consumed args")
 
     @classmethod
