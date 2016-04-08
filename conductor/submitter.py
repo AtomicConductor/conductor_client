@@ -14,7 +14,8 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG
-from conductor.lib import  conductor_submit, pyside_utils, common, loggeria
+
+from conductor.lib import  conductor_submit, pyside_utils, common, loggeria, api_client
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -28,12 +29,10 @@ TODO:
 2. about menu? - provide link to studio's conductor url (via yaml config file) 
 5. consider conforming all code to camel case (including .ui widgets). 
 6. Consider adding validation to the base class so that inheritance can be used.
-7. tool tips!  - ask greg about a tool tip for "resource"
+7. tool tips for all widget fields
 8. What about the advanced options? ("Force Upload" and "Dependency Job" )
-9. what are the available commands for the "cmd" arg?  These should be documented:
-    nuke-render  (what flags are available?)
-    maya2015Render  (what flags are available?)
-10: validate resource string only [a-z0-9-]
+9. what are the available commands for the "cmd" arg?
+
 '''
 
 class ConductorSubmitter(QtGui.QMainWindow):
@@ -98,6 +97,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Populate the Instance Type combobox with the available instance configs
         self.populateInstanceTypeCmbx()
+
+        # Populate the Project combobox with customer's projects
+        self.populateProjectCmbx()
 
         # Set the default instance type
         self.setInstanceType(self.default_instance_type)
@@ -238,6 +240,16 @@ class ConductorSubmitter(QtGui.QMainWindow):
         for instance_info in instance_types:
             self.ui_instance_type_cmbx.addItem(instance_info['description'], userData=instance_info)
 
+    def populateProjectCmbx(self):
+        '''
+        Populate the project combobox with project names.  If any projects are
+        specified in the config file, then use them. Otherwise query Conductor
+        for all projects
+        '''
+        self.ui_project_cmbx.clear()
+        for project in CONFIG.get("projects") or api_client.request_projects():
+            self.ui_project_cmbx.addItem(project)
+
     def setFrameRange(self, start, end):
         '''
         Set the UI's start/end frame fields
@@ -317,18 +329,22 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         return self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex())
 
-    def setResource(self, resource_str):
+    def setProject(self, project_str):
         '''
-        Set the UI's Resource field
+        Set the UI's Project field
         '''
-        self.ui_resource_lnedt.setText(resource_str)
+        index = self.ui_project_cmbx.findText(project_str)
+        if index == -1:
+            raise Exception("Project combobox entry does not exist: %s" % project_str)
+
+        self.ui_project_cmbx.setCurrentIndex(index)
 
 
-    def getResource(self):
+    def getProject(self):
         '''
-        Return the UI's Resurce field
+        Return the UI's Projectj  field
         '''
-        return str(self.ui_resource_lnedt.text())
+        return str(self.ui_project_cmbx.currentText())
 
 
     def setOutputDir(self, dirpath):
@@ -357,62 +373,37 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         self.ui_notify_lnedt.setText(str(value))
 
-    def generateConductorArgs(self, args):
+    def generateConductorArgs(self, data):
         '''
         Return a dictionary which contains the necessary conductor argument names
         and their values.  This dictionary will ultimately be passed directly 
         into a conductor Submit object when instantiating/calling it.
         
         Generally, the majority of the values that one would populate this dictionary
-        with would be found by quering this UI, e.g.from the "frames" section.
-         
+        with would be found by quering this UI, e.g.from the "frames" section of ui.
+           
+        '''
+        conductor_args = {}
 
-        example:  TODO: Give a real example
-           {'cmd': str,
-            'cores': int,
-            'force': bool,
-            'frames': str,
-            'output_path': str,
-            'postcmd': str?,
-            'priority': int?,
-            'resource': ?,
-            'upload_file': str,
-            'upload_only': bool,
-            'upload_paths': list of str?,
-            'user': str}
-            
-        
-        TODO: flesh out the docs for each variable
-        available keys:
-            cmd: str
-            cores: int
-            force: bool
-            frames: str
-            output_path: str
-            postcmd: str?
-            priority: int?
-            resource: ?
-            upload_file: str
-            upload_only: bool
-            upload_paths: list of str?
-            user: str
+        conductor_args["cores"] = self.getInstanceType()['cores']
+        conductor_args["environment"] = self.getEnvironment()
+        conductor_args["force"] = self.getForceUploadBool()
+        conductor_args["frames"] = self.getFrameRangeString()
+        conductor_args["job_title"] = self.getJobTitle()
+        conductor_args["local_upload"] = self.getLocalUpload()
+        conductor_args["machine_type"] = self.getInstanceType()['flavor']
+        conductor_args["notify"] = self.getNotifications()
+        conductor_args["output_path"] = self.getOutputDir()
+        conductor_args["project"] = self.getProject()
+        return conductor_args
 
+    def getCommand(self):
+        '''
+        Return the command string that Conductor will execute
         '''
         class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
         message = "%s not implemented. Please override method as desribed in its docstring" % class_method
         raise NotImplementedError(message)
-
-
-    def getDockerImage(self):
-        '''
-        Return the Docker image name (str) to use on Conductor.
-        Example: "Maya2015"
-        By default, this will return the docker image that is listed in the 
-        conductor config.yml file (or None if one does not exist).
-        Child classes should override this method to return the image that 
-        is appropriate for the software context (e.g nuke or maya, etc)
-        '''
-        return CONFIG.get("docker_image")
 
 
     def getEnvironment(self):
@@ -630,7 +621,11 @@ class ConductorSubmitter(QtGui.QMainWindow):
                                                          group_name=source_filepath,
                                                          widgets=usersetting_widgets)
         except:
-            logger.exception("Unable to apply user settings:")
+            settings_filepath = pyside_utils.UiUserSettings.getSettingsFilepath(self.company_name,
+                                                                                self.__class__.__name__)
+            message = ("Unable to apply user settings. "
+                       "You may want to modify/delete settings here: %s" % settings_filepath)
+            logger.exception(message)
 
     def saveUserSettings(self):
         '''

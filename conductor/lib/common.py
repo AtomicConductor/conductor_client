@@ -201,7 +201,6 @@ class Config():
                       'thread_count': (multiprocessing.cpu_count() * 2),
                       'instance_cores': 16,
                       'instance_flavor': "standard",
-                      'resource': 'default',
                       'priority': 5,
                       'local_upload': True,
                       'md5_caching': True,

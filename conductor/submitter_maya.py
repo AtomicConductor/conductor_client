@@ -250,12 +250,15 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     def getDockerImage(self):
         '''
-        If there is a docker image in the config.yml file, then use it (the
-        parent class' method retrieves this).  Otherwise query Maya and its
-        plugins for their version information, and then query  Conductor for 
-        a docker image that meets those requirements. 
+        Return the Docker image name (str) to use on Conductor.
+        Example: "Maya2015"
+
+        If there is a docker image in the config.yml file, then use it. 
+        Otherwise query Maya and its plugins for their version information, and t
+        hen query  Conductor for  a docker image that meets those requirements. 
         '''
-        docker_image = super(MayaConductorSubmitter, self).getDockerImage()
+
+        docker_image = CONFIG.get("docker_image")
         if not docker_image:
             maya_version = maya_utils.get_maya_version()
             software_info = {"software": "maya",
@@ -337,33 +340,22 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         Override this method from the base class to provide conductor arguments that 
         are specific for Maya.  See the base class' docstring for more details.
 
-            cmd: str
-            force: bool
-            frames: str
-            output_path: str # A directory path which shares a common root with all output files.  
-            postcmd: str?
-            priority: int?
-            resource: int, core count
-            upload_file: str , the filepath to the dependency text file 
-            upload_only: bool
-            upload_paths: list of str?
-            usr: str
         '''
-        conductor_args = {}
+        # Get the core arguments from the UI via the parent's  method
+        conductor_args = super(MayaConductorSubmitter, self).generateConductorArgs(data)
+
+        # Construct the maya-specific command
         conductor_args["cmd"] = self.generateConductorCmd()
-        conductor_args["cores"] = self.getInstanceType()['cores']
+
+        # Get the maya-specific environment
         conductor_args["environment"] = self.getEnvironment()
-        conductor_args["job_title"] = self.getJobTitle()
-        conductor_args["machine_type"] = self.getInstanceType()['flavor']
+
+        # Get the maya-specific docker image
+        conductor_args["docker_image"] = self.getDockerImage()
+
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
-        conductor_args["force"] = self.getForceUploadBool()
-        conductor_args["frames"] = self.getFrameRangeString()
-        conductor_args["docker_image"] = self.getDockerImage()
-        conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["notify"] = self.getNotifications()
-        conductor_args["output_path"] = self.getOutputDir()
-        conductor_args["resource"] = self.getResource()
+
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()

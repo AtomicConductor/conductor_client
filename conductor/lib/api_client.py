@@ -109,3 +109,29 @@ def request_docker_image(software_info):
         raise Exception(msg)
     data = json.loads(response)
     return data["docker_image"]
+
+def request_projects(statuses=("active",)):
+    '''
+    Query Conductor for all client Projects that are in the given state(s)
+    '''
+    api = ApiClient()
+
+    logger.debug("statuses: %s", statuses)
+
+    uri = 'api/v1/projects/'
+
+    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False)
+    logger.debug("response: %s", response)
+    logger.debug("response: %s", response_code)
+    if response_code not in [200]:
+        msg = "Failed to get available projects from Conductor"
+        msg += "\nError %s ...\n%s" % (response_code, response)
+        raise Exception(msg)
+    projects = []
+
+    # Filter for only projects of the proper status
+    for project in json.loads(response).get("data") or []:
+        if not statuses or project.get("status") in statuses:
+            projects.append(project["name"])
+    return projects
+

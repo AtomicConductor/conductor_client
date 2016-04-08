@@ -226,12 +226,11 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
     def getDockerImage(self):
         '''
-        If there is a docker image in the config.yml file, then use it (the
-        parent class' method retrieves this).  Otherwise query Nuke and its
-        plugins for their version information, and then query  Conductor for 
-        a docker image that meets those requirements. 
+        If there is a docker image in the config.yml file, then use it.  
+        Otherwise query Nuke and its plugins for their version information, 
+        and then query  Conductor for a docker image that meets those requirements. 
         '''
-        docker_image = super(NukeConductorSubmitter, self).getDockerImage()
+        docker_image = CONFIG.get("docker_image")
         if not docker_image:
             nuke_version = nuke_utils.get_nuke_version()
             software_info = {"software": "nuke",
@@ -321,36 +320,24 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
     def generateConductorArgs(self, data):
         '''
         Override this method from the base class to provide conductor arguments that 
-        are specific for Maya.  See the base class' docstring for more details.
-        
-            cmd: str
-            force: bool
-            frames: str
-            output_path: str # The directory path that the render images are set to output to  
-            postcmd: str?
-            priority: int?
-            resource: int, core count
-            upload_file: str , the filepath to the dependency text file 
-            upload_only: bool
-            upload_paths: list of str?
-            usr: str
+        are specific for Nuke.  See the base class' docstring for more details.
         '''
-        conductor_args = {}
+
+        # Get the core arguments from the UI via the parent's  method
+        conductor_args = super(NukeConductorSubmitter, self).generateConductorArgs(data)
+
+        # Construct the nuke-specific command
         conductor_args["cmd"] = self.generateConductorCmd()
-        conductor_args["cores"] = self.getInstanceType()['cores']
-        conductor_args["environment"] = self.getEnvironment()
-        conductor_args["job_title"] = self.getJobTitle()
-        conductor_args["machine_type"] = self.getInstanceType()['flavor']
+
+        # Get the nuke-specific docker image
+        conductor_args["docker_image"] = self.getDockerImage()
+
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
-        conductor_args["force"] = self.getForceUploadBool()
-        conductor_args["frames"] = self.getFrameRangeString()
-        conductor_args["docker_image"] = self.getDockerImage()
-        conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["notify"] = self.getNotifications()
-        conductor_args["output_path"] = data["output_path"]
-        conductor_args["resource"] = self.getResource()
+
+
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
+
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
 

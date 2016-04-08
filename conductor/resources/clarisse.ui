@@ -169,7 +169,7 @@
        <item>
         <widget class="QWidget" name="ui_resource_wgt" native="true">
          <property name="toolTip">
-          <string>[optional] Specify a resource string to associate the Conductor job with</string>
+          <string>[optional] Specify a  project name to associate the Conductor job with.  Allocating Jobs to different projects allows for additional flexiblity when filtering billing data, deleting storage, and setting persmissions. If no project is specified, the job will be associated with the &quot;default&quot; project.</string>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_10">
           <property name="margin">
@@ -178,12 +178,12 @@
           <item>
            <widget class="QLabel" name="label_6">
             <property name="text">
-             <string>Resource</string>
+             <string>Project</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="ui_resource_lnedt"/>
+           <widget class="QLineEdit" name="ui_project_lnedt"/>
           </item>
          </layout>
         </widget>

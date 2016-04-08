@@ -37,7 +37,6 @@ class Submit():
 
 
     def __init__(self, args):
-        logger.debug("Init Submit")
         self.timeid = int(time.time())
         self.consume_args(args)
         self.validate_args()
@@ -113,8 +112,8 @@ class Submit():
         self.priority = self.resolve_arg(args, 'priority', 5)
         logger.debug("priority: %s", self.priority)
 
-        self.resource = self.resolve_arg(args, 'resource', "")
-        logger.debug("resource: %s", self.resource)
+        self.project = self.resolve_arg(args, 'project', "")
+        logger.debug("project: %s", self.project)
 
         self.upload_file = self.resolve_arg(args, 'upload_file', "")
         logger.debug("upload_file: %s", self.upload_file)
@@ -265,6 +264,7 @@ class Submit():
         submit_dict['job_title'] = self.job_title
         submit_dict['notify'] = self.notify
         submit_dict['metadata'] = self.metadata
+        submit_dict['project'] = self.project
 
         if upload_files:
             submit_dict['upload_files'] = upload_files
@@ -282,8 +282,7 @@ class Submit():
                                 'instance_type':'n1-standard-1'})
         else:
 
-            submit_dict.update({'resource':self.resource,
-                                'frame_range':self.frames,
+            submit_dict.update({'frame_range':self.frames,
                                 'command':self.command,
                                 'cores':self.cores,
                                 'machine_flavor':self.machine_flavor})
@@ -354,7 +353,7 @@ class Submit():
                              "database_filepath":self.database_filepath,
                              "md5_caching": self.md5_caching}
             uploader_ = uploader.Uploader(uploader_args)
-            upload_error_message = uploader_.handle_upload_response(upload_files)
+            upload_error_message = uploader_.handle_upload_response(self.project, upload_files)
             if upload_error_message:
                 raise Exception("Could not upload files:\n%s" % upload_error_message)
             # Get the resulting dictionary of the file's and their corresponding md5 hashes
