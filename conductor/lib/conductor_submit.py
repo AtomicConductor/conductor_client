@@ -143,6 +143,7 @@ class Submit():
         logger.debug(self.notify)
         exit()
 
+
         logger.debug("Consumed args")
 
     @classmethod
@@ -284,6 +285,7 @@ class Submit():
         submit_dict['metadata'] = self.metadata
         submit_dict['project'] = self.project
         submit_dict['upload_size'] = upload_size
+
 
         if upload_files:
             submit_dict['upload_files'] = upload_files

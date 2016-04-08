@@ -499,7 +499,11 @@
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
+<<<<<<< HEAD
                 <property name="isFileUserPref" stdset="0">
+=======
+                <property name="isUserSetting" stdset="0">
+>>>>>>> 9f1eb03... project argument
                  <bool>true</bool>
                 </property>
                </widget>
@@ -928,6 +932,10 @@ tasks before deciding to execute the job's remaining tasks.
      </widget>
     </item>
    </layout>
+   <zorder>widget_4</zorder>
+   <zorder>tabWidget</zorder>
+   <zorder>widget_6</zorder>
+   <zorder>ui_submit_pbtn</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

@@ -276,7 +276,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                 "dependencies":dependencies,
                 "enforced_md5s":enforced_md5s}
 
-
     def getJobTitle(self):
         '''
         Generate and return the title to be given to the job.  This is the title

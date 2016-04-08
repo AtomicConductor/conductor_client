@@ -16,8 +16,12 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG
+<<<<<<< HEAD
 
 from conductor.lib import  conductor_submit, pyside_utils, common, api_client, loggeria, package_utils
+=======
+from conductor.lib import  conductor_submit, pyside_utils, common, api_client
+>>>>>>> 9f1eb03... project argument
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -39,6 +43,10 @@ TODO:
 5. consider conforming all code to camel case (including .ui widgets). 
 6. Consider adding validation to the base class so that inheritance can be used.
 7. tool tips for all widget fields
+<<<<<<< HEAD
+=======
+8. What about the advanced options? ("Force Upload" and "Dependency Job" )
+>>>>>>> 9f1eb03... project argument
 9. what are the available commands for the "cmd" arg?
 
 '''
@@ -213,6 +221,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         self.ui_packages_splitter.setStretchFactor(0, 1)
         self.ui_packages_splitter.setStretchFactor(1, 2)
+
 
         # Hide the widget that holds advanced settings. TODO: need to come back to this.
         self.ui_advanced_wgt.hide()
@@ -516,6 +525,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex())
 
     def setProject(self, project_str, strict=True):
+
         '''
         Set the UI's Project field
         '''
@@ -525,6 +535,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             logger.warning(msg)
             if strict:
                 raise Exception(msg)
+
 
         self.ui_project_cmbx.setCurrentIndex(index)
 
@@ -560,7 +571,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         Set the UI's Notification field to the given value
         '''
         self.ui_notify_lnedt.setText(str(value))
-
 
     def getScoutJobCheckbox(self):
         '''
@@ -598,6 +608,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         conductor_args["project"] = self.getProject()
         conductor_args["scout_frames"] = self.getScoutFrames()
         conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
+
         return conductor_args
 
     def getCommand(self):
@@ -851,6 +862,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             self.prefs.loadSubmitterUserPrefs(source_filepath)
         except:
             settings_filepath = self.prefs.getSettingsFilepath()
+
             message = ("Unable to apply user settings. "
                        "You may want to modify/delete settings here: %s" % settings_filepath)
             logger.exception(message)
