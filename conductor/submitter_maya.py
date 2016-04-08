@@ -186,6 +186,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return maya_utils.collect_dependencies(dependency_attrs)
 
 
+
     def getEnvironment(self):
         '''
         Return a dictionary of environment variables to use for the Job's
@@ -229,6 +230,15 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Process all of the dependendencies. This will create a dictionary of dependencies, and whether they are considred Valid or not (bool)
         dependencies = file_utils.process_dependencies(raw_dependencies)
 
+
+        # If the renderer is arnold and "use .tx files is enabled", then add corresponding tx files.
+        # TODO:(lws) This process shouldn't happen here. We can't keep tacking on things for random
+        # software-specific behavior. We're going to need start seperating behavior via classes (perhaps
+        # one for each renderer type?)
+        if maya_utils.is_arnold_renderer() and maya_utils.is_arnold_tx_enabled():
+            tx_filepaths = file_utils.get_tx_paths(dependencies.keys(), existing_only=True)
+            processed_tx_filepaths = file_utils.process_dependencies(tx_filepaths)
+            dependencies.update(processed_tx_filepaths)
 
         raw_data = {"dependencies":dependencies}
 

@@ -173,13 +173,11 @@ def get_render_file_prefix():
     need to be updated to properly query those renderers' information. 
     '''
 
-    renderer = cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
-
     # Use the render globals node/attr by default
     prefix_node_attr = "defaultRenderGlobals.imageFilePrefix"
 
-    # If the active renderer is vray, then use the vray node
-    if "vray" in renderer:
+    # If the active renderer is vray, then use the vray node for the file prefix
+    if is_vray_renderer():
         prefix_node_attr = "vraySettings.fileNamePrefix"
 
     # If the node doesn't exist, log an error. We could raise this as an exception,
@@ -432,4 +430,138 @@ def parse_ocio_config(config_file):
     config_path = os.path.dirname(config_file)
     print("Adding LUT config path %s" % config_path + "/" + contents['search_path'])
     return config_path + "/" + contents['search_path']
+
+
+def get_current_renderer():
+    '''
+    Return the name of the current renderer for the maya scene.
+    e.g. 'vray' or 'arnold', etc
+    '''
+    return cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
+
+
+def is_arnold_renderer():
+    '''
+    Return boolean to indicat whether arnold is the current renderer for the maya
+    scene
+    '''
+    return get_current_renderer() in ["arnold"]
+
+
+def is_vray_renderer():
+    '''
+    Return boolean to indicat whether vray is the current renderer for the maya
+    scene
+    '''
+    return get_current_renderer() in ["vray"]
+
+
+def get_mayasoftware_settings_node(strict=True):
+    '''
+    Return the renderGlobals node in the maya scene.  If strict is True, and 
+    no node is found, raise an exception.
+    '''
+    node_type = "renderGlobals"
+    default_name = "defaultRenderGlobals"
+    mayasoftware_nodes = get_node_by_type(node_type, must_exist=strict, many=True)
+    return _get_one_render_node(node_type, mayasoftware_nodes, default_name)
+
+def get_vray_settings_node(strict=True):
+    '''
+    Return the VRaySettingsNode node in the maya scene.  If strict is True, and 
+    no node is found, raise an exception.
+    '''
+    node_type = "VRaySettingsNode"
+    default_name = "vraySettings"
+    vray_nodes = get_node_by_type(node_type, must_exist=strict, many=True)
+    return _get_one_render_node(node_type, vray_nodes, default_name)
+
+
+def get_arnold_settings_node(strict=True):
+    '''
+    Return the aiOptions node in the maya scene.  If strict is True, and 
+    no node is found, raise an exception.
+    '''
+    node_type = "aiOptions"
+    default_name = "defaultArnoldRenderOptions"
+    arnold_nodes = get_node_by_type(node_type, must_exist=strict, many=True)
+    return _get_one_render_node(node_type, arnold_nodes, default_name)
+
+
+def _get_one_render_node(node_type, render_settings_nodes, default_name):
+    '''
+    helper function to return one node of the given render_settings_nodes.
+    
+    If more than on node exists, use the one that has the default name. Otherwise
+    throw an exception. This is really just a temporary hack until we can figure
+    out (decisively via an api call) as to which node is the active render node
+    for the maya scene.
+    '''
+    if not render_settings_nodes:
+        return ""
+
+    if len(render_settings_nodes) > 1:
+        if default_name not in render_settings_nodes:
+            raise Exception("Multiple %s nodes found in maya scene: %s" %
+                            (node_type, render_settings_nodes))
+        return default_name
+
+    return render_settings_nodes[0]
+
+
+def get_render_settings_node(renderer_name, strict=True):
+    '''
+    return the name of the renderer's settings node.
+    e.g. "defaultRenderGlobals" or "vraySettings" or "defaultArnoldRenderOptions"
+    '''
+    renderer_settings_gettr = {"vray": get_vray_settings_node,
+                               "arnold": get_arnold_settings_node,
+                               "mayaSoftware": get_mayasoftware_settings_node}
+
+    if renderer_name not in renderer_settings_gettr and strict:
+        raise Exception("Renderer not supported: %s", renderer_name)
+
+    return renderer_settings_gettr[renderer_name](strict=strict)
+
+
+
+def is_arnold_tx_enabled():
+    '''
+    Return True if the "Use Existing .tx Textures" option is enabled in Arnolds
+    render settings
+    '''
+    arnold_node = get_arnold_settings_node(strict=False)
+    if arnold_node:
+        return cmds.getAttr("%s.use_existing_tiled_textures" % arnold_node)
+
+
+
+def get_node_by_type(node_type, must_exist=True, many=False):
+    '''
+    For the given node type, return the one node found in the maya scene of that
+    type. If many is True, allow more than one to be returned, otherwise raise
+    an exception if more than one is found. If must_exist is True, raise an
+    exception if no nodes are found in the maya scene. 
+    '''
+
+    nodes = cmds.ls(type=node_type) or []
+    if not nodes and must_exist:
+        raise Exception("No %s nodes found in maya scene." % node_type)
+
+
+    if (len(nodes) > 1) and not many:
+        raise Exception("More than one %s node found in maya scene: %s" % (node_type, nodes))
+
+    # If many are allowed, return a list of all nodes (possibly empty list)
+    if many:
+        return nodes
+
+    # Otherwise return a single value
+
+    # if there is a value in the list, then return it
+    if nodes:
+        return nodes[0]
+
+    # Otherwise return an empty string
+    return ""
 
