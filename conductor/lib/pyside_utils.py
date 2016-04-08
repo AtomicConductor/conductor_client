@@ -378,8 +378,6 @@ def _get_child_tree_items(tree_widget_item):
     return nodes
 
 
-
-
 class WidgetGettrSettr(object):
     '''
     Provides  getter/setter functionality for QWidgets, making it easier to read/load
