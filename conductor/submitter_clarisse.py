@@ -271,7 +271,7 @@ class ClarisseConductorSubmitter(object):
             output_path: str # The directory path that the render images are set to output to  
             postcmd: str?
             priority: int?
-            resource: int, core count
+            project: str
             skip_time_check: bool?
             upload_dependent: int? jobid?
             upload_file: str , the filepath to the dependency text file 
@@ -287,7 +287,7 @@ class ClarisseConductorSubmitter(object):
         conductor_args["force"] = False
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["output_path"] = data["output_path"]
-        conductor_args["resource"] = str(self.ui.ui_resource_lnedt.text())
+        conductor_args["project"] = str(self.ui.ui_project_lnedt.text())
         conductor_args["docker_image"] = "clarisse2.0"
         conductor_args["upload_only"] = self.ui.ui_upload_only.isChecked()
         conductor_args["job_title"] = "clarisse %s %s" % (data['scene_file'], self.getImages())

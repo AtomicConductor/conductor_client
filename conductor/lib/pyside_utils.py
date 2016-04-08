@@ -315,6 +315,21 @@ class UiUserSettings(object):
 
 
     @classmethod
+    def getSettingsFilepath(cls, company_name, application_name):
+        '''
+        Return the filepath to the QSettings file
+        '''
+        qsettings = cls.getQSettings(company_name, application_name)
+        return qsettings.fileName()
+
+    @classmethod
+    def getQSettings(cls, company_name, application_name):
+        '''
+        Return the QSettings object fof the given company and application
+        '''
+        return QtCore.QSettings(company_name, application_name)
+
+    @classmethod
     def loadUserSettings(cls, company_name, application_name, group_name, widgets):
         '''
         Load user settings for the given group that are found in the qt prefs file. 
@@ -332,7 +347,7 @@ class UiUserSettings(object):
         
         widgets: list of Qt Widget objects to have settings loaded for.
         '''
-        qsettings = QtCore.QSettings(company_name, application_name)
+        qsettings = cls.getQSettings(company_name, application_name)
 
         logger.debug("Loading settings for: %s", group_name)
         group_name = cls.encodeGroupName(group_name)
@@ -449,7 +464,7 @@ class UiUserSettings(object):
         for widget in widgets:
             if widget.objectName() == widget_name:
                 return widget
-        raise Exception("Expected widget %s not found: %s" % widget_name)
+        raise Exception("Expected widget not found: %s" % widget_name)
 
     @classmethod
     def getLineEditValue(cls, lineedit):
