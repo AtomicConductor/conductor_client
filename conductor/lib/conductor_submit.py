@@ -87,6 +87,9 @@ class Submit():
         self.frames = self.resolve_arg(args, 'frames', "")
         logger.debug("frames: %s", self.frames)
 
+        self.test_frames = self.resolve_arg(args, 'test_frames', "")
+        logger.debug("test_frames: %s", self.test_frames)
+
         self.job_title = self.resolve_arg(args, 'job_title', "")
         logger.debug("job_title: %s", self.job_title)
 
@@ -120,6 +123,9 @@ class Submit():
 
         self.upload_only = self.resolve_arg(args, 'upload_only', False)
         logger.debug("upload_only: %s", self.upload_only)
+
+        self.max_instances = self.resolve_arg(args, 'max_instances', 0)
+        logger.debug("max_instances: %s", self.max_instances)
 
         self.upload_paths = self.resolve_arg(args, 'upload_paths', [], combine_config=True)
         logger.debug("upload_paths: %s", self.upload_paths)
@@ -240,6 +246,12 @@ class Submit():
         if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
 
+        rx_number = "\d+"  # The "number" building block, eg.  acceptes 1001, or 1, or 002
+        rx_step = "x\d"  # the "step" building block, e.g. accepts x1000, or x1, or x002
+        rx_range_w_step = r"(?:%s-%s(?:%s)?)+" % (rx_number, rx_number, rx_step)  # the "range w option step" building block, e.g 100-100, or 100-100x3, oor
+        rx_validation = "((%s|%s), +)+" % (rx_number, rx_range_w_step)  # The final regex which uses a space and comma as a delimeter between multiple frame strings
+
+
 
     def send_job(self, upload_files):
         '''
@@ -293,6 +305,9 @@ class Submit():
                 submit_dict['output_path'] = self.output_path
             if self.environment:
                 submit_dict['environment'] = self.environment
+            if self.max_instances:
+                submit_dict['max_instances'] = int(self.max_instances)
+            submit_dict['test_frames'] = self.test_frames
 
 
         logger.debug("send_job JOB ARGS:")
