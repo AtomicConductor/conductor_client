@@ -155,6 +155,13 @@ def parse_args():
     submit_parser.add_argument("--project",
                                help='The name of the project to submit the job. This will default to "default"')
 
+    submit_parser.add_argument("--software_package_ids",
+                               help=('The ids for the software packages to use for the submitted '
+                                     'job, e.g. maya or nuke. Packages are identified '
+                                     'by their ID number, which can be queried from '
+                                     'Conductor\'s "web api"'),
+                               nargs="*")
+
     submit_parser.add_argument("--job_title",
                                help=("The title to name the job.  This is the title "
                                      "that will be displayed in the web ui"))

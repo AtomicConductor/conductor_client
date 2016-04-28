@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>418</width>
-    <height>472</height>
+    <width>360</width>
+    <height>455</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -129,7 +129,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="ui_tabwgt">
       <property name="cursor">
        <cursorShape>ArrowCursor</cursorShape>
       </property>
@@ -160,7 +160,7 @@
       <property name="movable">
        <bool>false</bool>
       </property>
-      <widget class="QWidget" name="general_tab">
+      <widget class="QWidget" name="ui_general_tab">
        <attribute name="title">
         <string>General</string>
        </attribute>
@@ -674,6 +674,198 @@
               </size>
              </property>
             </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="ui_software_versions_tab">
+       <property name="toolTip">
+        <string>Job Software:
+When submitting a job, it's important to indicate which software packages the job requires.
+These are the software packages that will be made available when the job is run.
+If this is not indicated correctly, the job will likely fail or malfunction.
+Choose software packages from the &quot;Available Software&quot; list on the right and add them to your Job's packages (on the left).
+You will likely need to have a package for your host software (Maya, Nuke, etc), and potentially any plugins (Vray, Arnold, etc).</string>
+       </property>
+       <attribute name="title">
+        <string>Job Software</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_12">
+        <item>
+         <widget class="QWidget" name="widget" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_13">
+           <item>
+            <widget class="QSplitter" name="ui_packages_splitter">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="handleWidth">
+              <number>8</number>
+             </property>
+             <widget class="QWidget" name="widget_3" native="true">
+              <layout class="QVBoxLayout" name="verticalLayout_14">
+               <property name="margin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_9">
+                 <property name="text">
+                  <string>Job Software</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QTreeWidget" name="ui_job_software_trwgt">
+                 <property name="styleSheet">
+                  <string notr="true"/>
+                 </property>
+                 <property name="selectionMode">
+                  <enum>QAbstractItemView::ExtendedSelection</enum>
+                 </property>
+                 <property name="indentation">
+                  <number>5</number>
+                 </property>
+                 <property name="sortingEnabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="headerHidden">
+                  <bool>true</bool>
+                 </property>
+                 <column>
+                  <property name="text">
+                   <string notr="true">1</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+               <item>
+                <widget class="QWidget" name="widget_10" native="true">
+                 <layout class="QVBoxLayout" name="verticalLayout_10">
+                  <property name="leftMargin">
+                   <number>6</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>6</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QPushButton" name="ui_auto_detect_pbtn">
+                    <property name="toolTip">
+                     <string>Auto-detect and populate the software packages that should be used for your job</string>
+                    </property>
+                    <property name="text">
+                     <string>Refresh Auto Detect</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QWidget" name="widget_11" native="true">
+                    <layout class="QHBoxLayout" name="horizontalLayout_2">
+                     <property name="margin">
+                      <number>0</number>
+                     </property>
+                     <item>
+                      <widget class="QPushButton" name="ui_remove_selected_pbtn">
+                       <property name="toolTip">
+                        <string>Remove selected packages from the Job Software pane.</string>
+                       </property>
+                       <property name="text">
+                        <string>Remove Selected</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="ui_find_pbtn">
+                       <property name="toolTip">
+                        <string>Find and highlight any selected Job packages in the &quot;Available Software&quot; pane.</string>
+                       </property>
+                       <property name="text">
+                        <string>Find &gt;</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="widget_9" native="true">
+              <property name="toolTip">
+               <string>Available Software:
+A list of software packages that can be made available for your job.
+Select desired packages from this list and add them to your Job (on the left).</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_11">
+               <property name="margin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_8">
+                 <property name="text">
+                  <string>Available Software</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QTreeWidget" name="ui_software_versions_trwgt">
+                 <property name="styleSheet">
+                  <string notr="true">/* font: 75 10pt; */</string>
+                 </property>
+                 <property name="selectionMode">
+                  <enum>QAbstractItemView::ExtendedSelection</enum>
+                 </property>
+                 <property name="sortingEnabled">
+                  <bool>true</bool>
+                 </property>
+                 <column>
+                  <property name="text">
+                   <string>Software Name</string>
+                  </property>
+                 </column>
+                 <column>
+                  <property name="text">
+                   <string>Software Version</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="ui_show_all_versions_chkbx">
+                 <property name="toolTip">
+                  <string>Display all versions of software available.
+When this is off, only software packages of a detected version are displayed.</string>
+                 </property>
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text">
+                  <string>Show all versions</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="ui_add_to_job_pbtn">
+                 <property name="toolTip">
+                  <string>Add the selected software packages (from the right panel) to the Job's software packages (the left panel).</string>
+                 </property>
+                 <property name="text">
+                  <string>Add selected to Job</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </widget>
            </item>
           </layout>
          </widget>
