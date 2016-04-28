@@ -118,6 +118,9 @@ class Submit():
         self.scout_frames = self.resolve_arg(args, 'scout_frames', "")
         logger.debug("scout_frames: %s", self.scout_frames)
 
+        self.software_package_ids = self.resolve_arg(args, 'software_package_ids', [], combine_config=True)
+        logger.debug("software_package_ids: %s", self.software_package_ids)
+
         self.upload_file = self.resolve_arg(args, 'upload_file', "")
         logger.debug("upload_file: %s", self.upload_file)
 
@@ -129,6 +132,7 @@ class Submit():
 
         self.upload_paths = self.resolve_arg(args, 'upload_paths', [], combine_config=True)
         logger.debug("upload_paths: %s", self.upload_paths)
+
 
         self.user = self.resolve_arg(args, 'user', getpass.getuser())
         logger.debug("user: %s", self.user)
@@ -307,7 +311,13 @@ class Submit():
                 submit_dict['environment'] = self.environment
             if self.max_instances:
                 submit_dict['max_instances'] = int(self.max_instances)
-            submit_dict['scout_frames'] = self.scout_frames
+            if self.software_package_ids:
+                submit_dict['software_package_ids'] = self.software_package_ids
+            if self.scout_frames:
+                submit_dict['scout_frames'] = self.scout_frames
+
+
+
 
 
         logger.debug("send_job JOB ARGS:")

@@ -1,3 +1,5 @@
+import collections
+from pprint import pformat
 import logging
 import os
 import operator
@@ -15,7 +17,7 @@ except ImportError, e:
 
 from conductor import CONFIG
 
-from conductor.lib import  conductor_submit, pyside_utils, common, loggeria, api_client
+from conductor.lib import  conductor_submit, pyside_utils, common, api_client, loggeria, package_utils
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -33,7 +35,6 @@ TODO:
 5. consider conforming all code to camel case (including .ui widgets). 
 6. Consider adding validation to the base class so that inheritance can be used.
 7. tool tips for all widget fields
-8. What about the advanced options? ("Force Upload" and "Dependency Job" )
 9. what are the available commands for the "cmd" arg?
 
 '''
@@ -64,6 +65,12 @@ class ConductorSubmitter(QtGui.QMainWindow):
     default_instance_type = 16
 
     link_color = "rgb(200,100,100)"
+
+    software_packages = None
+
+    product = None
+
+    _job_software_tab_idx = 2
 
     def __init__(self, parent=None):
         '''
@@ -104,11 +111,18 @@ class ConductorSubmitter(QtGui.QMainWindow):
         # Populate the Instance Type combobox with the available instance configs
         self.populateInstanceTypeCmbx()
 
-        # Set the default instance type
-        self.setInstanceType(self.default_instance_type)
+        # Populate the software versions tree widget
+        self.populateSoftwareVersionsTrWgt()
+
+        self.filterPackages(show_all_versions=self.ui_show_all_versions_chkbx.isChecked())
+
+        self.autoDetectSoftware()
 
         # Populate the Project combobox with customer's projects
         self.populateProjectCmbx()
+
+        # Set the default instance type
+        self.setInstanceType(self.default_instance_type)
 
         # Set the default project by querying the config
         default_project = CONFIG.get('project')
@@ -125,6 +139,20 @@ class ConductorSubmitter(QtGui.QMainWindow):
         # Apply the user settings for scout job use
         self.LoadScoutJobCheckboxPreference()
 
+        # Hide find button (until maybe a later release TODO:(LWS) Come back to this
+        self.ui_find_pbtn.hide()
+
+        # Connect context menu for job software treewidget
+        self.ui_job_software_trwgt.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui_job_software_trwgt.customContextMenuRequested.connect(self.openJobTreeMenu)
+
+        # Connect context menu for available software treewidget
+        self.ui_software_versions_trwgt.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui_software_versions_trwgt.customContextMenuRequested.connect(self.openAvailableTreeMenu)
+
+        self.ui_packages_splitter.setStretchFactor(0, 1)
+        self.ui_packages_splitter.setStretchFactor(1, 2)
+
         # Hide the widget that holds advanced settings. TODO: need to come back to this.
         self.ui_advanced_wgt.hide()
 
@@ -132,7 +160,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         self._addExtendedWidget()
 
         # shrink UI to be as small as can be
-        self.adjustSize()
+#         self.adjustSize()
 
         # Set the keyboard focus on the frame range radio button
         self.ui_start_end_rdbtn.setFocus()
@@ -405,7 +433,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             msg = "Project combobox entry does not exist: %s" % project_str
             logger.warning(msg)
             if strict:
-                raise Exception()
+                raise Exception(msg)
 
         self.ui_project_cmbx.setCurrentIndex(index)
 
@@ -478,6 +506,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
         conductor_args["scout_frames"] = self.getScoutFrames()
+        conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
         return conductor_args
 
     def getCommand(self):
@@ -488,16 +517,40 @@ class ConductorSubmitter(QtGui.QMainWindow):
         message = "%s not implemented. Please override method as desribed in its docstring" % class_method
         raise NotImplementedError(message)
 
+    def getDockerImage(self):
+        '''
+        Return the Docker image name to use on Conductor.
+
+        If there is a docker image in the config.yml file, then use it.
+        '''
+
+        return CONFIG.get("docker_image")
 
     def getEnvironment(self):
         '''
         Return a dictionary of environment variables to use for the Job's
-        environment
+        environment. Merge any environment settings defined in the config with 
+        the environment of the packages that the user has selected.
         '''
         #  Get any environment variable settings from config.yml
-        environment = CONFIG.get("environment") or {}
-        assert isinstance(environment, dict), "Not a dictionary: %s" % environment
-        return environment
+        config_environment = CONFIG.get("environment") or {}
+        assert isinstance(config_environment, dict), "Not a dictionary: %s" % config_environment
+        selected_packages = self.getJobPackages()
+        return package_utils.merge_package_environments(selected_packages,
+                                                        base_env=config_environment)
+
+    def getSoftwarePackageIds(self):
+        '''
+        Return the software packages that the submitted job will have access to
+        when running.  These packages are referred to by their ids. Merge the 
+        any packages that are defined in the config with those that are selected
+        by the user. 
+        '''
+        config_package_ids = CONFIG.get("software_package_ids") or []
+        assert isinstance(config_package_ids, list), "Not a list: %s" % config_package_ids
+        selected_package_ids = [package["package_id"] for package in self.getJobPackages()]
+        return list(set(config_package_ids + selected_package_ids))
+
 
     def getForceUploadBool(self):
         '''
@@ -592,7 +645,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
         is also an available/appropriate methodology.  
         
         '''
-
+        if not self.validateJobPackages():
+            return
         data = self.runPreSubmission()
         response_code, response = self.runConductorSubmission(data)
         self.runPostSubmission(response_code)
@@ -632,6 +686,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
             self.setOutputDir(dirpath)
 
     def getFrameRangeString(self):
+        '''
+        Construct the frameRange string for the frames argument
+        '''
         if self.ui_start_end_rdbtn.isChecked():
             return "%s-%sx%s" % (self.getStartFrame(), self.getEndFrame(), self.getStepFrame())
         else:
@@ -929,6 +986,529 @@ class ConductorSubmitter(QtGui.QMainWindow):
         if use_scout_frames != None:
             self.setScoutJobCheckbox(bool(use_scout_frames))
 
+
+
+    ###########################################################################
+    #  SOFTWARE PACKAGES
+    ###########################################################################
+
+
+    def getHostProductInfo(self):
+        raise NotImplementedError
+
+
+    def getPluginsProductInfo(self):
+        return []
+
+    def introspectSoftwareInfo(self):
+        host_product_info = self.getHostProductInfo()
+        assert host_product_info, "No host product info retrieved"
+        plugin_products_info = self.getPluginsProductInfo()
+        return [host_product_info] + plugin_products_info
+
+    def autoDetectSoftware(self):
+        '''
+        Of the given packages, return the packages that match
+
+        1. host software
+        2. plugins
+            - renderer
+            - others
+        '''
+
+        self.ui_job_software_trwgt.clear()
+        tree_packages = self.getTreeItemPackages().values()
+
+        softwares_info = self.introspectSoftwareInfo()
+
+
+
+        matched_packages = []
+        unmatched_software = []
+        for software_info in softwares_info:
+#             package_item = self.getBestPackage(software_info, tree_packages)
+            package_id = software_info.get("package_id")
+            package = self.software_packages.get(package_id)
+            if not package:
+                unmatched_software.append(software_info)
+            else:
+                matched_packages.append(package)
+
+
+        self.populateJobSoftwareTrwgt(matched_packages)
+
+        if unmatched_software:
+            msg = "Could not match software info: \n\t%s" % ("\n\t".join([pformat(s) for s in unmatched_software]))
+            logger.warning(msg)
+            package_strs = ["- %s: %s %s" % (p["product"], p["version"], "(for %s: %s)" % (p["host_product"], p["host_version"]) if p.get("host_product") else "")
+                            for p in unmatched_software]
+            msg = "The following software packages could not be auto matched:\n  %s" % "\n  ".join(package_strs)
+            msg += '\n\nManually add desired software packages in the "Job Software" tab'
+
+            title = "Job Submission Failure"
+            pyside_utils.launch_error_box(title, msg, parent=self)
+            self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
+
+    ###########################################################################
+    ######################  AVAILABLE SOFTWARE TREEWIDGET  - self.ui_software_versions_trwgt
+    ###########################################################################
+
+    @QtCore.Slot(name="on_ui_add_to_job_pbtn_clicked")
+    def on_ui_add_to_job_pbtn_clicked(self):
+        self._availableAddSelectedItems()
+        self.validateJobPackages()
+
+
+    @QtCore.Slot(name="on_ui_show_all_versions_chkbx_clicked")
+    def on_ui_show_all_versions_chkbx_clicked(self):
+
+        self.filterPackages(show_all_versions=self.ui_show_all_versions_chkbx.isChecked())
+
+
+
+
+    def populateSoftwareVersionsTrWgt(self):
+        '''
+        Populate the QTreeWidget with all of the available software packages
+        
+        This is a little tricky because packages can be plugins of other packages, 
+        and we want to represent that relations (via nesting).  We also want
+        to group packages that are of the same type (and have them be able to
+        expand/collpase that group.
+        
+        
+        Here is an example hierarchy:
+       
+            maya  # The group for all maya version packages
+                |
+                |_maya 2014 SP1  # The actual package
+                        |
+                        |_vray  # The group for all vray packages (for maya 2014 SP1)
+                                |
+                                |_vray 1.2.4 # The actual package
+                        |
+                        |_arnold # The group for all arnold packages (for maya 2014 sp1)
+                                |
+                                |_arnold 2.73.1 # The actual package                            
+                |                                
+                |_maya 2014 SP2  # The actual package
+                        |
+                        |_vray  # The group for all vray packages (for maya 2014 SP2)
+                                |
+                                |_vray 1.2.4   # The actual package
+                        |
+                        |_arnold # The group for all Arnold packages (for maya 2014 SP2)
+                                |
+                                |_arnold 2.73.1  # The actual package
+                                 
+        
+        
+        A package's data structure may look like this:
+        
+           {"package_id": "6b24ca0ea1085ebad536c18307192dce"
+            "product": "maya",
+            "major_version": "2015",
+            "minor_version": "SP3",
+            "release_version": "",
+            "build_version": "",
+            "plugin_host_product": "",
+            "plugin_host_version": "",
+            "plugin_hosts": [],
+            "plugins": [  "8ac98ef9362171a889c5ac8dca8a2a47",
+                          "03be394b4f84ec9a0d86e4b6f5f3fe26",
+                          "86779e759adcbbd38e1d058125ace737"]}
+
+        '''
+        self.ui_software_versions_trwgt.clear()
+
+        # Query Conductor for all of it's software packages
+        software_packages = api_client.request_software_packages()
+
+        # Create a dictioary of the software packages so that they can be retried by ID
+        self.software_packages = dict([(package["package_id"], package) for package in software_packages])
+
+        # Get packages that are host packages (i.e. not plugins). This is the "top" of the heirarchy
+        host_packages = [package for package in self.software_packages.values() if not package["plugin_host_product"]]
+
+        # These are the names of the top leve product groups .e.g. "maya", "nuke", "katana"
+        top_level_product_items = {}
+
+        # Create a tree item for every package (we'll group/parent them later)
+        # TODO:(LWS) This really ought to be a more clever recursive function. This is currently hard coded for only two depth levels.
+        for host_package in host_packages:
+
+#             # # TOP LEVEL PRODUCT GROUP ##
+#             product_name = host_package["product"]
+#             product_group_item = top_level_product_items.get(product_name)
+#             if not product_group_item:
+#                 product_group_item = QtGui.QTreeWidgetItem([product_name, ""])
+#                 product_group_item.product = product_name
+#                 top_level_product_items[product_name] = product_group_item
+#                 self.ui_software_versions_trwgt.addTopLevelItem(product_group_item)
+
+            ## HOST PRODUCT PACKAGE ###
+            host_package_item = self.createPackageTreeWidgetItem(host_package)
+#             product_group_item.addChild(host_package_item)
+            self.ui_software_versions_trwgt.addTopLevelItem(host_package_item)
+
+            # # PLUGINS FOR PRODUCT ##
+            plugin_parent_items = {}
+            for plugin_id in host_package["plugins"]:
+                plugin_package = self.software_packages.get(plugin_id)
+                if not plugin_package:
+                    logger.warning("Not able to find expected plugin. Id: %s", plugin_id)
+                    continue
+
+                ### PLUGIN PRODUCT GROUP ####
+                plugin_product_name = plugin_package["product"]
+                plugin_parent_product_item = plugin_parent_items.get(plugin_product_name)
+                if not plugin_parent_product_item:
+                    plugin_parent_product_item = QtGui.QTreeWidgetItem([plugin_product_name, ""])
+                    plugin_parent_product_item.product = plugin_product_name
+                    plugin_parent_items[plugin_product_name] = plugin_parent_product_item
+                    host_package_item.addChild(plugin_parent_product_item)
+
+                ### PLUGIN PRODUCT PACKAGE ###
+                plugin_package_item = self.createPackageTreeWidgetItem(plugin_package)
+                plugin_parent_product_item.addChild(plugin_package_item)
+
+
+        # Sort the row by the version column
+        software_column_idx = 1
+        self.ui_software_versions_trwgt.sortByColumn(software_column_idx, QtCore.Qt.AscendingOrder)
+
+
+    # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
+#     def filterPackages(self, show_all_versions=False):
+#         host_product_info = self.getHostProductInfo()
+# #         item_groups = self.getTreeItemGroups()
+#         for host_package_item in self.getHostPackageTreeItems():
+#             self.ui_software_versions_trwgt.setItemHidden(host_package_item, True)
+#             package = self.get_package_by_id(host_package_item.package_id)
+#             if package["product"] == self.product:
+#                 best_package = self.getBestPackage(host_product_info, self.software_packages.values())
+#                 if show_all_versions or (best_package and package["package_id"] == best_package["package_id"]):
+#                     self.ui_software_versions_trwgt.setItemHidden(host_package_item, False)
+
+    def filterPackages(self, show_all_versions=False):
+        host_package_info = self.getHostProductInfo()
+        host_package_id = host_package_info["package_id"]
+        host_package = self.get_package_by_id(host_package_id) if host_package_id else None
+        for host_package_item in self.getHostPackageTreeItems():
+            self.ui_software_versions_trwgt.setItemHidden(host_package_item, True)
+            package = self.get_package_by_id(host_package_item.package_id)
+            if package["product"] == self.product:
+                if show_all_versions or not host_package or package == host_package:
+                    self.ui_software_versions_trwgt.setItemHidden(host_package_item, False)
+
+
+
+    def getTreeItemPackages(self):
+        tree_item_packages = {}
+        for tree_item in pyside_utils.get_all_tree_items(self.ui_software_versions_trwgt):
+            if hasattr(tree_item, "package_id"):
+                tree_item_packages[tree_item.package_id] = self.get_package_by_id(tree_item.package_id)
+        return tree_item_packages
+
+    def getHostPackageTreeItems(self, host_product_name=None):
+        host_package_tree_items = []
+        for item in pyside_utils.get_top_level_items(self.ui_software_versions_trwgt):
+            package = self.get_package_by_id(item.package_id)
+            if not host_product_name or host_product_name == package["product"]:
+                host_package_tree_items.append(item)
+        return host_package_tree_items
+
+#     def getTreeItemGroups(self):
+#         tree_item_groups = {}
+#         for tree_item in pyside_utils.get_all_tree_items(self.ui_software_versions_trwgt):
+#             if hasattr(tree_item, "product"):
+#                 tree_item_groups[tree_item] = tree_item.product
+#         return tree_item_groups
+
+
+
+
+
+
+    def getBestPackage(self, software_info, packages):
+        return self.getMatchingPackage(software_info, packages, strict=False)
+#         maching_packages = self.getMatchingPackages(software_info, packages)
+#
+#         logger.debug("maching_packages (%s): %s", len(maching_packages), maching_packages)
+#
+#         if not maching_packages:
+#             return
+#
+#         if len(maching_packages) > 1:
+#             raise Exception("More than one matching package found for software: %s\n\t%s" %
+#                             (pformat(software_info), "\n\t".join([pformat(p) for p in maching_packages])))
+#
+#
+#         return maching_packages[0]
+
+    def getMatchingPackage(self, software_info, packages, strict=False):
+        matching_packages = self.getMatchingPackages(software_info, packages)
+        if not matching_packages:
+            msg = "Could not find matching package of:\n%s" % pformat(software_info)
+            logger.debug(msg)
+            if strict:
+                raise Exception(msg)
+            return
+
+
+        if len(matching_packages) > 1:
+            raise Exception("More than one best package found for software: %s\n\t%s" %
+                            (pformat(software_info), "\n\t".join([pformat(p) for p in matching_packages])))
+
+        return matching_packages[0]
+
+    def getMatchingPackages(self, software_info, packages):
+        return package_utils.get_matching_packages(software_info, packages)
+
+
+
+    def createPackageTreeWidgetItem(self, package):
+        '''
+        For the given software package, create a QTreeWidgetItem for it. 
+        with
+        a text/name that describes it 
+        '''
+
+        # This will be used for the "Software Name" column
+        software_name = package["product"]
+
+        # Construct the text to give the "Version" column. concatenate all version tiers together
+        software_version = ".".join(filter(None, [package.get(v) for v in
+                                                  ["major_version",
+                                                  "minor_version",
+                                                  "release_version",
+                                                  "build_version"]]))
+        tree_item = QtGui.QTreeWidgetItem([software_name, software_version])
+        tree_item.package_id = package["package_id"]
+        return tree_item
+
+
+    def getSelectedAvailablePackages(self):
+        '''
+        Return the package dictionaries for each QTreeItem that is selected by
+        the user.
+        '''
+        selected_packages = []
+        for item in self.ui_software_versions_trwgt.selectedItems():
+            selected_packages.append(self.get_package_by_id(item.package_id))
+        return selected_packages
+
+
+    def get_package_by_id(self, package_id):
+        return self.software_packages[package_id]
+
+
+    def openAvailableTreeMenu(self, position):
+        selected_item = self.ui_software_versions_trwgt.itemAt(position)
+        menu = self._makeAvalailableSoftwareContextMenu(selected_item)
+        menu.exec_(self.ui_software_versions_trwgt.viewport().mapToGlobal(position))
+
+    def _makeAvalailableSoftwareContextMenu(self, selected_item):
+        '''
+        Remove selected items
+        Add selected items
+        Show items in (other) tree
+        '''
+        menu = QtGui.QMenu()
+
+        # "check selected" menu item
+        action = menu.addAction("Add selected packages to Job", self._availableAddSelectedItems)
+#         action = menu.addAction("remove selected",
+#                                 lambda check=True: self._check_all_selected(check))
+        return menu
+
+
+
+    def _availableAddSelectedItems(self):
+        for available_package in self.getSelectedAvailablePackages():
+            job_package_item = self.createJobPackageTreeWidgetItem(available_package)
+            self.ui_job_software_trwgt.addTopLevelItem(job_package_item)
+
+
+
+    def _selectAvailablePackages(self, packages, clear=True):
+        tree_items = []
+        for tree_item in pyside_utils.get_all_tree_items(self.ui_software_versions_trwgt):
+            for package in packages:
+                if hasattr(tree_item, "package_id") and tree_item.package_id == package["package_id"]:
+                    tree_items.append(tree_item)
+        if clear:
+            self.ui_software_versions_trwgt.selectionModel().clear()
+
+        for tree_item in tree_items:
+            self.ui_software_versions_trwgt.setItemSelected(tree_item, True)
+
+    ###########################################################################
+    ######################  JOB SOFTWARE TREEWIDGET  - self.ui_job_software_trwgt
+    ###########################################################################
+
+    @QtCore.Slot(name="on_ui_auto_detect_pbtn_clicked")
+    def on_ui_auto_detect_pbtn_clicked(self):
+        self.autoDetectSoftware()
+
+    @QtCore.Slot(name="on_ui_remove_selected_pbtn_clicked")
+    def on_ui_remove_selected_pbtn_clicked(self):
+        self._jobRemoveSelectedItems()
+
+    @QtCore.Slot(name="on_ui_find_pbtn_clicked")
+    def on_ui_find_pbtn_clicked(self):
+        self._jobFindSelectedItemsInAvailableTree()
+
+    def populateJobSoftwareTrwgt(self, packages):
+        self.ui_job_software_trwgt.clear()
+        for package in packages:
+            job_package_item = self.createJobPackageTreeWidgetItem(package)
+            self.ui_job_software_trwgt.addTopLevelItem(job_package_item)
+
+
+    def openJobTreeMenu(self, position):
+        selected_item = self.ui_job_software_trwgt.itemAt(position)
+        menu = self._makeJobContextMenu(selected_item)
+        menu.exec_(self.ui_job_software_trwgt.viewport().mapToGlobal(position))
+
+
+    def _makeJobContextMenu(self, selected_item):
+        '''
+        Remove selected items
+        Add selected items
+        Show items in (other) tree
+        '''
+        menu = QtGui.QMenu()
+
+        # "check selected" menu item
+        action = menu.addAction("Remove selected packages", self._jobRemoveSelectedItems)
+#         action = menu.addAction("remove selected",
+#                                 lambda check=True: self._check_all_selected(check))
+        return menu
+
+    def _jobRemoveSelectedItems(self):
+        for item in self.ui_job_software_trwgt.selectedItems():
+            index = self.ui_job_software_trwgt.indexOfTopLevelItem(item)
+            self.ui_job_software_trwgt.takeTopLevelItem(index)
+
+    def _jobFindSelectedItemsInAvailableTree(self):
+        job_packages = self.getSelectedJobPackages()
+        self._selectAvailablePackages(job_packages)
+
+
+    def getJobPackages(self):
+        '''
+        Return the package dictionaries for each QTreeItem that is selected by
+        the user.
+        '''
+        job_packages = []
+        for item in pyside_utils.get_top_level_items(self.ui_job_software_trwgt):
+            job_packages.append(self.get_package_by_id(item.package_id))
+        return job_packages
+
+
+    def getSelectedJobPackages(self):
+        '''
+        Return the package dictionaries for each QTreeItem that is selected by
+        the user.
+        '''
+        select_job_packages = []
+        for item in self.ui_job_software_trwgt.selectedItems():
+            select_job_packages.append(self.get_package_by_id(item.package_id))
+        return select_job_packages
+
+
+
+
+    def createJobPackageTreeWidgetItem(self, package):
+        '''
+        For the given software package, create a QTreeWidgetItem for it. 
+        with
+        a text/name that describes it 
+        '''
+
+        # This will be used for the "Software Name" column
+        item_package_str = self._constructJobPackageStr(package)
+        tree_item = QtGui.QTreeWidgetItem([item_package_str])
+        tree_item.package_id = package["package_id"]
+        return tree_item
+
+    def _constructJobPackageStr(self, package):
+        software_name = package["product"]
+
+        # Construct the text to give the "Version" column. concatenate all version tiers together
+        software_version = ".".join(filter(None, [package.get(v) for v in
+                                                  ["major_version",
+                                                  "minor_version",
+                                                  "release_version",
+                                                  "build_version"]]))
+        return software_name + " " + software_version
+
+
+    def validateJobPackages(self):
+        '''
+        Validate that all packages that have been added to the job are...valid.
+        Return True if so, otherwise launch a dialog box to the user.
+        '''
+        job_packages = self.getJobPackages()
+        job_package_ids = [p["package_id"] for p in job_packages]
+
+
+
+
+
+        ### LOOK FOR DUPLICATE PACKAGES ###
+        duplicate_ids = set([x for x in job_package_ids if job_package_ids.count(x) > 1])
+        duplicate_packages = [self.get_package_by_id(package_id) for package_id in duplicate_ids]
+
+        if duplicate_packages:
+            title = "Duplicate software packages!"
+            dupe_package_strs = sorted(["- %s" % self._constructJobPackageStr(p) for p in duplicate_packages])
+            msg = ("Duplicate software packages have been specified for the Job!\n\n"
+                   "Please go the \"Job Software\" tab and ensure that only one "
+                   "of the following packages has been specified:\n   %s") % "\n   ".join(dupe_package_strs)
+            pyside_utils.launch_error_box(title, msg, parent=self)
+            self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
+            return False
+
+
+        ### LOOK FOR MULTIPLE PRODUCT PACKAGES ###
+        packages_by_product = collections.defaultdict(list)
+        for package in job_packages:
+            packages_by_product[package["product"]].append(package)
+        duplicate_product_strs = []
+        for product_packages in packages_by_product.values():
+            if len(product_packages) > 1:
+                s_ = "- %s  (%s)" % (product_packages[0]["product"], " vs ".join([self._constructJobPackageStr(p)
+                                                for p in product_packages]))
+                duplicate_product_strs.append(s_)
+
+        if duplicate_product_strs:
+            title = "Multiple software packages for the same product!"
+            msg = ("Multiple software packages of the same product have been specified for the Job!\n\n"
+                   "Please go the \"Job Software\" tab and ensure that only one "
+                   "package for the following products have been specified:\n   %s") % "\n   ".join(duplicate_product_strs)
+            pyside_utils.launch_error_box(title, msg, parent=self)
+            self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
+            return False
+
+
+        ### LOOK FOR PRESENCE OF A HOST PACKAGE ###
+        for package in self.getJobPackages():
+            if package["product"] == self.product:
+                break
+        else:
+            host_info = self.getHostProductInfo()
+            title = "No software package selected for %s!" % self.product
+            msg = ("No %s software package have been specified for the Job!\n\n"
+                   "Please go the \"Job Software\" tab and select a one (potentially %s") % (self.product, host_info["version"])
+            pyside_utils.launch_error_box(title, msg, parent=self)
+            self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
+            return False
+
+        return True
+
+
 class SubmitterPrefs(pyside_utils.UiFilePrefs):
 
     '''
@@ -1018,6 +1598,7 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
            the value of the "Scout Job" checkbox for the given file.
         '''
         return self.setPref(self.PREF_SCOUTFRAMES_ON, value, filepath=filepath)
+
 
 
 if __name__ == "__main__":
