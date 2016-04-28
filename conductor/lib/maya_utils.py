@@ -2,6 +2,7 @@ import logging, os, re, yaml
 import functools
 from maya import cmds
 
+from conductor.lib import common, package_utils
 logger = logging.getLogger(__name__)
 
 def dec_undo(func):
@@ -46,9 +47,10 @@ def get_short_name(node):
 def get_maya_version():
     '''
     Return the version string of the currently running maya session. 
-    e.g. "2015"
+    e.g. "Autodesk Maya 2015 SP4"
     '''
-    return cmds.about(version=True)
+    return cmds.about(installedVersion=True)
+
 
 
 def get_plugin_versions():
@@ -163,6 +165,79 @@ def get_image_dirpath():
 
     return output_dirpath
 
+def get_active_renderer():
+    '''
+    Return the name of the active renderer, e.g "vray" or "arnold
+    '''
+    return cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
+
+def get_renderer_info(renderer_name=None):
+    '''
+    renderer_name: str. e.g. "vray" or "arnold"
+    
+    {"renderer_name": "vray",
+     "plugin_name": "vrayformaya",
+     "plugin_version": 3.00.01'}
+     
+    '''
+    if not renderer_name:
+        renderer_name = get_active_renderer()
+
+    renderer_info = {"renderer_name": renderer_name}
+
+    # Get all plugin node types
+    plugin_node_types = {}
+    for plugin_name in cmds.pluginInfo(q=True, listPlugins=True) or []:
+        plugin_node_types[plugin_name] = cmds.pluginInfo(plugin_name, q=True, dependNode=True) or []
+
+    # Find the renderer globals node(s) for the active renderer and findout what plugin it's from
+    for node in cmds.renderer(renderer_name, q=True, globalsNodes=True) or []:
+        for plugin_name, node_types in  plugin_node_types.iteritems():
+            if cmds.nodeType(node) in node_types:
+                renderer_info["plugin_name"] = plugin_name
+                renderer_info["plugin_version"] = cmds.pluginInfo(plugin_name, version=True, q=True)
+                return renderer_info
+
+    raise Exception("Could not determine plugin infomation for renderer: %s" % renderer_name)
+
+
+
+
+def get_renderer_globals_node(renderer_name):
+    '''
+    For the given renderer name, return the name of its renderer globals node.
+    
+    #TODO:(lws)
+    Note that if more than one node is found, raise an exception.  This is to 
+    simplify things for now, but may need to support multiple nodes later.
+    
+    renderer_name: str. e.g. "vray" or "arnold" 
+    
+    return: str. e.g. "defaultRenderGlobals"
+    '''
+    if not renderer_exists(renderer_name):
+        logger.debug("Renderer does not exist: %s", renderer_name)
+        return ""
+
+    globals_nodes = cmds.renderer(renderer_name, q=True, globalsNodes=True) or []
+    if not globals_nodes:
+        return ""
+
+    if len(globals_nodes) > 1:
+        raise Exception("More than 1 %s renderer globals node found: %s" % (renderer_name, globals_nodes))
+
+    return globals_nodes[0]
+
+
+def renderer_exists(renderer_name):
+    '''
+    Return True if the given renderer (name) can be found in the maya session
+    
+    renderer_name: str. e.g. "vray" or "arnold" 
+    '''
+    return renderer_name in (cmds.renderer(q=True, namesOfAvailableRenderers=True) or [])
+
+
 def get_render_file_prefix():
     '''
     Return the "File Name Prefix" from the global render settings. Note that this
@@ -172,6 +247,9 @@ def get_render_file_prefix():
     Note that as more renderes are supported by Conductor, this function may 
     need to be updated to properly query those renderers' information. 
     '''
+
+    # Get the active renderer name
+    renderer = get_active_renderer()
 
     # Use the render globals node/attr by default
     prefix_node_attr = "defaultRenderGlobals.imageFilePrefix"
@@ -401,11 +479,11 @@ def parse_yeti_graph(node):
                                       node=n,
                                       getParamValue=True,
                                       param='file_name')
-            
+
             filePath = cmds.file(filePath, expandName=True, query=True, withoutCopyNumber=True)
 
             files.append(filePath)
-            
+
     return files
 
 #  Parse the vrscene file paths...
@@ -614,3 +692,217 @@ def get_node_by_type(node_type, must_exist=True, many=False):
     # Otherwise return an empty string
     return ""
 
+# def get_plugins_info():
+#     plugins_info = []
+#     for PluginClass in PLUGIN_CLASSES:
+#         if PluginClass.exists():
+#             plugins_info.append(PluginClass.get())
+#     return plugins_info
+
+
+def get_plugin_info():
+    plugins_info = {}
+    for PluginClass in PLUGIN_CLASSES:
+        if PluginClass.exists():
+            plugins_info[PluginClass.get_product()] = PluginClass.get_version()
+    return plugins_info
+
+
+def get_plugin_info_class(plugin_name):
+    for PluginClass in PLUGIN_CLASSES:
+        if plugin_name == PluginClass.plugin_name:
+            return PluginClass
+
+class MayaInfo(package_utils.ProductInfo):
+    '''
+    A class for retrieving version information about the current maya session.
+
+    Will ultimately produce something like this
+     # This is package for Maya
+      {'product': 'Maya'
+       'version': "Autodesk Maya 2015 SP4"         
+       'host_product': '',
+       'host_version': ''},
+
+    '''
+    product = "maya"
+
+    @classmethod
+    def get_product(cls):
+        '''
+        Return the name of the product, e.g. 
+        
+            "Maya"
+        '''
+        return cls.product
+
+    @classmethod
+    def get_version(cls):
+        '''
+        Return the product verion, e.g. 
+        
+            "Autodesk Maya 2015 SP4"
+        '''
+        return cmds.about(installedVersion=True)
+
+    @classmethod
+    def get_major_version(cls):
+        '''
+        Return the major version of the product, e.g. 
+            
+            "2015"
+        '''
+        return cls.regex_version().get("major_version", "")
+
+    @classmethod
+    def get_minor_version(cls):
+        '''
+        Return the minor version of the product, e.g. 
+        
+            "SP4"
+        '''
+        return cls.regex_version().get("minor_version", "")
+
+    @classmethod
+    def get_vendor(cls):
+        return "Autodesk"
+
+    @classmethod
+    def get_regex(cls):
+        '''
+        Regex the 
+
+        Autodesk Maya 2014 x64 Service Pack 1
+        Autodesk Maya 2014 Service Pack 2
+        Autodesk Maya 2014 Service Pack 3
+        Autodesk Maya 2015 SP1
+        Autodesk Maya 2015 SP4
+        Autodesk Maya 2016 SP4
+        Autodesk Maya 2016 Extension 1 + SP5
+        '''
+        rx_prefix = 'Autodesk Maya'
+        rx_major = r'(?P<major_version>\d+)'
+        rx_minor = r'(?P<minor_version>SP\d+)?'  # optionally get the service pack
+        rx = r'{} {} {}'.format(rx_prefix, rx_major, rx_minor)
+        return rx
+
+
+
+class MayaPluginInfo(package_utils.ProductInfo):
+    '''
+    A class for retrieving version information about a plugin in maya
+
+    Will ultimately produce something like this
+
+     {'product': '<plugin name>',
+      'major_version': u'3',
+      'minor_version': u'00',
+      'release_version': u'01',
+      'build_version': '',
+      'plugin_host_product': 'maya',
+      'plugin_host_version': u'2015'}
+    '''
+
+    plugin_name = None
+
+    @classmethod
+    def get_product(cls):
+        raise NotImplementedError
+
+
+    @classmethod
+    def get_plugin_host_product(cls):
+        '''
+        Return the name of the host software package, e.g. "Maya" or "Katana"
+        '''
+        return MayaInfo.get_product()
+
+    @classmethod
+    def get_plugin_host_version(cls):
+        '''
+        Return the name of the host software package, e.g. "Autodesk Maya 2015 SP4"
+        '''
+        return MayaInfo.get_major_version()
+
+    @classmethod
+    def get_version(cls):
+        return cmds.pluginInfo(cls.plugin_name, version=True, q=True) or ""
+
+
+    @classmethod
+    def exists(cls):
+        return cmds.pluginInfo(cls.plugin_name, loaded=True, q=True)
+
+
+    @classmethod
+    def get_regex(cls):
+        raise NotImplementedError
+
+
+class VrayInfo(MayaPluginInfo):
+    '''
+    A class for retrieving version information about the vray plugin in maya
+
+    Will ultimately produce something like this
+
+     {'product': 'vrayformaya',
+      'major_version': u'3',
+      'minor_version': u'00',
+      'release_version': u'01',
+      'build_version': '',
+      'plugin_host_product': 'maya',
+      'plugin_host_version': u'2015'}
+    '''
+    plugin_name = "vrayformaya"
+
+    @classmethod
+    def get_product(cls):
+        return "v-ray-maya"
+
+    @classmethod
+    def get_regex(cls):
+        '''
+        3.00.01
+        '''
+        rx_major = r'(?P<major_version>\d+)'
+        rx_minor = r'(?P<minor_version>\d+)'
+        rx_release = r'(?P<release_version>\d+)'
+        rx = r'{}\.{}\.{}'.format(rx_major, rx_minor, rx_release)
+        return rx
+
+
+class ArnoldInfo(MayaPluginInfo):
+    '''
+    A class for retrieving version information about the arnold plugin in maya
+
+    Will ultimately produce something like this
+
+     {'product': 'mtoa',
+      'major_version': u'1',
+      'minor_version': u'2',
+      'release_version': u'6',
+      'build_version': u'1',
+      'plugin_host_product': 'maya',
+      'plugin_host_version': u'2015'}
+
+    '''
+    plugin_name = "mtoa"
+
+    @classmethod
+    def get_product(cls):
+        return "arnold-maya"
+
+    @classmethod
+    def get_regex(cls):
+        '''
+        '1.2.6.1'
+        '''
+        rx_major = r'(?P<major_version>\d+)'
+        rx_minor = r'(?P<minor_version>\d+)'
+        rx_release = r'(?P<release_version>\d+)'
+        rx_build = r'(?P<build_version>\d+)'
+        rx = r'{}\.{}\.{}\.{}'.format(rx_major, rx_minor, rx_release, rx_build)
+        return rx
+
+
+PLUGIN_CLASSES = [VrayInfo, ArnoldInfo]

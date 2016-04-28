@@ -150,6 +150,9 @@ def launch_error_box(title, message, parent=None):
     # find the checkbox and hide it (it serves no purpose for us)
     checkbox = dialog.findChild(QtGui.QCheckBox)
     checkbox.hide()
+
+    # expand the dailog box a little larger if needed
+    dialog.adjustSize()
     return dialog.exec_()
 
 
@@ -285,6 +288,37 @@ def get_qt_check_flag(is_checked):
     if is_checked:
         return QtCore.Qt.Checked
     return QtCore.Qt.Unchecked
+
+
+def get_top_level_items(tree_widget):
+    '''
+    For the given QTreeWidget, return all top level QTreeItems
+    '''
+
+    return [tree_widget.topLevelItem(idx) for idx in range(tree_widget.topLevelItemCount())]
+
+def get_all_tree_items(tree_widget):
+    '''
+    For the given QTreeWidget, return all of its QTreeWidgetItems.  This is
+    an exhaustive, recursive search, capturing all top level as well as child
+    QTreeWidgetItems.
+    '''
+    all_items = []
+    for tree_item in get_top_level_items(tree_widget):
+        all_items.extend(_get_child_tree_items(tree_item))
+    return all_items
+
+
+def _get_child_tree_items(tree_widget_item):
+    ''' 
+    For the given QTreeWidgetItem, recursively seek out and return all child 
+    QTreeWidgetItems
+    '''
+    nodes = []
+    nodes.append(tree_widget_item)
+    for i in range(tree_widget_item.childCount()):
+        nodes.extend(_get_child_tree_items(tree_widget_item.child(i)))
+    return nodes
 
 
 

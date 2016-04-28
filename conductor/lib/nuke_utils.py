@@ -1,6 +1,7 @@
 import os
 import nuke
 
+from conductor.lib import package_utils
 
 def get_image_dirpath():
     pass
@@ -11,6 +12,7 @@ def get_nuke_version():
     e.g. "9.0v5"
     '''
     return nuke.env["NukeVersionString"]
+
 
 def get_plugins():
     '''
@@ -67,6 +69,14 @@ def get_plugins():
         if nuke.pluginExists(p) and not p.startswith(nuke_dirpath):
             plugins.append(p)
     return plugins
+
+
+def get_plugins_info():
+    plugins_info = []
+    for PluginClass in PLUGIN_CLASSES:
+        if PluginClass.exists():
+            plugins_info.append(PluginClass.get())
+    return plugins_info
 
 
 def collect_dependencies(write_nodes, dependency_knobs={}):
@@ -167,3 +177,86 @@ def get_write_node_filepath(node_name):
     if node.Class() not in write_node_types:
         raise Exception("Node not of expected types: %s. Got: %s" % (write_node_types, node.Class()))
     return node.knob("file").value()
+
+
+class NukeInfo(package_utils.ProductInfo):
+    '''
+    A class for retrieving version information about the current maya session.
+
+    Will ultimately produce something like this
+        {'product': 'nuke',
+         'vendor': 'The Foundry',
+         'version': '9.0v7'
+         'major_version': '9',
+         'minor_version': '0',
+         'release_version': '7',
+         'build_version': '',
+         'host_product': '',
+         'host_product_version': ''}
+
+    '''
+    product = "nuke"
+
+    @classmethod
+    def get_product(cls):
+        '''
+        Return the name of the product, e.g. 
+        
+            "nuke"
+        '''
+        return cls.product
+
+    @classmethod
+    def get_vendor(cls):
+        return "The Foundry"
+
+    @classmethod
+    def get_version(cls):
+        '''
+        Return the product verion, e.g. 
+        
+            "9.0v7"
+        '''
+        return nuke.env["NukeVersionString"]
+
+    @classmethod
+    def get_major_version(cls):
+        '''
+        Return the major version of the product, e.g. 
+            
+            "9"
+        '''
+        return str(nuke.NUKE_VERSION_MAJOR)
+
+    @classmethod
+    def get_minor_version(cls):
+        '''
+        Return the minor version of the product, e.g. 
+        
+            ""
+        '''
+        return str(nuke.NUKE_VERSION_MINOR or 0)
+
+    @classmethod
+    def get_release_version(cls):
+        '''
+        Return the minor version of the product, e.g. 
+        
+            "SP4"
+        '''
+        return str(nuke.NUKE_VERSION_RELEASE or 0)
+
+    @classmethod
+    def get_build_version(cls):
+        '''
+        Return the minor version of the product, e.g. 
+        
+            "SP4"
+        '''
+        return ""
+
+
+
+
+
+PLUGIN_CLASSES = []

@@ -364,6 +364,13 @@ def get_conductor_instance_types():
     resources = load_resources_file()
     return resources.get("instance_types") or []
 
+def get_package_ids():
+    '''
+    Get the list of available instances types from the resources.yml file
+    '''
+    resources = load_resources_file()
+    return resources.get("package_ids") or {}
+
 
 class Auth:
     pass
