@@ -123,7 +123,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     product = "maya"
 
-
     def __init__(self, parent=None):
         super(MayaConductorSubmitter, self).__init__(parent=parent)
         self.setMayaWindow()
