@@ -11,7 +11,7 @@ mkdir -p build/root/Applications/Conductor.app/Contents/MacOS build/root/Applica
 mkdir -p build/root/Library/LaunchAgents
 mkdir -p build/root/etc/paths.d
 mkdir -p build/scripts
-
+ 
 #Copy source files
 cp -r ../../bin \
       ../../conductor \
