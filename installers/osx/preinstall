@@ -1,5 +1,17 @@
 #!/bin/bash
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 #rm -rf /Applications/Conductor.app \
 #    /Library/LaunchAgents/com.conductorio.conductor.plist \
 #    /etc/paths.d/conductor
+=======
+rm -rf /Applications/Conductor.app \
+    /Library/LaunchAgents/com.conductorio.conductor.plist \
+    /etc/paths.d/conductor
+>>>>>>> 4db55ed... OS X preinstall cleanup
+=======
+#rm -rf /Applications/Conductor.app \
+#    /Library/LaunchAgents/com.conductorio.conductor.plist \
+#    /etc/paths.d/conductor
+>>>>>>> 22ef8e2... OS X preinstall cleanup
