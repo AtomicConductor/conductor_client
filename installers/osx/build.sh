@@ -5,7 +5,7 @@ mkdir -p build/root/Applications/Conductor.app/Contents/MacOS build/root/Applica
 mkdir -p build/root/Library/LaunchAgents
 cp -r ../../bin ../../conductor ../../maya_shelf ../../nuke_menu ../../clarisse_shelf ./python build/root/Applications/Conductor.app/Contents/MacOS
 cp info.plist build/root/Applications/Conductor.app/Contents
-cp conductor_client build/root/Applications/Conductor.app/Contents/MacOS
+cp conductor_client setenv build/root/Applications/Conductor.app/Contents/MacOS
 cp Conductor.icns build/root/Applications/Conductor.app/Contents/Resources
 cp com.conductorio.conductor.plist build/root/Library/LaunchAgents
 pushd build
