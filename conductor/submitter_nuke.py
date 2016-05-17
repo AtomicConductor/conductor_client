@@ -193,6 +193,11 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # Get the write nodes that have been selected by the user (in the UI)
         write_nodes = self.extended_widget.getSelectedWriteNodes()
 
+        if not write_nodes:
+            message = "No Write nodes selected for rendering!\nPlease select at least one Write node from the UI before pressing Submit"
+            pyside_utils.launch_error_box("No Write nodes selected!", message, parent=self)
+            raise Exception(message)
+
         raw_dependencies = self.collectDependencies(write_nodes)
 
         # If uploading locally (i.e. not using  uploader daemon
