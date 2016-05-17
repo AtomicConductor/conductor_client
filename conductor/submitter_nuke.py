@@ -11,8 +11,8 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-from conductor import CONFIG, submitter
-from conductor.lib import file_utils, nuke_utils, pyside_utils, common, api_client, loggeria
+from conductor import submitter
+from conductor.lib import file_utils, nuke_utils, pyside_utils, common, api_client
 
 logger = logging.getLogger(__name__)
 
@@ -139,26 +139,21 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         return cmd
 
 
-    def collectDependencies(self):
+    def collectDependencies(self, write_nodes):
         '''
-        Return a list of filepaths that the currently selected Write nodes
-        have a dependency on.
+        For the given write nodes, return a list of filepaths that these write
+        nodes rely upon (external file dependencies)
         '''
+        # Get all of the node types and attributes to query for external filepaths on
+        resources = common.load_resources_file()
 
-        # A dict of nuke node types, and their knob names to query for dependency filepaths
-        dependency_knobs = {'Read':['file'],
-                            'DeepRead':['file'],
-                            'ReadGeo2':['file'],
-                            'Vectorfield':['vfield_file'],
-                            'ScannedGrain':['fullGrain'],
-                            'Group':['vfield_file', 'cdl_path'],
-                            'Precomp':['file'],
-                            'AudioRead':['file'],
-                            'Camera':['file'],
-                            'Camera2':['file']}
+        # Get all of node types and their knobs to search for depencies on
+        dependency_knobs = resources.get("nuke_dependency_knobs") or {}
 
-        write_nodes = self.extended_widget.getSelectedWriteNodes()
+        # Collecte the depenecies for those write nodes
         dependencies = nuke_utils.collect_dependencies(write_nodes, dependency_knobs)
+
+        # Add the open nuke file to the depencies list
         dependencies.append(self.getSourceFilepath())
         return dependencies
 
@@ -195,7 +190,10 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         in the returned dictionary (so that we don't need to collect them again).
         '''
 
-        raw_dependencies = self.collectDependencies()
+        # Get the write nodes that have been selected by the user (in the UI)
+        write_nodes = self.extended_widget.getSelectedWriteNodes()
+
+        raw_dependencies = self.collectDependencies(write_nodes)
 
         # If uploading locally (i.e. not using  uploader daemon
         if self.getLocalUpload():
