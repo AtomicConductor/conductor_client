@@ -28,11 +28,11 @@ mv build/root/Applications/Conductor.app/Contents/MacOS/bin/conductor \
     build/root/Applications/Conductor.app/Contents/MacOS/bin/conductor_client
 cp conductor build/root/Applications/Conductor.app/Contents/MacOS/bin
 echo "/Applications/Conductor.app/Contents/MacOS/bin" > build/root/etc/paths.d/conductor
-
 sed "s/{VERSION}/${VERSION}/" info.plist > build/root/Applications/Conductor.app/Contents/info.plist
 
 PKG_FILES=$(find build/root | wc -l)
 PKG_DU=$(du -k -s build/root | cut -f1)
+
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{PKG_FILES}/${PKG_FILES}/g;s/{VERSION}/${VERSION}/g" PackageInfo > build/flat/base.pkg/PackageInfo
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{VERSION}/${VERSION}/g" Distribution > build/flat/Distribution
 pushd build
