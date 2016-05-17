@@ -41,6 +41,7 @@ pushd build
 ( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > flat/base.pkg/Scripts
 ../utils/mkbom -u 0 -g 80 root flat/base.pkg/Bom
 ( cd flat && ../../utils/xar --compression none -cf "../../conductor-${RELEASE_VERSION}.pkg" * )
+
 popd
 
 #upload our asset to GitHub

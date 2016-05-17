@@ -16,12 +16,9 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG
-<<<<<<< HEAD
 
 from conductor.lib import  conductor_submit, pyside_utils, common, api_client, loggeria, package_utils
-=======
-from conductor.lib import  conductor_submit, pyside_utils, common, api_client
->>>>>>> 9f1eb03... project argument
+
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
