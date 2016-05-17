@@ -48,5 +48,6 @@ curl -s -u \
     --data-binary @conductor-${RELEASE_VERSION}.pkg \
     -H "Content-Type:application/octet-stream" \
     "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}.pkg"
+
 popd
 
