@@ -11,7 +11,7 @@ dd if=/dev/zero of=ConductorClient.dmg bs=1M count=64
 /sbin/mkfs.hfsplus -v ConductorClient ConductorClient.dmg
 mkdir mnt
 sudo mount -o loop ConductorClient.dmg mnt
-cp -r build/Conductor.app mnt
+sudo cp -r build/Conductor.app mnt
 sudo umount mnt
 
 popd
