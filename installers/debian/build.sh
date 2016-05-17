@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 #!/bin/bash -x
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
@@ -44,3 +46,4 @@ for dist_ver in xenial trusty precise; do
         "${UPLOAD_URL}?name=${VERSION}-${dist_ver}.deb"
 done
 popd
+>>>>>>> 2cba1c6... fix debians
