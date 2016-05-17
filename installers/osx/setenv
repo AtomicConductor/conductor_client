@@ -1,9 +1,9 @@
 #!/bin/bash
 
-/bin/launchctl setenv PATH $PATH:/Applications/Conductor.app/Content/MacOS/bin
-/bin/launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/Conductor.app/Content/MacOS
-/bin/launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/Conductor.app/Content/MacOS/python/lib/python2.7/site-packages
-/bin/launchctl setenv MAYA_SHELF_PATH $MAYA_SHELF_PATH:/Applications/Conductor.app/Content/MacOS/maya_shelf
-/bin/launchctl setenv XBMLANGPATH $XBMLANGPATH:/Applications/Conductor.app/Content/MacOS/conductor/resources
-/bin/launchctl setenv NUKE_PATH $NUKE_PATH:/Applications/Conductor.app/Content/MacOS/nuke_menu
+/bin/launchctl setenv PATH $PATH:/Applications/Conductor.app/Contents/MacOS/bin
+/bin/launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/Conductor.app/Contents/MacOS
+/bin/launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/Conductor.app/Contents/MacOS/python/lib/python2.7/site-packages
+/bin/launchctl setenv MAYA_SHELF_PATH $MAYA_SHELF_PATH:/Applications/Conductor.app/Contents/MacOS/maya_shelf
+/bin/launchctl setenv XBMLANGPATH $XBMLANGPATH:/Applications/Conductor.app/Contents/MacOS/conductor/resources
+/bin/launchctl setenv NUKE_PATH $NUKE_PATH:/Applications/Conductor.app/Contents/MacOS/nuke_menu
 /bin/launchctl setenv CONDUCTOR_CONFIG "$HOME/Library/Application Support/Conductor/config.yml"
