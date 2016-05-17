@@ -13,3 +13,4 @@ p=$(launchctl getenv NUKE_PATH)
 /bin/launchctl setenv NUKE_PATH $p:/Applications/Conductor.app/Contents/MacOS/nuke_menu
 
 /bin/launchctl setenv CONDUCTOR_CONFIG "$HOME/Library/Application Support/Conductor/config.yml"
+ 
