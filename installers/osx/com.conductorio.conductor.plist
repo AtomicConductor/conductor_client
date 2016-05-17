@@ -4,21 +4,8 @@
 <dict>
     <key>Label</key>
     <string>com.conductorio.conductor</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>sh</string>
-        <string>-c</string>
-        <string>
-            launchctl setenv PATH $PATH:/Applications/Conductor.app/Content/MacOS
-            launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/Conductor.app/Content/MacOS
-            launchctl setenv PYTHONPATH $PYTHONPATH:/Applications/Conductor.app/Content/MacOS/python/lib/python2.7/site-packages
-            launchctl setenv MAYA_SHELF_PATH $MAYA_SHELF_PATH:/Applications/Conductor.app/Content/MacOS/maya_shelf
-            launchctl setenv XBMLANGPATH $XBMLANGPATH:/Applications/Conductor.app/Content/MacOS/conductor/resources
-            launchctl setenv NUKE_PATH $NUKE_PATH:/Applications/Conductor.app/Content/MacOS/nuke_menu
-            launchctl setenv CONDUCTOR_CONFIG ~/Library/Application Support/Conductor/config.yml
-        </string>
-        
-    </array>
+    <key>Program</key>
+    <string>/Applications/Conductor.app/Contents/MacOS/setenv</string>
     <key>KeepAlive</key>
     <false/>
     <key>RunAtLoad</key>
