@@ -33,7 +33,6 @@ sed "s/{VERSION}/${VERSION}/" info.plist > build/root/Applications/Conductor.app
 
 PKG_FILES=$(find build/root | wc -l)
 PKG_DU=$(du -k -s build/root | cut -f1)
-
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{PKG_FILES}/${PKG_FILES}/g;s/{VERSION}/${VERSION}/g" PackageInfo > build/flat/base.pkg/PackageInfo
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{VERSION}/${VERSION}/g" Distribution > build/flat/Distribution
 pushd build
@@ -41,7 +40,6 @@ pushd build
 ( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > flat/base.pkg/Scripts
 ../utils/mkbom -u 0 -g 80 root flat/base.pkg/Bom
 ( cd flat && ../../utils/xar --compression none -cf "../../conductor-${RELEASE_VERSION}.pkg" * )
-
 popd
 
 #upload our asset to GitHub

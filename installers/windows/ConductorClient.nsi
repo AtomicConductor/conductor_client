@@ -11,7 +11,11 @@
 #!define VERSION "00.00.00.01"
 !define COPYRIGHT "ConductorIO"
 !define DESCRIPTION "ConductorClient"
+<<<<<<< HEAD
 #!define LICENSE_TXT "eula.txt"
+=======
+!define LICENSE_TXT "eula.txt"
+>>>>>>> 839cfb4... windows version fix
 #!define INSTALLER_NAME "ConductorClient.exe"
 =======
 !define VERSION "00.00.00.01"

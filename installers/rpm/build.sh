@@ -44,4 +44,3 @@ for dist_ver in 5 6 7; do
         "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64.rpm"
     popd
 done
-

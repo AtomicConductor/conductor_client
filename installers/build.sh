@@ -6,4 +6,3 @@ tar zxf python.tgz
 ./osx/build.sh
 ./rpm/build.sh
 ./debian/build.sh
-
