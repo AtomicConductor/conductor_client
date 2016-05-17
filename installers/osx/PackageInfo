@@ -2,22 +2,9 @@
   <payload installKBytes="{PKG_DU}" numberOfFiles="{PKG_FILES}"/>
   <scripts>
     <postinstall file="./postinstall"/>
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4db55ed... OS X preinstall cleanup
     <preinstall file="./preinstall"/>
   </scripts>
 <bundle-version>
     <bundle id="com.conductorio.conductor" CFBundleIdentifier="com.conductorio.conductor" path="./Applications/Conductor.app" CFBundleVersion="{VERSION}"/>
-=======
-  </scripts>
-<bundle-version>
-<<<<<<< HEAD
-    <bundle id="com.conductorio.conductor" CFBundleIdentifier="com.conductorio.conductor" path="./Applications/Conductor.app" CFBundleVersion="1"/>
->>>>>>> cfa5cb5... release versions
-=======
-    <bundle id="com.conductorio.conductor" CFBundleIdentifier="com.conductorio.conductor" path="./Applications/Conductor.app" CFBundleVersion="{VERSION}"/>
->>>>>>> db3824a... fix broken OS X package
 </bundle-version>
 </pkg-info>
