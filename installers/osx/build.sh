@@ -8,6 +8,8 @@ cp info.plist build/root/Applications/Conductor.app/Contents
 cp conductor_client setenv build/root/Applications/Conductor.app/Contents/MacOS
 cp Conductor.icns build/root/Applications/Conductor.app/Contents/Resources
 cp com.conductorio.conductor.plist build/root/Library/LaunchAgents
+echo "/Applications/Conductor.app/Contents/MacOS/bin" > build/root/etc/paths.d/conductor
+
 pushd build
 PKG_FILES=$(find root | wc -l)
 PKG_DU=$(du -b -s root | cut -f1)
