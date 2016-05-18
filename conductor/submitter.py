@@ -33,7 +33,7 @@ TODO:
 8. What about the advanced options? ("Force Upload" and "Dependency Job" )
 9. what are the available commands for the "cmd" arg?
 
-'''
+''' 
 
 class ConductorSubmitter(QtGui.QMainWindow):
     '''
