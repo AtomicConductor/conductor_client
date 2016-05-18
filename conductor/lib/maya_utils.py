@@ -330,12 +330,13 @@ def collect_dependencies(node_attrs):
 
     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
     dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
+    logger.debug("maya scene base dependencies: %s", dependencies)
 
     all_node_types = cmds.allNodeTypes()
 
     for node_type, node_attrs in node_attrs.iteritems():
         if node_type not in all_node_types:
-            logger.warning("skipping unknown node type: %s", node_type)
+            logger.debug("skipping unknown node type: %s", node_type)
             continue
 
         for node in cmds.ls(type=node_type):
@@ -345,21 +346,26 @@ def collect_dependencies(node_attrs):
                     plug_value = cmds.getAttr(plug_name)
                     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
-
+                    logger.debug("%s: %s", plug_name, path)
                     #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
                     if node_type == "xgmPalette":
                         sceneFile = cmds.file(query=True, sceneName=True)
                         path = os.path.join(os.path.dirname(sceneFile), plug_value)
-                        dependencies += parse_xgen_file(path, node)
+                        xgen_dependencies = parse_xgen_file(path, node)
+                        logger.debug("xgen_dependencies: %s", xgen_dependencies)
+                        dependencies += xgen_dependencies
 
                     dependencies.append(path)
 
     #  Grab any OCIO settings that might be there...
-    ocio_config = get_ocio_config()
-    if ocio_config:
-        logger.info("OCIO config detected -- %s" % ocio_config)
-        dependencies.append(ocio_config)
-        dependencies.append(parse_ocio_config(ocio_config))
+    ocio_config_filepath = get_ocio_config()
+    if ocio_config_filepath:
+        logger.info("OCIO config detected -- %s" % ocio_config_filepath)
+        logger.debug("OCIO file: %s", ocio_config_filepath)
+        dependencies.append(ocio_config_filepath)
+        ocio_config_dependencies = parse_ocio_config(ocio_config_filepath)
+        logger.debug("OCIO config dependencies: %s", ocio_config_dependencies)
+        dependencies.append(ocio_config_dependencies)
 
 
     # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
