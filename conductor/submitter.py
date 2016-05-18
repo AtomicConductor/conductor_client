@@ -349,6 +349,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         # Connect the "reset preferences" action
         self.addResetPreferencesMenu(self.ui_reset_preferences_menu)
 
+
     def addLoggingMenu(self, menu):
         '''
         For the given menu object, dynamically generate a action item for
@@ -370,8 +371,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
             # Set the action item to be checked if its log level matches the current log level
             action.setChecked(current_level == level_value)
             action_group.addAction(action);
-
-
 
     def addResetPreferencesMenu(self, menu):
         '''
@@ -421,7 +420,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
             pyside_utils.launch_message_box("Deleted",
                                             "Preferences Deleted",
                                             parent=self)
-
 
     def populateInstanceTypeCmbx(self):
         '''
@@ -1722,8 +1720,6 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
             the frame/range to use for scout frames
         '''
         return self.setPref(self.PREF_JOB_PACKAGES_IDS, value, filepath=filepath)
-
-
 
 if __name__ == "__main__":
     app = QtGui.QApplication.instance()
