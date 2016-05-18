@@ -1,7 +1,9 @@
 import logging
 import os
+import operator
 import sys
 import inspect
+import functools
 import traceback
 from PySide import QtGui, QtCore
 import imp
@@ -12,7 +14,7 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG
-from conductor.lib import  conductor_submit, pyside_utils, common, api_client
+from conductor.lib import  conductor_submit, pyside_utils, common, api_client, loggeria
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -85,6 +87,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Set the window title name
         self.setWindowTitle(self._window_title)
+
+        # Setup the top menu bar
+        self.setupMenuBar()
 
         # Set the radio button on for the start/end frames by default
         self.on_ui_start_end_rdbtn_toggled(True)
@@ -182,6 +187,42 @@ class ConductorSubmitter(QtGui.QMainWindow):
         rx_range_w_step = r"(?:%s-%s(?:%s)?)+" % (rx_number, rx_number, rx_step)  # the "range w option step" building block, e.g 100-100, or 100-100x3, oor
         rx_validation = "((%s|%s), +)+" % (rx_number, rx_range_w_step)  # The final regex which uses a space and comma as a delimeter between multiple frame strings
         self.frame_str_validator = QtGui.QRegExpValidator(QtCore.QRegExp(rx_validation), None)
+
+
+    def setupMenuBar(self):
+        '''
+        Setup the gui's menu bar (The top menu bar)
+        '''
+        menubar = self.menuBar
+        assert menubar, "No menubar found!"
+
+        # Add the Logging Menu
+        self.addLoggingMenu(self.ui_set_log_level_qmenu)
+
+
+    def addLoggingMenu(self, menu):
+        '''
+        For the given menu object, dynamically generate a action item for
+        each log level (from the loggeria module). 
+        '''
+        conductor_logger = loggeria.get_conductor_logger()
+        current_level = conductor_logger.level
+
+        # Create an action group (this allows for mutually exclusive checkboxes (radio buttons)
+        action_group = QtGui.QActionGroup(menu)
+
+        # loop by order of log_level value
+        for level_name, level_value in sorted(loggeria.LEVEL_MAP.iteritems(),
+                                              key=operator.itemgetter(1), reverse=True):
+            # Generate the function that the menu action will call
+            func = functools.partial(loggeria.set_conductor_log_level, log_level=level_name)
+            action = menu.addAction(level_name, func)
+            action.setCheckable(True)
+            # Set the action item to be checked if its log level matches the current log level
+            action.setChecked(current_level == level_value)
+            action_group.addAction(action);
+
+
 
     def populateInstanceTypeCmbx(self):
         '''
@@ -651,8 +692,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
             enforced_md5s[filepath] = common.generate_md5(filepath, base_64=True)
 
         return enforced_md5s
-
-
 
 
 if __name__ == "__main__":

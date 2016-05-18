@@ -17,6 +17,9 @@
    <iconset resource="../submitter_resources.qrc">
     <normaloff>:/images/resources/conductor_logo_01_x32.png</normaloff>:/images/resources/conductor_logo_01_x32.png</iconset>
   </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
@@ -129,6 +132,9 @@
      <widget class="QTabWidget" name="tabWidget">
       <property name="cursor">
        <cursorShape>ArrowCursor</cursorShape>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"/>
       </property>
       <property name="tabPosition">
        <enum>QTabWidget::North</enum>
@@ -698,6 +704,33 @@
    <zorder>widget_6</zorder>
    <zorder>ui_submit_pbtn</zorder>
   </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>418</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="ui_options_qmenu">
+    <property name="title">
+     <string>Options</string>
+    </property>
+    <widget class="QMenu" name="ui_set_log_level_qmenu">
+     <property name="title">
+      <string>Set Log Level</string>
+     </property>
+    </widget>
+    <addaction name="ui_set_log_level_qmenu"/>
+   </widget>
+   <addaction name="ui_options_qmenu"/>
+  </widget>
+  <action name="actionWARNING">
+   <property name="text">
+    <string>WARNING</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>ui_start_end_rdbtn</tabstop>

@@ -118,9 +118,9 @@ def set_conductor_log_level(log_level):
     Set the "conductor" package's logger to the given log level
     '''
     assert log_level in LEVEL_MAP.keys(), "Invalid log_level: %s" % log_level
-#     assert log_level in LEVEL_MAP.values(), "Invalid log_level: %s" % log_level
     logger = get_conductor_logger()
     logger.setLevel(log_level)
+    logger.info("Changed log level to %s", log_level)
 
 
 def get_conductor_logger():
