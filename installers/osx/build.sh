@@ -43,11 +43,15 @@ PKG_DU=$(du -b -s root | cut -f1)
 cat << EOF > flat/base.pkg/PackageInfo
 <pkg-info format-version="2" identifier="com.conductorio.Conductor.base.pkg" version="1.0.0" install-location="/" auth="root">
   <payload installKBytes="$PKG_DU" numberOfFiles="$PKG_FILES"/>
+  <scripts>
+    <postinstall file="./postinstall"/>
+  </scripts>
 <bundle-version>
     <bundle id="com.conductorio.conductor" CFBundleIdentifier="com.conductorio.conductor" path="./Applications/Conductor.app" CFBundleVersion="1"/>
 </bundle-version>
 </pkg-info>
 EOF
+
 cat << EOF > flat/Distribution
 <?xml version="1.0" encoding="utf-8"?>
 <installer-script minSpecVersion="1.000000" authoringTool="com.apple.PackageMaker" authoringToolVersion="3.0.3" authoringToolBuild="174">
@@ -74,6 +78,7 @@ cat << EOF > flat/Distribution
     <pkg-ref id="com.conductorio.Conductor.base.pkg" installKBytes="$PKG_DU" version="1.0.0" auth="Root">#base.pkg</pkg-ref>
 </installer-script>
 EOF
+
 ( cd root && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > flat/base.pkg/Payload
 ( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > flat/base.pkg/Scripts
 ../utils/mkbom -u 0 -g 80 root flat/base.pkg/Bom
