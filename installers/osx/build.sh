@@ -1,4 +1,5 @@
 #!/bin/bash -x
+
 #This is mostly based on the tutorial:
 #http://bomutils.dyndns.org/tutorial.html
 pushd $( dirname "${BASH_SOURCE[0]}" )
@@ -37,6 +38,7 @@ PKG_DU=$(du -k -s build/root | cut -f1)
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{PKG_FILES}/${PKG_FILES}/g;s/{VERSION}/${VERSION}/g" PackageInfo > build/flat/base.pkg/PackageInfo
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{VERSION}/${VERSION}/g" Distribution > build/flat/Distribution
 
+#Build ConductorClient.pkg
 pushd build
 PKG_FILES=$(find root | wc -l)
 PKG_DU=$(du -b -s root | cut -f1)
