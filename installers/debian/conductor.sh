@@ -7,3 +7,4 @@ export XBMLANGPATH=$XBMLANGPATH:/opt/conductor/conductor/resources/%B
 export NUKE_PATH=$NUKE_PATH:/opt/conductor/nuke_menu
 export CONDUCTOR_CONFIG=$HOME/.conductor/config.yml
 export PATH=$PATH:/opt/conductor/bin
+
