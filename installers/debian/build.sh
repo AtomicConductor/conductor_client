@@ -42,5 +42,5 @@ for dist_ver in xenial trusty precise; do
         --data-binary @${VERSION}-${dist_ver}.deb	 \
         -H "Content-Type:application/octet-stream" \
         "${UPLOAD_URL}?name=${VERSION}-${dist_ver}.deb"
-done
+done 
 popd
