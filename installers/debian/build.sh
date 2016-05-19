@@ -18,6 +18,8 @@ cp -r ../../bin \
       ./python \
        build/${VERSION}/opt/conductor
 
+mv build/${VERSION}/opt/conductor/bin/conductor build/${VERSION}/opt/conductor/bin/conductor.py
+cp conductor build/${VERSION}/opt/conductor/bin/conductor
 cp conductor.sh build/${VERSION}/etc/profile.d
 
 cp control  build/${VERSION}/DEBIAN
