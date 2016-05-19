@@ -8,6 +8,7 @@ VERSION="conductor_${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}"
 
 mkdir -p build/${VERSION}/DEBIAN
 mkdir -p build/${VERSION}/opt/conductor
+mkdir -p build/${VERSION}/etc/profile.d
 
 cp -r ../../bin \
       ../../conductor \
@@ -16,6 +17,8 @@ cp -r ../../bin \
       ../../clarisse_shelf \
       ./python \
        build/${VERSION}/opt/conductor
+
+cp conductor.sh build/${VERSION}/etc/profile.d
 
 cp control  build/${VERSION}/DEBIAN
 sudo chown -R root:root build/${VERSION}
