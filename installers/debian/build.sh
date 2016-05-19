@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
 MAJOR_VERSION="1"
@@ -22,8 +22,7 @@ cp conductor.sh build/${VERSION}/etc/profile.d
 
 cp control  build/${VERSION}/DEBIAN
 sudo chown -R root:root build/${VERSION}
-
 sudo dpkg-deb --build build/${VERSION}
-sudo chown jenkins:jenkins build/${VERSION}.deb
+sudo chown -R jenkins:jenkins build/${VERSION}
 mv build/${VERSION}.deb .
-sudo rm -rf build
+popd
