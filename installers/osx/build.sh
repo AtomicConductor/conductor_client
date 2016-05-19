@@ -16,6 +16,8 @@ cp conductor_client setenv build/root/Applications/Conductor.app/Contents/MacOS
 cp Conductor.icns build/root/Applications/Conductor.app/Contents/Resources
 cp com.conductorio.conductor.plist build/root/Library/LaunchAgents
 cp postinstall build/scripts
+mv build/root/Applications/Conductor.app/Contents/MacOS/bin/conductor build/root/Applications/Conductor.app/Contents/MacOS/bin/conductor_client
+cp conductor build/root/Applications/Conductor.app/Contents/MacOS/bin
 
 #Build ConductorClient.pkg
 pushd build

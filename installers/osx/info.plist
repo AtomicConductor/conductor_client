@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>conductor_client</string>
+    <string>bin/conductor</string>
     <key>CFBundleIconFile</key>
     <string>Conductor.icns</string>
     <key>CFBundleIdentifier</key>
