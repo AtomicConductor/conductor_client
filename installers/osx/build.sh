@@ -1,10 +1,15 @@
 #!/bin/bash
+#This is mostly based on the tutorial:
+#http://bomutils.dyndns.org/tutorial.html
 pushd $( dirname "${BASH_SOURCE[0]}" )
+
+#Create required directory structure
 mkdir -p build/flat/base.pkg build/flat/Resources/en.lproj
 mkdir -p build/root/Applications/Conductor.app/Contents/MacOS build/root/Applications/Conductor.app/Contents/Resources
 mkdir -p build/root/Library/LaunchAgents
 mkdir -p build/scripts
 
+#Copy source files
 cp -r ../../bin ../../conductor ../../maya_shelf ../../nuke_menu ../../clarisse_shelf ./python build/root/Applications/Conductor.app/Contents/MacOS
 cp info.plist build/root/Applications/Conductor.app/Contents
 cp conductor_client setenv build/root/Applications/Conductor.app/Contents/MacOS
@@ -12,6 +17,7 @@ cp Conductor.icns build/root/Applications/Conductor.app/Contents/Resources
 cp com.conductorio.conductor.plist build/root/Library/LaunchAgents
 cp postinstall build/scripts
 
+#Build ConductorClient.pkg
 pushd build
 PKG_FILES=$(find root | wc -l)
 PKG_DU=$(du -b -s root | cut -f1)
