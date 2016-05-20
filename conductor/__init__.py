@@ -12,6 +12,7 @@ from conductor.lib import common, loggeria
 try:
     CONFIG = common.Config().config
 except ValueError:
+    #Launch the setup completetion wizard here?
     raise
 
 # IF there is log level specified in config (which by default there should be), then set it for conductor's logger
