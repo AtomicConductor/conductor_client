@@ -30,7 +30,7 @@ mv build/root/Applications/Conductor.app/Contents/MacOS/bin/conductor \
     build/root/Applications/Conductor.app/Contents/MacOS/bin/conductor_client
 cp conductor build/root/Applications/Conductor.app/Contents/MacOS/bin
 echo "/Applications/Conductor.app/Contents/MacOS/bin" > build/root/etc/paths.d/conductor
-
+ 
 sed "s/{VERSION}/${VERSION}/" info.plist > build/root/Applications/Conductor.app/Contents/info.plist
 
 PKG_FILES=$(find build/root | wc -l)
