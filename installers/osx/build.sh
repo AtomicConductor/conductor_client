@@ -3,7 +3,7 @@
 #http://bomutils.dyndns.org/tutorial.html
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
-VERSION=${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}
+VERSION=${RELEASE_VERSION:1}
 
 #Create required directory structure
 mkdir -p build/flat/base.pkg build/flat/Resources/en.lproj

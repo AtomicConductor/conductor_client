@@ -1,7 +1,7 @@
 #!/bin/bash -x
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
-VERSION="conductor-${RELEASE_VERSION}-0.noarch"
+VERSION="conductor-${RELEASE_VERSION}-0.x86_64"
 
 mkdir -p build/{BUILDROOT,RPMS,SPECS}
 mkdir -p build/BUILDROOT/${VERSION}/opt/conductor
@@ -16,7 +16,8 @@ cp -r ../../bin \
        build/BUILDROOT/${VERSION}/opt/conductor
 
 cp conductor.spec build/SPECS
-mv build/BUILDROOT/${VERSION}/opt/conductor/bin/conductor build/BUILDROOT/${VERSION}/opt/conductor/bin/conductor_client
+mv build/BUILDROOT/${VERSION}/opt/conductor/bin/conductor \
+    build/BUILDROOT/${VERSION}/opt/conductor/bin/conductor_client
 cp conductor build/BUILDROOT/${VERSION}/opt/conductor/bin/
 cp conductor.sh build/BUILDROOT/${VERSION}/etc/profile.d
 

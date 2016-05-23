@@ -1,7 +1,7 @@
 #!/bin/bash -x
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
-VERSION="conductor_${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}"
+VERSION="conductor_${RELEASE_VERSION:1}"
 
 mkdir -p build/${VERSION}/DEBIAN
 mkdir -p build/${VERSION}/opt/conductor
@@ -20,7 +20,7 @@ cp conductor build/${VERSION}/opt/conductor/bin/conductor
 cp conductor.sh build/${VERSION}/etc/profile.d
 
 cp control  build/${VERSION}/DEBIAN
-echo "Version: ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}" >> build/${VERSION}/DEBIAN/control
+echo "Version: ${RELEASE_VERSION:1}" >> build/${VERSION}/DEBIAN/control
 sudo chown -R root:root build/${VERSION}
 sudo dpkg-deb --build build/${VERSION}
 sudo chown -R jenkins:jenkins build/${VERSION}
