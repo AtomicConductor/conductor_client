@@ -40,4 +40,3 @@ pushd build
 ( cd flat && ../../utils/xar --compression none -cf "../../conductor-${RELEASE_VERSION}.pkg" * )
 popd
 popd
-popd

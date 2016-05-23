@@ -7,6 +7,7 @@ import webbrowser
 
 from conductor.lib import common, loggeria
 
+#__version__="0.0.0"
 
 # Read the config yaml file upon module import
 try:
