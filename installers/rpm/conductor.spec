@@ -4,8 +4,9 @@
 
 Summary: Conductor Client
 Name: conductor
-Version: 1
-Release: 0
+Version: %{_major_version}
+Release: %{_minor_version}
+Patch: %{_patch_version}
 License: Proprietary
 Group: Applications/Multimedia
 URL: https://www.conductorio.com

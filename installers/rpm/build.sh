@@ -1,10 +1,7 @@
 #!/bin/bash -x
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
-MAJOR_VERSION="1"
-MINOR_VERSION="0"
-PATCH_VERSION="0"
-VERSION="conductor-${MAJOR_VERSION}-${MINOR_VERSION}.x86_64"
+VERSION="conductor-${MAJOR_VERSION}-${MINOR_VERSION}-${PATCH_VERSION}.x86_64"
 
 mkdir -p build/{BUILDROOT,RPMS,SPECS}
 mkdir -p build/BUILDROOT/${VERSION}/opt/conductor
@@ -24,7 +21,11 @@ cp conductor build/BUILDROOT/${VERSION}/opt/conductor/bin/
 cp conductor.sh build/BUILDROOT/${VERSION}/etc/profile.d
 
 pushd build
-rpmbuild --define "_topdir ${PWD}" -bb SPECS/conductor.spec
+rpmbuild --define "_topdir ${PWD}" \
+         --define "_major_version ${MAJOR_VERSION}" \
+         --define "_minor_version ${MINOR_VERSION}" \
+         --define "_patch_version ${PATCH_VERSION}" \
+         -bb SPECS/conductor.spec
 mv RPMS/*/*.rpm ..
 popd
 popd
