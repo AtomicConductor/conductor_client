@@ -3,6 +3,17 @@
     <title>Conductor</title>
     <options customize="never" allow-external-scripts="no"/>
     <domains enable_anywhere="true"/>
+    <installation-check script="pm_install_check();"/>
+    <script>function pm_install_check() {
+  if(!(system.compareVersions(system.version.ProductVersion,'10.5') >= 0)) {
+    my.result.title = 'Failure';
+    my.result.message = 'You need at least Mac OS X 10.5 to install Conductor.';
+    my.result.type = 'Fatal';
+    return false;
+  }
+  return true;
+}
+</script>
     <choices-outline>
         <line choice="choice1"/>
     </choices-outline>
