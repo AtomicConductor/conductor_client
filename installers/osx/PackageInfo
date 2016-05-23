@@ -4,6 +4,6 @@
     <postinstall file="./postinstall"/>
   </scripts>
 <bundle-version>
-    <bundle id="com.conductorio.conductor" CFBundleIdentifier="com.conductorio.conductor" path="./Applications/Conductor.app" CFBundleVersion="1"/>
+    <bundle id="com.conductorio.conductor" CFBundleIdentifier="com.conductorio.conductor" path="./Applications/Conductor.app" CFBundleVersion="{VERSION}"/>
 </bundle-version>
 </pkg-info>
