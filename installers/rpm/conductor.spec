@@ -10,6 +10,7 @@ License: Proprietary
 Group: Applications/Multimedia
 URL: https://www.conductorio.com
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildArch: noarch
 AutoReqProv: no
 
 %description
