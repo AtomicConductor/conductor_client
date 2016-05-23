@@ -1,0 +1,9 @@
+#!/bin/bash
+
+#Put conductor in the path
+echo "/Applications/Conductor.app/Contents/MacOS/bin" > /etc/paths.d/conductor
+
+#initialize the environment so conductor is ready to go after installation
+#if we don't do this the user has to log out before the environment is set up
+INSTALLER_USER=$(stat -f '%Su' $HOME)
+sudo -u ${INSTALLER_USER} /Applications/Conductor.app/Contents/MacOS/setenv
