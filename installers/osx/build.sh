@@ -38,50 +38,18 @@ PKG_DU=$(du -k -s build/root | cut -f1)
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{PKG_FILES}/${PKG_FILES}/g;s/{VERSION}/${VERSION}/g" PackageInfo > build/flat/base.pkg/PackageInfo
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{VERSION}/${VERSION}/g" Distribution > build/flat/Distribution
 
+sed "s/{VERSION}/${VERSION}/" info.plist > build/root/Applications/Conductor.app/Contents/info.plist
+
 #Build ConductorClient.pkg
 pushd build
 PKG_FILES=$(find root | wc -l)
 PKG_DU=$(du -b -s root | cut -f1)
-cat << EOF > flat/base.pkg/PackageInfo
-<pkg-info format-version="2" identifier="com.conductorio.Conductor.base.pkg" version="1.0.0" install-location="/" auth="root">
-  <payload installKBytes="$PKG_DU" numberOfFiles="$PKG_FILES"/>
-  <scripts>
-    <postinstall file="./postinstall"/>
-  </scripts>
-<bundle-version>
-    <bundle id="com.conductorio.conductor" CFBundleIdentifier="com.conductorio.conductor" path="./Applications/Conductor.app" CFBundleVersion="1"/>
-</bundle-version>
-</pkg-info>
-EOF
-
-cat << EOF > flat/Distribution
-<?xml version="1.0" encoding="utf-8"?>
-<installer-script minSpecVersion="1.000000" authoringTool="com.apple.PackageMaker" authoringToolVersion="3.0.3" authoringToolBuild="174">
-    <title>Conductor</title>
-    <options customize="never" allow-external-scripts="no"/>
-    <domains enable_anywhere="true"/>
-    <choices-outline>
-        <line choice="choice1"/>
-    </choices-outline>
-    <choice id="choice1" title="base">
-        <pkg-ref id="com.conductorio.Conductor.base.pkg"/>
-    </choice>
-    <pkg-ref id="com.conductorio.Conductor.base.pkg" installKBytes="$PKG_DU" version="1.0.0" auth="Root">#base.pkg</pkg-ref>
-</installer-script>
-EOF
-
+sed "s/{PKG_DU}/${PKG_DU}/g;s/{PKG_FILES}/${PKG_FILES}/g;s/{VERSION}/${VERSION}/g" PackageInfo > flat/base.pkg/PackageInfo
+sed "s/{PKG_DU}/${PKG_DU}/g;s/{VERSION}/${VERSION}/g" Distribution > flat/Distribution
 ( cd root && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > flat/base.pkg/Payload
 ( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > flat/base.pkg/Scripts
 ../utils/mkbom -u 0 -g 80 root flat/base.pkg/Bom
 ( cd flat && ../../utils/xar --compression none -cf "../../conductor-${RELEASE_VERSION}.pkg" * )
-popd
- 
-#upload our asset to GitHub
-curl -s -u \
-    ${GITHUB_API_TOKEN} \
-    --data-binary @conductor-${RELEASE_VERSION}.pkg \
-    -H "Content-Type:application/octet-stream" \
-    "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}.pkg"
 
 popd
 popd
