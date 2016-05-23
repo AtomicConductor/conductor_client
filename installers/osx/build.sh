@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #This is mostly based on the tutorial:
 #http://bomutils.dyndns.org/tutorial.html
 pushd $( dirname "${BASH_SOURCE[0]}" )
