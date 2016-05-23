@@ -21,7 +21,7 @@ cp -r ../../bin \
       ../../clarisse_shelf \
       ./python \
       build/root/Applications/Conductor.app/Contents/MacOS
-cp setenv build/root/Applications/Conductor.app/Contents/MacOS
+cp setenv build/root/Applications/Conductor.app/Contents/MacOS 
 
 cp Conductor.icns build/root/Applications/Conductor.app/Contents/Resources
 cp com.conductorio.conductor.plist build/root/Library/LaunchAgents
