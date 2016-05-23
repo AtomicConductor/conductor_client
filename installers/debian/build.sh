@@ -20,7 +20,7 @@ cp conductor build/${VERSION}/opt/conductor/bin/conductor
 cp conductor.sh build/${VERSION}/etc/profile.d
 
 cp control  build/${VERSION}/DEBIAN
-echo ${RELEASE_VERSION} >> build/${VERSION}/DEBIAN/control
+echo "Version: ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}" >> build/${VERSION}/DEBIAN/control
 sudo chown -R root:root build/${VERSION}
 sudo dpkg-deb --build build/${VERSION}
 sudo chown -R jenkins:jenkins build/${VERSION}

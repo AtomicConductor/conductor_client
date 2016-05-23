@@ -2,5 +2,4 @@ Package: conductor
 Architecture: all
 Maintainer: conductorio.com
 Priority: optional
-Version: 1.0.0
 Description: Conductor cloud rendering client

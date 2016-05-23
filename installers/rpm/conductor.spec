@@ -4,13 +4,13 @@
 
 Summary: Conductor Client
 Name: conductor
-Version: %{_major_version}
-Release: %{_minor_version}
-Patch: %{_patch_version}
+Version: %{_version}
+Release: 0
 License: Proprietary
 Group: Applications/Multimedia
 URL: https://www.conductorio.com
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildArch: noarch
 AutoReqProv: no
 
 %description
