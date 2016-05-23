@@ -39,3 +39,5 @@ pushd build
 ../utils/mkbom -u 0 -g 80 root flat/base.pkg/Bom
 ( cd flat && ../../utils/xar --compression none -cf "../../conductor-${RELEASE_VERSION}.pkg" * )
 popd
+popd
+popd
