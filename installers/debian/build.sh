@@ -20,7 +20,6 @@ cp conductor.sh build/${VERSION}/etc/profile.d
 
 cp control  build/${VERSION}/DEBIAN
 echo "Version: ${RELEASE_VERSION:1}" >> build/${VERSION}/DEBIAN/control
-
 sudo chown -R root:root build/${VERSION}
 
 for dist_ver in xenial trusty precise; do

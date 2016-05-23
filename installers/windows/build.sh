@@ -14,4 +14,4 @@ curl -s -u \
     -H "Content-Type:application/octet-stream" \
     "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}.exe"
 
-popd 
+popd
