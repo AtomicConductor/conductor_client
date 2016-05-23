@@ -22,6 +22,7 @@ def git_checkout(tag):
 def build_all(installers):
     for installer in installers:
         subprocess.check_call(['{}/build.sh'.format(installer)],
+            shell=True,
             env=dict(os.environ,
                     RELEASE_VERSION=release_version,
                     MAJOR_VERSION=major_version,
