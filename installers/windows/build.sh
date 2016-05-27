@@ -10,7 +10,7 @@ makensis -DVERSION="${RELEASE_VERSION:1}.0" -DINSTALLER_NAME="conductor-${RELEAS
 #upload our asset to GitHub
 curl -s -u \
     ${GITHUB_API_TOKEN} \
-    --data-binary @installers/windows/conductor-${RELEASE_VERSION}.exe \
+    --data-binary @conductor-${RELEASE_VERSION}.exe \
     -H "Content-Type:application/octet-stream" \
     "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}.exe"
 
