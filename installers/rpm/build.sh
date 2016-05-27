@@ -22,7 +22,7 @@ cp conductor.sh build/BUILDROOT/${VERSION}/etc/profile.d
 
 for dist_ver in 6 7; do
     cp -r build build-${dist_ver}
-    docker run -it \
+    docker run -i \
       -v ${WORSPACE}/installers/Python-2.7.11:/root/src \
       -v $(pwd)/build/opt/conductor/python:/root/python \
       -v $(pwd)/build-python.sh:/root/build-python.sh \
