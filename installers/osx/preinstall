@@ -2,5 +2,5 @@
 
 #rm -rf /Applications/Conductor.app \
 #    /Library/LaunchAgents/com.conductorio.conductor.plist \
-#    /etc/paths.d/conductor 
+#    /etc/paths.d/conductor
 
