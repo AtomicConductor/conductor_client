@@ -37,7 +37,7 @@ for dist_ver in 5 6 7; do
          -bb SPECS/conductor.spec
     
     #upload our asset to GitHub
-    curl -s -u \
+    curl -s -u \ 
         ${GITHUB_API_TOKEN} \
         --data-binary @RPMS/x86_64/conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64.rpm	 \
         -H "Content-Type:application/octet-stream" \
