@@ -42,3 +42,10 @@ pushd build
 ( cd flat && ../../utils/xar --compression none -cf "../../conductor-${RELEASE_VERSION}.pkg" * )
 popd
 popd
+
+#upload out asset to GitHub
+curl -s -u \
+    ${GITHUB_API_TOKEN} \
+    --data-binary @installers/osx/conductor-${RELEASE_VERSION}.pkg \
+    -H "Content-Type:application/octet-stream" \
+    "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}.pkg"
