@@ -5,6 +5,7 @@ VERSION="conductor_${RELEASE_VERSION:1}"
 
 mkdir -p build/${VERSION}/DEBIAN
 mkdir -p build/${VERSION}/opt/conductor
+mkdir -p build/${VERSION}/opt/conductor/python
 mkdir -p build/${VERSION}/etc/profile.d
 
 cp -r ../../bin \
@@ -42,5 +43,5 @@ for dist_ver in xenial trusty precise; do
         --data-binary @${VERSION}-${dist_ver}.deb	 \
         -H "Content-Type:application/octet-stream" \
         "${UPLOAD_URL}?name=${VERSION}-${dist_ver}.deb"
-done 
+done
 popd
