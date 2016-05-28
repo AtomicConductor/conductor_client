@@ -9,7 +9,7 @@ yum install -y sqlite-devel \
                db4-devel \
                tk-devel \
                libdb-devel
-
+               
 /root/src/configure --prefix=/root/python && make && make install
 curl -O "https://bootstrap.pypa.io/get-pip.py"
 /root/python/bin/python get-pip.py
