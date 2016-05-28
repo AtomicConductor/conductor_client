@@ -34,5 +34,12 @@ for dist_ver in 6 7; do
          --define "_version ${RELEASE_VERSION}" \
          --define "_dist el${dist_ver}"
          -bb SPECS/conductor.spec
+    
+    #upload our asset to GitHub
+    curl -s -u \
+        ${GITHUB_API_TOKEN} \
+        --data-binary @RPMS/x86_64/conductor*.rpm \
+        -H "Content-Type:application/octet-stream" \
+        "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}.exe"
     popd
 done
