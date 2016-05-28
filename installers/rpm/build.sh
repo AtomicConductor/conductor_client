@@ -29,6 +29,7 @@ for dist_ver in 6 7; do
       centos:${dist_ver} \
       /root/build-python.sh
     
+    mv build-${dist_ver}/BUILDROOT/${VERSION} build-${dist_ver}/BUILDROOT/conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64
     pushd build-${dist_ver}
     rpmbuild --define "_topdir ${PWD}" \
          --define "_version ${RELEASE_VERSION}" \
