@@ -10,8 +10,8 @@ yum install -y sqlite-devel \
                tk-devel \
                libdb-devel
 
-sleep 600
+
 /root/src/configure --prefix=/root/python && make && make install
 curl -O "https://bootstrap.pypa.io/get-pip.py"
-/root/python/python/bin/python get-pip.py
-/root/python/python/bin/pip install pyaml requests urllib3
+/root/python/bin/python get-pip.py
+/root/python/bin/pip install pyaml requests urllib3

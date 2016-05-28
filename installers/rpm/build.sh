@@ -23,17 +23,16 @@ cp conductor.sh build/BUILDROOT/${VERSION}/etc/profile.d
 for dist_ver in 6 7; do
     cp -r build build-${dist_ver}
     docker run -i \
-      -v ${WORSPACE}/installers/Python-2.7.11:/root/src \
-      -v $(pwd)/build/opt/conductor/python:/root/python \
+      -v ${WORKSPACE}/installers/Python-2.7.11:/root/src \
+      -v $(pwd)/build/BUILDROOT/${VERSION}/opt/conductorpython:/root/python \
       -v $(pwd)/build-python.sh:/root/build-python.sh \
       centos:${dist_version} \
       /root/build-python.sh
-done
-
-pushd build
-rpmbuild --define "_topdir ${PWD}" \
+    
+    pushd build-${dist_ver}
+    rpmbuild --define "_topdir ${PWD}" \
          --define "_version ${RELEASE_VERSION}" \
          -bb SPECS/conductor.spec
-mv RPMS/*/*.rpm ..
-popd
-popd
+    popd
+    popd
+done
