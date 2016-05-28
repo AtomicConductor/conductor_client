@@ -32,7 +32,7 @@ for dist_ver in 6 7; do
     pushd build-${dist_ver}
     rpmbuild --define "_topdir ${PWD}" \
          --define "_version ${RELEASE_VERSION}" \
-         --define "_dist el${dist_ver}"
+         --define "_dist el${dist_ver}" \
          -bb SPECS/conductor.spec
     
     #upload our asset to GitHub
