@@ -5,7 +5,7 @@
 Summary: Conductor Client
 Name: conductor
 Version: %{_version}
-Release: 0
+Release: 0.%{_dist}
 License: Proprietary
 Group: Applications/Multimedia
 URL: https://www.conductorio.com
@@ -25,7 +25,7 @@ AutoReqProv: no
 #cp -a * %{buildroot}
 
 %clean
-rm -rf %{buildroot}
+#rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
