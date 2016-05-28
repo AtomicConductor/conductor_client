@@ -34,5 +34,4 @@ for dist_ver in 6 7; do
          --define "_version ${RELEASE_VERSION}" \
          -bb SPECS/conductor.spec
     popd
-    popd
 done
