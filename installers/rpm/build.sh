@@ -27,7 +27,7 @@ for dist_ver in 5 6 7; do
       -v $(pwd)/build-${dist_ver}/BUILDROOT/${VERSION}/opt/conductor/python:/root/python \
       -v $(pwd)/build-python.sh:/root/build-python.sh \
       centos:${dist_ver} \
-      /root/build-python.sh
+      /root/build-python.sh 
     
     mv build-${dist_ver}/BUILDROOT/${VERSION} build-${dist_ver}/BUILDROOT/conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64
 
