@@ -24,7 +24,7 @@ for dist_ver in 6 7; do
     cp -r build build-${dist_ver}
     docker run -i \
       -v ${WORKSPACE}/installers/Python-2.7.11:/root/src \
-      -v $(pwd)/build/BUILDROOT/${VERSION}/opt/conductor/python:/root/python \
+      -v $(pwd)/build-${dist_ver}/BUILDROOT/${VERSION}/opt/conductor/python:/root/python \
       -v $(pwd)/build-python.sh:/root/build-python.sh \
       centos:${dist_ver} \
       /root/build-python.sh
