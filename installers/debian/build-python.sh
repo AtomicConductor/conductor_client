@@ -13,11 +13,7 @@ apt-get install -y --allow-unauthenticated \
                 curl
                 
 
-cd /root
-mkdir build python
-cd build
-/tmp/Python*/configure --prefix=/root/python && make && make install
+/root/src/configure --prefix=/root/python && make && make install
 curl -O "https://bootstrap.pypa.io/get-pip.py"
-../python/bin/python get-pip.py
-
-../python/bin/pip install pyaml requests urllib3
+/root/python/bin/python get-pip.py
+/root/python/bin/pip install pyaml requests urllib3
