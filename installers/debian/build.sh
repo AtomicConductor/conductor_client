@@ -39,7 +39,7 @@ for dist_ver in xenial trusty precise; do
     #upload our asset to GitHub
     curl -s -u \
         ${GITHUB_API_TOKEN} \
-        --data-binary @build/${VERSION}-${dist_ver}.deb	 \
+        --data-binary @${VERSION}-${dist_ver}.deb	 \
         -H "Content-Type:application/octet-stream" \
         "${UPLOAD_URL}?name=${VERSION}-${dist_ver}.deb"
 done
