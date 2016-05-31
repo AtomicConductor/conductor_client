@@ -23,7 +23,7 @@ echo "Version: ${RELEASE_VERSION:1}" >> build/${VERSION}/DEBIAN/control
 sudo chown -R root:root build/${VERSION}
 
 for dist_ver in xenial trusty precise; do
-    cp -r build/${VERSION} build/${VERSION}-${dist_ver}
+    cp -r build build-${dist_ver}
     
     docker run -i \
       -v ${WORKSPACE}/installers/Python-2.7.11:/root/src \
@@ -32,9 +32,9 @@ for dist_ver in xenial trusty precise; do
       ubuntu:${dist_ver} \
       /root/build-python.sh
     
-    sudo dpkg-deb --build build/${VERSION}-${dist_ver}
-    sudo chown -R jenkins:jenkins build/${VERSION}-${dist_ver}
-    mv build/${VERSION}-${dist_ver}.deb .
+    sudo dpkg-deb --build build-${dist_ver}/${VERSION}
+    sudo chown -R jenkins:jenkins build-${dist_ver}/${VERSION}
+    mv  build-${dist_ver}/${VERSION}.deb .//${VERSION}-${dist_ver}.deb
     
     #upload our asset to GitHub
     curl -s -u \
