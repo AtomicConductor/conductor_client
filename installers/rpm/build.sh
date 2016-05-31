@@ -20,7 +20,7 @@ mv build/BUILDROOT/${VERSION}/opt/conductor/bin/conductor \
 cp conductor build/BUILDROOT/${VERSION}/opt/conductor/bin/
 cp conductor.sh build/BUILDROOT/${VERSION}/etc/profile.d
 
-for dist_ver in 6 7; do
+for dist_ver in 5 6 7; do
     cp -r build build-${dist_ver}
     docker run -i \
       -v ${WORKSPACE}/installers/Python-2.7.11:/root/src \
@@ -39,8 +39,8 @@ for dist_ver in 6 7; do
     #upload our asset to GitHub
     curl -s -u \
         ${GITHUB_API_TOKEN} \
-        --data-binary @RPMS/x86_64/conductor*.rpm \
+        --data-binary @RPMS/x86_64/conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64.rpm	 \
         -H "Content-Type:application/octet-stream" \
-        "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}.exe"
+        "${UPLOAD_URL}?conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64.rpm"
     popd
 done
