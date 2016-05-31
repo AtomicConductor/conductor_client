@@ -27,14 +27,14 @@ for dist_ver in xenial trusty precise; do
     
     docker run -i \
       -v ${WORKSPACE}/installers/Python-2.7.11:/root/src \
-      -v $(pwd)/build-${dist_ver}/opt/conductor/python:/root/python \
+      -v $(pwd)/build-${dist_ver}/${VERSION}/opt/conductor/python:/root/python \
       -v $(pwd)/build-python.sh:/root/build-python.sh \
       ubuntu:${dist_ver} \
       /root/build-python.sh
     
     sudo dpkg-deb --build build-${dist_ver}/${VERSION}
     sudo chown -R jenkins:jenkins build-${dist_ver}/${VERSION}
-    mv  build-${dist_ver}/${VERSION}.deb .//${VERSION}-${dist_ver}.deb
+    mv  build-${dist_ver}/${VERSION}.deb ./${VERSION}-${dist_ver}.deb
     
     #upload our asset to GitHub
     curl -s -u \
