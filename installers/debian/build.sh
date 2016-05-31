@@ -23,7 +23,7 @@ echo "Version: ${RELEASE_VERSION:1}" >> build/${VERSION}/DEBIAN/control
 sudo chown -R root:root build/${VERSION}
 
 for dist_ver in xenial trusty precise; do
-    cp -r build/${VERSION} build/${VERSION}-${dist-ver}
+    cp -r build/${VERSION} build/${VERSION}-${dist_ver}
     
     docker run -i \
       -v ${WORKSPACE}/installers/Python-2.7.11:/root/src \

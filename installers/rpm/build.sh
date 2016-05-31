@@ -41,6 +41,6 @@ for dist_ver in 5 6 7; do
         ${GITHUB_API_TOKEN} \
         --data-binary @RPMS/x86_64/conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64.rpm	 \
         -H "Content-Type:application/octet-stream" \
-        "${UPLOAD_URL}?conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64.rpm"
+        "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64.rpm"
     popd
 done
