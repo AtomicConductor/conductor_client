@@ -25,7 +25,7 @@ sudo chown -R root:root build/${VERSION}
 for dist_ver in xenial trusty precise; do
     cp -r build build-${dist_ver}
     
-    docker run -i \
+    docker run -i \ 
       -v ${WORKSPACE}/installers/Python-2.7.11:/root/src \
       -v $(pwd)/build-${dist_ver}/${VERSION}/opt/conductor/python:/root/python \
       -v $(pwd)/build-python.sh:/root/build-python.sh \
