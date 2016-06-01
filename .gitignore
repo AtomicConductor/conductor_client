@@ -39,6 +39,7 @@ auth
 
 # config
 config.yml
+release.json
 
 # pycharm
 .idea
