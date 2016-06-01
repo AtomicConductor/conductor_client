@@ -30,3 +30,4 @@ try:
         warnings.warn("Conductor is out of date.  Please go to {} for update information.".format(vc.update_url))
 except:
     warnings.warn("Failed to check for Conductor updates.")
+
