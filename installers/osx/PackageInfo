@@ -1,0 +1,10 @@
+<pkg-info format-version="2" identifier="com.conductorio.Conductor.base.pkg" version="{VERSION}" install-location="/" auth="root">
+  <payload installKBytes="{PKG_DU}" numberOfFiles="{PKG_FILES}"/>
+  <scripts>
+    <postinstall file="./postinstall"/>
+    <preinstall file="./preinstall"/>
+  </scripts>
+<bundle-version>
+    <bundle id="com.conductorio.conductor" CFBundleIdentifier="com.conductorio.conductor" path="./Applications/Conductor.app" CFBundleVersion="{VERSION}"/>
+</bundle-version>
+</pkg-info>
