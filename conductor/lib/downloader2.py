@@ -857,7 +857,8 @@ class Downloader(object):
         logger.debug("tmp_filepath: %s", tmp_filepath)
         # download the file.
         new_md5 = download_file(url, tmp_filepath, poll_rate=self.download_progess_polling, state=file_state)
-        self.logger.debug("new_md5: %s", new_md5)
+
+        logger.debug("new_md5: %s", new_md5)
         if new_md5 != md5:
             try:
                 logger.debug("Cleaning up temp file: %s", tmp_filepath)
@@ -865,7 +866,8 @@ class Downloader(object):
             except:
                 logger.warning("Could not cleanup temp file: %s", tmp_filepath)
             raise Exception("Downloaded file does not have expected md5. %s vs %s: %s" % (new_md5, md5, tmp_filepath))
-        self.logger.debug("File md5 verified: %s", tmp_filepath)
+
+        logger.debug("File md5 verified: %s", tmp_filepath)
 
         logger.debug("Moving: %s to %s", tmp_filepath, local_filepath)
         shutil.move(tmp_filepath, local_filepath)
