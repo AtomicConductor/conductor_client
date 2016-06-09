@@ -854,6 +854,7 @@ class Downloader(object):
         # hack to use tempfile to generate a unique filename.  close file object immediately.  This will get thrown out soon
         tmpfile = tempfile.NamedTemporaryFile(prefix=filename, dir=dirpath)
         tmpfile.close()  # close this. otherwise we get warnings/errors about the file handler not being closed
+
         tmp_filepath = tmpfile.name
         logger.debug("tmp_filepath: %s", tmp_filepath)
         # download the file.
