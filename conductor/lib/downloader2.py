@@ -20,7 +20,9 @@ import ntpath
 import re
 import requests
 import random
+import shutil
 import sys
+import tempfile
 import time
 import threading
 import traceback
@@ -768,8 +770,6 @@ class Downloader(object):
         '''
         For the given file information, download the file to disk.  Check whether
         the file already exists and matches the expected md5 before downloading.
-        
-        
         '''
         # Reset bytes downloaded to 0 (in case of retries)
         file_state.bytes_downloaded = 0
@@ -793,14 +793,25 @@ class Downloader(object):
 
         file_state.status = FileDownloadState.STATE_DOWNLOADING
 
+        # Download to a temporary file and then move it
+        dirpath, filename = os.path.split(local_filepath)
+        tmpfile = tempfile.NamedTemporaryFile(prefix=filename, dir=dirpath)
+        tmp_filepath = tmpfile.name
+        logger.debug("tmp_filepath: %s", tmp_filepath)
         # download the file.
-        new_md5 = download_file(url, local_filepath, poll_rate=self.download_progess_polling, state=file_state)
+        new_md5 = download_file(url, tmp_filepath, poll_rate=self.download_progess_polling, state=file_state)
         self.logger.debug("new_md5: %s", new_md5)
         if new_md5 != md5:
-            raise Exception("Downloaded file does not have expected md5. %s vs %s: %s", new_md5, md5, local_filepath)
+            try:
+                logger.debug("Cleaning up temp file: %s", tmp_filepath)
+                os.remove(tmp_filepath)
+            except:
+                logger.warning("Could not cleanup temp file: %s", tmp_filepath)
+            raise Exception("Downloaded file does not have expected md5. %s vs %s: %s" % (new_md5, md5, tmp_filepath))
+        self.logger.debug("File md5 verified: %s", tmp_filepath)
 
-        self.logger.debug("File md5 verified: %s", local_filepath)
-
+        logger.debug("Moving: %s to %s", tmp_filepath, local_filepath)
+        shutil.move(tmp_filepath, local_filepath)
 
         # Set file permissions
         self.logger.debug('\tsetting file perms to 666')

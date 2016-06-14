@@ -1,0 +1,15 @@
+#!/bin/bash
+
+p=$(launchctl getenv PYTHONPATH)
+/bin/launchctl setenv PYTHONPATH $p:/Applications/Conductor.app/Contents/MacOS/python/lib/python2.7/site-packages:/Applications/Conductor.app/Contents/MacOS
+
+p=$(launchctl getenv MAYA_SHELF_PATH)
+/bin/launchctl setenv MAYA_SHELF_PATH $p:/Applications/Conductor.app/Contents/MacOS/maya_shelf
+
+p=$(launchctl getenv XBMLANGPATH)
+/bin/launchctl setenv XBMLANGPATH $p:/Applications/Conductor.app/Contents/MacOS/conductor/resources
+
+p=$(launchctl getenv NUKE_PATH)
+/bin/launchctl setenv NUKE_PATH $p:/Applications/Conductor.app/Contents/MacOS/nuke_menu
+
+/bin/launchctl setenv CONDUCTOR_CONFIG "$HOME/Library/Application Support/Conductor/config.yml"
