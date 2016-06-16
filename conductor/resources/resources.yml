@@ -46,7 +46,8 @@ maya_dependency_attrs:
         - fnm        
     VRayVolumeGrid: #VRay
         - if
-
+    VRayScene: #Vray Scene
+        - FilePath
         
         
 # A dictionary of node types and their corresponing knobs(s) for
