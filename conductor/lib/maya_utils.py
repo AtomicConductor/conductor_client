@@ -385,10 +385,13 @@ def get_ocio_config():
 
 #  Parse the vrscene file paths...
 def parse_vrscene_file(path):
-    f = open(path, 'r')
-    fcontent = f.read()
-    f.close()
-    return re.findall('\s+file="(.+)"', fcontent)
+    files = []
+    with open(path) as infile:
+        for line in infile:
+            res = re.findall('\s+file="(.+)"', line)
+            if res:
+                files += res
+    return files
 
 
 #  Parse the xgen file to find the paths for extra dependencies not explicitly
