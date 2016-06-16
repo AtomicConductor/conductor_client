@@ -356,7 +356,7 @@ def collect_dependencies(node_attrs):
                         dependencies += xgen_dependencies
 
                     if node_type == "VRayScene":
-                        vrscene_dependencies = parse_vrscene_file(path, node)
+                        vrscene_dependencies = parse_vrscene_file(path)
                         logger.debug("vrscene dependencies: %s" % vrscene_dependencies)
                         dependencies += vrscene_dependencies
 
