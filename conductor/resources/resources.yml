@@ -48,6 +48,8 @@ maya_dependency_attrs:
         - if
     VRayScene: #Vray Scene
         - FilePath
+    pgYetiMaya:
+        - cacheFile
         
         
 # A dictionary of node types and their corresponing knobs(s) for

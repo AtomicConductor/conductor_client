@@ -360,6 +360,11 @@ def collect_dependencies(node_attrs):
                         logger.debug("vrscene dependencies: %s" % vrscene_dependencies)
                         dependencies += vrscene_dependencies
 
+                    if node_type == "pgYetiMaya":
+                        input_mode_attr = '%s.inputMode' % node
+                        if cmds.getAttr(input_mode_attr) == 0:
+                            continue
+
                     dependencies.append(path)
 
     #  Grab any OCIO settings that might be there...
