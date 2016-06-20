@@ -355,6 +355,19 @@ def collect_dependencies(node_attrs):
                         logger.debug("xgen_dependencies: %s", xgen_dependencies)
                         dependencies += xgen_dependencies
 
+                    if node_type == "VRayScene":
+                        vrscene_dependencies = parse_vrscene_file(path)
+                        logger.debug("vrscene dependencies: %s" % vrscene_dependencies)
+                        dependencies += vrscene_dependencies
+
+                    if node_type == "pgYetiMaya":
+                        input_mode_attr = '%s.fileMode' % node
+                        yeti_dependencies = parse_yeti_graph(node)
+                        logger.debug("yeti graph dependencies: %s" % yeti_dependencies)
+                        dependencies += yeti_dependencies
+                        if cmds.getAttr(input_mode_attr) == 0:
+                            continue
+
                     dependencies.append(path)
 
     #  Grab any OCIO settings that might be there...
@@ -371,10 +384,40 @@ def collect_dependencies(node_attrs):
     # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
 
+
 def get_ocio_config():
     plug_name = "defaultColorMgtGlobals.cfp"
     if cmds.objExists(plug_name):
         return cmds.getAttr(plug_name)
+
+#  Parse the yeti scene graph for texture nodes
+#  TODO: Expand to also try and find relative textures in IMAGE_SEARCH_PATH
+def parse_yeti_graph(node):
+    textureNodes = cmds.pgYetiGraph(node, listNodes=True, type='texture')
+    files = []
+    if textureNodes:
+        for n in textureNodes:
+            filePath = cmds.pgYetiGraph(node,
+                                      node=n,
+                                      getParamValue=True,
+                                      param='file_name')
+            
+            filePath = cmds.file(filePath, expandName=True, query=True, withoutCopyNumber=True)
+
+            files.append(filePath)
+            
+    return files
+
+#  Parse the vrscene file paths...
+def parse_vrscene_file(path):
+    files = []
+    with open(path) as infile:
+        for line in infile:
+            res = re.findall('\s+file="(.+)"', line)
+            if res:
+                files += res
+    return files
+
 
 #  Parse the xgen file to find the paths for extra dependencies not explicitly
 #  named. This will return a list of files and directories.
