@@ -93,6 +93,10 @@ def parse_args():
     submit_parser.add_argument("--frames",
                                help="frame range to execute over.")
 
+    submit_parser.add_argument("--test_frames",
+                               help="If specified, these frames will run first and the rest of the"
+                                    "job will wait until verification has been given before continuing.")
+
     submit_parser.add_argument("--local_upload",
                                help="Trigger files to be uploaded localy",
                                choices=[False, True],
@@ -191,6 +195,8 @@ def parse_args():
                                      "everyday, while storing the last 7 days "
                                      "of logs"))
 
+    submit_parser.add_argument("--max_instances",
+                               help="Maximum number of instances for this job")
 
     submit_parser.set_defaults(func=run_submit)
 
