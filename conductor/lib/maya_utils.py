@@ -361,7 +361,10 @@ def collect_dependencies(node_attrs):
                         dependencies += vrscene_dependencies
 
                     if node_type == "pgYetiMaya":
-                        input_mode_attr = '%s.inputMode' % node
+                        input_mode_attr = '%s.fileMode' % node
+                        yeti_dependencies = parse_yeti_graph(node)
+                        logger.debug("yeti graph dependencies: %s" % yeti_dependencies)
+                        dependencies += yeti_dependencies
                         if cmds.getAttr(input_mode_attr) == 0:
                             continue
 
@@ -387,6 +390,23 @@ def get_ocio_config():
     if cmds.objExists(plug_name):
         return cmds.getAttr(plug_name)
 
+#  Parse the yeti scene graph for texture nodes
+#  TODO: Expand to also try and find relative textures in IMAGE_SEARCH_PATH
+def parse_yeti_graph(node):
+    textureNodes = cmds.pgYetiGraph(node, listNodes=True, type='texture')
+    files = []
+    if textureNodes:
+        for n in textureNodes:
+            filePath = cmds.pgYetiGraph(node,
+                                      node=n,
+                                      getParamValue=True,
+                                      param='file_name')
+            
+            filePath = cmds.file(filePath, expandName=True, query=True, withoutCopyNumber=True)
+
+            files.append(filePath)
+            
+    return files
 
 #  Parse the vrscene file paths...
 def parse_vrscene_file(path):
