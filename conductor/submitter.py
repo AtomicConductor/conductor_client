@@ -113,6 +113,12 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Set the keyboard focus on the frame range radio button
         self.ui_start_end_rdbtn.setFocus()
+        
+        # Check for resource in config, if available disable lineedit and set value
+        if CONFIG.get('resource'):
+            self.ui_resource_lnedt.setEnabled(False)
+            self.setResource(CONFIG.get('resource'))
+        
 
 
     def refreshUi(self):
