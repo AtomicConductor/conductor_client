@@ -1,0 +1,38 @@
+<!-- form-token.html -->
+<label>Do you already have Conductor token?</label>
+<div class="form-group">
+    <div class="radio">
+        <label>
+           <input type="radio" ng-model="token_type" value="new" checked/>
+           No.
+        </label>
+    </div>
+    <div class="radio">
+        <label>
+            <input type="radio" ng-model="token_type" value="existing"/>
+            Yes.
+        </label>
+    </div>
+</div>
+<div class="form-group row">
+    <div ng-show="token_type == 'new'">
+        Click the button below to be taken to your account profile page.  On the profile page click 'Get Token' to download a token file.  Once you have downloaded the file return to this page to continue.
+        <div class="col-xs-6 col-xs-offset-1" >
+            <a href="https://{{formData.account}}.conductorio.com/profile" target="_blank" class="btn btn-block btn-info" ng-click="token_type = 'existing'">
+                Take me to my profile <span class="glyphicon glyphicon-circle-arrow-right"></span>
+            </a>
+        </div>
+    </div>
+    <div class="col-xs-6 col-xs-offset-1" ng-show="token_type == 'existing'">
+        <label>Please select your token file</label>
+        <input type="file" class="form-control" name="token" on-read-file="formData.token = $fileContent">
+        
+    </div>
+</div>
+
+<div class="form-group row" ng-show="formData.token">
+    That's all we need!  Click Finish to complete setup.
+<div class="col-xs-6 col-xs-offset-3">
+    <button type="submit" ng-click="$window.close()" class="btn btn-danger">Finish</button>
+</div>
+</div>
