@@ -552,32 +552,39 @@ class Downloader(object):
 
             try:
 
+                empty_queue_slots = (self.thread_count * 2) - pending_queue.qsize()
                 # If the queue is full, then sleep
-                if pending_queue.qsize() >= (self.thread_count * 2):
+                if empty_queue_slots <= 0:
     #                 logger.debug('Pending download queue is full (%s Downloads). Not adding any more Downloads' % self.thread_count)
     #                 sleep_time = 0.5
     #                 logger.debug("sleeping3: %s", sleep_time)
     #                 time.sleep(sleep_time)
                     continue
 
+                logger.debug("empty_queue_slots: %s", empty_queue_slots)
+
+
+
                 # Get the the next download
-                download = self.get_next_download()
+                max_count = 15  # Cap the maxiumum request to 15 at a time (this keeps the request from not taking a super long time)
+                downloads = self.get_next_downloads(count=min([empty_queue_slots, max_count]))
     #             logger.debug('download: %s', download)
 
                 # If there is not a download, then sleep
-                if not download:
-    #                 logger.debug('No more downloads to queue. sleeping...')
+                if not downloads:
+                    logger.debug('No more downloads to queue. sleeping %s seconds...', self.naptime)
                     self.nap()
                     continue
 
-                # Ensure that this Download is not already in the pending/downloading queues
-                if _in_queue(pending_queue, download, "download_id") or  _in_queue(downloading_queue, download, "download_id"):
-                    logger.warning("Omitting Redundant Download: %s", download)
-                    continue
+                # Ensure that each Download is not already in the pending/downloading queues
+                for download in downloads:
+                    if _in_queue(pending_queue, download, "download_id") or  _in_queue(downloading_queue, download, "download_id"):
+                        logger.warning("Omitting Redundant Download: %s", download)
+                        continue
 
-                # Add the download to the pending queue
-                logger.debug("adding to pending queue: %s", download)
-                self.pending_queue.put(download)
+                    # Add the download to the pending queue
+                    logger.debug("adding to pending queue: %s", download)
+                    self.pending_queue.put(download)
             except:
                 logger.exception("Exception occurred in QueueThead:\n")
                 self.nap()
@@ -589,11 +596,11 @@ class Downloader(object):
             return
 
 
-
-    def get_next_download(self):
+    @common.dec_timer_exit
+    def get_next_downloads(self, count):
         try:
-            download = _get_next_download(self.location, self.endpoint_downloads_next, self.api_client)
-            return download
+            downloads = _get_next_downloads(self.location, self.endpoint_downloads_next, self.api_client, count=count)
+            return downloads
         except Exception as e:
             logger.exception('Could not get next download')
 
@@ -1200,17 +1207,17 @@ def prepare_dest_dirpath(dir_path):
 
 # @dec_random_exception(percentage_chance=0.05)
 @dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
-def _get_next_download(location, endpoint, client):
-    params = {'location': location}
+def _get_next_downloads(location, endpoint, client, count=1):
+    params = {'location': location,
+              "count": count}
     # logger.debug('params: %s', params)
     response_string, response_code = client.make_request(endpoint, params=params)
 #     logger.debug("response code is:\n%s" % response_code)
 #     logger.debug("response data is:\n%s" % response_string)
     if response_code != 201:
         return None
-    download_job = json.loads(response_string)
-    download_job["timestamp"] = time.time()  # This is here for testing. might be useful to keep, but remove as necessary
-    return download_job
+
+    return json.loads(response_string).get("data", [])
 
 @dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_job_download(endpoint, client, jid, tid):
