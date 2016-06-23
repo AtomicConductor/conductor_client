@@ -2,6 +2,7 @@ import os
 import inspect
 import json
 import yaml
+import errno
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
@@ -14,6 +15,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         
     def _write_config_files(self,config):
+        try:
+            os.makedirs(self.config_dir)
+        except OSError as e:
+            if e.errno == errno.EEXIST and os.path.isdir(self.config_dir):
+                pass
+            else:
+                raise
+            
         with open(os.path.join(self.config_dir,"CONDUCTOR_TOKEN"),'w') as token_file:
             token_file.write(config['token'])
         
