@@ -555,7 +555,7 @@ class Downloader(object):
             try:
 
                 # If the queue is full, then sleep
-                if pending_queue.qsize() >= self.thread_count:
+                if pending_queue.qsize() >= (self.thread_count * 2):
     #                 logger.debug('Pending download queue is full (%s Downloads). Not adding any more Downloads' % self.thread_count)
     #                 sleep_time = 0.5
     #                 logger.debug("sleeping3: %s", sleep_time)
