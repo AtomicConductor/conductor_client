@@ -566,7 +566,7 @@ class Downloader(object):
 
 
                 # Get the the next download
-                max_count = 15  # Cap the maxiumum request to 15 at a time (this keeps the request from not taking a super long time)
+                max_count = 20  # Cap the request to 20 Downloads at a time (this keeps the request from not taking a super long time). This is an arbitrary number and can be adjusted as needed
                 downloads = self.get_next_downloads(count=min([empty_queue_slots, max_count]))
     #             logger.debug('download: %s', download)
 
@@ -1301,7 +1301,7 @@ def _in_queue(queue, item_dict, key):
     For the given queue object, return True if the given item is aleady in the
     queue. Use the given key to match dict item values
     '''
-    for item in queue.queue:
+    for item in tuple(queue.queue):
         if item[key] == item_dict[key]:
             return True
 
