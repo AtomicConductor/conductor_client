@@ -10,7 +10,7 @@
 #!define VERSION "00.00.00.01"
 !define COPYRIGHT "ConductorIO"
 !define DESCRIPTION "ConductorClient"
-!define LICENSE_TXT "eula.txt"
+#!define LICENSE_TXT "eula.txt"
 #!define INSTALLER_NAME "ConductorClient.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
 !define REG_ROOT "HKCU"

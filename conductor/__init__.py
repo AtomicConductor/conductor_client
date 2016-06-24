@@ -5,7 +5,7 @@ import logging
 import tempfile
 import warnings
 
-from conductor.lib import common, loggeria, version_check
+from conductor.lib import common, loggeria, version_check, wizard
 
 #The version string is updated by the build system.
 #Do not modify the following line.
@@ -15,8 +15,8 @@ from conductor.lib import common, loggeria, version_check
 try:
     CONFIG = common.Config().config
 except ValueError:
-    #Launch the setup completion wizard here?
-    raise
+    wizard.run()
+    CONFIG = common.Config().config
 
 # IF there is log level specified in config (which by default there should be), then set it for conductor's logger
 log_level = CONFIG.get("log_level")
