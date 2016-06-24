@@ -35,14 +35,15 @@ angular.module('formApp', ['ngAnimate', 'ui.router'])
 
 // our controller for the form
 // =============================================================================
-.controller('formController', function($scope, $http, $window) {
+.controller('formController', function($scope, $http, $state) {
     
     // we will store all of our form data in this object
     $scope.formData = {};
     
     // function to process the form
     $scope.processForm = function() {
-        $http.post('index.html', $scope.formData)
+        $http.post('index.html', $scope.formData);
+        $state.go('form.finish')
     };
     
 })

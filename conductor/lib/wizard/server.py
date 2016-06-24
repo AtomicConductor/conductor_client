@@ -37,11 +37,8 @@ class Handler(BaseHTTPRequestHandler):
             
         
     def do_POST(self):
-        global keep_running
-        keep_running = False
         self._set_headers()
         self._write_config_files(json.loads(self.rfile.read(int(self.headers['Content-Length']))))
-        self.wfile.write('success')
 
     def do_GET(self):
         path = os.path.sep.join((self.web_root,self.path))
@@ -54,6 +51,9 @@ class Handler(BaseHTTPRequestHandler):
 
         self._set_headers()
         self.wfile.write(content)
+        if 'finish' in self.path:
+            global keep_running
+            keep_running = False
         
     @property
     def web_root(self):
