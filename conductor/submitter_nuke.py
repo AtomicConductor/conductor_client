@@ -11,7 +11,7 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-from conductor import submitter
+from conductor import CONFIG, submitter
 from conductor.lib import file_utils, nuke_utils, pyside_utils, common, api_client
 
 logger = logging.getLogger(__name__)
