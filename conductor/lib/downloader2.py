@@ -389,10 +389,10 @@ class Downloader(object):
     _download_history = None
 
     # record the original threads that started
-    _original_threads = None
+    _original_threads = ()
 
     # record last threads alive
-    _threads_alive = None
+    _threads_alive = ()
 
 
     def __init__(self, thread_count=None, location=None, output_dir=None):
@@ -849,7 +849,9 @@ class Downloader(object):
 
         # Download to a temporary file and then move it
         dirpath, filename = os.path.split(local_filepath)
+        # hack to use tempfile to generate a unique filename.  close file object immediately.  This will get thrown out soon
         tmpfile = tempfile.NamedTemporaryFile(prefix=filename, dir=dirpath)
+        tmpfile.close()  # close this. otherwise we get warnings/errors about the file handler not being closed
         tmp_filepath = tmpfile.name
         logger.debug("tmp_filepath: %s", tmp_filepath)
         # download the file.
