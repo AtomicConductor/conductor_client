@@ -130,7 +130,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             "-X AFWrite.write_exr -F %f /Volumes/af/show/walk/shots/114/114_100/sandbox/mjtang/tractor/nuke_render_job_122/walk_114_100_main_comp_v136.nk"
 
         '''
-        base_cmd = "-F %%f %s %s"
+        base_cmd = "nuke-render -F %%f %s %s"
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = ["-X %s" % write_node for write_node in write_nodes]
@@ -332,11 +332,13 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
 
-
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
 
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
+
+        # the output path gets dynamically generated based upon which write nodes the user has selected
+        conductor_args["output_path"] = data["output_path"]
 
         return conductor_args
 
