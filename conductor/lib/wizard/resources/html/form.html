@@ -1,0 +1,21 @@
+<!-- form.html -->
+<div class="row">
+<div class="col-sm-8 col-sm-offset-2">
+
+    <div id="form-container">
+
+        <div class="page-header text-center">
+            <img src="img/conductor_color.png" height=200/>
+        </div>
+        
+        <!-- use ng-submit to catch the form submission and use our Angular function -->
+        <form id="signup-form" ng-submit="processForm()">
+
+            <!-- our nested state views will be injected here -->
+            <div id="form-views" ui-view></div>
+        </form>
+
+    </div>
+
+</div>
+</div>

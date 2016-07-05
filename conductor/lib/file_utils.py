@@ -68,8 +68,9 @@ def separate_path(path, no_extension=False):
 
 def process_dependencies(paths):
     '''
-    For the given lists of dependency paths, return a dictionary where the keys are the depenency filepaths and the values
-    are paths, and the values are a bool, indicating whether the dependency path is valid. 
+    For the given lists of dependency paths, return a dictionary where the keys 
+    are the depenency filepaths and the values are paths, and the values are a 
+    bool, indicating whether the dependency path is valid. 
     
     '''
     dependencies = {}
@@ -408,4 +409,28 @@ def create_file(filepath, mode=0660):
         os.umask(umask_original)
     handle.write("")
     handle.close()
+
+
+
+def get_tx_paths(filepaths, existing_only=False):
+    '''
+    Return the tx filepaths for the given filepaths 
+    '''
+    return [get_tx_path(path, existing_only=existing_only) for path in filepaths]
+
+
+def get_tx_path(filepath, existing_only=False):
+    '''
+    For the given filepath, consruct a parallel *.tx filepath residing in the same 
+    directory (same name, different extension).
+    If existing_only is True, only return the tx filepath if it exists on disk,
+    otherwise return an empty string.
+    '''
+    filepath_base, ext = os.path.splitext(filepath)
+    tx_filepath = filepath_base + ".tx"
+    if existing_only and not os.path.isfile(tx_filepath):
+        return ""
+    return tx_filepath
+
+
 

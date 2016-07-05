@@ -173,13 +173,11 @@ def get_render_file_prefix():
     need to be updated to properly query those renderers' information. 
     '''
 
-    renderer = cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
-
     # Use the render globals node/attr by default
     prefix_node_attr = "defaultRenderGlobals.imageFilePrefix"
 
-    # If the active renderer is vray, then use the vray node
-    if "vray" in renderer:
+    # If the active renderer is vray, then use the vray node for the file prefix
+    if is_vray_renderer():
         prefix_node_attr = "vraySettings.fileNamePrefix"
 
     # If the node doesn't exist, log an error. We could raise this as an exception,
@@ -332,12 +330,13 @@ def collect_dependencies(node_attrs):
 
     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
     dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
+    logger.debug("maya scene base dependencies: %s", dependencies)
 
     all_node_types = cmds.allNodeTypes()
 
     for node_type, node_attrs in node_attrs.iteritems():
         if node_type not in all_node_types:
-            logger.warning("skipping unknown node type: %s", node_type)
+            logger.debug("skipping unknown node type: %s", node_type)
             continue
 
         for node in cmds.ls(type=node_type):
@@ -347,30 +346,78 @@ def collect_dependencies(node_attrs):
                     plug_value = cmds.getAttr(plug_name)
                     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
-
+                    logger.debug("%s: %s", plug_name, path)
                     #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
                     if node_type == "xgmPalette":
                         sceneFile = cmds.file(query=True, sceneName=True)
                         path = os.path.join(os.path.dirname(sceneFile), plug_value)
-                        dependencies += parse_xgen_file(path, node)
+                        xgen_dependencies = parse_xgen_file(path, node)
+                        logger.debug("xgen_dependencies: %s", xgen_dependencies)
+                        dependencies += xgen_dependencies
+
+                    if node_type == "VRayScene":
+                        vrscene_dependencies = parse_vrscene_file(path)
+                        logger.debug("vrscene dependencies: %s" % vrscene_dependencies)
+                        dependencies += vrscene_dependencies
+
+                    if node_type == "pgYetiMaya":
+                        input_mode_attr = '%s.fileMode' % node
+                        yeti_dependencies = parse_yeti_graph(node)
+                        logger.debug("yeti graph dependencies: %s" % yeti_dependencies)
+                        dependencies += yeti_dependencies
+                        if cmds.getAttr(input_mode_attr) == 0:
+                            continue
 
                     dependencies.append(path)
 
     #  Grab any OCIO settings that might be there...
-    ocio_config = get_ocio_config()
-    if ocio_config:
-        logger.info("OCIO config detected -- %s" % ocio_config)
-        dependencies.append(ocio_config)
-        dependencies.append(parse_ocio_config(ocio_config))
+    ocio_config_filepath = get_ocio_config()
+    if ocio_config_filepath:
+        logger.info("OCIO config detected -- %s" % ocio_config_filepath)
+        logger.debug("OCIO file: %s", ocio_config_filepath)
+        dependencies.append(ocio_config_filepath)
+        ocio_config_dependencies = parse_ocio_config(ocio_config_filepath)
+        logger.debug("OCIO config dependencies: %s", ocio_config_dependencies)
+        dependencies.append(ocio_config_dependencies)
 
 
     # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
 
+
 def get_ocio_config():
     plug_name = "defaultColorMgtGlobals.cfp"
     if cmds.objExists(plug_name):
         return cmds.getAttr(plug_name)
+
+#  Parse the yeti scene graph for texture nodes
+#  TODO: Expand to also try and find relative textures in IMAGE_SEARCH_PATH
+def parse_yeti_graph(node):
+    textureNodes = cmds.pgYetiGraph(node, listNodes=True, type='texture')
+    files = []
+    if textureNodes:
+        for n in textureNodes:
+            filePath = cmds.pgYetiGraph(node,
+                                      node=n,
+                                      getParamValue=True,
+                                      param='file_name')
+            
+            filePath = cmds.file(filePath, expandName=True, query=True, withoutCopyNumber=True)
+
+            files.append(filePath)
+            
+    return files
+
+#  Parse the vrscene file paths...
+def parse_vrscene_file(path):
+    files = []
+    with open(path) as infile:
+        for line in infile:
+            res = re.findall('\s+file="(.+)"', line)
+            if res:
+                files += res
+    return files
+
 
 #  Parse the xgen file to find the paths for extra dependencies not explicitly
 #  named. This will return a list of files and directories.
@@ -432,4 +479,138 @@ def parse_ocio_config(config_file):
     config_path = os.path.dirname(config_file)
     print("Adding LUT config path %s" % config_path + "/" + contents['search_path'])
     return config_path + "/" + contents['search_path']
+
+
+def get_current_renderer():
+    '''
+    Return the name of the current renderer for the maya scene.
+    e.g. 'vray' or 'arnold', etc
+    '''
+    return cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
+
+
+def is_arnold_renderer():
+    '''
+    Return boolean to indicat whether arnold is the current renderer for the maya
+    scene
+    '''
+    return get_current_renderer() in ["arnold"]
+
+
+def is_vray_renderer():
+    '''
+    Return boolean to indicat whether vray is the current renderer for the maya
+    scene
+    '''
+    return get_current_renderer() in ["vray"]
+
+
+def get_mayasoftware_settings_node(strict=True):
+    '''
+    Return the renderGlobals node in the maya scene.  If strict is True, and 
+    no node is found, raise an exception.
+    '''
+    node_type = "renderGlobals"
+    default_name = "defaultRenderGlobals"
+    mayasoftware_nodes = get_node_by_type(node_type, must_exist=strict, many=True)
+    return _get_one_render_node(node_type, mayasoftware_nodes, default_name)
+
+def get_vray_settings_node(strict=True):
+    '''
+    Return the VRaySettingsNode node in the maya scene.  If strict is True, and 
+    no node is found, raise an exception.
+    '''
+    node_type = "VRaySettingsNode"
+    default_name = "vraySettings"
+    vray_nodes = get_node_by_type(node_type, must_exist=strict, many=True)
+    return _get_one_render_node(node_type, vray_nodes, default_name)
+
+
+def get_arnold_settings_node(strict=True):
+    '''
+    Return the aiOptions node in the maya scene.  If strict is True, and 
+    no node is found, raise an exception.
+    '''
+    node_type = "aiOptions"
+    default_name = "defaultArnoldRenderOptions"
+    arnold_nodes = get_node_by_type(node_type, must_exist=strict, many=True)
+    return _get_one_render_node(node_type, arnold_nodes, default_name)
+
+
+def _get_one_render_node(node_type, render_settings_nodes, default_name):
+    '''
+    helper function to return one node of the given render_settings_nodes.
+    
+    If more than on node exists, use the one that has the default name. Otherwise
+    throw an exception. This is really just a temporary hack until we can figure
+    out (decisively via an api call) as to which node is the active render node
+    for the maya scene.
+    '''
+    if not render_settings_nodes:
+        return ""
+
+    if len(render_settings_nodes) > 1:
+        if default_name not in render_settings_nodes:
+            raise Exception("Multiple %s nodes found in maya scene: %s" %
+                            (node_type, render_settings_nodes))
+        return default_name
+
+    return render_settings_nodes[0]
+
+
+def get_render_settings_node(renderer_name, strict=True):
+    '''
+    return the name of the renderer's settings node.
+    e.g. "defaultRenderGlobals" or "vraySettings" or "defaultArnoldRenderOptions"
+    '''
+    renderer_settings_gettr = {"vray": get_vray_settings_node,
+                               "arnold": get_arnold_settings_node,
+                               "mayaSoftware": get_mayasoftware_settings_node}
+
+    if renderer_name not in renderer_settings_gettr and strict:
+        raise Exception("Renderer not supported: %s", renderer_name)
+
+    return renderer_settings_gettr[renderer_name](strict=strict)
+
+
+
+def is_arnold_tx_enabled():
+    '''
+    Return True if the "Use Existing .tx Textures" option is enabled in Arnolds
+    render settings
+    '''
+    arnold_node = get_arnold_settings_node(strict=False)
+    if arnold_node:
+        return cmds.getAttr("%s.use_existing_tiled_textures" % arnold_node)
+
+
+
+def get_node_by_type(node_type, must_exist=True, many=False):
+    '''
+    For the given node type, return the one node found in the maya scene of that
+    type. If many is True, allow more than one to be returned, otherwise raise
+    an exception if more than one is found. If must_exist is True, raise an
+    exception if no nodes are found in the maya scene. 
+    '''
+
+    nodes = cmds.ls(type=node_type) or []
+    if not nodes and must_exist:
+        raise Exception("No %s nodes found in maya scene." % node_type)
+
+
+    if (len(nodes) > 1) and not many:
+        raise Exception("More than one %s node found in maya scene: %s" % (node_type, nodes))
+
+    # If many are allowed, return a list of all nodes (possibly empty list)
+    if many:
+        return nodes
+
+    # Otherwise return a single value
+
+    # if there is a value in the list, then return it
+    if nodes:
+        return nodes[0]
+
+    # Otherwise return an empty string
+    return ""
 
