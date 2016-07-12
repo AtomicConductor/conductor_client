@@ -1,7 +1,7 @@
 /* style.css */
 /* ANIMATION STYLINGS
 ============================================================================= */
-#signup-form            { position:relative; min-height:300px; overflow:hidden; padding:30px; }
+#signup-form            { position:relative; min-height:300px; overflow:hidden; padding:0 30px; }
 #form-views             { width:auto; }
 
 /* basic styling for entering and leaving */
@@ -50,4 +50,101 @@
 @-webkit-keyframes slideInRight {
     from    { -webkit-transform:translateX(200%); }
     to      { -webkit-transform: translateX(0); }
+}
+
+/* custom styling */
+.form-control:focus {
+  background-color: #4d5261 !important;
+  box-shadow: none !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 5000s ease-in-out 0s;
+  -webkit-text-fill-color: #C1C6CC !important;
+}
+
+
+.wizard-content-area {
+  position: relative;
+  height: 480px;
+  margin-top: 15px;
+  max-width: 1024px;
+  border: 1px solid #434857;
+  border-radius: 4px;
+  background-color: #212630;
+}
+
+.welcome-container {
+  margin: auto;
+  width: 80%;
+}
+
+.begin-button {
+  width: 65%;
+  margin-top: 10px;
+}
+
+.wizard-signup-container,
+.wizard-token-container {
+  text-align: center;
+}
+
+.wizard-signup-button-container {
+  margin-top: 10px;
+}
+
+.wizard-radio-group {
+  margin-left: -50px;
+}
+
+.wizard-account-area {
+  width: 80%;
+  margin: auto;
+}
+
+.wizard-form {
+  margin-top: -5px;
+}
+
+.wizard-company-entry-container {
+  margin: auto;
+  width: 50%;
+}
+
+.wizard-token-profile-button {
+  margin-top: 10px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 65%;
+}
+
+.upload-button {
+  height: 25px !important;
+  font-size: 12px !important;
+  font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  padding-top: 3px !important;
+  margin-left: 10px !important;
+  color: #2780B2 !important;
+  border: 1px solid #2780B2 !important;
+  background-color: transparent !important;
+}
+
+.upload-button:hover {
+  background-color: #2780B2 !important;
+  color: white !important;
+}
+
+.finish-upload-area {
+  width: 80%;
+  margin: 5px auto;
+}
+
+.wizard-finish-button {
+  margin-top: 5px;
 }

@@ -1,6 +1,7 @@
 <!-- form-signup.html -->
-<label>Do you already have Conductor account?</label>
-<div class="form-group">
+<div class="wizard-signup-container">
+  <label>Do you already have Conductor account?</label>
+  <div class="form-group wizard-radio-group">
     <div class="radio">
         <label>
            <input type="radio" ng-model="account_type" value="new" checked/>
@@ -13,27 +14,31 @@
             Yes.
         </label>
     </div>
-</div>
-<div class="form-group row" >
-    <div ng-show="account_type == 'new'" class="text-center">
+  </div>
+  <div class="form-group container-fluid">
+    <div ng-show="account_type == 'new'" class="text-center wizard-account-area">
     Please click the button below to sign up for a Conductor account. Once you have signed up please return to this page to continue.
-        <div class="col-xs-6 col-xs-offset-1" >
-            <a href="https://www.conductorio.com/api/signup" target="_blank" class="btn btn-block btn-info" ng-click="account_type = 'existing'">
+        <div class="wizard-signup-button-container">
+            <a href="https://www.conductorio.com/api/signup"
+               target="_blank"
+               class="btn btn-sm btn-block btn-primary-outline"
+               ng-click="account_type = 'existing'">
                 Take me to the signup page <span class="glyphicon glyphicon-circle-arrow-right"></span>
             </a>
         </div>
     </div>
-<div class="col-xs-6 col-xs-offset-1" ng-show="account_type == 'existing'">
+    <div class="wizard-company-entry-container" ng-show="account_type == 'existing'">
         <label>Please enter your company name</label>
-        <input type="text" class="form-control" name="account" ng-model="formData.account">
+        <input type="text" class="form-control input-sm" name="account" ng-model="formData.account">
         
-</div>
-</div>
+    </div>
+  </div>
 
-<div class="form-group row" ng-show="formData.account">
-<div class="col-xs-6 col-xs-offset-3">
-    <a ui-sref="form.token" class="btn btn-block btn-info">
-    Next Section <span class="glyphicon glyphicon-circle-arrow-right"></span>
-    </a>
-</div>
+  <div class="form-group row" ng-show="formData.account && account_type !== 'new'">
+    <div class="col-xs-6 col-xs-offset-3">
+        <a ui-sref="form.token" class="btn btn-block btn-primary-outline btn-sm">
+        Next Section <span class="glyphicon glyphicon-circle-arrow-right"></span>
+        </a>
+    </div>
+  </div>
 </div>
