@@ -3,15 +3,16 @@ import inspect
 import json
 import yaml
 import errno
+import mimetypes
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 keep_running = True
 
 class Handler(BaseHTTPRequestHandler):
-    def _set_headers(self):
+    def _set_headers(self, path=''):
         self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        self.send_header('Content-type', mimetypes.guess_type(path)[0])
         self.end_headers()
         
     def _write_config_files(self,config):
@@ -49,7 +50,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404)
             return
 
-        self._set_headers()
+        self._set_headers(path)
         self.wfile.write(content)
         if 'finish' in self.path:
             global keep_running
