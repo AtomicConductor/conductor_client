@@ -93,7 +93,7 @@ def parse_args():
     submit_parser.add_argument("--frames",
                                help="frame range to execute over.")
 
-    submit_parser.add_argument("--test_frames",
+    submit_parser.add_argument("--scout_frames",
                                help="If specified, these frames will run first and the rest of the"
                                     "job will wait until verification has been given before continuing.")
 
