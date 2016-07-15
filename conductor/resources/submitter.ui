@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>418</width>
-    <height>455</height>
+    <height>472</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -206,7 +206,7 @@
                    <property name="checked">
                     <bool>true</bool>
                    </property>
-                   <property name="isUserSetting" stdset="0">
+                   <property name="isFileUserPref" stdset="0">
                     <bool>true</bool>
                    </property>
                   </widget>
@@ -229,7 +229,7 @@
                    <property name="text">
                     <string>Custom</string>
                    </property>
-                   <property name="isUserSetting" stdset="0">
+                   <property name="isFileUserPref" stdset="0">
                     <bool>true</bool>
                    </property>
                   </widget>
@@ -278,7 +278,7 @@
                          <property name="value">
                           <number>1</number>
                          </property>
-                         <property name="isUserSetting" stdset="0">
+                         <property name="isFileUserPref" stdset="0">
                           <bool>true</bool>
                          </property>
                         </widget>
@@ -335,7 +335,7 @@
                       <property name="alignment">
                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                       </property>
-                      <property name="isUserSetting" stdset="0">
+                      <property name="isFileUserPref" stdset="0">
                        <bool>true</bool>
                       </property>
                      </widget>
@@ -385,7 +385,7 @@
                       <property name="alignment">
                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                       </property>
-                      <property name="isUserSetting" stdset="0">
+                      <property name="isFileUserPref" stdset="0">
                        <bool>true</bool>
                       </property>
                      </widget>
@@ -411,7 +411,7 @@
     - frame range with frame skipping. e.g: &quot;1001-1006x2&quot;
     - or a mixture, e.g &quot;1001, 1005-1010, 1020-1030x5&quot;</string>
                       </property>
-                      <property name="isUserSetting" stdset="0">
+                      <property name="isFileUserPref" stdset="0">
                        <bool>true</bool>
                       </property>
                      </widget>
@@ -464,7 +464,7 @@
                 <property name="currentIndex">
                  <number>-1</number>
                 </property>
-                <property name="isUserSetting" stdset="0">
+                <property name="isFileUserPref" stdset="0">
                  <bool>true</bool>
                 </property>
                </widget>
@@ -499,7 +499,7 @@
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
-                <property name="isUserSetting" stdset="0">
+                <property name="isFileUserPref" stdset="0">
                  <bool>true</bool>
                 </property>
                </widget>
@@ -609,7 +609,7 @@
                 <property name="readOnly">
                  <bool>false</bool>
                 </property>
-                <property name="isUserSetting" stdset="0">
+                <property name="isFileUserPref" stdset="0">
                  <bool>true</bool>
                 </property>
                </widget>
@@ -657,7 +657,7 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
-             <property name="isUserSetting" stdset="0">
+             <property name="isFileUserPref" stdset="0">
               <bool>true</bool>
              </property>
             </widget>
@@ -699,10 +699,6 @@
      </widget>
     </item>
    </layout>
-   <zorder>widget_4</zorder>
-   <zorder>tabWidget</zorder>
-   <zorder>widget_6</zorder>
-   <zorder>ui_submit_pbtn</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -722,6 +718,7 @@
       <string>Set Log Level</string>
      </property>
     </widget>
+    <addaction name="ui_reset_preferences_action"/>
     <addaction name="ui_set_log_level_qmenu"/>
    </widget>
    <addaction name="ui_options_qmenu"/>
@@ -729,6 +726,11 @@
   <action name="actionWARNING">
    <property name="text">
     <string>WARNING</string>
+   </property>
+  </action>
+  <action name="ui_reset_preferences_action">
+   <property name="text">
+    <string>Reset Preferences</string>
    </property>
   </action>
  </widget>
