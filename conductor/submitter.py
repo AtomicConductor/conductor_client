@@ -23,6 +23,8 @@ RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
 
 logger = logging.getLogger(__name__)
 
+
+
 '''
 TODO:
 1. Create qt resource package or fix filepaths for all images to be set during code execution
@@ -108,6 +110,12 @@ class ConductorSubmitter(QtGui.QMainWindow):
         default_project = CONFIG.get('project')
         if default_project:
             self.setProject(default_project, strict=False)
+
+        # Instantiate a user prefs  object
+        self.prefs = SubmitterPrefs(company_name=self.company_name,
+                                    application_name=self.__class__.__name__,
+                                    file_widgets=self.getUserPrefsFileWidgets(),
+                                    global_widgets=self.getUserPrefsGlobalWidgets())
 
         # Hide the widget that holds advanced settings. TODO: need to come back to this.
         self.ui_advanced_wgt.hide()
@@ -205,6 +213,28 @@ class ConductorSubmitter(QtGui.QMainWindow):
         # Add the Logging Menu
         self.addLoggingMenu(self.ui_set_log_level_qmenu)
 
+        # Connect the "reset preferences" action
+        self.ui_reset_preferences_action.triggered.connect(self.resetUserPreferences)
+
+
+    def resetUserPreferences(self):
+        '''
+        Prompt the user to delete their preferences, and delete them if yes.
+        '''
+        title = "Delete User Preferences?"
+        message = "Delete your Conductor preferences & history from this machine?"
+
+        yes, _ = pyside_utils.launch_yes_no_dialog(title, message,
+                                                   show_not_agin_checkbox=False,
+                                                   parent=self)
+        # If the user has confirmed
+        if yes:
+            self.prefs.clear()
+            self.prefs.sync()
+            # show confirmation of deletion
+            pyside_utils.launch_message_box("Deleted",
+                                            "Preferences deleted",
+                                            parent=self)
 
     def addLoggingMenu(self, menu):
         '''
@@ -482,6 +512,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             pyside_utils.launch_error_box(title, message, parent=self)
 
 
+
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
     def on_ui_start_end_rdbtn_toggled(self, on):
 
@@ -579,17 +610,31 @@ class ConductorSubmitter(QtGui.QMainWindow):
         app.exec_()
 
 
-    def getUserSettingWidgets(self):
+    def getUserPrefsGlobalWidgets(self):
         '''
         Return a list of widget objects that are appropriate for restoring their
-        state (values) from a user's preference file. These widgets are identified 
-        by a dynamic property that has been set on them via Qt Designer.
-        The property name is "isUserSetting" and it's a bool which should be 
-        set to True.
+        state (values) from a user's preference file. Specifically, these widgets 
+        are those which a user's GLOBAL  preferences should be recorded/loaded for. 
+        These widgets are identified by a dynamic property that has been set on 
+        them via Qt Designer.
+        
         '''
-        user_setting_identifier = "isUserSetting"
+        pref_identifier = "isGlobalUserPref"
         return pyside_utils.get_widgets_by_property(self,
-                                                    user_setting_identifier,
+                                                    pref_identifier,
+                                                    match_value=True,
+                                                    property_value=True)
+    def getUserPrefsFileWidgets(self):
+        '''
+        Return a list of widget objects that are appropriate for restoring their
+        state (values) from a user's preference file. Specifically, these widgets 
+        are those which a user's FILE-SPECIFIC should be recorded/loaded for. 
+        These widgets are identified by a dynamic property that has been set on 
+        them via Qt Designer.
+        '''
+        pref_identifier = "isFileUserPref"
+        return pyside_utils.get_widgets_by_property(self,
+                                                    pref_identifier,
                                                     match_value=True,
                                                     property_value=True)
 
@@ -607,23 +652,14 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def loadUserSettings(self):
         '''
-        Read any user preferences that may have been stored for the currently 
-        opened source file (maya/katana/nuke file, etc) and apply those values
-        to the widgets. These widgets are identified 
-        by a dynamic property that has been set on them via Qt Designer.
-        The property name is "isUserSetting" and it's a bool which should be 
-        set to True.
+        Read and apply user preferences (widget values, etc)
         '''
         try:
+            self.prefs.sync()
             source_filepath = self.getSourceFilepath()
-            usersetting_widgets = self.getUserSettingWidgets()
-            pyside_utils.UiUserSettings.loadUserSettings(company_name=self.company_name,
-                                                         application_name=self.__class__.__name__,
-                                                         group_name=source_filepath,
-                                                         widgets=usersetting_widgets)
+            self.prefs.loadSubmitterUserPrefs(source_filepath)
         except:
-            settings_filepath = pyside_utils.UiUserSettings.getSettingsFilepath(self.company_name,
-                                                                                self.__class__.__name__)
+            settings_filepath = self.prefs.getSettingsFilepath()
             message = ("Unable to apply user settings. "
                        "You may want to modify/delete settings here: %s" % settings_filepath)
             logger.exception(message)
@@ -635,11 +671,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         try:
             source_filepath = self.getSourceFilepath()
-            usersetting_widgets = self.getUserSettingWidgets()
-            pyside_utils.UiUserSettings.saveUserSettings(company_name=self.company_name,
-                                                         application_name=self.__class__.__name__,
-                                                         group_name=source_filepath,
-                                                         widgets=usersetting_widgets)
+            self.prefs.saveSubmitterUserPrefs(source_filepath)
+            self.prefs.sync()
         except:
             logger.exception("Unable to save user settings:")
 
@@ -700,6 +733,55 @@ class ConductorSubmitter(QtGui.QMainWindow):
             enforced_md5s[filepath] = common.generate_md5(filepath, base_64=True)
 
         return enforced_md5s
+
+
+class SubmitterPrefs(pyside_utils.UiFilePrefs):
+
+    '''
+    A class for interfacing with User preferences for the submitter UI.  
+    This subclasses adds functionality that is specific to the Conductor submitter. 
+    
+    Preference names:
+    
+    Things to consider:
+        1. Because preferences are optional/"superflous" they should NEVER break 
+           the submitter UI. Therefore all pref reading/writing needs to be 
+           safegaurded against(i.e. try/except) so that it doesn't halt usage.
+        2. Because the getting/setting of a preference may fail, be sure to model
+           preferences in a way so that they will not result in dangerous behavior
+           if they fail. i.e. don't allow the absense of a preference value cause
+           the user to default to doing something dangerous (such as submit a 
+           high frame/corecount job) 
+    
+    '''
+    # PREFERENCE NAMES (these the names that are used/written to the preference file
+
+
+    @common.ExceptionLogger("Failed to load Conductor user preferences. You may want to reset your preferences from the options menu")
+    def loadSubmitterUserPrefs(self, source_filepath):
+        '''
+        Load both the global and file-specific (e.g.nuke/maya file) user 
+        preferences for the UI widgets. This will reinstate any values on the
+        widgets that that were recorded on them from the last time. 
+        
+        First load the global preferences, then load the file-specific prefs
+        which will override and of the global prefs
+        '''
+        # Load the global prefs
+        self.loadGlobalWidgetPrefs()
+
+        # Load the file-specific prefs
+        self.loadFileWidgetPrefs(source_filepath)
+
+    @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
+    def saveSubmitterUserPrefs(self, source_filepath):
+        '''
+        Save current widget settings to the user's preference file.  These settings
+        are recorded per source file (maya/katana/nuke file, etc).
+        '''
+
+        self.saveGlobalWidgetPrefs()
+        self.saveFileWidgetPrefs(source_filepath)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+import base64
+import functools
 import hashlib
 import logging
 import math
@@ -9,9 +11,8 @@ import subprocess
 import sys
 import time
 import traceback
-import base64
 import yaml
-from functools import wraps
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,126 @@ def on_windows():
     Return True if the current system is a Windows platform
     '''
     return platform.system() == "Windows"
+
+
+class ExceptionAction(object):
+    '''
+    This is a base class to be used for constructing decorators that take a
+    specific action when the decorated method/function raises an exception.
+    For example, it can send a message or record data to a database before
+    the exception is raised, and then (optionally) raise the exception.
+    Optionally specify particular exceptions (classes) to be omiited from taking
+    action on (though still raise the exception)
+    
+    disable_var: str. An environment variable name, which if found in the runtime
+                      environement will disable the action from being taken. This
+                      can be useful when a developer is activeky developing and
+                      does not want the decorator to take action.
+    '''
+
+    def __init__(self, raise_=True, omitted_exceptions=(), disable_var=""):
+        self.omitted_exceptions = omitted_exceptions
+        self.raise_ = raise_
+        self.disable_var = disable_var
+
+    def __call__(self, function):
+        '''
+        This gets called during python compile time (as all decorators do).
+        It will always have only a single argument: the function this is being
+        decorated.  It's responsbility is to return a callable, e.g. the actual
+        decorator function 
+        '''
+        @functools.wraps(function)
+        def decorater_function(*args, **kwargs):
+            '''
+            The decorator function
+            
+            Tries to execute the decorated function. If an exception occurs,
+            it is caught, takes the action, and then raises the exception. 
+            '''
+
+            try:
+                return function(*args, **kwargs)
+            except Exception as e:
+                # IF the exception is one that is to be ignored, then simply raise
+                # it. No further action to take
+                if isinstance(e, self.omitted_exceptions) or (self.disable_var and os.environ.get(self.disable_var)):
+                    logger.debug("Skipping exception action")
+                    raise
+
+                # Wrap the action in a try/except so that this decorator does
+                # not block/disrupt the behavior of the wrapped function/method
+                try:
+                    self.take_action(e)
+                except:
+                    failed_method_name = "%s.%s.%s" % (__name__, self.__class__.__name__, self.take_action.__name__)
+                    logger.error("%s failed:\n%s", failed_method_name, traceback.format_exc())
+
+
+                # Raise the original exception if indicated to do so
+                if self.raise_:
+                    raise e
+
+        return decorater_function
+
+
+    def take_action(self, e):
+        '''
+        Overide this method to do something useful before raising the exception.
+        
+        e.g.: 
+            print "sending error message to mom: %s" % traceback.format_exc()
+        '''
+        raise NotImplementedError
+
+class ExceptionLogger(ExceptionAction):
+    '''
+    DECORATOR
+    If the decorated function raises an exception, this decorator can log
+    the exception and continue (suppressing the actual exception.  A message 
+    may be prepended to the exception message.
+        
+    example output:
+    
+        >> broken_function()
+        # Warning: conductor.lib.common : My prependend message
+        Traceback (most recent call last):
+          File "/usr/local/lschlosser/code/conductor_client/conductor/lib/common.py", line 85, in decorater_function
+            return function(*args, **kwargs)
+          File "<maya console>", line 4, in broken_function
+        ZeroDivisionError: integer division or modulo by zero
+     
+    
+    '''
+    def __init__(self, message="", log_traceback=True, log_level=logging.WARNING,
+                 raise_=False, omitted_exceptions=(), disable_var=""):
+        '''
+        message: str. The prepended message
+        log_level: int. The log level to log the message as
+        raise_: bool.  Whether to raise (i.e. not supress) the exception after
+                it's been logged.
+        '''
+
+        self._message = message
+        self._log_traceback = log_traceback
+        self._log_level = log_level
+        super(ExceptionLogger, self).__init__(raise_=raise_,
+                                              omitted_exceptions=omitted_exceptions,
+                                              disable_var=disable_var)
+
+    def take_action(self, error):
+        '''
+        Log out the message
+        '''
+        msg = ""
+        if self._message:
+            msg += self._message
+        if self._log_traceback:
+            # check if msg is empty or not.  Don't want to add a newline to empty line.
+            if msg:
+                msg += "\n"
+            msg += traceback.format_exc()
+        logger.log(self._log_level, msg)
 
 
 def retry(function, retry_count=5):
@@ -75,7 +196,7 @@ def retry(function, retry_count=5):
 def dec_timer_exit(func):
     '''
     '''
-    @wraps(func)
+    @functools.wraps(func)
     def wrapper(*a, **kw):
         func_name = getattr(func, "__name__", "<Unknown function>")
         start_time = time.time()
@@ -95,7 +216,7 @@ def dec_catch_exception(raise_=False):
     '''
     def catch_decorator(func):
 
-        @wraps(func)
+        @functools.wraps(func)
         def wrapper(*args, **kwds):
             try:
                 return func(*args, **kwds)
