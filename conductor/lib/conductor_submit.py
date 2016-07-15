@@ -87,9 +87,6 @@ class Submit():
         self.frames = self.resolve_arg(args, 'frames', "")
         logger.debug("frames: %s", self.frames)
 
-        self.test_frames = self.resolve_arg(args, 'test_frames', "")
-        logger.debug("test_frames: %s", self.test_frames)
-
         self.job_title = self.resolve_arg(args, 'job_title', "")
         logger.debug("job_title: %s", self.job_title)
 
@@ -117,6 +114,9 @@ class Submit():
 
         self.project = self.resolve_arg(args, 'project', "")
         logger.debug("project: %s", self.project)
+
+        self.scout_frames = self.resolve_arg(args, 'scout_frames', "")
+        logger.debug("scout_frames: %s", self.scout_frames)
 
         self.upload_file = self.resolve_arg(args, 'upload_file', "")
         logger.debug("upload_file: %s", self.upload_file)
@@ -307,7 +307,7 @@ class Submit():
                 submit_dict['environment'] = self.environment
             if self.max_instances:
                 submit_dict['max_instances'] = int(self.max_instances)
-            submit_dict['test_frames'] = self.test_frames
+            submit_dict['scout_frames'] = self.scout_frames
 
 
         logger.debug("send_job JOB ARGS:")

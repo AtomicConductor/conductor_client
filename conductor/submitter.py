@@ -20,6 +20,7 @@ from conductor import submitter_resources  # This is a required import  so that 
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
+SUCCESS_CODES_SUBMIT = [201, 204]
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
         self._setCustomRangeValidator()
         self.ui_custom_lnedt.textChanged.connect(self._validateCustomFramesText)
 
+        # connect the scout job checkbox signal
+        self.ui_scout_job_chkbx.stateChanged.connect(self.saveScoutJobPref)
+
         # Set the window title name
         self.setWindowTitle(self._window_title)
 
@@ -116,6 +120,10 @@ class ConductorSubmitter(QtGui.QMainWindow):
                                     application_name=self.__class__.__name__,
                                     file_widgets=self.getUserPrefsFileWidgets(),
                                     global_widgets=self.getUserPrefsGlobalWidgets())
+
+
+        # Apply the user settings for scout job use
+        self.LoadScoutJobCheckboxPreference()
 
         # Hide the widget that holds advanced settings. TODO: need to come back to this.
         self.ui_advanced_wgt.hide()
@@ -211,30 +219,10 @@ class ConductorSubmitter(QtGui.QMainWindow):
         assert menubar, "No menubar found!"
 
         # Add the Logging Menu
-        self.addLoggingMenu(self.ui_set_log_level_qmenu)
+        self.addLoggingMenu(self.ui_set_log_level_menu)
 
         # Connect the "reset preferences" action
-        self.ui_reset_preferences_action.triggered.connect(self.resetUserPreferences)
-
-
-    def resetUserPreferences(self):
-        '''
-        Prompt the user to delete their preferences, and delete them if yes.
-        '''
-        title = "Delete User Preferences?"
-        message = "Delete your Conductor preferences & history from this machine?"
-
-        yes, _ = pyside_utils.launch_yes_no_dialog(title, message,
-                                                   show_not_agin_checkbox=False,
-                                                   parent=self)
-        # If the user has confirmed
-        if yes:
-            self.prefs.clear()
-            self.prefs.sync()
-            # show confirmation of deletion
-            pyside_utils.launch_message_box("Deleted",
-                                            "Preferences deleted",
-                                            parent=self)
+        self.addResetPreferencesMenu(self.ui_reset_preferences_menu)
 
     def addLoggingMenu(self, menu):
         '''
@@ -258,6 +246,56 @@ class ConductorSubmitter(QtGui.QMainWindow):
             action.setChecked(current_level == level_value)
             action_group.addAction(action);
 
+
+
+    def addResetPreferencesMenu(self, menu):
+        '''
+        For the given menu object, dynamically generate a action item for
+        each log level (from the loggeria module). 
+        '''
+
+        # RESET ALL PREFERENCES
+        action_name = "Gloal Preferences"
+        title = "Reset Global Preferences"
+        message = "Reset Global Conductor preferences"
+        global_func = functools.partial(self._resetPreferences, title, message)
+        global_action = menu.addAction(action_name, global_func)
+        global_action.setToolTip(message)
+
+
+        # RESET FILE PREFERENCES
+        action_name = "File Preferences"
+        title = "Reset file Preferencess"
+        message = "Reset the Conductor preferences for the open file?"
+        source_filepath = self.getSourceFilepath()
+        fle_func = functools.partial(self._resetPreferences, title, message, filepath=source_filepath)
+        file_action = menu.addAction(action_name, fle_func)
+        file_action.setToolTip(message)
+
+
+    def _resetPreferences(self, title, message, filepath=None):
+        '''
+        Prompt the user to delete their preferences, and delete them if yes.
+        
+        If a filepath is given, then delete the preferenes for the given filepath.
+        Otherwise delete the global preferences.
+        '''
+        # Prompt the user
+        yes, _ = pyside_utils.launch_yes_no_dialog(title, message,
+                                                   show_not_agin_checkbox=False,
+                                                   parent=self)
+        # If the user has confirmed deletion
+        if yes:
+            if filepath:
+                self.prefs.clearFilePrefs(filepath)
+            else:
+                self.prefs.clearGlobalPrefs()
+
+            self.prefs.sync()
+            # show confirmation of deletion
+            pyside_utils.launch_message_box("Deleted",
+                                            "Preferences Deleted",
+                                            parent=self)
 
 
     def populateInstanceTypeCmbx(self):
@@ -404,6 +442,19 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         self.ui_notify_lnedt.setText(str(value))
 
+
+    def getScoutJobCheckbox(self):
+        '''
+        Return the checkbox value for the "Scout Job" checkbox 
+        '''
+        return self.ui_scout_job_chkbx.isChecked()
+
+    def setScoutJobCheckbox(self, bool_):
+        '''
+        Set the checkbox value for the "Scout Job" checkbox 
+        '''
+        return self.ui_scout_job_chkbx.setChecked(bool_)
+
     def generateConductorArgs(self, data):
         '''
         Return a dictionary which contains the necessary conductor argument names
@@ -426,6 +477,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
+        conductor_args["scout_frames"] = self.getScoutFrames()
         return conductor_args
 
     def getCommand(self):
@@ -453,8 +505,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         return self.ui_force_upload_chkbx.isChecked()
 
-    @pyside_utils.wait_cursor
-    @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
     def runConductorSubmission(self, data):
         '''
         Instantiate a Conductor Submit object with the given conductor_args 
@@ -468,7 +518,13 @@ class ConductorSubmitter(QtGui.QMainWindow):
         for arg_name, arg_value in conductor_args.iteritems():
             logger.debug("%s: %s", arg_name, arg_value)
 
-        # Instantiate a conductor Submit object and run the submission!
+        return self._runSubmission(conductor_args)
+
+
+
+    @pyside_utils.wait_cursor
+    @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
+    def _runSubmission(self, conductor_args):
         try:
             submission = conductor_submit.Submit(conductor_args)
             response, response_code = submission.main()
@@ -478,9 +534,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             message = "".join(traceback.format_exception(*sys.exc_info()))
             pyside_utils.launch_error_box(title, message, self)
             raise
-
         return response_code, response
-
 
     def getLocalUpload(self):
         '''
@@ -497,7 +551,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def launch_result_dialog(self, response_code, response):
 
         # If the job submitted successfully
-        if response_code in [201, 204]:
+        if response_code in SUCCESS_CODES_SUBMIT:
             job_id = str(response.get("jobid") or 0).zfill(5)
             title = "Job Submitted"
             job_url = CONFIG['url'] + "/job/" + job_id
@@ -510,7 +564,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
             title = "Job Submission Failure"
             message = "Job submission failed: error %s" % response_code
             pyside_utils.launch_error_box(title, message, parent=self)
-
 
 
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
@@ -544,6 +597,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         response_code, response = self.runConductorSubmission(data)
         self.runPostSubmission(response_code)
 
+        # Launch a dialog box what diesplays the results of the job submission
         self.launch_result_dialog(response_code, response)
 
 
@@ -586,9 +640,11 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def _validateCustomFramesText(self, text):
         '''
-        
+        Validate that the given text conforms to a valid frame range expression
+        If the text does not conform to the validator, colorize the lineedit so
+        that it's apparent to the user.
         '''
-        if self.frame_str_validator.validate(text, len(text))[0] == QtGui.QValidator.Invalid:
+        if not text or self.frame_str_validator.validate(text, len(text))[0] == QtGui.QValidator.Invalid:
             style_sheet = "background-color: rgb(130, 63, 63);"
         else:
             style_sheet = ""
@@ -734,6 +790,144 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         return enforced_md5s
 
+    def getDefaultScoutFrames(self):
+        '''
+        Return the default scout frames for the open scene file.  This should
+        attempt to return the first, middle, and last frame 
+        Logic order:
+            1. If the "start" and "end" fields are active/populated in the submitter UI
+               then use that range to determine first, middle, last scout frames
+            2. If the use has specified a custom frame range in the submitter UI,
+               Then return None 
+        '''
+        try:
+            if self.ui_start_end_rdbtn.isChecked():
+                start = self.getStartFrame()
+                end = self.getEndFrame()
+                middle = int((float(start) + float(end)) / 2)
+                frames = sorted(set([int(start), int(middle), int(end)]))
+                scout_frames_str = ", ".join([str(f) for f in frames])
+                return scout_frames_str
+        except:
+            logger.warning("Failed to load default scout frames\n%s", traceback.format_exc())
+
+        # If there is failure or we can't derive the frame range, simply return empty string
+        return ""
+
+    def getScoutFrames(self):
+        '''
+        If the "Scout Job" checkbox is checked, promput the user to ender desired scout frames.
+        If the user has submitted scout frames in the past, then prepopulate those frames
+        in the dialog box. Otherwise generate default scout frames
+        '''
+
+        # If the button that was pressed was the submit_job button (not the submit scout job button)
+        if self.getScoutJobCheckbox():
+
+            source_filepath = self.getSourceFilepath()
+
+            # Retrieve any scout frames from the user's prefs, or use defaults
+            default_scout_frames = self.prefs.getFileScoutFrames(source_filepath) or self.getDefaultScoutFrames()
+
+            # Launch the scout frames input dialog
+            ok, scout_frames = self.launchScoutFramesDialog(default_scout_frames)
+
+            # if the user cancelled
+            if not ok:
+                raise Exception("Cancelled")  # todo:(lws) Should handle this more gracefully. Probably raise custom exception
+
+            # Record the scout frames specified to the user prefs
+            self.prefs.setFileScoutFrames(source_filepath, scout_frames)
+            return scout_frames
+
+
+    def launchScoutFramesDialog(self, default_scout_frames):
+        '''
+        Launch a dialog box to prompt the user to enter their desired scout
+        frames.  Prepopulate the lineedit field with any scout frames that have 
+        been submitted previous for the current file (read from preferences). 
+        '''
+        lineedit_tooltip = ("Specify desired scout frames:\n"
+                 "    - individual frame(s), e.g \"1001, 1006\"\n"
+                 "    - frame range, e.g \"1001-1006\"\n"
+                 "    - frame range with frame skipping. e.g: \"1001-1006x2\"\n"
+                 "    - or a mixture, e.g \"1001, 1005-1010, 1020-1030x5\"")
+
+        title = "Scout Frames"
+        label_txt = "Designate Scout frames"
+        dialog_tooltip = self.ui_scout_job_chkbx.toolTip()
+
+
+
+        # Create the dialog's widgets
+        dialog = QtGui.QDialog(self)
+        verticalLayout = QtGui.QVBoxLayout(dialog)
+        label = QtGui.QLabel(dialog)
+        verticalLayout.addWidget(label)
+        lineedit = QtGui.QLineEdit(dialog)
+        verticalLayout.addWidget(lineedit)
+        widget = QtGui.QWidget(dialog)
+        horizontalLayout = QtGui.QHBoxLayout(widget)
+        horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        cancel_pbtn = QtGui.QPushButton(widget)
+        horizontalLayout.addWidget(cancel_pbtn)
+        ok_btn = QtGui.QPushButton(widget)
+        horizontalLayout.addWidget(ok_btn)
+        verticalLayout.addWidget(widget)
+        dialog.layout().setSizeConstraint(QtGui.QLayout.SetFixedSize)
+
+        def _validateScoutFramesText(text):
+            '''
+            Validation callback
+            '''
+            if not text or self.frame_str_validator.validate(text, len(text))[0] == QtGui.QValidator.Invalid:
+                style_sheet = "background-color: rgb(130, 63, 63);"
+            else:
+                style_sheet = ""
+            # Get the lineedit widget that called this validator
+            lineedit.setStyleSheet(style_sheet)
+            ok_btn.setDisabled(bool(style_sheet))
+
+        # Connect signals
+        lineedit.textChanged.connect(_validateScoutFramesText)
+        ok_btn.clicked.connect(dialog.accept)
+        cancel_pbtn.clicked.connect(dialog.reject)
+
+        # Trigger the validator immediately so that an empty lineedit will be validated against
+        lineedit.textChanged.emit(lineedit.text())
+
+        # Set the widets' texts
+        dialog.setWindowTitle(title)
+        label.setText(label_txt)
+        lineedit.setText(default_scout_frames)
+        lineedit.setToolTip(lineedit_tooltip)
+        cancel_pbtn.setText("Cancel")
+        ok_btn.setText("OK")
+        dialog.setToolTip(dialog_tooltip)
+
+        ok = dialog.exec_()
+        scout_frames = lineedit.text()
+        return ok, scout_frames
+
+
+    def saveScoutJobPref(self, is_checked):
+        '''
+        Save the "Scout Job" checkbox user preference for the open file
+        '''
+        filepath = self.getSourceFilepath()
+        self.prefs.setFileUseScoutJob(filepath, bool(is_checked))
+
+
+    def LoadScoutJobCheckboxPreference(self):
+        '''
+        Query the user settings for the Scout Job checkbox (whether they explictly
+        set it on or off) and apply that setting.  Otherwise, leave the checkbox
+        to its default state.
+        '''
+        filepath = self.getSourceFilepath()
+        use_scout_frames = self.prefs.getFileUseScoutJob(filepath)
+        if use_scout_frames != None:
+            self.setScoutJobCheckbox(bool(use_scout_frames))
 
 class SubmitterPrefs(pyside_utils.UiFilePrefs):
 
@@ -742,7 +936,9 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
     This subclasses adds functionality that is specific to the Conductor submitter. 
     
     Preference names:
-    
+        noremind-scoutframes # bool. Reminder about using scout frames  
+        file_submitted       # bool. `A Records whether a file has been submitted or not
+        
     Things to consider:
         1. Because preferences are optional/"superflous" they should NEVER break 
            the submitter UI. Therefore all pref reading/writing needs to be 
@@ -755,7 +951,8 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
     
     '''
     # PREFERENCE NAMES (these the names that are used/written to the preference file
-
+    PREF_SCOUTFRAMES_STR = "scoutframes_str"
+    PREF_SCOUTFRAMES_ON = "scoutframes-ON"
 
     @common.ExceptionLogger("Failed to load Conductor user preferences. You may want to reset your preferences from the options menu")
     def loadSubmitterUserPrefs(self, source_filepath):
@@ -779,9 +976,48 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
         Save current widget settings to the user's preference file.  These settings
         are recorded per source file (maya/katana/nuke file, etc).
         '''
-
+        # Save the global prefs
         self.saveGlobalWidgetPrefs()
+
+        # Save the file-specific prefs
         self.saveFileWidgetPrefs(source_filepath)
+
+    @common.ExceptionLogger("Failed to load Conductor user preferences. You may want to reset your preferences from the options menu")
+    def getFileScoutFrames(self, filepath):
+        '''
+        Return the user settings for:
+            the frame/range to use for scout frames
+        '''
+        return self.getPref(self.PREF_SCOUTFRAMES_STR, filepath=filepath)
+
+
+    @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
+    def setFileScoutFrames(self, filepath, value):
+
+        '''
+        Set the user settings for:
+            the frame/range to use for scout frames
+        '''
+        return self.setPref(self.PREF_SCOUTFRAMES_STR, value, filepath=filepath)
+
+    @common.ExceptionLogger("Failed to load Conductor user preferences. You may want to reset your preferences from the options menu")
+    def getFileUseScoutJob(self, filepath):
+        '''
+        Return the user settings for:
+           the value of the "Scout Job" checkbox that the user applied
+           for the given file.
+        '''
+        return self.getPref(self.PREF_SCOUTFRAMES_ON, filepath=filepath)
+
+
+    @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
+    def setFileUseScoutJob(self, filepath, value):
+
+        '''
+        Set the user settings for:
+           the value of the "Scout Job" checkbox for the given file.
+        '''
+        return self.setPref(self.PREF_SCOUTFRAMES_ON, value, filepath=filepath)
 
 
 if __name__ == "__main__":

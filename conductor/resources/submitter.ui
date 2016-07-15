@@ -684,14 +684,48 @@
     </item>
     <item>
      <widget class="QWidget" name="widget_6" native="true">
-      <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
        <property name="margin">
         <number>0</number>
        </property>
        <item>
+        <widget class="QCheckBox" name="ui_scout_job_chkbx">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>A Scout Job provides a convenient cost-controlling mechanism when submitting
+ a job to Conductor.  A Scout Job  operates just like a normal Job, however,
+ it gives the user the opportunity to review the results of a &quot;sampling&quot; of
+ its tasks (Scout tasks) before running the remaining tasks.
+
+How does it work?
+When a Scout job is submitted, the user specifies which of its tasks should
+be considered &quot;Scout&quot; tasks.  These tasks will we begin to render on
+conductor as usual. However, the remaining tasks will be placed into a state of
+&quot;Holding&quot;. These tasks will not render until user explicity tells them to start (&quot;continue&quot;).
+This allows the user to review the results of the scout
+tasks before deciding to execute the job's remaining tasks.
+</string>
+         </property>
+         <property name="layoutDirection">
+          <enum>Qt::RightToLeft</enum>
+         </property>
+         <property name="text">
+          <string>Scout Job</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="ui_submit_pbtn">
          <property name="text">
-          <string>Submit</string>
+          <string>Submit Job</string>
          </property>
         </widget>
        </item>
@@ -713,13 +747,18 @@
     <property name="title">
      <string>Options</string>
     </property>
-    <widget class="QMenu" name="ui_set_log_level_qmenu">
+    <widget class="QMenu" name="ui_set_log_level_menu">
      <property name="title">
       <string>Set Log Level</string>
      </property>
     </widget>
-    <addaction name="ui_reset_preferences_action"/>
-    <addaction name="ui_set_log_level_qmenu"/>
+    <widget class="QMenu" name="ui_reset_preferences_menu">
+     <property name="title">
+      <string>Reset Preferences</string>
+     </property>
+    </widget>
+    <addaction name="ui_reset_preferences_menu"/>
+    <addaction name="ui_set_log_level_menu"/>
    </widget>
    <addaction name="ui_options_qmenu"/>
   </widget>
@@ -728,9 +767,9 @@
     <string>WARNING</string>
    </property>
   </action>
-  <action name="ui_reset_preferences_action">
+  <action name="action">
    <property name="text">
-    <string>Reset Preferences</string>
+    <string>&quot;</string>
    </property>
   </action>
  </widget>
@@ -741,7 +780,6 @@
   <tabstop>ui_step_frame_spnbx</tabstop>
   <tabstop>ui_force_upload_chkbx</tabstop>
   <tabstop>lineEdit</tabstop>
-  <tabstop>ui_submit_pbtn</tabstop>
   <tabstop>ui_refresh_tbtn</tabstop>
  </tabstops>
  <resources>
