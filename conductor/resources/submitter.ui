@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>418</width>
-    <height>455</height>
+    <height>575</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -511,6 +511,95 @@
          </widget>
         </item>
         <item>
+         <widget class="QGroupBox" name="ui_cost_estimation_grpbx">
+          <property name="title">
+           <string>Cost Estimation</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_10">
+           <item>
+            <widget class="QWidget" name="ui_estimated_frame_time_wgt" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <property name="margin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="ui_estimated_frame_time_lbl">
+                <property name="text">
+                 <string>Estimated Time per Frame (mins)</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QDoubleSpinBox" name="ui_frame_time_spnbx">
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+                <property name="maximum">
+                 <double>999999999.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="ui_estimated_cost_wgt" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_2">
+              <property name="margin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="ui_estimated_cost_lbl">
+                <property name="text">
+                 <string>Estimated Cost</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="ui_currency_lbl">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>$</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="ui_cost_lbl">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="layoutDirection">
+                 <enum>Qt::RightToLeft</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+                </property>
+                <property name="textInteractionFlags">
+                 <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <widget class="QWidget" name="ui_advanced_wgt" native="true">
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <property name="topMargin">
@@ -567,6 +656,7 @@
        <zorder>ui_framerange_grpbx</zorder>
        <zorder>ui_framerange_grpbx_2</zorder>
        <zorder>ui_extended_container_wgt</zorder>
+       <zorder>ui_cost_estimation_grpbx</zorder>
       </widget>
       <widget class="QWidget" name="ui_advanced_tab">
        <attribute name="title">
@@ -699,10 +789,6 @@
      </widget>
     </item>
    </layout>
-   <zorder>widget_4</zorder>
-   <zorder>tabWidget</zorder>
-   <zorder>widget_6</zorder>
-   <zorder>ui_submit_pbtn</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

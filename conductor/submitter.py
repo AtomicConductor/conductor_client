@@ -121,6 +121,15 @@ class ConductorSubmitter(QtGui.QMainWindow):
         self.ui_start_end_rdbtn.setFocus()
 
 
+        self.ui_instance_type_cmbx.currentIndexChanged.connect(self.calculateCost)
+
+        self.ui_frame_time_spnbx.valueChanged.connect(self.calculateCost)
+        self.ui_step_frame_spnbx.valueChanged.connect(self.calculateCost)
+
+        self.ui_custom_lnedt.textChanged.connect(self.calculateCost)
+        self.ui_start_frame_lnedt.textChanged.connect(self.calculateCost)
+        self.ui_end_frame_lnedt.textChanged.connect(self.calculateCost)
+
     def refreshUi(self):
         '''
         Override this method to repopulate the UI with fresh data from the software
@@ -699,6 +708,67 @@ class ConductorSubmitter(QtGui.QMainWindow):
             enforced_md5s[filepath] = common.generate_md5(filepath, base_64=True)
 
         return enforced_md5s
+
+
+    def getEstimatedFrameTime(self):
+        return self.ui_frame_time_spnbx.value()
+
+
+    def getPricing(self, instance_type):
+        return {
+               "n1-standard-2": 0.19,
+               "n1-standard-4": 0.37,
+               "n1-standard-8": 0.73,
+               "n1-standard-16": 1.47,
+               "n1-standard-32": 2.88,
+               "n1-highmem-4": 0.45,
+               "n1-highmem-8": 0.89,
+               "n1-highmem-16": 1.78,
+               "n1-highmem-32": 3.49,
+               "n1-highcpu-8": 0.59,
+               "n1-highcpu-16": 1.18,
+               "n1-highcpu-32": 2.36,
+               "storage": 0.18
+               }.get(instance_type)
+
+
+    def calculateCost(self, _):
+        '''
+        '''
+        tooltip = ("The cost of the estimated Job: %s\n"
+                   "Frame count: %s\n"
+                   "(Price per Minute/60) * Estimated Frame Time * Frame Count\n"
+                   "%s/60 * %s * %s")
+        frame_range_str = self.getFrameRangeString()
+        logger.debug("frame_range_str: %s", frame_range_str)
+
+        frame_list = common.Frange(frame_range_str).get_frame_list()
+        logger.debug("frame_list: %s", frame_list)
+
+        frame_count = len(frame_list)
+        logger.debug("frame_count: %s", frame_count)
+
+        frame_time = self.getEstimatedFrameTime()  # ui_frame_time_spnbx
+        logger.debug("frame_time: %s", frame_time)
+
+        instance_type = self.getInstanceType()
+        logger.debug("instance_type: %s", instance_type)
+
+        instance_type_ = "n1-" + str(instance_type["flavor"]) + "-" + str(instance_type["cores"])
+        logger.debug("instance_type_: %s", instance_type_)
+
+        price_per_min = self.getPricing(instance_type_)
+        logger.debug("price_per_min: %s", price_per_min)
+
+        price_per_second = price_per_min / 60
+        logger.debug("price_per_second: %s", price_per_second)
+
+        cost = price_per_second * frame_time * frame_count
+        logger.debug("Calculated cost: %s", cost)
+
+        self.ui_cost_lbl.setText("%.2f" % cost)
+        tooltip_ = tooltip % (cost, frame_count, price_per_min, frame_time, frame_count)
+        self.ui_cost_lbl.setToolTip(tooltip_)
 
 
 if __name__ == "__main__":

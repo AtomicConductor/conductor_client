@@ -367,3 +367,78 @@ def get_conductor_instance_types():
 
 class Auth:
     pass
+
+
+
+class Frange(object):
+    def __init__(self, frame_set=None):
+        self.first = None
+        self.last = None
+        self.chunks = None
+        self.steps = None
+        # frame_list can contain but list of strings or list of Frange objects
+        self.frame_list = []
+        if frame_set:
+            self.set_frames(frame_set)
+
+    def set_frames(self, frame_string):
+        """
+        Sets the range of this Frange object.
+        frame_string syntax:
+            "101-162x12, 172-184, 192, 134"
+        """
+        frame_sets = frame_string.split(",")
+        if len(frame_sets) > 1:
+            for frames in frame_sets:
+                # treat each frame set separate, searching for steps
+                frames = Frange(frames)
+                self.frame_list.append(frames)
+
+        else:
+            step_split = frame_string.split("x")
+            if len(step_split) > 1:
+                self.steps = step_split[1]
+            frame_range = step_split[0]
+            range_split = frame_range.split("-")
+            if len(range_split) > 1:
+                self.last = range_split[1]
+            self.first = range_split[0]
+
+    def get_frame_list(self, inpList=None):
+        frame_out_list = []
+        if inpList:
+            frame_list = inpList
+        else:
+            frame_list = self.frame_list
+
+        if frame_list:
+            for i in frame_list:
+                val = i.get_frame_list()
+                print val
+                frame_out_list.extend(val)
+
+        elif self.last:
+            if self.steps:
+                range_set = range(int(self.first), int(self.last) + 1, int(self.steps))
+            else:
+                range_set = range(int(self.first), int(self.last) + 1)
+            frame_out_list.extend(range_set)
+
+        elif self.first:
+            range_set = [int(self.first)]
+            frame_out_list.extend(range_set)
+
+        return frame_out_list
+
+    def get_frames_for_nuke(self):
+        frame_list = self.get_frame_list()
+        out_frames = []
+        if self.chunks:
+            str_frames = ["-F " + str(i) for i in frame_list]
+            out_frames = [" ".join(str_frames[i:i + int(self.chunks)]) for i in range(0, len(str_frames), int(self.chunks))]
+
+        else:
+            str_frames = ["-F " + str(i) for i in frame_list]
+            # cmd_frames = "-F "+" -F ".join(str_frames)
+            out_frames = str_frames
+        return out_frames
