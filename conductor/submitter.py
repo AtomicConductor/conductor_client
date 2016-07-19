@@ -98,11 +98,16 @@ class ConductorSubmitter(QtGui.QMainWindow):
         # Populate the Instance Type combobox with the available instance configs
         self.populateInstanceTypeCmbx()
 
+        # Set the default instance type
+        self.setInstanceType(self.default_instance_type)
+
         # Populate the Project combobox with customer's projects
         self.populateProjectCmbx()
 
-        # Set the default instance type
-        self.setInstanceType(self.default_instance_type)
+        # Set the default project by querying the config
+        default_project = CONFIG.get('project')
+        if default_project:
+            self.setProject(default_project, strict=False)
 
         # Hide the widget that holds advanced settings. TODO: need to come back to this.
         self.ui_advanced_wgt.hide()
@@ -115,12 +120,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Set the keyboard focus on the frame range radio button
         self.ui_start_end_rdbtn.setFocus()
-
-
-        # Check for resource in config, if available disable lineedit and set value
-        if CONFIG.get('resource'):
-            self.ui_resource_lnedt.setEnabled(False)
-            self.setResource(CONFIG.get('resource'))
 
 
     def refreshUi(self):
@@ -329,13 +328,16 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         return self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex())
 
-    def setProject(self, project_str):
+    def setProject(self, project_str, strict=True):
         '''
         Set the UI's Project field
         '''
         index = self.ui_project_cmbx.findText(project_str)
         if index == -1:
-            raise Exception("Project combobox entry does not exist: %s" % project_str)
+            msg = "Project combobox entry does not exist: %s" % project_str
+            logger.warning(msg)
+            if strict:
+                raise Exception()
 
         self.ui_project_cmbx.setCurrentIndex(index)
 
