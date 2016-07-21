@@ -21,6 +21,9 @@ maya_dependency_attrs:
         - aiFilename
     aiStandIn: # Arnold
         - dso
+    aiVolume: # Arnold
+        - dso
+        - filename 
     AlembicNode: # Alembic (now maya builtin?)
         - abc_File
     CrowdProxyVRay: # Golaem
