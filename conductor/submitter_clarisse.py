@@ -320,20 +320,6 @@ class ClarisseConductorSubmitter(object):
     def runPostSubmission(self, response):
         pass
 
-
-    #  This is currently static, but eventually we'll query the app
-    def getDockerImage(self):
-        docker_image = CONFIG.get("docker_image")
-        if not docker_image:
-            clarisse_version = clarisse_utils.get_clarisse_version()
-            if clarisse_version.startswith("2.0"):
-                clarisse_version = "2.0"
-            software_info = {"software": "clarisse",
-                             "software_version":clarisse_version}
-            docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
-
-        return docker_image
-
     def getImages(self):
         image_str = ""
         num_images = self.ui.ui_render_images_trwgt.topLevelItemCount()

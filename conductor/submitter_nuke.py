@@ -12,7 +12,7 @@ except ImportError, e:
 
 
 from conductor import CONFIG, submitter
-from conductor.lib import file_utils, nuke_utils, pyside_utils, common, api_client
+from conductor.lib import file_utils, nuke_utils, pyside_utils, common, package_utils
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
     _window_title = "Conductor - Nuke"
 
+    product = "nuke"
 
     @classmethod
     def runUi(cls):
@@ -224,28 +225,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                 "enforced_md5s":enforced_md5s}
 
 
-    def getDockerImage(self):
-        '''
-        If there is a docker image in the config.yml file, then use it.  
-        Otherwise query Nuke and its plugins for their version information, 
-        and then query  Conductor for a docker image that meets those requirements. 
-        '''
-        docker_image = CONFIG.get("docker_image")
-        if not docker_image:
-            nuke_version = nuke_utils.get_nuke_version()
-            software_info = {"software": "nuke",
-                             "software_version":nuke_version}
-
-            # Get a list of nuke plugins
-            plugins = nuke_utils.get_plugins()
-            # Convert the plugins list into a dictionary (to conform to endpoint expectations)
-            # Populate the keys with each plugin, where the value is an empty string
-            # (hopefully we will populate it with relevant information such as plugin version, etc)
-            plugins_dict = dict([(p, "") for p in plugins])
-            software_info["plugins"] = plugins_dict
-            docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
-        return docker_image
-
     def getJobTitle(self):
         '''
         Generate and return the title to be given to the job.  This is the title
@@ -329,9 +308,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # Construct the nuke-specific command
         conductor_args["cmd"] = self.generateConductorCmd()
 
-        # Get the nuke-specific docker image
-        conductor_args["docker_image"] = self.getDockerImage()
-
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
 
@@ -360,3 +336,23 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         Return the currently opened nuke script
         '''
         return nuke_utils.get_nuke_script_filepath()
+
+    # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
+#     def getHostProductInfo(self):
+#         return nuke_utils.NukeInfo.get()
+    # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
+#     def getPluginsProductInfo(self):
+#         return nuke_utils.get_plugins_info()
+
+
+
+    def getHostProductInfo(self):
+        host_version = nuke_utils.NukeInfo.get_version()
+        package_id = package_utils.get_host_package(self.product, host_version, strict=False).get("package")
+        host_info = {"product": self.product,
+                     "version": host_version,
+                     "package_id": package_id}
+        return host_info
+
+    def getPluginsProductInfo(self):
+        return nuke_utils.get_plugins_info()

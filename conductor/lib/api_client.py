@@ -1,5 +1,6 @@
 import json
 import logging
+from pprint import pformat
 import requests
 import urlparse
 
@@ -79,37 +80,6 @@ class ApiClient():
         return response.text, response.status_code
 
 
-def request_docker_image(software_info):
-    '''
-    Query the app for an image that satisfies the given software_info requirements
-   
-    args:
-        software_info: dict. e.g. {"software":"maya",
-                                   "maya": "2015",
-                                   "vray":"3.0",
-                                   "golaem": "3.0.4"}
-
-        return: str. the name of the docker image
-    '''
-    api = ApiClient()
-
-    logger.debug("software_info: %s", software_info)
-
-    uri = 'api/get_docker_image'
-
-    data = json.dumps(software_info)
-    logger.debug("data: %s", data)
-
-    response, response_code = api.make_request(uri_path=uri, verb="POST", data=data, raise_on_error=False)
-    logger.debug("response: %s", response)
-    logger.debug("response: %s", response_code)
-    if response_code not in [200]:
-        msg = "Failed to retrieve docker image with the given paramaters:\n%s" % software_info
-        msg += "\nError %s ...\n%s" % (response_code, response)
-        raise Exception(msg)
-    data = json.loads(response)
-    return data["docker_image"]
-
 def request_projects(statuses=("active",)):
     '''
     Query Conductor for all client Projects that are in the given state(s)
@@ -134,4 +104,55 @@ def request_projects(statuses=("active",)):
         if not statuses or project.get("status") in statuses:
             projects.append(project["name"])
     return projects
+
+
+def request_software_packages(sidecar_id=None):
+    '''
+    Query Conductor for all software packages for the given sidecar_id.  If no
+    sidecar_id is given then get the latest packages (uses latest sidecar_id)
+    '''
+    api = ApiClient()
+
+    logger.debug("sidecar_id: %s", sidecar_id)
+
+    if sidecar_id:
+        uri = 'api/v1/ee/packages/%s' % sidecar_id
+    else:
+        uri = 'api/v1/ee/packages'
+
+    logger.debug("uri: %s", uri)
+
+    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False)
+#     logger.debug("response: %s", response)
+#     logger.debug("response: %s", response_code)
+    if response_code not in [200]:
+        msg = "Failed to get software packages for sidecar: %s" % sidecar_id
+        msg += "\nError %s ...\n%s" % (response_code, response)
+        raise Exception(msg)
+    return json.loads(response).get("data", [])
+
+
+def request_sidecar(sidecar_id=None):
+    '''
+    Return the sidecar entity for the given sidecar_id.  If no sidecar_id is
+    given, return the latest sidecar
+    '''
+    logger.debug("sidecar_id: %s", sidecar_id)
+
+    api = ApiClient()
+    uri = 'api/v1/ee/sidecars'
+    if sidecar_id:
+        uri += "/%s" % sidecar_id
+
+    logger.debug("uri: %s", uri)
+    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False)
+    logger.debug("response: %s", response)
+    logger.debug("response: %s", response_code)
+    if response_code not in [200]:
+        msg = "Failed to get sidecar from %s" % uri
+        msg += "\nError %s ...\n%s" % (response_code, response)
+        raise Exception(msg)
+
+    return json.loads(response)
+
 
