@@ -96,25 +96,16 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
     product = "nuke"
 
-    @classmethod
-    def runUi(cls):
-        '''
-        Launch the UI
-        '''
-        ui = cls()
-        ui.show()
-
     def __init__(self, parent=None):
         super(NukeConductorSubmitter, self).__init__(parent=parent)
-        self.refreshUi()
-        self.loadUserSettings()
 
-    def initializeUi(self):
-        super(NukeConductorSubmitter, self).initializeUi()
+    def createUI(self):
+        super(NukeConductorSubmitter, self).createUI()
         # Hide the output path widget.  Not sure if this is safe to expose yet.  I don't think it will work for nuke.
         self.ui_output_path_widget.hide()
 
-    def refreshUi(self):
+    def applyDefaultSettings(self):
+        super(NukeConductorSubmitter, self).applyDefaultSettings()
         start, end = nuke_utils.get_frame_range()
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()

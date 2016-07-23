@@ -25,7 +25,11 @@ SUCCESS_CODES_SUBMIT = [201, 204]
 
 logger = logging.getLogger(__name__)
 
+# Store the parent window so that we can reuse it later
+_parent_window = None
 
+# Store the submitter instance so that we can reuse it later (re-open a closed window)
+_ui_instance = None
 
 '''
 TODO:
@@ -71,6 +75,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     _job_software_tab_idx = 2
 
+
     def __init__(self, parent=None):
         '''
         1. Load the ui file
@@ -79,12 +84,102 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
-        self.initializeUi()
 
 
-    def initializeUi(self):
+        # Create widgets
+        self.createUI()
+
+        # Instantiate a user prefs  object
+        self.prefs = SubmitterPrefs(company_name=self.company_name,
+                                    application_name=self.__class__.__name__,
+                                    file_widgets=self.getUserPrefsFileWidgets(),
+                                    global_widgets=self.getUserPrefsGlobalWidgets())
+        # Populate the UI with info
+        self.populateUi()
+
+        # Apply default settings
+        self.applyDefaultSettings()
+
+        # Load user preferences over top of default settings
+        self.loadUserSettings()
+
+
+    @classmethod
+    @pyside_utils.wait_cursor
+    def runUiStandalone(cls):
         '''
-        Initialize ui properties/behavior
+        Note that this UI class is to be run directly from a python shell, e.g.
+        not within another software's context (such as maya/nuke).
+        '''
+        global _parent_window  # This global statement is particularly important (though it may not appear so when using simple usecases that don't use complex inheritence structures).
+
+        _parent_window = cls.getParentWindow()
+
+        app = QtGui.QApplication.instance()
+        if app is None:
+            app = QtGui.QApplication(sys.argv)
+        ui = cls()
+        ui.show()
+        app.exec_()
+
+
+    @classmethod
+    @pyside_utils.wait_cursor
+    def runUi(cls, force_new=False):
+        '''
+        Launch the submitter UI.  This is intended to be run within a software 
+        context such as Maya or Nuke (as opposed to a shell).  By default, 
+        this will show any existing submitter UI that had been closed prior by
+        the user (as opposed to creating a new instance of the UI). Use the 
+        force_new flag to force a new instance of it.
+        
+        '''
+        global _parent_window  # This global statement is particularly important (though it may not appear so when using simple usecases that don't use complex inheritence structures).
+        global _ui_instance
+
+
+        # Reuse the same parent window object, otherwise ownshership gets jacked, and child widgets start getting deleted. This took about 3 hours to figure out.
+        if not _parent_window:
+            _parent_window = cls.getParentWindow()
+
+        # if there is an existing instance of the window, simply show it.
+        if not force_new and _ui_instance:
+            logger.debug("Reopening existing Submitter window")
+            _ui_instance.show()
+
+            # Apply default settings to UI
+            _ui_instance.applyDefaultSettings()
+
+            # load the user settings because the open file may have changed
+            _ui_instance.loadUserSettings()
+        else:
+            logger.debug("Creating new Submitter window")
+
+            # Otherwise create a new instance
+            _ui_instance = cls(parent=_parent_window)
+            _ui_instance.show()
+
+        # Bring focus to this window
+        _ui_instance.activateWindow()
+
+        return _ui_instance
+
+    @classmethod
+    def getParentWindow(cls):
+        '''
+        Return a QtWidget object that should act as the parent for the submitter 
+        window. This is oftentime the case when launching the submitter within
+        another application such as nuke or maya.  In these cases, return
+        the main QtWindow object for those applications.
+        '''
+        return None
+
+
+
+
+    def createUI(self):
+        '''
+        Create UI widgets and make 
         '''
 
         # Set the start/end fields to be restricted to integers only
@@ -103,40 +198,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # Setup the top menu bar
         self.setupMenuBar()
-
-        # Set the radio button on for the start/end frames by default
-        self.on_ui_start_end_rdbtn_toggled(True)
-
-        # Populate the Instance Type combobox with the available instance configs
-        self.populateInstanceTypeCmbx()
-
-        # Populate the software versions tree widget
-        self.populateSoftwareVersionsTrWgt()
-
-        self.filterPackages(show_all_versions=self.ui_show_all_versions_chkbx.isChecked())
-
-        self.autoDetectSoftware()
-
-        # Populate the Project combobox with customer's projects
-        self.populateProjectCmbx()
-
-        # Set the default instance type
-        self.setInstanceType(self.default_instance_type)
-
-        # Set the default project by querying the config
-        default_project = CONFIG.get('project')
-        if default_project:
-            self.setProject(default_project, strict=False)
-
-        # Instantiate a user prefs  object
-        self.prefs = SubmitterPrefs(company_name=self.company_name,
-                                    application_name=self.__class__.__name__,
-                                    file_widgets=self.getUserPrefsFileWidgets(),
-                                    global_widgets=self.getUserPrefsGlobalWidgets())
-
-
-        # Apply the user settings for scout job use
-        self.LoadScoutJobCheckboxPreference()
 
         # Hide find button (until maybe a later release TODO:(LWS) Come back to this
         self.ui_find_pbtn.hide()
@@ -158,22 +219,52 @@ class ConductorSubmitter(QtGui.QMainWindow):
         # Add the extended widget (must be implemented by the child class
         self._addExtendedWidget()
 
-        # shrink UI to be as small as can be
-#         self.adjustSize()
+
+    def populateUi(self):
+        '''
+        Populate the UI with data.  This data should be global information that
+        is not specific to the open file
+        '''
+
+        # Populate the Instance Type combobox with the available instance configs
+        self.populateInstanceTypeCmbx()
+
+        # Populate the software versions tree widget
+        self.populateSoftwareVersionsTrWgt()
+
+        # Populate the Project combobox with customer's projects
+        self.populateProjectCmbx()
+
+
+    def applyDefaultSettings(self):
+        '''
+        Set the UI to default settings.
+        '''
+
+        # Set the radio button on for the start/end frames by default
+        self.on_ui_start_end_rdbtn_toggled(True)
+
+        # Set the default instance type
+        self.setInstanceType(self.default_instance_type)
+
+        # Set the default project by querying the config
+        default_project = CONFIG.get('project')
+        if default_project:
+            self.setProject(default_project, strict=False)
+
+        # Show only available packages in accordance with the checkbox
+        self.filterPackages(show_all_versions=self.ui_show_all_versions_chkbx.isChecked())
+
+        # Set scout Job checkbox ON by default.
+        self.ui_scout_job_chkbx.blockSignals(True)
+        self.ui_scout_job_chkbx.setChecked(True)
+        self.ui_scout_job_chkbx.blockSignals(False)
+
+        # Populate the Job packages treewidget (this is file specific so goes in this function, rather than self.populateUi
+        self.populateJobPackages()
 
         # Set the keyboard focus on the frame range radio button
         self.ui_start_end_rdbtn.setFocus()
-
-
-    def refreshUi(self):
-        '''
-        Override this method to repopulate the UI with fresh data from the software
-        it's running from
-        '''
-        class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
-        message = "%s not implemented. Please override method as desribed in its docstring" % class_method
-        raise NotImplementedError(message)
-
 
     def _addExtendedWidget(self):
         '''
@@ -671,10 +762,10 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return
 
 
-
+    @pyside_utils.wait_cursor
     @QtCore.Slot(name="on_ui_refresh_tbtn_clicked")
     def on_ui_refresh_tbtn_clicked(self):
-        self.refreshUi()
+        self.applyDefaultSettings()
 
 
     @QtCore.Slot(name="on_ui_choose_output_path_pbtn_clicked")
@@ -707,19 +798,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         self.ui_custom_lnedt.setStyleSheet(style_sheet)
 
-
-    @classmethod
-    def runUi(cls):
-        '''
-        Note that this UI class is to be run directly from a python shell, e.g.
-        not within another software's context (such as maya/nuke).
-        '''
-        app = QtGui.QApplication.instance()
-        if app is None:
-            app = QtGui.QApplication(sys.argv)
-        ui = cls()
-        ui.show()
-        app.exec_()
 
 
     def getUserPrefsGlobalWidgets(self):
@@ -782,12 +860,14 @@ class ConductorSubmitter(QtGui.QMainWindow):
         are recorded per source file (maya/katana/nuke file, etc).
         '''
         try:
+            self.saveJobPackagesToPrefs()
             source_filepath = self.getSourceFilepath()
             self.prefs.saveSubmitterUserPrefs(source_filepath)
             self.prefs.sync()
         except:
             logger.exception("Unable to save user settings:")
 
+    @pyside_utils.wait_cursor
     def closeEvent(self, event):
         '''
         When the Conductor UI is closed, save the user settings.
@@ -966,24 +1046,14 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return ok, scout_frames
 
 
+    @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
     def saveScoutJobPref(self, is_checked):
         '''
         Save the "Scout Job" checkbox user preference for the open file
         '''
         filepath = self.getSourceFilepath()
-        self.prefs.setFileUseScoutJob(filepath, bool(is_checked))
-
-
-    def LoadScoutJobCheckboxPreference(self):
-        '''
-        Query the user settings for the Scout Job checkbox (whether they explictly
-        set it on or off) and apply that setting.  Otherwise, leave the checkbox
-        to its default state.
-        '''
-        filepath = self.getSourceFilepath()
-        use_scout_frames = self.prefs.getFileUseScoutJob(filepath)
-        if use_scout_frames != None:
-            self.setScoutJobCheckbox(bool(use_scout_frames))
+        widget_name = self.sender().objectName()
+        return self.prefs.setFileWidgetPref(filepath, widget_name, bool(is_checked))
 
 
 
@@ -1005,7 +1075,40 @@ class ConductorSubmitter(QtGui.QMainWindow):
         plugin_products_info = self.getPluginsProductInfo()
         return [host_product_info] + plugin_products_info
 
-    def autoDetectSoftware(self):
+    def populateJobPackages(self, auto=False):
+        '''
+        1. query the prefs for package ids
+        2. Query the config for package ids and add
+        3. if none, then auto detect
+        
+        '''
+        self.ui_job_software_trwgt.clear()
+        source_filepath = self.getSourceFilepath()
+        software_package_ids = self.prefs.getJobPackagesIds(source_filepath) or []
+
+        # Hack for pyside. If there is only one package id, it will return it as unicode type (rather than a lost of 1 string)
+        if isinstance(software_package_ids, unicode):
+            software_package_ids = [str(software_package_ids)]
+        software_package_ids += (CONFIG.get("software_package_ids") or [])
+        if not software_package_ids:
+            software_package_ids = self.autoDetectPackageIds()
+
+        software_packages = [self.software_packages.get(package_id) for package_id in software_package_ids]
+        if software_packages:
+            self.populateJobSoftwareTrwgt(software_packages)
+
+
+    def autoPopulateJobPackages(self):
+        self.ui_job_software_trwgt.clear()
+        package_ids = self.autoDetectPackageIds()
+
+        software_packages = [self.software_packages.get(package_id) for package_id in package_ids]
+        if software_packages:
+            self.populateJobSoftwareTrwgt(software_packages)
+
+
+
+    def autoDetectPackageIds(self):
         '''
         Of the given packages, return the packages that match
 
@@ -1015,7 +1118,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             - others
         '''
 
-        self.ui_job_software_trwgt.clear()
+
         tree_packages = self.getTreeItemPackages().values()
 
         softwares_info = self.introspectSoftwareInfo()
@@ -1031,10 +1134,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
             if not package:
                 unmatched_software.append(software_info)
             else:
-                matched_packages.append(package)
+                matched_packages.append(package_id)
 
 
-        self.populateJobSoftwareTrwgt(matched_packages)
 
         if unmatched_software:
             msg = "Could not match software info: \n\t%s" % ("\n\t".join([pformat(s) for s in unmatched_software]))
@@ -1048,6 +1150,18 @@ class ConductorSubmitter(QtGui.QMainWindow):
             pyside_utils.launch_error_box(title, msg, parent=self)
             self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
 
+
+        return matched_packages
+
+
+    def saveJobPackagesToPrefs(self):
+        package_ids = []
+        for item in pyside_utils.get_top_level_items(self.ui_job_software_trwgt):
+            package_ids.append(item.package_id)
+        filepath = self.getSourceFilepath()
+        self.prefs.setJobPackagesIds(filepath, package_ids)
+
+
     ###########################################################################
     ######################  AVAILABLE SOFTWARE TREEWIDGET  - self.ui_software_versions_trwgt
     ###########################################################################
@@ -1056,6 +1170,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def on_ui_add_to_job_pbtn_clicked(self):
         self._availableAddSelectedItems()
         self.validateJobPackages()
+        self.saveJobPackagesToPrefs()
 
 
     @QtCore.Slot(name="on_ui_show_all_versions_chkbx_clicked")
@@ -1348,7 +1463,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     @QtCore.Slot(name="on_ui_auto_detect_pbtn_clicked")
     def on_ui_auto_detect_pbtn_clicked(self):
-        self.autoDetectSoftware()
+        self.autoPopulateJobPackages()
+        self.saveJobPackagesToPrefs()
 
     @QtCore.Slot(name="on_ui_remove_selected_pbtn_clicked")
     def on_ui_remove_selected_pbtn_clicked(self):
@@ -1389,6 +1505,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         for item in self.ui_job_software_trwgt.selectedItems():
             index = self.ui_job_software_trwgt.indexOfTopLevelItem(item)
             self.ui_job_software_trwgt.takeTopLevelItem(index)
+        self.saveJobPackagesToPrefs()
 
     def _jobFindSelectedItemsInAvailableTree(self):
         job_packages = self.getSelectedJobPackages()
@@ -1397,8 +1514,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def getJobPackages(self):
         '''
-        Return the package dictionaries for each QTreeItem that is selected by
-        the user.
+        Return the package dictionaries for ALL QTreeItems 
         '''
         job_packages = []
         for item in pyside_utils.get_top_level_items(self.ui_job_software_trwgt):
@@ -1515,8 +1631,7 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
     This subclasses adds functionality that is specific to the Conductor submitter. 
     
     Preference names:
-        noremind-scoutframes # bool. Reminder about using scout frames  
-        file_submitted       # bool. `A Records whether a file has been submitted or not
+        scoutframes_str # str. The frames that the user set for scout frames 
         
     Things to consider:
         1. Because preferences are optional/"superflous" they should NEVER break 
@@ -1529,9 +1644,10 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
            high frame/corecount job) 
     
     '''
-    # PREFERENCE NAMES (these the names that are used/written to the preference file
+    # PREFERENCE NAMES (these the names that are used/written to the preference file (non widget)
     PREF_SCOUTFRAMES_STR = "scoutframes_str"
-    PREF_SCOUTFRAMES_ON = "scoutframes-ON"
+    PREF_JOB_PACKAGES_IDS = "job_packages_ids"
+
 
     @common.ExceptionLogger("Failed to load Conductor user preferences. You may want to reset your preferences from the options menu")
     def loadSubmitterUserPrefs(self, source_filepath):
@@ -1580,23 +1696,22 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
         return self.setPref(self.PREF_SCOUTFRAMES_STR, value, filepath=filepath)
 
     @common.ExceptionLogger("Failed to load Conductor user preferences. You may want to reset your preferences from the options menu")
-    def getFileUseScoutJob(self, filepath):
+    def getJobPackagesIds(self, filepath):
         '''
         Return the user settings for:
-           the value of the "Scout Job" checkbox that the user applied
-           for the given file.
+            the frame/range to use for scout frames
         '''
-        return self.getPref(self.PREF_SCOUTFRAMES_ON, filepath=filepath)
+        return self.getPref(self.PREF_JOB_PACKAGES_IDS, filepath=filepath)
 
 
     @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
-    def setFileUseScoutJob(self, filepath, value):
+    def setJobPackagesIds(self, filepath, value):
 
         '''
         Set the user settings for:
-           the value of the "Scout Job" checkbox for the given file.
+            the frame/range to use for scout frames
         '''
-        return self.setPref(self.PREF_SCOUTFRAMES_ON, value, filepath=filepath)
+        return self.setPref(self.PREF_JOB_PACKAGES_IDS, value, filepath=filepath)
 
 
 
