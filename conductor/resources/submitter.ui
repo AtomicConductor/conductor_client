@@ -83,7 +83,7 @@
           <item>
            <widget class="QToolButton" name="ui_refresh_tbtn">
             <property name="toolTip">
-             <string>Refresh UI data</string>
+             <string>Reset UI data</string>
             </property>
             <property name="layoutDirection">
              <enum>Qt::RightToLeft</enum>
@@ -910,6 +910,9 @@ tasks before deciding to execute the job's remaining tasks.
           <string>Scout Job</string>
          </property>
          <property name="checked">
+          <bool>true</bool>
+         </property>
+         <property name="isFileUserPref" stdset="0">
           <bool>true</bool>
          </property>
         </widget>

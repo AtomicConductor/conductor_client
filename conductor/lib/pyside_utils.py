@@ -440,6 +440,8 @@ class WidgetGettrSettr(object):
         getter_func = cls.getGettrMap().get(widget_type)
         if not getter_func:
             raise Exception("No getter function mapped for widget class: %s", widget_type)
+
+        logger.debug("Querying value from widget: %s", widget.objectName())
         # Call the the gettr function
         return getter_func(widget)
 
@@ -463,6 +465,7 @@ class WidgetGettrSettr(object):
         setter_func = cls.getSettrMap().get(widget_type)
         if not setter_func:
             raise Exception("No setter function mapped for widget class: %s", widget_type)
+        logger.debug("Applying pref to widget %s: %s", widget.objectName(), widget_value)
         # Call the the settr function
         return setter_func(widget, widget_value)
 
