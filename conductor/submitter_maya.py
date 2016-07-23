@@ -16,13 +16,9 @@ except ImportError, e:
 from conductor import CONFIG, submitter
 from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria, package_utils
 
-
-
-
 '''
 TODO: 
 1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
-2. implement pyside inheritance to Maya's window interface
 3. Cull out unused maya dependencies.  Should we exclude materials that aren't assigned, etc?
 5. Validate the maya file has been saved
 '''
@@ -127,21 +123,19 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     product = "maya"
 
-    @classmethod
-    def runUi(cls):
-        '''
-        Load the UI
-        '''
-        global maya_window  # This global statement is particularly important (though it may not appear so when using simple usecases that don't use complex inheritence structures).
-        maya_window = get_maya_window()
-        ui = cls(parent=maya_window)
-        ui.show()
 
     def __init__(self, parent=None):
         super(MayaConductorSubmitter, self).__init__(parent=parent)
         self.setMayaWindow()
-        self.refreshUi()
-        self.loadUserSettings()
+
+    @classmethod
+    def getParentWindow(cls):
+        '''
+        Return Maya's main QT window widget. This will be the parent widget for
+        the submitter UI.
+        '''
+        return get_maya_window()
+
 
     def setMayaWindow(self):
         '''
@@ -152,7 +146,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Make this widget appear as a standalone window even though it is parented
         self.setWindowFlags(QtCore.Qt.Window)
 
-    def refreshUi(self):
+    def applyDefaultSettings(self):
+        super(MayaConductorSubmitter, self).applyDefaultSettings()
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
