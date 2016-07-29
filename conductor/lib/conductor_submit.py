@@ -20,7 +20,7 @@ except ImportError, e:
 
 
 from conductor import CONFIG
-from conductor.lib import file_utils, api_client, uploader, loggeria
+from conductor.lib import file_utils, api_client, uploader, loggeria, callbacks, common
 
 logger = logging.getLogger(__name__)
 
@@ -269,9 +269,9 @@ class Submit():
                     "/batman/v06/batman_v006_high.png": "s9y36AyAR5cYoMg0Vx1tzw=="}
 
         '''
-        assert isinstance(upload_files, dict), "Expected dictionary. Got: %s" % upload_files
+        # assert isinstance(upload_files, dict), "Expected dictionary. Got: %s" % upload_files
 
-        logger.debug("upload_files:\n\t%s", "\n\t".join(upload_files or {}))
+        logger.debug("upload_files:\n\t%s" % upload_files)
 
         submit_dict = {'owner':self.user}
         submit_dict['location'] = self.location
@@ -369,20 +369,44 @@ class Submit():
         upload_files = self.get_upload_files()
 
         # Create a dictionary of upload_files with None as the values.
-        upload_files = dict([(path, None) for path in upload_files])
+        upload_info = []
 
         # If opting to upload locally (i.e. from this machine) then run the uploader now
         # This will do all of the md5 hashing and uploading files to the conductor (if necesary).
         if self.local_upload:
+            for file in upload_files:
+                path_type, path = callbacks.upload_callback(file)
+                assert path_type in ['file', 'aws', 'gcs'], "Invalid file type %s" % path_type
+
+                file_info = {"type": path_type,
+                             "source": path,
+                             "destination": file,
+                             "md5": None}
+
+                upload_info.append(file_info)
+
             uploader_args = {"location":self.location,
                              "database_filepath":self.database_filepath,
                              "md5_caching": self.md5_caching}
             uploader_ = uploader.Uploader(uploader_args)
-            upload_error_message = uploader_.handle_upload_response(self.project, upload_files)
+            upload_error_message = uploader_.handle_upload_response(self.project, upload_info)
             if upload_error_message:
                 raise Exception("Could not upload files:\n%s" % upload_error_message)
             # Get the resulting dictionary of the file's and their corresponding md5 hashes
-            upload_files = uploader_.return_md5s()
+            upload_md5s = uploader_.return_md5s()
+            logger.debug("upload md5s are %s" % upload_md5s)
+
+            #  Store this data in the upload_info set (this is kinda ugly)
+            for entity in upload_info:
+                if entity['type'] == 'file':
+                    for file in upload_md5s:
+                        if file != entity['destination']:
+                            continue
+                        entity['md5'] = upload_md5s[file]
+                else:
+                    #  Figure out the md5 of the local file
+                    entity['md5'] = common.generate_md5(entity['destination'], base_64=True)
+            logger.debug("upload info is %s" % upload_info)
 
         # If the NOT uploading locally (i.e. offloading the work to the uploader daemon
         else:
@@ -391,12 +415,21 @@ class Submit():
             for filepath, md5 in self.enforced_md5s.iteritems():
                 processed_filepaths = file_utils.process_upload_filepath(filepath)
                 assert len(processed_filepaths) == 1, "Did not get exactly one filepath: %s" % processed_filepaths
-                upload_files[processed_filepaths[0]] = md5
+
+                path_type, path = callbacks.upload_callback(processed_filepaths[0])
+                assert type in ['file', 'aws', 'gcs'], "Invalid file type %s" % type
+
+                file_info = {"type": path_type,
+                             "source": path,
+                             "destination": processed_filepaths[0],
+                             "md5": md5}
+
+                upload_info.append(file_info)
 
         # Submit the job to conductor. upload_files may have md5s included in dictionary or may not.
         # Any md5s that are incuded, are expected to be checked against if/when the uploader
         # daemon goes to upload them. If they do not match what is on disk, the uploader will fail the job
-        response, response_code = self.send_job(upload_files)
+        response, response_code = self.send_job(upload_info)
         return json.loads(response), response_code
 
     def get_upload_files(self):

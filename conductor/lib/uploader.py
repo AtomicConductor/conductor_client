@@ -535,8 +535,8 @@ class Uploader():
 
             logger.info('project: %s', project)
             logger.info('upload_id is %s', upload_id)
-            logger.info('upload_files %s:(truncated)\n\t%s',
-                        len(upload_files), "\n\t".join(upload_files.keys()[:5]))
+            # logger.info('upload_files %s:(truncated)\n\t%s',
+            #             len(upload_files), "\n\t".join(upload_files.keys()[:5]))
 
             # reset counters
             self.num_files_to_process = len(upload_files)
@@ -559,8 +559,9 @@ class Uploader():
             self.create_print_status_thread()
 
             # load tasks into worker pools
-            for path, md5 in upload_files.iteritems():
-                self.manager.add_task((path, md5))
+            for file_info in upload_files:
+                if file_info['type'] == "file":
+                    self.manager.add_task((file_info['source'], file_info['md5']))
 
             # wait for work to finish
             error_message = self.manager.join()
