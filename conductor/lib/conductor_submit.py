@@ -257,7 +257,7 @@ class Submit():
 
 
 
-    def send_job(self, upload_files):
+    def send_job(self, upload_files, upload_size):
         '''
         Construct args for two different cases:
             - upload_only
@@ -281,6 +281,7 @@ class Submit():
         submit_dict['notify'] = self.notify
         submit_dict['metadata'] = self.metadata
         submit_dict['project'] = self.project
+        submit_dict['upload_size'] = upload_size
 
         if upload_files:
             submit_dict['upload_files'] = upload_files
@@ -367,6 +368,7 @@ class Submit():
 
         # Get the list of file dependencies
         upload_files = self.get_upload_files()
+        upload_size = 0
 
         # Create a dictionary of upload_files with None as the values.
         upload_files = dict([(path, None) for path in upload_files])
@@ -393,10 +395,13 @@ class Submit():
                 assert len(processed_filepaths) == 1, "Did not get exactly one filepath: %s" % processed_filepaths
                 upload_files[processed_filepaths[0]] = md5
 
+        for upload_file in upload_files:
+            upload_size += os.stat(upload_file).st_size
+
         # Submit the job to conductor. upload_files may have md5s included in dictionary or may not.
         # Any md5s that are incuded, are expected to be checked against if/when the uploader
         # daemon goes to upload them. If they do not match what is on disk, the uploader will fail the job
-        response, response_code = self.send_job(upload_files)
+        response, response_code = self.send_job(upload_files, upload_size)
         return json.loads(response), response_code
 
     def get_upload_files(self):
