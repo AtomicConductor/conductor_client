@@ -343,7 +343,7 @@ class Uploader():
                 try:
                     status_dict = {
                         'upload_id': self.upload_id,
-                        'size_in_bytes': bytes_to_upload,
+                        'transfer_size': bytes_to_upload,
                         'bytes_transfered': bytes_uploaded,
                     }
                     logger.debug('reporting status as: %s', status_dict)
