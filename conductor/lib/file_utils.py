@@ -229,7 +229,7 @@ def get_common_dirpath(paths):
         # if the output "path" ends with a slash, then we know it's actually a
         # directory path, and can return it
         if output_path.endswith(os.sep) and _is_valid_path(output_path):
-            return os.path.normpath(output_path)
+            return output_path.rstrip(os.sep) # strip of the trailing path separator
 
         # Otherwise ask for the directory of the output "path"
         dirpath = os.path.dirname(output_path)
@@ -237,7 +237,7 @@ def get_common_dirpath(paths):
         # IF the directory is NOT considered a root directory (such as "/" or "G:\\"
         # then return it
         if _is_valid_path(dirpath):
-            return os.path.normpath(dirpath)
+            return dirpath
 
 
 
