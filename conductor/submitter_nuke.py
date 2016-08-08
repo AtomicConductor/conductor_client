@@ -11,8 +11,8 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-from conductor import submitter
-from conductor.lib import file_utils, nuke_utils, pyside_utils, common, api_client
+from conductor import CONFIG, submitter
+from conductor.lib import file_utils, nuke_utils, pyside_utils, common, package_utils
 
 logger = logging.getLogger(__name__)
 
@@ -94,26 +94,18 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
     _window_title = "Conductor - Nuke"
 
-
-    @classmethod
-    def runUi(cls):
-        '''
-        Launch the UI
-        '''
-        ui = cls()
-        ui.show()
+    product = "nuke"
 
     def __init__(self, parent=None):
         super(NukeConductorSubmitter, self).__init__(parent=parent)
-        self.refreshUi()
-        self.loadUserSettings()
 
-    def initializeUi(self):
-        super(NukeConductorSubmitter, self).initializeUi()
+    def createUI(self):
+        super(NukeConductorSubmitter, self).createUI()
         # Hide the output path widget.  Not sure if this is safe to expose yet.  I don't think it will work for nuke.
         self.ui_output_path_widget.hide()
 
-    def refreshUi(self):
+    def applyDefaultSettings(self):
+        super(NukeConductorSubmitter, self).applyDefaultSettings()
         start, end = nuke_utils.get_frame_range()
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
@@ -130,7 +122,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             "-X AFWrite.write_exr -F %f /Volumes/af/show/walk/shots/114/114_100/sandbox/mjtang/tractor/nuke_render_job_122/walk_114_100_main_comp_v136.nk"
 
         '''
-        base_cmd = "-F %%f %s %s"
+        base_cmd = "nuke-render -F %%f %s %s"
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = ["-X %s" % write_node for write_node in write_nodes]
@@ -224,29 +216,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                 "enforced_md5s":enforced_md5s}
 
 
-    def getDockerImage(self):
-        '''
-        If there is a docker image in the config.yml file, then use it (the
-        parent class' method retrieves this).  Otherwise query Nuke and its
-        plugins for their version information, and then query  Conductor for 
-        a docker image that meets those requirements. 
-        '''
-        docker_image = super(NukeConductorSubmitter, self).getDockerImage()
-        if not docker_image:
-            nuke_version = nuke_utils.get_nuke_version()
-            software_info = {"software": "nuke",
-                             "software_version":nuke_version}
-
-            # Get a list of nuke plugins
-            plugins = nuke_utils.get_plugins()
-            # Convert the plugins list into a dictionary (to conform to endpoint expectations)
-            # Populate the keys with each plugin, where the value is an empty string
-            # (hopefully we will populate it with relevant information such as plugin version, etc)
-            plugins_dict = dict([(p, "") for p in plugins])
-            software_info["plugins"] = plugins_dict
-            docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
-        return docker_image
-
     def getJobTitle(self):
         '''
         Generate and return the title to be given to the job.  This is the title
@@ -321,38 +290,25 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
     def generateConductorArgs(self, data):
         '''
         Override this method from the base class to provide conductor arguments that 
-        are specific for Maya.  See the base class' docstring for more details.
-        
-            cmd: str
-            force: bool
-            frames: str
-            output_path: str # The directory path that the render images are set to output to  
-            postcmd: str?
-            priority: int?
-            resource: int, core count
-            upload_file: str , the filepath to the dependency text file 
-            upload_only: bool
-            upload_paths: list of str?
-            usr: str
+        are specific for Nuke.  See the base class' docstring for more details.
         '''
-        conductor_args = {}
+
+        # Get the core arguments from the UI via the parent's  method
+        conductor_args = super(NukeConductorSubmitter, self).generateConductorArgs(data)
+
+        # Construct the nuke-specific command
         conductor_args["cmd"] = self.generateConductorCmd()
-        conductor_args["cores"] = self.getInstanceType()['cores']
-        conductor_args["environment"] = self.getEnvironment()
-        conductor_args["job_title"] = self.getJobTitle()
-        conductor_args["machine_type"] = self.getInstanceType()['flavor']
+
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
-        conductor_args["force"] = self.getForceUploadBool()
-        conductor_args["frames"] = self.getFrameRangeString()
-        conductor_args["docker_image"] = self.getDockerImage()
-        conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["notify"] = self.getNotifications()
-        conductor_args["output_path"] = data["output_path"]
-        conductor_args["resource"] = self.getResource()
+
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
+
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
+
+        # the output path gets dynamically generated based upon which write nodes the user has selected
+        conductor_args["output_path"] = data["output_path"]
 
         return conductor_args
 
@@ -371,3 +327,23 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         Return the currently opened nuke script
         '''
         return nuke_utils.get_nuke_script_filepath()
+
+    # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
+#     def getHostProductInfo(self):
+#         return nuke_utils.NukeInfo.get()
+    # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
+#     def getPluginsProductInfo(self):
+#         return nuke_utils.get_plugins_info()
+
+
+
+    def getHostProductInfo(self):
+        host_version = nuke_utils.NukeInfo.get_version()
+        package_id = package_utils.get_host_package(self.product, host_version, strict=False).get("package")
+        host_info = {"product": self.product,
+                     "version": host_version,
+                     "package_id": package_id}
+        return host_info
+
+    def getPluginsProductInfo(self):
+        return nuke_utils.get_plugins_info()

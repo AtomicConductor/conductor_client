@@ -14,15 +14,11 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG, submitter
-from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria
-
-
-
+from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria, package_utils
 
 '''
 TODO: 
 1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
-2. implement pyside inheritance to Maya's window interface
 3. Cull out unused maya dependencies.  Should we exclude materials that aren't assigned, etc?
 5. Validate the maya file has been saved
 '''
@@ -125,21 +121,21 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     _window_title = "Conductor - Maya"
 
-    @classmethod
-    def runUi(cls):
-        '''
-        Load the UI
-        '''
-        global maya_window  # This global statement is particularly important (though it may not appear so when using simple usecases that don't use complex inheritence structures).
-        maya_window = get_maya_window()
-        ui = cls(parent=maya_window)
-        ui.show()
+    product = "maya"
+
 
     def __init__(self, parent=None):
         super(MayaConductorSubmitter, self).__init__(parent=parent)
         self.setMayaWindow()
-        self.refreshUi()
-        self.loadUserSettings()
+
+    @classmethod
+    def getParentWindow(cls):
+        '''
+        Return Maya's main QT window widget. This will be the parent widget for
+        the submitter UI.
+        '''
+        return get_maya_window()
+
 
     def setMayaWindow(self):
         '''
@@ -150,7 +146,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Make this widget appear as a standalone window even though it is parented
         self.setWindowFlags(QtCore.Qt.Window)
 
-    def refreshUi(self):
+    def applyDefaultSettings(self):
+        super(MayaConductorSubmitter, self).applyDefaultSettings()
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
         self.extended_widget.refreshUi()
@@ -165,9 +162,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         Return the command string that Conductor will execute
         
         example:
-            "-rd /tmp/render_output/ -s %f -e %f -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
+            "Render -rd /tmp/render_output/ -s %f -e %f -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
         '''
-        base_cmd = "-rd /tmp/render_output/ -s %%f -e %%f %s %s"
+        base_cmd = "Render -rd /tmp/render_output/ -s %%f -e %%f %s %s"
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
         maya_filepath = self.getSourceFilepath()
@@ -197,6 +194,38 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         if ocio_config:
             environment.update({"OCIO": ocio_config})
         return environment
+
+    # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
+#     def getHostProductInfo(self):
+#         return maya_utils.MayaInfo.get()
+
+    def getHostProductInfo(self):
+        host_version = maya_utils.MayaInfo.get_version()
+        package_id = package_utils.get_host_package(self.product, host_version, strict=False).get("package")
+        host_info = {"product": self.product,
+                     "version": host_version,
+                     "package_id": package_id}
+        return host_info
+
+
+# THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
+#     def getPluginsProductInfo(self):
+#         return maya_utils.get_plugins_info()
+
+
+    def getPluginsProductInfo(self):
+        plugins_info = []
+        host_version = maya_utils.MayaInfo.get_version()
+        for plugin_product, plugin_version in maya_utils.get_plugin_info().iteritems():
+            package_id = package_utils.get_plugin_package_id(self.product, host_version, plugin_product, plugin_version, strict=False)
+            plugin_info = {"host_product": self.product,
+                           "host_version": host_version,
+                           "product":plugin_product,
+                           "version":plugin_version,
+                           "package_id": package_id}
+
+            plugins_info.append(plugin_info)
+        return plugins_info
 
 
     def runPreSubmission(self):
@@ -246,25 +275,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return {"abort":not is_valid,
                 "dependencies":dependencies,
                 "enforced_md5s":enforced_md5s}
-
-
-    def getDockerImage(self):
-        '''
-        If there is a docker image in the config.yml file, then use it (the
-        parent class' method retrieves this).  Otherwise query Maya and its
-        plugins for their version information, and then query  Conductor for 
-        a docker image that meets those requirements. 
-        '''
-        docker_image = super(MayaConductorSubmitter, self).getDockerImage()
-        if not docker_image:
-            maya_version = maya_utils.get_maya_version()
-            software_info = {"software": "maya",
-                             "software_version":maya_version}
-            plugin_versions = maya_utils.get_plugin_versions()
-            software_info["plugins"] = plugin_versions
-            docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
-
-        return docker_image
 
 
     def getJobTitle(self):
@@ -337,33 +347,19 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         Override this method from the base class to provide conductor arguments that 
         are specific for Maya.  See the base class' docstring for more details.
 
-            cmd: str
-            force: bool
-            frames: str
-            output_path: str # A directory path which shares a common root with all output files.  
-            postcmd: str?
-            priority: int?
-            resource: int, core count
-            upload_file: str , the filepath to the dependency text file 
-            upload_only: bool
-            upload_paths: list of str?
-            usr: str
         '''
-        conductor_args = {}
+        # Get the core arguments from the UI via the parent's  method
+        conductor_args = super(MayaConductorSubmitter, self).generateConductorArgs(data)
+
+        # Construct the maya-specific command
         conductor_args["cmd"] = self.generateConductorCmd()
-        conductor_args["cores"] = self.getInstanceType()['cores']
+
+        # Get the maya-specific environment
         conductor_args["environment"] = self.getEnvironment()
-        conductor_args["job_title"] = self.getJobTitle()
-        conductor_args["machine_type"] = self.getInstanceType()['flavor']
+
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
-        conductor_args["force"] = self.getForceUploadBool()
-        conductor_args["frames"] = self.getFrameRangeString()
-        conductor_args["docker_image"] = self.getDockerImage()
-        conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["notify"] = self.getNotifications()
-        conductor_args["output_path"] = self.getOutputDir()
-        conductor_args["resource"] = self.getResource()
+
         conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
@@ -385,6 +381,39 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         Return the currently opened maya file
         '''
         return maya_utils.get_maya_scene_filepath()
+
+
+    def validateJobPackages(self):
+        '''
+        Validate that job packages make sense
+            1. ensure no duplicate packages (call the parent class method for this)
+            2. ensure that no two packages of the same product exist (call the parent class method for this)
+            3. Ensure that a package for the host product has been selected (call the parent class method for this)
+            4. Ensure that a render package is present (unless just using maya software)
+        '''
+        is_valid = super(MayaConductorSubmitter, self).validateJobPackages()
+        active_renderer = maya_utils.get_active_renderer()
+
+        # If the renderer is other than mayasoftware, ensure that there is a job package for it
+        if active_renderer != "mayaSoftware":
+            #  get info for the active renderer
+            renderer_info = maya_utils.get_renderer_info(renderer_name=active_renderer)
+            PluginInfoClass = maya_utils.get_plugin_info_class(renderer_info["plugin_name"])
+            plugin_product = PluginInfoClass.get_product()
+            for package in self.getJobPackages():
+                if package["product"] == plugin_product:
+                    break
+            else:
+                title = "No package specified for %s!" % plugin_product
+                msg = ("No %s software package has been specified for the Job!\n\n"
+                       "Please go the \"Job Software\" tab and add one that is "
+                       "appropriate (potentially %s") % (plugin_product, PluginInfoClass.get_version())
+                pyside_utils.launch_error_box(title, msg, parent=self)
+                self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
+                return False
+
+        return is_valid
+
 
 
 class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):

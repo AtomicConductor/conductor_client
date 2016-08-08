@@ -271,7 +271,7 @@ class ClarisseConductorSubmitter(object):
             output_path: str # The directory path that the render images are set to output to  
             postcmd: str?
             priority: int?
-            resource: int, core count
+            project: str
             skip_time_check: bool?
             upload_dependent: int? jobid?
             upload_file: str , the filepath to the dependency text file 
@@ -287,7 +287,7 @@ class ClarisseConductorSubmitter(object):
         conductor_args["force"] = False
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["output_path"] = data["output_path"]
-        conductor_args["resource"] = str(self.ui.ui_resource_lnedt.text())
+        conductor_args["project"] = str(self.ui.ui_project_lnedt.text())
         conductor_args["docker_image"] = "clarisse2.0"
         conductor_args["upload_only"] = self.ui.ui_upload_only.isChecked()
         conductor_args["job_title"] = "clarisse %s %s" % (data['scene_file'], self.getImages())
@@ -319,20 +319,6 @@ class ClarisseConductorSubmitter(object):
     #  Nothing to do at the moment
     def runPostSubmission(self, response):
         pass
-
-
-    #  This is currently static, but eventually we'll query the app
-    def getDockerImage(self):
-        docker_image = CONFIG.get("docker_image")
-        if not docker_image:
-            clarisse_version = clarisse_utils.get_clarisse_version()
-            if clarisse_version.startswith("2.0"):
-                clarisse_version = "2.0"
-            software_info = {"software": "clarisse",
-                             "software_version":clarisse_version}
-            docker_image = common.retry(lambda: api_client.request_docker_image(software_info))
-
-        return docker_image
 
     def getImages(self):
         image_str = ""

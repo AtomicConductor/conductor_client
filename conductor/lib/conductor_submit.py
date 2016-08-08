@@ -37,7 +37,6 @@ class Submit():
 
 
     def __init__(self, args):
-        logger.debug("Init Submit")
         self.timeid = int(time.time())
         self.consume_args(args)
         self.validate_args()
@@ -113,8 +112,14 @@ class Submit():
         self.priority = self.resolve_arg(args, 'priority', 5)
         logger.debug("priority: %s", self.priority)
 
-        self.resource = self.resolve_arg(args, 'resource', "")
-        logger.debug("resource: %s", self.resource)
+        self.project = self.resolve_arg(args, 'project', "")
+        logger.debug("project: %s", self.project)
+
+        self.scout_frames = self.resolve_arg(args, 'scout_frames', "")
+        logger.debug("scout_frames: %s", self.scout_frames)
+
+        self.software_package_ids = self.resolve_arg(args, 'software_package_ids', [], combine_config=True)
+        logger.debug("software_package_ids: %s", self.software_package_ids)
 
         self.upload_file = self.resolve_arg(args, 'upload_file', "")
         logger.debug("upload_file: %s", self.upload_file)
@@ -122,8 +127,12 @@ class Submit():
         self.upload_only = self.resolve_arg(args, 'upload_only', False)
         logger.debug("upload_only: %s", self.upload_only)
 
+        self.max_instances = self.resolve_arg(args, 'max_instances', 0)
+        logger.debug("max_instances: %s", self.max_instances)
+
         self.upload_paths = self.resolve_arg(args, 'upload_paths', [], combine_config=True)
         logger.debug("upload_paths: %s", self.upload_paths)
+
 
         self.user = self.resolve_arg(args, 'user', getpass.getuser())
         logger.debug("user: %s", self.user)
@@ -131,6 +140,7 @@ class Submit():
         self.notify = { "emails": self.resolve_arg(args, 'notify', [], combine_config=True),
                         "slack": self.resolve_arg(args, 'slack_notify', [], combine_config=True)}
         logger.debug("notify: %s", self.notify)
+
         logger.debug("Consumed args")
 
     @classmethod
@@ -240,8 +250,14 @@ class Submit():
         if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
 
+        rx_number = "\d+"  # The "number" building block, eg.  acceptes 1001, or 1, or 002
+        rx_step = "x\d"  # the "step" building block, e.g. accepts x1000, or x1, or x002
+        rx_range_w_step = r"(?:%s-%s(?:%s)?)+" % (rx_number, rx_number, rx_step)  # the "range w option step" building block, e.g 100-100, or 100-100x3, oor
+        rx_validation = "((%s|%s), +)+" % (rx_number, rx_range_w_step)  # The final regex which uses a space and comma as a delimeter between multiple frame strings
 
-    def send_job(self, upload_files):
+
+
+    def send_job(self, upload_files, upload_size):
         '''
         Construct args for two different cases:
             - upload_only
@@ -264,6 +280,8 @@ class Submit():
         submit_dict['job_title'] = self.job_title
         submit_dict['notify'] = self.notify
         submit_dict['metadata'] = self.metadata
+        submit_dict['project'] = self.project
+        submit_dict['upload_size'] = upload_size
 
         if upload_files:
             submit_dict['upload_files'] = upload_files
@@ -281,8 +299,7 @@ class Submit():
                                 'instance_type':'n1-standard-1'})
         else:
 
-            submit_dict.update({'resource':self.resource,
-                                'frame_range':self.frames,
+            submit_dict.update({'frame_range':self.frames,
                                 'command':self.command,
                                 'cores':self.cores,
                                 'machine_flavor':self.machine_flavor})
@@ -293,6 +310,15 @@ class Submit():
                 submit_dict['output_path'] = self.output_path
             if self.environment:
                 submit_dict['environment'] = self.environment
+            if self.max_instances:
+                submit_dict['max_instances'] = int(self.max_instances)
+            if self.software_package_ids:
+                submit_dict['software_package_ids'] = self.software_package_ids
+            if self.scout_frames:
+                submit_dict['scout_frames'] = self.scout_frames
+
+
+
 
 
         logger.debug("send_job JOB ARGS:")
@@ -342,6 +368,7 @@ class Submit():
 
         # Get the list of file dependencies
         upload_files = self.get_upload_files()
+        upload_size = 0
 
         # Create a dictionary of upload_files with None as the values.
         upload_files = dict([(path, None) for path in upload_files])
@@ -353,7 +380,7 @@ class Submit():
                              "database_filepath":self.database_filepath,
                              "md5_caching": self.md5_caching}
             uploader_ = uploader.Uploader(uploader_args)
-            upload_error_message = uploader_.handle_upload_response(upload_files)
+            upload_error_message = uploader_.handle_upload_response(self.project, upload_files)
             if upload_error_message:
                 raise Exception("Could not upload files:\n%s" % upload_error_message)
             # Get the resulting dictionary of the file's and their corresponding md5 hashes
@@ -368,10 +395,13 @@ class Submit():
                 assert len(processed_filepaths) == 1, "Did not get exactly one filepath: %s" % processed_filepaths
                 upload_files[processed_filepaths[0]] = md5
 
+        for upload_file in upload_files:
+            upload_size += os.stat(upload_file).st_size
+
         # Submit the job to conductor. upload_files may have md5s included in dictionary or may not.
         # Any md5s that are incuded, are expected to be checked against if/when the uploader
         # daemon goes to upload them. If they do not match what is on disk, the uploader will fail the job
-        response, response_code = self.send_job(upload_files)
+        response, response_code = self.send_job(upload_files, upload_size)
         return json.loads(response), response_code
 
     def get_upload_files(self):

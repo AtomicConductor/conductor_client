@@ -33,6 +33,7 @@ sed "s/{VERSION}/${VERSION}/" info.plist > build/root/Applications/Conductor.app
 
 PKG_FILES=$(find build/root | wc -l)
 PKG_DU=$(du -k -s build/root | cut -f1)
+
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{PKG_FILES}/${PKG_FILES}/g;s/{VERSION}/${VERSION}/g" PackageInfo > build/flat/base.pkg/PackageInfo
 sed "s/{PKG_DU}/${PKG_DU}/g;s/{VERSION}/${VERSION}/g" Distribution > build/flat/Distribution
 pushd build

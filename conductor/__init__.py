@@ -22,7 +22,7 @@ except ValueError:
 log_level = CONFIG.get("log_level")
 if log_level:
     loggeria.set_conductor_log_level(log_level)
-    
+
 #Try to ensure that we have the latest version of Conductor
 try:
     vc = version_check.VersionCheck()

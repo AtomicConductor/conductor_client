@@ -7,3 +7,4 @@ echo "/Applications/Conductor.app/Contents/MacOS/bin" > /etc/paths.d/conductor
 #if we don't do this the user has to log out before the environment is set up
 INSTALLER_USER=$(stat -f '%Su' $HOME)
 sudo -u ${INSTALLER_USER} /Applications/Conductor.app/Contents/MacOS/setenv
+
