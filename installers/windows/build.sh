@@ -15,3 +15,4 @@ curl -s -u \
     "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}.exe"
 
 popd
+

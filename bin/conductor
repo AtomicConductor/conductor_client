@@ -84,7 +84,7 @@ def parse_args():
     submit_parser.add_argument("--metadata",
         help=("Specify metadata dictionary. Note that it's best to wrap this dictionary"
               " in single quotes,\n e.g. --metadata '{\"project\":\"Scrooge\"}'"),
-        type=json.loads) # use the json loads function to parse dict
+        type=json.loads)  # use the json loads function to parse dict
 
     submit_parser.add_argument("--force",
                                help="Do not check for existing uploads, force a new upload",
@@ -92,6 +92,10 @@ def parse_args():
 
     submit_parser.add_argument("--frames",
                                help="frame range to execute over.")
+
+    submit_parser.add_argument("--scout_frames",
+                               help="If specified, these frames will run first and the rest of the"
+                                    "job will wait until verification has been given before continuing.")
 
     submit_parser.add_argument("--local_upload",
                                help="Trigger files to be uploaded localy",
@@ -148,8 +152,15 @@ def parse_args():
     submit_parser.add_argument("--priority",
                                help="Set the priority of the submitted job. Default is 5")
 
-    submit_parser.add_argument("--resource",
-                               help="resource pool to submit jobs to, defaults to show name.")
+    submit_parser.add_argument("--project",
+                               help='The name of the project to submit the job. This will default to "default"')
+
+    submit_parser.add_argument("--software_package_ids",
+                               help=('The ids for the software packages to use for the submitted '
+                                     'job, e.g. maya or nuke. Packages are identified '
+                                     'by their ID number, which can be queried from '
+                                     'Conductor\'s "web api"'),
+                               nargs="*")
 
     submit_parser.add_argument("--job_title",
                                help=("The title to name the job.  This is the title "
@@ -191,6 +202,8 @@ def parse_args():
                                      "everyday, while storing the last 7 days "
                                      "of logs"))
 
+    submit_parser.add_argument("--max_instances",
+                               help="Maximum number of instances for this job")
 
     submit_parser.set_defaults(func=run_submit)
 
@@ -298,7 +311,7 @@ def parse_args():
 def cast_to_bool(string):
     '''
     Ensure that the argument provided is either "True" or "False (or "true" or
-    "false") and that argument into an actual bool True or False value
+    "false") and convert that argument to an actual bool value (True or False).
     '''
     string_lower = string.lower()
     if string_lower == "true":

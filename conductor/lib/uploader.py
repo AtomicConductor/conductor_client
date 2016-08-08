@@ -117,7 +117,7 @@ class MD5OutputWorker(worker.ThreadWorker):
     def ship_batch(self):
         if self.batch:
             logger.debug('sending batch: %s', self.batch)
-            self.put_job(json.dumps(self.batch))
+            self.put_job(self.batch)
             self.batch = {}
 
     def target(self, thread_int):
@@ -163,22 +163,27 @@ class HttpBatchWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.api_client = api_client.ApiClient()
+        self.project = kwargs.get('project')
 
     def make_request(self, job):
-        response_string, response_code = self.api_client.make_request(
-            uri_path='/api/files/get_upload_urls',
-            verb='POST',
-            headers={'Content-Type':'application/json'},
-            data=job,
-        )
+        uri_path = '/api/files/get_upload_urls'
+        headers = {'Content-Type':'application/json'}
+        data = {"upload_files": job,
+                "project": self.project}
+
+        response_str, response_code = self.api_client.make_request(uri_path=uri_path,
+                                                                   verb='POST',
+                                                                   headers=headers,
+                                                                   data=json.dumps(data),
+                                                                   raise_on_error=False)
 
         if response_code == 200:
-            url_list = json.loads(response_string)
+            url_list = json.loads(response_str)
             return url_list
         if response_code == 204:
             return None
-        else:
-            raise Exception('could not make request to /api/files/get_upload_urls')
+        raise Exception('%s Failed request to: %s\n%s' % (response_code, uri_path, response_str))
+
 
     def do_work(self, job, thread_int):
         logger.debug('getting upload urls for %s', job)
@@ -286,8 +291,10 @@ class Uploader():
         self.api_client = api_client.ApiClient()
         self.args = args or {}
         self.args['thread_count'] = CONFIG['thread_count']
-        self.location = self.args.get("location")
         logger.debug("args: %s", self.args)
+
+        self.location = self.args.get("location")
+        self.project = self.args.get("project")
 
     def prepare_workers(self):
         logger.debug('preparing workers...')
@@ -296,7 +303,7 @@ class Uploader():
         self.job_start_time = 0
         self.manager = None
 
-    def create_manager(self, md5_only=False):
+    def create_manager(self, project, md5_only=False):
         if md5_only:
             job_description = [
                 (MD5Worker, [], {'thread_count': self.args['thread_count'],
@@ -310,7 +317,8 @@ class Uploader():
                                  "md5_caching": self.args['md5_caching']}),
 
                 (MD5OutputWorker, [], {'thread_count': 1}),
-                (HttpBatchWorker, [], {'thread_count': self.args['thread_count']}),
+                (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
+                                       "project": project}),
                 (FileStatWorker, [], {'thread_count': 1}),
                 (UploadWorker, [], {'thread_count': self.args['thread_count']}),
             ]
@@ -335,7 +343,7 @@ class Uploader():
                 try:
                     status_dict = {
                         'upload_id': self.upload_id,
-                        'size_in_bytes': bytes_to_upload,
+                        'transfer_size': bytes_to_upload,
                         'bytes_transfered': bytes_uploaded,
                     }
                     logger.debug('reporting status as: %s', status_dict)
@@ -512,24 +520,37 @@ class Uploader():
 
         return True
 
-    def handle_upload_response(self, upload_files, upload_id=None, md5_only=False):
+    def handle_upload_response(self, project, upload_files, upload_id=None, md5_only=False):
+        '''
+        This is a reallly confusing method and should probably be split into
+        to clear logic branches: one that is called when in daemon mode, and 
+        one that is not.  
+        If not called in daemon mode (local_upload=True), then md5_only is True 
+        and project is not None.Otherwise we're in daemon mode, where the project 
+        information is not required because the daemon will only be fed uploads 
+        by the app which have valid projects attached to them.
+        '''
         try:
+
+
+            logger.info('project: %s', project)
+            logger.info('upload_id is %s', upload_id)
+            logger.info('upload_files %s:(truncated)\n\t%s',
+                        len(upload_files), "\n\t".join(upload_files.keys()[:5]))
+
             # reset counters
             self.num_files_to_process = len(upload_files)
             self.job_start_time = int(time.time())
             self.upload_id = upload_id
             self.job_failed = False
+
             # signal the reporter to start working
             self.working = True
 
             self.prepare_workers()
 
-            # print out info
-            logger.info('upload_files contains %s files like:', len(upload_files))
-            logger.info('\t%s', "\n\t".join(upload_files.keys()[:5]))
-
             # create worker pools
-            self.manager = self.create_manager(md5_only)
+            self.manager = self.create_manager(project, md5_only)
 
             # create reporters
             logger.debug('creating report status thread...')
@@ -590,17 +611,17 @@ class Uploader():
 
                 try:
                     json_data = json.loads(resp_str)
-                    # TODO: consider failing if the md5's have changed since submission
-                    upload_files = json_data['upload_files']
+                    upload = json_data.get("data", {})
                 except ValueError, e:
                     logger.error('response was not valid json: %s', resp_str)
                     time.sleep(self.sleep_time)
                     continue
 
-                upload_id = json_data['upload_id']
-                logger.info('upload_id is %s', upload_id)
+                upload_files = upload['upload_files']
+                upload_id = upload['id']
+                project = upload['project']
 
-                error_message = self.handle_upload_response(upload_files, upload_id)
+                error_message = self.handle_upload_response(project, upload_files, upload_id)
                 if error_message:
                     self.mark_upload_failed(error_message, upload_id)
 
