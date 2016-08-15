@@ -494,6 +494,18 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         return str(self.ui_custom_lnedt.text())
 
+    def setChunkSize(self, chunk_size):
+        '''
+        Set the UI's Frame Chunk Size spinbox value
+        '''
+        self.ui_chunk_size_spnbx.setValue(int(chunk_size))
+
+    def getChunkSize(self):
+        '''
+        Return UI's Frame Chunk Size spinbox value
+        '''
+        return self.ui_chunk_size_spnbx.value()
+
 
     def setInstanceType(self, core_count):
         '''
@@ -589,6 +601,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         conductor_args["environment"] = self.getEnvironment()
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
+        conductor_args["chunk_size"] = self.getChunkSize()
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']

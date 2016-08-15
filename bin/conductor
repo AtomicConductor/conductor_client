@@ -90,6 +90,10 @@ def parse_args():
                                help="Do not check for existing uploads, force a new upload",
                                action='store_true')
 
+    submit_parser.add_argument("--chunk_size",
+                               help="number of frames to execute on a single instance",
+                               default=1)
+
     submit_parser.add_argument("--frames",
                                help="frame range to execute over.")
 
