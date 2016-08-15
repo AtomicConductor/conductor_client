@@ -130,6 +130,9 @@ class Submit():
         self.max_instances = self.resolve_arg(args, 'max_instances', 0)
         logger.debug("max_instances: %s", self.max_instances)
 
+        self.chunk_size = self.resolve_arg(args, 'chunk_size', 1)
+        logger.debug("chunk_size: %s", self.chunk_size)
+
         self.upload_paths = self.resolve_arg(args, 'upload_paths', [], combine_config=True)
         logger.debug("upload_paths: %s", self.upload_paths)
 
@@ -285,6 +288,7 @@ class Submit():
         submit_dict['metadata'] = self.metadata
         submit_dict['project'] = self.project
         submit_dict['upload_size'] = upload_size
+        submit_dict['chunk_size'] = self.chunk_size
 
 
         if upload_files:
