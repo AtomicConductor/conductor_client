@@ -164,7 +164,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         example:
             "Render -rd /tmp/render_output/ -s %f -e %f -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
         '''
-        base_cmd = "Render -rd /tmp/render_output/ -s %%f -e %%f %s %s"
+        base_cmd = "Render -rd /tmp/render_output/ -s %%sf -e %%ef %s %s"
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
         maya_filepath = self.getSourceFilepath()
