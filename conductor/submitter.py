@@ -1090,10 +1090,15 @@ class ConductorSubmitter(QtGui.QMainWindow):
         if isinstance(software_package_ids, unicode):
             software_package_ids = [str(software_package_ids)]
         software_package_ids += (CONFIG.get("software_package_ids") or [])
+
+        # If no packages have been found in prefs or config, then autodetect packages
         if not software_package_ids:
             software_package_ids = self.autoDetectPackageIds()
 
-        software_packages = [self.software_packages.get(package_id) for package_id in software_package_ids]
+        # get the package dictionaries from their package id
+        software_packages = filter(None, [self.software_packages.get(package_id) for package_id in set(software_package_ids)])
+
+        # if there are any packages, then populate the treewidget with them
         if software_packages:
             self.populateJobSoftwareTrwgt(software_packages)
 
@@ -1102,7 +1107,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         self.ui_job_software_trwgt.clear()
         package_ids = self.autoDetectPackageIds()
 
-        software_packages = [self.software_packages.get(package_id) for package_id in package_ids]
+        software_packages = filter(None, [self.software_packages.get(package_id) for package_id in package_ids])
         if software_packages:
             self.populateJobSoftwareTrwgt(software_packages)
 
