@@ -643,6 +643,8 @@ package_ids:
             package: 1b40104837d6d167afc0925e69f00897
         "10.0v2": 
             package: 6d48ae0212e2fccc7c476613616fbd00
+        "10.0v3": 
+            package: 570172b9af4dbfbcaf30f7c343498486
 
     
 
