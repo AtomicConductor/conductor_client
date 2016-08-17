@@ -1285,6 +1285,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
                 plugin_parent_product_item = plugin_parent_items.get(plugin_product_name)
                 if not plugin_parent_product_item:
                     plugin_parent_product_item = QtGui.QTreeWidgetItem([plugin_product_name, ""])
+                    plugin_parent_product_item.setFlags(QtCore.Qt.ItemIsEnabled)
                     plugin_parent_product_item.product = plugin_product_name
                     plugin_parent_items[plugin_product_name] = plugin_parent_product_item
                     host_package_item.addChild(plugin_parent_product_item)
@@ -1446,8 +1447,14 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
 
     def _availableAddSelectedItems(self):
-        for available_package in self.getSelectedAvailablePackages():
-            job_package_item = self.createJobPackageTreeWidgetItem(available_package)
+        selected_available_packages = self.getSelectedAvailablePackages()
+        if not selected_available_packages:
+            return pyside_utils.launch_error_box("No packages selected",
+                                                 "No packages have been selected."
+                                                 "Please select at least one package before adding it to the job.",
+                                                 parent=self)
+        for package in selected_available_packages:
+            job_package_item = self.createJobPackageTreeWidgetItem(package)
             self.ui_job_software_trwgt.addTopLevelItem(job_package_item)
 
 
