@@ -159,12 +159,17 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     def generateConductorCmd(self):
         '''
-        Return the command string that Conductor will execute
+        Return the command string that Conductor will execute.
+
         
         example:
-            "Render -rd /tmp/render_output/ -s %f -e %f -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
+            "Render -rd /tmp/render_output/ <frame_args> -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
+
+        The <frame_args> portion of the command will have values substitited into
+        into it by conductor (when the job is submitted).  These values will be
+        dictated by the "frames" argument.
         '''
-        base_cmd = "Render -rd /tmp/render_output/ -s %%sf -e %%ef %s %s"
+        base_cmd = "Render -rd /tmp/render_output/ <frame_args> %s %s"
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
         maya_filepath = self.getSourceFilepath()
