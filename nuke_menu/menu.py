@@ -2,6 +2,8 @@ import os
 import sys
 import traceback
 
+import nuke
+
 from conductor import submitter
 
 PACKAGE_DIRPATH = os.path.dirname(submitter.__file__)
