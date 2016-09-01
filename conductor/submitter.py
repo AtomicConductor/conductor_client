@@ -213,9 +213,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         self.ui_packages_splitter.setStretchFactor(0, 1)
         self.ui_packages_splitter.setStretchFactor(1, 2)
 
-        # Hide the widget that holds advanced settings. TODO: need to come back to this.
-        self.ui_advanced_wgt.hide()
-
         # Add the extended widget (must be implemented by the child class
         self._addExtendedWidget()
 
@@ -573,10 +570,12 @@ class ConductorSubmitter(QtGui.QMainWindow):
         self.ui_notify_lnedt.setText(str(value))
 
 
-    def getScoutJobCheckbox(self):
+    def getScoutJobCheckbox(self, off_when_disabled=True):
         '''
         Return the checkbox value for the "Scout Job" checkbox 
         '''
+        if off_when_disabled and not self.ui_scout_job_chkbx.isEnabled():
+            return False
         return self.ui_scout_job_chkbx.isChecked()
 
     def setScoutJobCheckbox(self, bool_):
@@ -599,7 +598,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         conductor_args["cores"] = self.getInstanceType()['cores']
         conductor_args["environment"] = self.getEnvironment()
-        conductor_args["force"] = self.getForceUploadBool()
         conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["chunk_size"] = self.getChunkSize()
         conductor_args["job_title"] = self.getJobTitle()
@@ -610,6 +608,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         conductor_args["project"] = self.getProject()
         conductor_args["scout_frames"] = self.getScoutFrames()
         conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
+        conductor_args["upload_only"] = self.getUploadOnly()
         return conductor_args
 
     def getCommand(self):
@@ -655,12 +654,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return list(set(config_package_ids + selected_package_ids))
 
 
-    def getForceUploadBool(self):
-        '''
-        Return whether the "Force Upload" checkbox is checked on or off.
-        '''
-        return self.ui_force_upload_chkbx.isChecked()
-
     def runConductorSubmission(self, data):
         '''
         Instantiate a Conductor Submit object with the given conductor_args 
@@ -704,6 +697,19 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return CONFIG.get("local_upload")
 
 
+    def getUploadOnly(self):
+        '''
+        Return whether the "Upload Only" checkbox is checked on or off.
+        '''
+        return self.ui_upload_only_chkbx.isChecked()
+
+    def setUploadOnly(self, upload_only):
+        '''
+        Set the the "Upload Only" checkbox to the given upload_only value (bool)
+        '''
+        return self.ui_upload_only_chkbx.setChecked(bool(upload_only))
+
+
     def launch_result_dialog(self, response_code, response):
 
         # If the job submitted successfully
@@ -727,6 +733,22 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         self.ui_start_end_wgt.setEnabled(on)
         self.ui_custom_wgt.setDisabled(on)
+
+
+
+    @QtCore.Slot(bool, name="on_ui_upload_only_chkbx_toggled")
+    def on_ui_upload_only_chkbx_toggled(self, toggled):
+        '''
+        When the "Upload Only" checkbox is checked on, disable the extended
+        widget (i.e. the software specific options e.g. Render layers or Write 
+        nodes,etc), as well as the Scout Job checkbox.   
+        When the the Upload Only checkobx is checked off, re-enable all of those
+        other widgets
+        '''
+        if self.extended_widget:
+            self.extended_widget.setDisabled(toggled)
+
+        self.ui_scout_job_chkbx.setDisabled(toggled)
 
 
     @QtCore.Slot(name="on_ui_submit_pbtn_clicked")

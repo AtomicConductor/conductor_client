@@ -86,23 +86,6 @@ class MayaWidget(QtGui.QWidget):
         return selected_layers
 
 
-    def getUploadOnlyBool(self):
-        '''
-        Return whether the "Upload Only" checkbox is checked on or off.
-        '''
-        return self.ui_upload_only.isChecked()
-
-
-    @QtCore.Slot(bool, name="on_ui_upload_only_toggled")
-    def on_ui_upload_only_toggled(self, toggled):
-        '''
-        when the "Upload Only" checkbox is checked on, disable the Render 
-        Layers widget. when the "Upload Only" checkbox is checked off, enable
-        the Render Layers widget.
-        '''
-        self.ui_render_layers_trwgt.setDisabled(toggled)
-
-
 class MayaConductorSubmitter(submitter.ConductorSubmitter):
     '''
     
@@ -365,7 +348,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
 
-        conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
         return conductor_args

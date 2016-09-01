@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>145</width>
-    <height>59</height>
+    <height>36</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -22,25 +22,11 @@
      <property name="title">
       <string>Render Layers</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QCheckBox" name="ui_upload_only">
-        <property name="toolTip">
-         <string>Only upload dependencies. Don't submit render job</string>
-        </property>
-        <property name="text">
-         <string>Upload Only</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <layout class="QVBoxLayout" name="verticalLayout_2"/>
     </widget>
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>ui_upload_only</tabstop>
- </tabstops>
  <resources>
   <include location="../submitter_maya_resources.qrc"/>
  </resources>

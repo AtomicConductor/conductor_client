@@ -62,23 +62,6 @@ class NukeWidget(QtGui.QWidget):
         '''
         return [str(item.text(0)) for item in self.ui_write_nodes_trwgt.selectedItems()]
 
-    def getUploadOnlyBool(self):
-        '''
-        Return whether the "Upload Only" checkbox is checked on or off.
-        '''
-        return self.ui_upload_only.isChecked()
-
-
-    @QtCore.Slot(bool, name="on_ui_upload_only_toggled")
-    def on_ui_upload_only_toggled(self, toggled):
-        '''
-        when the "Upload Only" checkbox is checked on, disable the Write 
-        Nodes widget. when the "Upload Only" checkbox is checked off, enable
-        the Write Nodes widget.
-        '''
-        self.ui_write_nodes_trwgt.setDisabled(toggled)
-
-
 
 
 class NukeConductorSubmitter(submitter.ConductorSubmitter):
@@ -304,8 +287,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
-
-        conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
 
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
