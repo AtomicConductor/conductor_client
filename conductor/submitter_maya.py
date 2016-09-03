@@ -140,7 +140,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def getExtendedWidget(self):
         return MayaWidget()
 
-    def generateConductorCmd(self):
+    def getCommand(self):
         '''
         Return the command string that Conductor will execute.
 
@@ -158,18 +158,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         maya_filepath = self.getSourceFilepath()
         cmd = base_cmd % (render_layer_args, maya_filepath)
         return cmd
-
-
-    def collectDependencies(self):
-        '''
-        Generate a list of filepaths that the current maya scene is dependent on.
-        '''
-        # Get all of the node types and attributes to query for external filepaths on
-        resources = common.load_resources_file()
-        dependency_attrs = resources.get("maya_dependency_attrs") or {}
-
-        return maya_utils.collect_dependencies(dependency_attrs)
-
 
 
     def getEnvironment(self):
@@ -216,55 +204,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return plugins_info
 
 
-    def runPreSubmission(self):
-        '''
-        Override the base class (which is an empty stub method) so that a 
-        validation pre-process can be run.  If validation fails, then indicate
-        that the the submission process should be aborted.   
-        
-        We also collect dependencies  at this point and pass that
-        data along...
-        In order to validate the submission, dependencies must be collected
-        and inspected. Because we don't want to unnessarily collect dependencies
-        again (after validation succeeds), we also pass the depenencies along
-        in the returned dictionary (so that we don't need to collect them again).
-        '''
-
-        raw_dependencies = self.collectDependencies()
-
-
-        # If uploading locally (i.e. not using  uploader daemon
-        if self.getLocalUpload():
-            # Don't need to enforce md5s for the daemon (don't want to do unnessary md5 hashing here)
-            enforced_md5s = {}
-        else:
-            # Get all files that we want to have integrity enforcement when uploading via the daemon
-            enforced_md5s = self.getEnforcedMd5s()
-
-        # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
-        raw_dependencies.extend(enforced_md5s.keys())
-
-        # Process all of the dependendencies. This will create a dictionary of dependencies, and whether they are considred Valid or not (bool)
-        dependencies = file_utils.process_dependencies(raw_dependencies)
-
-
-        # If the renderer is arnold and "use .tx files is enabled", then add corresponding tx files.
-        # TODO:(lws) This process shouldn't happen here. We can't keep tacking on things for random
-        # software-specific behavior. We're going to need start seperating behavior via classes (perhaps
-        # one for each renderer type?)
-        if maya_utils.is_arnold_renderer() and maya_utils.is_arnold_tx_enabled():
-            tx_filepaths = file_utils.get_tx_paths(dependencies.keys(), existing_only=True)
-            processed_tx_filepaths = file_utils.process_dependencies(tx_filepaths)
-            dependencies.update(processed_tx_filepaths)
-
-        raw_data = {"dependencies":dependencies}
-
-        is_valid = self.runValidation(raw_data)
-        return {"abort":not is_valid,
-                "dependencies":dependencies,
-                "enforced_md5s":enforced_md5s}
-
-
     def getJobTitle(self):
         '''
         Generate and return the title to be given to the job.  This is the title
@@ -306,61 +245,58 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return title
 
 
-    def runValidation(self, raw_data):
+
+    def getUploadPaths(self):
+        upload_paths = super(MayaConductorSubmitter, self).getUploadPaths()
+        upload_paths.extend(self.collectDependencies())
+        # If the renderer is arnold and "use .tx files is enabled", then add corresponding tx files.
+        # TODO:(lws) This process shouldn't happen here. We can't keep tacking on things for random
+        # software-specific behavior. We're going to need start seperating behavior via classes (perhaps
+        # one for each renderer type?)
+        if maya_utils.is_arnold_renderer() and maya_utils.is_arnold_tx_enabled():
+            tx_filepaths = file_utils.get_tx_paths(upload_paths, existing_only=True)
+            upload_paths.extend(tx_filepaths)
+
+        return sorted(set(upload_paths))
+
+
+    def collectDependencies(self):
         '''
-        This is an added method (i.e. not a base class override), that allows
-        validation to occur when a user presses the "Submit" button. If the
-        validation fails, a notification dialog appears to the user, halting
-        the submission process. 
-        
-        Validate that the data being submitted is...valid.
-        
-        1. Dependencies
-        2. Output dir
+        Generate a list of filepaths that the current maya scene is dependent on.
         '''
-
-        # ## Validate that all filepaths exist on disk
-        dependencies = raw_data["dependencies"]
-        invalid_filepaths = [path for path, is_valid in dependencies.iteritems() if not is_valid]
-        if invalid_filepaths:
-            message = "Found invalid filepaths:\n\n%s" % "\n\n".join(invalid_filepaths)
-            pyside_utils.launch_error_box("Invalid filepaths!", message, parent=self)
-            raise Exception(message)
-
-        return True
+        # Get all of the node types and attributes to query for external filepaths on
+        resources = common.load_resources_file()
+        dependency_attrs = resources.get("maya_dependency_attrs") or {}
+        return maya_utils.collect_dependencies(dependency_attrs)
 
 
-    def generateConductorArgs(self, data):
-        '''
-        Override this method from the base class to provide conductor arguments that 
-        are specific for Maya.  See the base class' docstring for more details.
 
-        '''
-        # Get the core arguments from the UI via the parent's  method
-        conductor_args = super(MayaConductorSubmitter, self).generateConductorArgs(data)
+#     def getJobArgs(self):
+#         '''
+#         Override this method from the base class to provide conductor arguments that
+#         are specific for Maya.  See the base class' docstring for more details.
+#
+#         '''
+#         # Get the core arguments from the UI via the parent's  method
+#         conductor_args = super(MayaConductorSubmitter, self).getJobArgs()
+#
+#         # Get the maya-specific environment
+#         conductor_args["environment"] = self.getEnvironment()
+#
+#         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
+#         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
+#
+#         return conductor_args
 
-        # Construct the maya-specific command
-        conductor_args["cmd"] = self.generateConductorCmd()
-
-        # Get the maya-specific environment
-        conductor_args["environment"] = self.getEnvironment()
-
-        # Grab the enforced md5s files from data (note that this comes from the presubmission phase
-        conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
-
-        # Grab the file dependencies from data (note that this comes from the presubmission phase
-        conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
-        return conductor_args
-
-
-    def runConductorSubmission(self, data):
-
-        # If an "abort" key has a True value then abort submission
-        if data.get("abort"):
-            logger.warning("Conductor: Submission aborted")
-            return data
-
-        return super(MayaConductorSubmitter, self).runConductorSubmission(data)
+#
+#     def runConductorSubmission(self, data):
+#
+#         # If an "abort" key has a True value then abort submission
+#         if data.get("abort"):
+#             logger.warning("Conductor: Submission aborted")
+#             return data
+#
+#         return super(MayaConductorSubmitter, self).runConductorSubmission(data)
 
 
     def getSourceFilepath(self):

@@ -66,22 +66,19 @@ def separate_path(path, no_extension=False):
     return dirpath, basename, extension
 
 
-def process_dependencies(paths):
+def validate_paths(paths):
     '''
-    For the given lists of dependency paths, return a dictionary where the keys 
-    are the depenency filepaths and the values are paths, and the values are a 
-    bool, indicating whether the dependency path is valid. 
-    
-    '''
-    dependencies = {}
+    For the given lists of paths, return a dictionary where the keys 
+    are a paths and the value is a bool, indicating whether the path is valid. 
+       '''
+    paths = {}
     for path in paths:
         try:
             process_upload_filepath(path)
-            dependencies[path] = True
+            paths[path] = True
         except:
-            dependencies[path] = False
-
-    return dependencies
+            paths[path] = False
+    return paths
 
 
 
@@ -229,7 +226,7 @@ def get_common_dirpath(paths):
         # if the output "path" ends with a slash, then we know it's actually a
         # directory path, and can return it
         if output_path.endswith(os.sep) and _is_valid_path(output_path):
-            return output_path.rstrip(os.sep) # strip of the trailing path separator
+            return output_path.rstrip(os.sep)  # strip of the trailing path separator
 
         # Otherwise ask for the directory of the output "path"
         dirpath = os.path.dirname(output_path)

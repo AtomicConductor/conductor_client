@@ -1,14 +1,15 @@
 import collections
 from pprint import pformat
+import imp
 import logging
 import os
 import operator
 import sys
 import inspect
 import functools
+import time
 import traceback
 from PySide import QtGui, QtCore
-import imp
 
 try:
     imp.find_module('conductor')
@@ -16,7 +17,7 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG
-from conductor.lib import  conductor_submit, pyside_utils, common, api_client, loggeria, package_utils
+from conductor.lib import  conductor_submit, pyside_utils, common, api_client, loggeria, package_utils, file_utils
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -36,11 +37,351 @@ TODO:
 1. Create qt resource package or fix filepaths for all images to be set during code execution
 2. about menu? - provide link to studio's conductor url (via yaml config file) 
 5. consider conforming all code to camel case (including .ui widgets). 
-6. Consider adding validation to the base class so that inheritance can be used.
 7. tool tips for all widget fields
 9. what are the available commands for the "cmd" arg?
 
 '''
+
+
+class StepDecorator(object):
+
+    def __init__(self, step_name=None):
+        self.step_name = step_name
+
+    def __call__(self, function):
+        '''
+        This gets called during python compile time (as all decorators do).
+        It will always have only a single argument: the function this is being
+        decorated.  It's responsbility is to return a callable, e.g. the actual
+        decorator function
+        '''
+        @functools.wraps(function)
+        def decorater_function(*args, **kwargs):
+            '''
+            The decorator function
+
+            Tries to execute the decorated function. If an exception occurs,
+            it is caught, takes the action, and then raises the exception.
+            '''
+            assert len(args) > 0, "Must at least have self as an argument"
+            thread_instance = args[0]
+
+            step_name = self.step_name or function.__name__
+            thread_instance.sig_step_started.emit("Running: %s" % step_name)
+            result = function(*args, **kwargs)
+            thread_instance.sig_step_finished.emit("Finished: %s" % step_name)
+            return result
+
+        return decorater_function
+
+
+
+
+
+class SubmissionThread(QtCore.QThread):
+    '''
+    This class is eparate thread that will be run apart from the
+    main ui thread.  This allows the main ui to remain responsive and display
+    updates/progress of what this thread is doing.
+    
+    Specifically, this class is handling the entire submission process (from
+    the moment the user presses the "submit" button).  This submission processes
+    can be broken down into several stages so that progress percentage and feedback
+    can be provided to the user.  This thread also allows for the cancelling
+    of the submission process by the user.
+    
+    These are the stages of the submission process:
+        1. Argument Gathering
+            - collectDependencies
+                -depencying processing
+        2. Argument Validation
+        3. Job Submission
+        4. Post submission processes
+        5
+        
+    This thread will exit in the following circumstances:
+        1. The user cancels the process
+        2. An exception is raised 
+        3. The process completes
+        
+    When the thread exits, it will provide the following information on it's object:
+        - result:  This will only be available if no exceptions have been raised. 
+                    This is simply the return data of the submission process
+        - exception: This is the sys.exc_info() from any exception that occurs. Otherwise None.
+        
+        
+    This thread communicates via signals:
+        - sig_step_started:  The step has started
+        - sig_step_finished: The step completed
+        - sig_log: emits log information that might be useful for capturing (and displaying in the UI)
+         
+    
+    This thread is really kinda hacky because it actually uses the main thread's
+    gui object. This is required because the gui object has many methods and attributes
+    that are required for this submission process, such as gathering arguments
+    (from the gui), and querying other data stored in the gui.
+    
+    '''
+
+    sig_step_started = QtCore.Signal(object)
+    sig_step_finished = QtCore.Signal(object)
+    sig_log = QtCore.Signal(object)
+
+    result = None
+    exception = None
+    canceled = False
+    steps = ["Presubmission",
+             "Job Argument Gathering",
+             "Job Argument Validation",
+             "Job Submission"]
+    _log = ""
+
+
+    def __init__(self, ui):
+        self.ui = ui
+        super(SubmissionThread, self).__init__()
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+
+        try:
+            self.result = self.main()
+        except:
+            self.exception = sys.exc_info()
+
+    def main(self):
+        self.check_canceled()
+        self.run_pre_submission()
+        self.check_canceled()
+        job_args = self.get_job_args()
+        self.check_canceled()
+        validated_args = self.validate_job_args(job_args)
+        self.check_canceled()
+        return self.submit_job(validated_args)
+
+    @StepDecorator("Presubmission")
+    def run_pre_submission(self):
+        self.log("This is a presub message")
+        data = self.ui.runPreSubmission()
+        return data
+
+
+    @StepDecorator("Job Argument Gathering")
+    def get_job_args(self):
+        self.log("This is a Argument Gathering message")
+        job_args = self.ui.getJobArgs()
+        time.sleep(1)
+        return job_args
+
+    @StepDecorator("Job Argument Validation")
+    def validate_job_args(self, job_arguments):
+        self.log("This is a Argument Validation message")
+        validated_args = self.ui.validateJobArgs(job_arguments)
+        time.sleep(1)
+        return validated_args
+
+#     @StepDecorator("Job Submission")
+#     def submit_job(self, job_arguments):
+#         submission = conductor_submit.Submit(job_arguments)
+#         result = submission.main()
+#         return result
+
+    @StepDecorator("Job Submission")
+    def submit_job(self, job_arguments):
+        self.log("This is a Job Submission message")
+        time.sleep(.5)
+        result = ({"jobid": "02010"}, 201)
+        return result
+
+    def cancel(self):
+        self.canceled = True
+
+    def check_canceled(self):
+        if self.canceled:
+            raise CanceledException("Canceled")
+
+    def log(self, message):
+        self._log += "\n" + message
+        self.sig_log.emit(message)
+
+    def get_log(self):
+        return self._log
+    
+    
+    
+#     def step_decorator(self, ):
+#                 @functools.wraps(function)
+#         def decorater_function(*args, **kwargs):
+#             '''
+#             The decorator function
+# 
+#             Tries to execute the decorated function. If an exception occurs,
+#             it is caught, takes the action, and then raises the exception.
+#             '''
+#             assert len(args) > 0, "Must at least have self as an argument"
+#             thread_instance = args[0]
+# 
+#             step_name = self.step_name or function.__name__
+#             thread_instance.sig_step_started.emit("Running: %s" % step_name)
+#             result = function(*args, **kwargs)
+#             thread_instance.sig_step_finished.emit("Finished: %s" % step_name)
+#             return result
+# 
+#         return decorater_function
+    
+    
+    
+    def step_decorator(self, function):
+    
+        '''
+        DECORATOR
+        Wraps the decorated function/method so that if the function raises an
+        exception, the exception will be caught, it's message will be printed,
+        and the function will return (suppressing the exception) .
+        '''
+        @functools.wraps(function)
+        def decorater_function(*args, **kwargs):
+            '''
+            The decorator function
+
+            Tries to execute the decorated function. If an exception occurs,
+            it is caught, takes the action, and then raises the exception.
+            '''
+            assert len(args) > 0, "Must at least have self as an argument"
+            thread_instance = args[0]
+
+            step_name = self.step_name or function.__name__
+            thread_instance.sig_step_started.emit("Running: %s" % step_name)
+            result = function(*args, **kwargs)
+            thread_instance.sig_step_finished.emit("Finished: %s" % step_name)
+            return result
+
+class JobProgressDialog(QtGui.QMessageBox):
+
+    '''
+    TBC:
+        1. Want to have two different dialog boxes:
+            a. progress dialog box
+            b. result dialog box
+        
+        2. The progress dialog box will
+            a.Show current step of action
+            b.progress bar
+            c.details button to show the "log" of the progress
+            
+        3. The result dialog will have
+            a. The reults of the submissin : exceptions, success
+            b. details of the process (take this from the log of the progress)
+            
+         
+    '''
+
+    link_color = "rgb(200,100,100)"
+    steps = []
+    is_thread_finished = False
+#     minimum_width = 500
+
+    sig_canceled = QtCore.Signal(object)
+
+    def __init__(self, qthread, title="", text="", parent=None):
+        super(JobProgressDialog, self).__init__(parent=parent)
+        self.qthread = qthread
+
+
+
+
+
+
+        self.setText(text)
+#         self.label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtGui.QMessageBox.Cancel)
+        self.progress_bar = QtGui.QProgressBar()
+        self.progress_bar.setMaximum(0)
+        layout = self.layout()
+        layout.addWidget(self.progress_bar, 1, 1)
+#         self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowCloseButtonHint)
+        self.setDetailedText(" ")
+
+
+        self.connect_thread()
+
+
+    def connect_thread(self):
+
+
+        for step in self.qthread.steps:
+            self.add_step(step)
+
+        self.qthread.sig_step_started.connect(self.step_started)
+        self.qthread.sig_step_finished.connect(self.step_finished)
+
+
+        # Connect the thread's finished signal to the dialog's accept slot.  This will hide the dialog once the thread has finished
+        self.qthread.finished.connect(self.accept)
+
+        # Connect the Cancel button to the cancel
+        self.button(QtGui.QMessageBox.Cancel).clicked.connect(self.cancel)
+
+        self.qthread.sig_log.connect(self.add_to_details)
+
+
+    def done(self, return_code):
+        '''
+        This is a super hack to work around a QT bug.  When using using StandardButtons
+        in a QMessageBox, when the buttons are pressed, the QMessageBox won't
+        emit the expected signals (rejected(), accepted(), etc). 
+        see https://forum.qt.io/topic/20663/problems-with-signal-accept-and-signal-reject-and-qmessagebox/6 
+        '''
+        if return_code == QtGui.QMessageBox.Cancel:
+            print "done: cancelled"
+            self.cancel()
+            while not self.qthread.isFinished():
+                QtGui.qApp.processEvents()
+        super(JobProgressDialog, self).done(return_code)
+
+    def submission_finished(self, result):
+        print "submission_finished!!!!  Setting dialog to done:", result
+        self.done(0)
+
+    def add_step(self, step_description):
+        self.steps.append(step_description)
+        self.progress_bar.setMaximum(self.progress_bar.maximum() + 1)
+
+    def add_to_details(self, text):
+        details = "%s\n%s" % (self.detailedText(), text)
+        self.setDetailedText(details)
+
+    def next_step(self):
+        next_step = self.progress_bar.value() + 1
+        step_message = self.steps[next_step]
+        new_value = next_step
+        self.progress_bar.setValue(new_value)
+        self.setText(step_message)
+        if new_value >= self.progress_bar.maximum():
+            self.setStandardButtons(QtGui.QMessageBox.Ok)
+
+    def step_started(self, step_message):
+        print "step started: %s" % step_message
+        self.next_step()
+
+    def step_finished(self, step_message):
+        print "step finished: %s" % step_message
+
+
+    def cancel(self):
+        '''
+        Set the dialog's test to "Cancelling <step name> ..."
+        and tell the thread to cancel
+        '''
+        self.setText("Canceling ...")
+        self.qthread.cancel()
+
+
+
+
 
 class ConductorSubmitter(QtGui.QMainWindow):
     '''
@@ -584,32 +925,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         return self.ui_scout_job_chkbx.setChecked(bool_)
 
-    def generateConductorArgs(self, data):
-        '''
-        Return a dictionary which contains the necessary conductor argument names
-        and their values.  This dictionary will ultimately be passed directly 
-        into a conductor Submit object when instantiating/calling it.
-        
-        Generally, the majority of the values that one would populate this dictionary
-        with would be found by quering this UI, e.g.from the "frames" section of ui.
-           
-        '''
-        conductor_args = {}
-
-        conductor_args["cores"] = self.getInstanceType()['cores']
-        conductor_args["environment"] = self.getEnvironment()
-        conductor_args["frames"] = self.getFrameRangeString()
-        conductor_args["chunk_size"] = self.getChunkSize()
-        conductor_args["job_title"] = self.getJobTitle()
-        conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["machine_type"] = self.getInstanceType()['flavor']
-        conductor_args["notify"] = self.getNotifications()
-        conductor_args["output_path"] = self.getOutputDir()
-        conductor_args["project"] = self.getProject()
-        conductor_args["scout_frames"] = self.getScoutFrames()
-        conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
-        conductor_args["upload_only"] = self.getUploadOnly()
-        return conductor_args
 
     def getCommand(self):
         '''
@@ -653,37 +968,77 @@ class ConductorSubmitter(QtGui.QMainWindow):
         selected_package_ids = [package["package_id"] for package in self.getJobPackages()]
         return list(set(config_package_ids + selected_package_ids))
 
-
-    def runConductorSubmission(self, data):
+    def getJobArgs(self):
         '''
-        Instantiate a Conductor Submit object with the given conductor_args 
-        (dict), and execute it. 
+        Return a dictionary which contains the necessary conductor argument names
+        and their values.  This dictionary will ultimately be passed directly 
+        into a conductor Submit object when instantiating/calling it.
+        
+        Generally, the majority of the values that one would populate this dictionary
+        with would be found by quering this UI, e.g.from the "frames" section of ui.
+           
         '''
-        # Generate a dictionary of arguments to feed conductor
-        conductor_args = self.generateConductorArgs(data)
+        job_args = {}
 
-        # Print out the values for each argument
-        logger.debug("runConductorSubmission ARGS:")
-        for arg_name, arg_value in conductor_args.iteritems():
-            logger.debug("%s: %s", arg_name, arg_value)
+        job_args["cmd"] = self.getCommand()
+        job_args["cores"] = self.getInstanceType()['cores']
+        job_args["enforced_md5s"] = self.getEnforcedMd5s()
+        job_args["environment"] = self.getEnvironment()
+        job_args["frames"] = self.getFrameRangeString()
+        job_args["chunk_size"] = self.getChunkSize()
+        job_args["job_title"] = self.getJobTitle()
+        job_args["local_upload"] = self.getLocalUpload()
+        job_args["machine_type"] = self.getInstanceType()['flavor']
+        job_args["notify"] = self.getNotifications()
+        job_args["output_path"] = self.getOutputDir()
+        job_args["project"] = self.getProject()
+        job_args["scout_frames"] = self.getScoutFrames()
+        job_args["software_package_ids"] = self.getSoftwarePackageIds()
+        job_args["upload_only"] = self.getUploadOnly()
+        job_args["upload_paths"] = self.getUploadPaths()
 
-        return self._runSubmission(conductor_args)
+        return job_args
 
 
+    def getUploadPaths(self):
+        upload_paths = []
+        # Get all files that we want to have integrity enforcement when uploading via the daemon
+        enforced_md5s = self.getEnforcedMd5s()
+        # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
+        upload_paths.extend(enforced_md5s.keys())
+        return upload_paths
 
-    @pyside_utils.wait_cursor
-    @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
-    def _runSubmission(self, conductor_args):
-        try:
-            submission = conductor_submit.Submit(conductor_args)
-            response, response_code = submission.main()
 
-        except:
-            title = "Job submission failure"
-            message = "".join(traceback.format_exception(*sys.exc_info()))
-            pyside_utils.launch_error_box(title, message, self)
-            raise
-        return response_code, response
+    def validateJobArgs(self, job_args):
+        '''
+        Validate the the given job arguments
+        '''
+        self.validateJobPackages()
+        self.validateUploadPaths(job_args["upload_paths"])
+        return job_args
+
+
+    def validateUploadPaths(self, upload_paths):
+        '''
+        This is an added method (i.e. not a base class override), that allows
+        validation to occur when a user presses the "Submit" button. If the
+        validation fails, a notification dialog appears to the user, halting
+        the submission process. 
+        
+        Validate that the data being submitted is...valid.
+        
+        1. Dependencies
+        2. Output dir
+        '''
+        # Process all of the dependendencies. This will create a dictionary of dependencies, and whether they are considred Valid or not (bool)
+        path_results = file_utils.validate_paths(upload_paths)
+
+        invalid_filepaths = [path for path, is_valid in path_results.iteritems() if not is_valid]
+        if invalid_filepaths:
+            message = "Found invalid filepaths:\n\n%s" % "\n\n".join(invalid_filepaths)
+            raise ValidationException(message)
+
+
 
     def getLocalUpload(self):
         '''
@@ -710,7 +1065,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return self.ui_upload_only_chkbx.setChecked(bool(upload_only))
 
 
-    def launch_result_dialog(self, response_code, response):
+    def launch_result_dialog(self, response, response_code, details=""):
 
         # If the job submitted successfully
         if response_code in SUCCESS_CODES_SUBMIT:
@@ -720,12 +1075,12 @@ class ConductorSubmitter(QtGui.QMainWindow):
             message = ('<html><head/><body><p>Job submitted: '
                        '<a href="%s"><span style=" text-decoration: underline; '
                        'color:%s;">%s</span></a></p></body></html>') % (job_url, self.link_color, job_id)
-            pyside_utils.launch_message_box(title, message, is_richtext=True, parent=self)
+            pyside_utils.launch_message_box(title, message, is_richtext=True, parent=self, details=details)
         # All other response codes indicate a submission failure.
         else:
             title = "Job Submission Failure"
             message = "Job submission failed: error %s" % response_code
-            pyside_utils.launch_error_box(title, message, parent=self)
+            pyside_utils.launch_error_box(title, message, parent=self, details=details)
 
 
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
@@ -769,15 +1124,77 @@ class ConductorSubmitter(QtGui.QMainWindow):
         does not meet all pre/post submission needs, then overriding those methods
         is also an available/appropriate methodology.  
         
+        
+        The Job submission process occurs in a separate thread.  This allows
+        the main thread (which runs the UI) to remain responsive.  While the 
+        submission thread is running, a modal progress dialog will block the user
+        until the submission thread completes. 
+        
+        
+        
         '''
-        if not self.validateJobPackages():
-            return
-        data = self.runPreSubmission()
-        response_code, response = self.runConductorSubmission(data)
-        self.runPostSubmission(response_code)
+        # Creaat the submission thread
+        submission_thread = SubmissionThread(self)
 
-        # Launch a dialog box what diesplays the results of the job submission
-        self.launch_result_dialog(response_code, response)
+        # Instantiate the Submission Dialog
+        job_progress_dialog = JobProgressDialog(submission_thread, title="Job Submission", text="Submitting Job", parent=self)
+
+        # Start the submission thread.  This does NOT block the main thread from continuing
+        submission_thread.start()
+
+        # Display the modal dialog.  This DOES block the main thread from continuing.
+        result = job_progress_dialog.exec_()
+
+        # Wait for the thread to finish, otherwise the results/exception attributes may not have populated
+        # This typiacally wouln't be required, but the actual termination of the
+        # thread may take some time. We don't want the main thread (and UI) to be
+        # free for the user to take further actions. Otherwise, this could lead to
+        # the user spawning another submission process before the other one is
+        # completed.  Also, losing a QThread refefence before it finishes can
+        # cause a hard crash.  Once the thread finishes, the submission dialog
+        # will close.
+        submission_thread.wait()
+
+
+
+        logger.debug("result: %s", result)
+        logger.debug("submission_thread.result: %s", submission_thread.result)
+        logger.debug("submission_thread.exception: %s", submission_thread.exception)
+
+        thread_log = submission_thread.get_log()
+
+        # If an excepton occured, display the exception info in a new dialog
+        if submission_thread.exception:
+
+            # Figure out what exception type occured
+            e_type, e_value, e_traceback = submission_thread.exception
+
+            # If the exception was a validation exception
+            if e_type == ValidationException:
+                title = "Validation Failure"
+                message = e_value
+                # Switch to the Software Packages tab
+                self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
+                pyside_utils.launch_error_box(title, message, self, details=thread_log)
+
+            # If the exception was due to the user cancelling
+            elif e_type == CanceledException:
+                title = "Job submission Cancelled"
+                message = "Job submission Cancelled"
+                pyside_utils.launch_error_box(title, message, self, details=thread_log)
+
+            # Catch all other exceptions here.  Hopefully thisw won't happen too often
+            else:
+                title = "Job submission failure"
+                message = "".join(traceback.format_exception(*submission_thread.exception))
+                pyside_utils.launch_error_box(title, message, self, details=thread_log)
+
+        # If no excepton occured, then retrieve the response from the thread and
+        # display the results in a new dialog
+        else:
+            response, response_code = submission_thread.result
+            self.launch_result_dialog(response, response_code, details=thread_log)
+
 
 
     def runPreSubmission(self):
@@ -950,14 +1367,15 @@ class ConductorSubmitter(QtGui.QMainWindow):
         # Create a list of files that we want to guarantee to be in the same
         # state when uploading to conductor.  These files will need to md5 hashed here/now.
         # This is potentially TIME CONSUMING (if the files are large and plenty).
-        enforced_files = []
-        enforced_files.append(self.getSourceFilepath())
-
-        # Generate md5s to dictionary
         enforced_md5s = {}
-        for filepath in enforced_files:
-            logger.info("md5 hashing: %s", filepath)
-            enforced_md5s[filepath] = common.generate_md5(filepath, base_64=True)
+        if not self.getLocalUpload():
+            enforced_files = []
+            enforced_files.append(self.getSourceFilepath())
+
+            # Generate md5s to dictionary
+            for filepath in enforced_files:
+                logger.info("md5 hashing: %s", filepath)
+                enforced_md5s[filepath] = common.generate_md5(filepath, base_64=True)
 
         return enforced_md5s
 
@@ -1209,7 +1627,13 @@ class ConductorSubmitter(QtGui.QMainWindow):
     @QtCore.Slot(name="on_ui_add_to_job_pbtn_clicked")
     def on_ui_add_to_job_pbtn_clicked(self):
         self._availableAddSelectedItems()
-        self.validateJobPackages()
+        try:
+            self.validateJobPackages()
+        except ValidationException as ve:
+            self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
+            pyside_utils.launch_error_box(ve.title, ve.message, parent=self)
+            raise
+
         self.saveJobPackagesToPrefs()
 
 
@@ -1606,7 +2030,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
                                                   "build_version"]]))
         return software_name + " " + software_version
 
-
     def validateJobPackages(self):
         '''
         Validate that all packages that have been added to the job are...valid.
@@ -1614,10 +2037,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         job_packages = self.getJobPackages()
         job_package_ids = [p["package_id"] for p in job_packages]
-
-
-
-
 
         ### LOOK FOR DUPLICATE PACKAGES ###
         duplicate_ids = set([x for x in job_package_ids if job_package_ids.count(x) > 1])
@@ -1629,9 +2048,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             msg = ("Duplicate software packages have been specified for the Job!\n\n"
                    "Please go the \"Job Software\" tab and ensure that only one "
                    "of the following packages has been specified:\n   %s") % "\n   ".join(dupe_package_strs)
-            pyside_utils.launch_error_box(title, msg, parent=self)
-            self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
-            return False
+            raise ValidationException as ve(msg, title=title)
 
 
         ### LOOK FOR MULTIPLE PRODUCT PACKAGES ###
@@ -1650,10 +2067,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             msg = ("Multiple software packages of the same product have been specified for the Job!\n\n"
                    "Please go the \"Job Software\" tab and ensure that only one "
                    "package for the following products have been specified:\n   %s") % "\n   ".join(duplicate_product_strs)
-            pyside_utils.launch_error_box(title, msg, parent=self)
-            self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
-            return False
-
+            raise ValidationException as ve(msg, title=title)
 
         ### LOOK FOR PRESENCE OF A HOST PACKAGE ###
         for package in self.getJobPackages():
@@ -1664,11 +2078,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
             title = "No software package selected for %s!" % self.product
             msg = ("No %s software package have been specified for the Job!\n\n"
                    "Please go the \"Job Software\" tab and select a one (potentially %s") % (self.product, host_info["version"])
-            pyside_utils.launch_error_box(title, msg, parent=self)
-            self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
-            return False
+            raise ValidationException as ve(msg, title=title)
 
-        return True
 
 
 class SubmitterPrefs(pyside_utils.UiFilePrefs):
@@ -1759,6 +2170,16 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
             the frame/range to use for scout frames
         '''
         return self.setPref(self.PREF_JOB_PACKAGES_IDS, value, filepath=filepath)
+
+
+class ValidationException as ve(Exception):
+    def __init__(message, title=None):
+        self.message = message
+        self.title = title
+        super(ValidationException, self).__init__(message)
+
+class CanceledException(Exception):
+    pass
 
 
 

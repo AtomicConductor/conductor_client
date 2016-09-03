@@ -97,7 +97,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         return NukeWidget()
 
 
-    def generateConductorCmd(self):
+    def getCommand(self):
         '''
         Return the command string that Conductor will execute
         
@@ -115,6 +115,15 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         nuke_scriptpath = self.getSourceFilepath()
         cmd = base_cmd % (" ".join(write_nodes_args), nuke_scriptpath)
         return cmd
+
+
+
+    def getUploadPaths(self):
+        upload_paths = super(NukeConductorSubmitter, self).getUploadPaths()
+        write_nodes = self.extended_widget.getSelectedWriteNodes()
+        upload_paths.extend(self.collectDependencies(write_nodes))
+        return sorted(set(upload_paths))
+
 
 
     def collectDependencies(self, write_nodes):
@@ -154,12 +163,12 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         output_path = file_utils.get_common_dirpath(write_paths)
         return output_path, write_paths
 
-    def runPreSubmission(self):
+    def validateJobArgs(self, job_args):
         '''
-        Override the base class (which is an empty stub method) so that a 
+        Override the base class (which is an empty stub method) so that a
         validation pre-process can be run.  If validation fails, then indicate
-        that the the submission process should be aborted.   
-        
+        that the the submission process should be aborted.
+
         We also collect dependencies (and asds) at this point and pass that
         data along...
         In order to validate the submission, dependencies must be collected
@@ -167,39 +176,33 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         again (after validation succeeds), we also pass the depenencies along
         in the returned dictionary (so that we don't need to collect them again).
         '''
+        import time
 
         # Get the write nodes that have been selected by the user (in the UI)
         write_nodes = self.extended_widget.getSelectedWriteNodes()
+        self.validateWriteNodes(write_nodes)
 
+        job_args["output_path"] = self.validateOutputPath(job_args["output_path"])
+        return super(NukeConductorSubmitter, self).validateJobArgs(job_args)
+
+
+    def validateWriteNodes(self, write_nodes):
         if not write_nodes:
             message = "No Write nodes selected for rendering!\nPlease select at least one Write node from the UI before pressing Submit"
-            pyside_utils.launch_error_box("No Write nodes selected!", message, parent=self)
-            raise Exception(message)
+            raise submitter.ValidationException(message)
 
-        raw_dependencies = self.collectDependencies(write_nodes)
+    def validateOutputPath(self, output_path):
 
-        # If uploading locally (i.e. not using  uploader daemon
-        if self.getLocalUpload():
-            # Don't need to enforce md5s for the daemon (don't want to do unnessary md5 hashing here)
-            enforced_md5s = {}
-        else:
-            # Get all files that we want to have integrity enforcement when uploading via the daemon
-            enforced_md5s = self.getEnforcedMd5s()
+        # ## Validate that there is a common root path across all of the Write
+        # nodes' output paths
+        output_path, write_paths = output_path
+        if not output_path:
+            message = "No common/shared output directory. All output files should share a common root!\n\nOutput files:\n    %s" % "\n   ".join(write_paths)
+            raise submitter.ValidationException(message)
 
-        # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
-        raw_dependencies.extend(enforced_md5s.keys())
+        return output_path
 
 
-        dependencies = file_utils.process_dependencies(raw_dependencies)
-        output_path, write_paths = self.getOutputPath()
-        raw_data = {"dependencies":dependencies,
-                    "output_path":[output_path, write_paths]}
-
-        is_valid = self.runValidation(raw_data)
-        return {"abort":not is_valid,
-                "dependencies":dependencies,
-                "output_path":output_path,
-                "enforced_md5s":enforced_md5s}
 
 
     def getJobTitle(self):
@@ -239,72 +242,30 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         return title
 
 
-    def runValidation(self, raw_data):
-        '''
-        This is an added method (i.e. not a base class override), that allows
-        validation to occur when a user presses the "Submit" button. If the
-        validation fails, a notification dialog appears to the user, halting
-        the submission process. 
-        
-        Validate that the data being submitted is...valid.
-        
-        1. Dependencies
-        2. Output dir
-        '''
 
-        # ## Validate that all filepaths exist on disk
-        dependencies = raw_data["dependencies"]
-        invalid_filepaths = [path for path, is_valid in dependencies.iteritems() if not is_valid]
-        if invalid_filepaths:
-            message = "Found invalid filepaths:\n\n%s" % "\n\n".join(invalid_filepaths)
-            pyside_utils.launch_error_box("Invalid filepaths!", message, parent=self)
-            raise Exception(message)
-
-
-        # ## Validate that there is a common root path across all of the Write
-        # nodes' output paths
-        output_path, write_paths = raw_data["output_path"]
-        if not output_path:
-            message = "No common/shared output directory. All output files should share a common root!\n\nOutput files:\n    %s" % "\n   ".join(write_paths)
-            pyside_utils.launch_error_box("No common output directory!", message, parent=self)
-            raise Exception(message)
-
-        return True
-
-
-
-    def generateConductorArgs(self, data):
+    def getJobArgs(self):
         '''
         Override this method from the base class to provide conductor arguments that 
         are specific for Nuke.  See the base class' docstring for more details.
         '''
 
         # Get the core arguments from the UI via the parent's  method
-        conductor_args = super(NukeConductorSubmitter, self).generateConductorArgs(data)
-
-        # Construct the nuke-specific command
-        conductor_args["cmd"] = self.generateConductorCmd()
-
-        # Grab the enforced md5s files from data (note that this comes from the presubmission phase
-        conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
-
-        # Grab the file dependencies from data (note that this comes from the presubmission phase
-        conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
+        job_args = super(NukeConductorSubmitter, self).getJobArgs()
 
         # the output path gets dynamically generated based upon which write nodes the user has selected
-        conductor_args["output_path"] = data["output_path"]
+        job_args["output_path"] = self.getOutputPath()
 
-        return conductor_args
+        return job_args
 
 
-    def runConductorSubmission(self, data):
-
-        # If an "abort" key has a True value then abort submission
-        if data.get("abort"):
-            logger.warning("Conductor: Submission aborted")
-            return data
-
-        return super(NukeConductorSubmitter, self).runConductorSubmission(data)
+#     def runConductorSubmission(self, data):
+#
+#         # If an "abort" key has a True value then abort submission
+#         if data.get("abort"):
+#             logger.warning("Conductor: Submission aborted")
+#             return data
+#
+#         return super(NukeConductorSubmitter, self).runConductorSubmission(data)
 
     def getSourceFilepath(self):
         '''

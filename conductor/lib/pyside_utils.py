@@ -101,7 +101,7 @@ def wait_message(title, message):
 
 
 
-def launch_message_box(title, message, is_richtext=False, parent=None):
+def launch_message_box(title, message, is_richtext=False, parent=None, details=""):
     """
     Launches a very basic message dialog box with the given title and message. 
     
@@ -118,6 +118,8 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
     # Set the message text to the given message string
     dialog.setText(str(message))
 
+    dialog.setDetailedText(details)
+
     # Set the text to be selectable by a mouse
     text_label = dialog.findChild(QtGui.QLabel, "qt_msgbox_label")
     text_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
@@ -129,7 +131,7 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
     return dialog.exec_()
 
 
-def launch_error_box(title, message, parent=None):
+def launch_error_box(title, message, parent=None, details=""):
     """
     Launches a QErrorMessage dialog box with the given title and message. 
     """

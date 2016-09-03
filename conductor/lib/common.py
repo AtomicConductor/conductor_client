@@ -10,6 +10,7 @@ import signal
 import subprocess
 import sys
 import time
+import threading
 import traceback
 import yaml
 
@@ -24,6 +25,11 @@ def signal_handler(sig_number, stack_frame):
     SIGINT_EXIT = True
 
 def register_sigint_signal_handler(signal_handler=signal_handler):
+    current_thread = threading.current_thread()
+    if not isinstance(current_thread, threading._MainThread):
+        logger.warning("skipping sigint handler registration because not in main thread: %s", current_thread.name)
+        return
+
     logger.debug("REGISTERING SIGNAL HANDLER")
     signal.signal(signal.SIGINT, signal_handler)
 

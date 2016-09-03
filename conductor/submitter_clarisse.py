@@ -177,7 +177,7 @@ class ClarisseConductorSubmitter(object):
         '''
 
         scene_info = self.collectDependencies()
-        dependencies = file_utils.process_dependencies(scene_info["dependencies"])
+        dependencies = file_utils.validate_paths(scene_info["dependencies"])
         output_path = scene_info['output_path']
         raw_data = {"dependencies":dependencies,
                     "output_path":[output_path],
