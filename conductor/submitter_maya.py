@@ -121,7 +121,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     _window_title = "Conductor - Maya"
 
-    product = "maya"
+    product = "maya-io"
 
 
     def __init__(self, parent=None):

@@ -1164,7 +1164,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
             msg = "The following software packages could not be auto matched:\n  %s" % "\n  ".join(package_strs)
             msg += '\n\nManually add desired software packages in the "Job Software" tab'
 
-            title = "Job Submission Failure"
+            title = "Software Package Error"
             pyside_utils.launch_error_box(title, msg, parent=self)
             self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
 
@@ -1636,6 +1636,11 @@ class ConductorSubmitter(QtGui.QMainWindow):
         ### LOOK FOR PRESENCE OF A HOST PACKAGE ###
         for package in self.getJobPackages():
             if package["product"] == self.product:
+                break
+            # HACK to accommodate the mismatch of product names between maya and
+            # mayaio (specifically when override packages are specified in the config)
+            # TODO:(LWS: OMG GET RID OF THIS ASAP!!!
+            if package["product"] == "maya" and  self.product == "maya-io":
                 break
         else:
             host_info = self.getHostProductInfo()
