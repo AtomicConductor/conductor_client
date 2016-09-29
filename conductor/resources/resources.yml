@@ -87,349 +87,34 @@ maya_supported_plugins:
     
     
 package_ids:
-    maya: 
-        "Autodesk Maya 2014 x64 Service Pack 1":
-            package: 61ffb4b037645eac40496b3fa3d7e767
+    maya-io: 
+                       
+        "Autodesk Maya 2016": 
+            package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya: 
-                "2.40.02": 60dc9682ff4984c51a4365e27b114328
-                "3.10.01": 5816f936ce8c63893052e45d0470a2ee
-                "3.30.01": aeabaa0ff5f5234e356db9c316699c3f
-                "3.30.02": fcb63dda30f871935805430a723d643f 
-                "3.40.01": dfb2b24cc2fd7d3877370cbf4f91c8e3
-                "3.40.02": 4715d763852a8a85ca0957287a9edeaa
+                "3.10.01": debb2da484387978a7da8da1c728227a
+                "3.30.01": 781b03c5609da53bcf254c5760ef9a25
+                "3.30.02": ab1f0722997e09c66954326464178f68
+                "3.40.01": 82659ed9b17eb70fa5d01b761a0024d6
+                "3.40.02": c94e13e3f8defffe2444d509d6e24fe1
             arnold-maya: 
-                "1.0.0.2": 1608eddb29c756ea47744ebb70064bf2
-                "1.1.0.3": 6e8a521232559018ba6f0cc0c7a3a168
-                "1.1.0.4": 70f40d9a0f24391524fab30c6386caa4
-                "1.1.1.0": 6c719112dc7f59871c9ec663cb39af45
-                "1.1.1.1": 5c78f465837f86ef31d1554e2ff31b2b
-                "1.1.2.0": 88d92ef0914b3cb8a11ae0e061bec296
-                "1.1.2.1": d31a185f5ca7fb82e219611fc4a4cc39
-                "1.1.2.2": 8c7b54ede3422c58f6848ae66ab1345e
-                "1.2.0.2": 0b355160f0bdde99825d3ee0cd847a85
-                "1.2.0.3": a55c7b7aca85583dc2aae42f97b7ef3c
-                "1.2.0.4": c8996761b6347ac17daaf56cb10d650c
-                "1.2.1.0": 3741b17b9031046483e94039edefc1c4
-                "1.2.2.0": cd6266782cae764b7cc340344526dd40
-                "1.2.3.0": 4ce52864d770294deb51582f970df194
-                "1.2.3.1": 88c30b7e547b35f84449b72aaaf2f755
-                "1.2.4.0": 10ffe808bb1c97743535d35fc1c364ea
-                "1.2.4.1": 6e4d3cb9d2dc0065095b3598bf7e90a0
-                "1.2.4.2": 5e934bed72e8b0f69ccf09403e6c82dc
-                "1.2.4.3": cd1cdefc997eb18fc0e60c058554a184
-                "1.2.5.0": 78e145d3aac468d71e3ec3c2996dc347
-                "1.2.6.0": 203b5a7fd4d56562000d9b752bdb031f
-                "1.2.6.1": ca16e160477e0788435add5b61269d2e
-                "1.2.7.0": 5d4576877ca77c647b03e9d6f9068f95
-                "1.2.7.1": 51a0e1045074ff37d7f79ce57d0c1a44
-                "1.2.7.2": 95a41fad289a6a03db0c3f72eb61f959
-                "1.2.7.3": 52839eeff88cd224206333dae693cb5b
+                "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4 
+                "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
+                "1.2.3.1": 112d90408d3871da851f231988ad8145
+                "1.2.4.0": 4e96e7df4291d285f30ad73d3871536e
+                "1.2.4.1": 304bd6c4b1714b20a2edab81f449b738
+                "1.2.4.2": b200eabaa755873677205d785c254d12
+                "1.2.4.3": 92d614d9b3961b34fdeba02ca4345d27
+                "1.2.5.0": a6ddf76a25809410b8c822d87da555b8
+                "1.2.6.0": 97d3a45868d9748eee58e49de82849d8
+                "1.2.6.1": a6c81da2ab4b322bfb6b77011bd54573
+                "1.2.7.0": ad9a76c60354805f6d54fa07e20b657a
+                "1.2.7.1": 0074771ed6622e6975a4770fa0cde004
+                "1.2.7.2": ae6b6564ca05e5f9f7c5df0ce72f47c2
+                "1.2.7.3": 88872a43918591b0e215c5a3390a5e71   
 
-        "Autodesk Maya 2014 Service Pack 2": 
-            package: 4548d2cead95e5c6937060e31a687cd7
-            v-ray-maya:  
-                "2.40.02": 60dc9682ff4984c51a4365e27b114328
-                "3.10.01": 5816f936ce8c63893052e45d0470a2ee
-                "3.30.01": aeabaa0ff5f5234e356db9c316699c3f
-                "3.30.02": fcb63dda30f871935805430a723d643f
-                "3.40.01": dfb2b24cc2fd7d3877370cbf4f91c8e3
-                "3.40.02": 4715d763852a8a85ca0957287a9edeaa
-            arnold-maya: 
-                "1.0.0.2": 1608eddb29c756ea47744ebb70064bf2
-                "1.1.0.3": 6e8a521232559018ba6f0cc0c7a3a168
-                "1.1.0.4": 70f40d9a0f24391524fab30c6386caa4
-                "1.1.1.0": 6c719112dc7f59871c9ec663cb39af45
-                "1.1.1.1": 5c78f465837f86ef31d1554e2ff31b2b
-                "1.1.2.0": 88d92ef0914b3cb8a11ae0e061bec296
-                "1.1.2.1": d31a185f5ca7fb82e219611fc4a4cc39
-                "1.1.2.2": 8c7b54ede3422c58f6848ae66ab1345e
-                "1.2.0.2": 0b355160f0bdde99825d3ee0cd847a85
-                "1.2.0.3": a55c7b7aca85583dc2aae42f97b7ef3c
-                "1.2.0.4": c8996761b6347ac17daaf56cb10d650c
-                "1.2.1.0": 3741b17b9031046483e94039edefc1c4
-                "1.2.2.0": cd6266782cae764b7cc340344526dd40
-                "1.2.3.0": 4ce52864d770294deb51582f970df194
-                "1.2.3.1": 88c30b7e547b35f84449b72aaaf2f755
-                "1.2.4.0": 10ffe808bb1c97743535d35fc1c364ea
-                "1.2.4.1": 6e4d3cb9d2dc0065095b3598bf7e90a0
-                "1.2.4.2": 5e934bed72e8b0f69ccf09403e6c82dc
-                "1.2.4.3": cd1cdefc997eb18fc0e60c058554a184
-                "1.2.5.0": 78e145d3aac468d71e3ec3c2996dc347
-                "1.2.6.0": 203b5a7fd4d56562000d9b752bdb031f
-                "1.2.6.1": ca16e160477e0788435add5b61269d2e
-                "1.2.7.0": 5d4576877ca77c647b03e9d6f9068f95
-                "1.2.7.1": 51a0e1045074ff37d7f79ce57d0c1a44
-                "1.2.7.2": 95a41fad289a6a03db0c3f72eb61f959
-                "1.2.7.3": 52839eeff88cd224206333dae693cb5b
-
-                 
-        "Autodesk Maya 2014 Service Pack 3": 
-            package: 8e5685a7984bf7d061c09cc6cda0211e
-            v-ray-maya: 
-                "2.40.02": 60dc9682ff4984c51a4365e27b114328
-                "3.10.01": 5816f936ce8c63893052e45d0470a2ee
-                "3.30.01": aeabaa0ff5f5234e356db9c316699c3f
-                "3.30.02": fcb63dda30f871935805430a723d643f
-                "3.40.01": dfb2b24cc2fd7d3877370cbf4f91c8e3
-                "3.40.02": 4715d763852a8a85ca0957287a9edeaa
-            arnold-maya: 
-                "1.0.0.2": 1608eddb29c756ea47744ebb70064bf2
-                "1.1.0.3": 6e8a521232559018ba6f0cc0c7a3a168
-                "1.1.0.4": 70f40d9a0f24391524fab30c6386caa4
-                "1.1.1.0": 6c719112dc7f59871c9ec663cb39af45
-                "1.1.1.1": 5c78f465837f86ef31d1554e2ff31b2b
-                "1.1.2.0": 88d92ef0914b3cb8a11ae0e061bec296
-                "1.1.2.1": d31a185f5ca7fb82e219611fc4a4cc39
-                "1.1.2.2": 8c7b54ede3422c58f6848ae66ab1345e
-                "1.2.0.2": 0b355160f0bdde99825d3ee0cd847a85
-                "1.2.0.3": a55c7b7aca85583dc2aae42f97b7ef3c
-                "1.2.0.4": c8996761b6347ac17daaf56cb10d650c
-                "1.2.1.0": 3741b17b9031046483e94039edefc1c4
-                "1.2.2.0": cd6266782cae764b7cc340344526dd40
-                "1.2.3.0": 4ce52864d770294deb51582f970df194
-                "1.2.3.1": 88c30b7e547b35f84449b72aaaf2f755
-                "1.2.4.0": 10ffe808bb1c97743535d35fc1c364ea
-                "1.2.4.1": 6e4d3cb9d2dc0065095b3598bf7e90a0
-                "1.2.4.2": 5e934bed72e8b0f69ccf09403e6c82dc
-                "1.2.4.3": cd1cdefc997eb18fc0e60c058554a184
-                "1.2.5.0": 78e145d3aac468d71e3ec3c2996dc347
-                "1.2.6.0": 203b5a7fd4d56562000d9b752bdb031f
-                "1.2.6.1": ca16e160477e0788435add5b61269d2e
-                "1.2.7.0": 5d4576877ca77c647b03e9d6f9068f95
-                "1.2.7.1": 51a0e1045074ff37d7f79ce57d0c1a44
-                "1.2.7.2": 95a41fad289a6a03db0c3f72eb61f959
-                "1.2.7.3": 52839eeff88cd224206333dae693cb5b
-
-
-                
-        "Autodesk Maya 2015 SP1": 
-            package: c320dddf485ebc85003aa0c17ab8dc0c
-            v-ray-maya: 
-                "2.40.02": 5d55ff82632840e1be4899ea9948c40e
-                "3.10.01": 23bd3ad1a061c4f1dfd44f4056818b51
-                "3.30.01": c7660703da7549861541dbb4fb0df2ad
-                "3.30.02": 3adda21284cd6839a91193a78d6f7b27
-                "3.40.01": bd6dfc5565868910fcf160d73d37a3c9
-                "3.40.02": 92d795017a06487b1f8234bfcd21035d
-                "3.00.01": 0d287007fbe9928248c6859df9845f11
-            "arnold-maya": 
-                "1.1.0.3": 4d00c30662c5d0f978987c5f109318eb
-                "1.1.0.4": a30673f9379a8c9f6695c79044d27343
-                "1.1.1.0": 60fb7c2ade69d1dba794c6d46e7f2b60
-                "1.1.1.1": 2b6ebd523c11123af625d1204f9c1529
-                "1.1.2.0": 03be394b4f84ec9a0d86e4b6f5f3fe26
-                "1.1.2.1": c183235a9e4744fd6a607a083dfe36ef
-                "1.1.2.2": a8e233e072380db63f340b176c2bb81c
-                "1.2.0.2": 0b360526eb14bf52bb6c6dd9b685c2ba
-                "1.2.0.3": 3689f70d404dabe8ab707f07e8e34e71
-                "1.2.0.4": cfe4d6af946b6b5be8bb9be117745fcc
-                "1.2.1.0": cf86ba8d638b4d4e1d74c927426e9953
-                "1.2.2.0": 3553d5d071eabdc84173860ead439f85
-                "1.2.3.0": bf974b73a948a0c514d298424227f09e
-                "1.2.3.1": bb34591e3afcb71f8c5a66eacfb471e3
-                "1.2.4.0": 13ea084ba4df644373ef4c2e189a2bf9
-                "1.2.4.1": 8ac98ef9362171a889c5ac8dca8a2a47
-                "1.2.4.2": 9c4946851b0aa77f61ce204648595094
-                "1.2.4.3": d1d96fa568ef031a4b62a54a4c01df5e
-                "1.2.5.0": 86779e759adcbbd38e1d058125ace737
-                "1.2.6.0": ee07a413034b54ec25d02f60305c2c7d
-                "1.2.6.1": 959954175a14916201e2818b87a5d03f
-                "1.2.7.0": 7e1d10d55ea92781d87ae4026d1aa9dc
-                "1.2.7.1": ec445d08e90343a9eda23c940169bc2d
-                "1.2.7.2": 5afd6f6f3a7e1c9f1be7989bd0548544
-                "1.2.7.3": 75b4b659d95c6ba401000355a0ace18b
-                
-        "Autodesk Maya 2015 SP2": 
-            package: 1435d016cf4f47ff0381cb7d581ec399
-            v-ray-maya: 
-                "2.40.02": 5d55ff82632840e1be4899ea9948c40e
-                "3.10.01": 23bd3ad1a061c4f1dfd44f4056818b51
-                "3.30.01": c7660703da7549861541dbb4fb0df2ad
-                "3.30.02": 3adda21284cd6839a91193a78d6f7b27
-                "3.40.01": bd6dfc5565868910fcf160d73d37a3c9
-                "3.40.02": 92d795017a06487b1f8234bfcd21035d
-                "3.00.01": 0d287007fbe9928248c6859df9845f11
-            "arnold-maya": 
-                "1.1.0.3": 4d00c30662c5d0f978987c5f109318eb
-                "1.1.0.4": a30673f9379a8c9f6695c79044d27343
-                "1.1.1.0": 60fb7c2ade69d1dba794c6d46e7f2b60
-                "1.1.1.1": 2b6ebd523c11123af625d1204f9c1529
-                "1.1.2.0": 03be394b4f84ec9a0d86e4b6f5f3fe26
-                "1.1.2.1": c183235a9e4744fd6a607a083dfe36ef
-                "1.1.2.2": a8e233e072380db63f340b176c2bb81c
-                "1.2.0.2": 0b360526eb14bf52bb6c6dd9b685c2ba
-                "1.2.0.3": 3689f70d404dabe8ab707f07e8e34e71
-                "1.2.0.4": cfe4d6af946b6b5be8bb9be117745fcc
-                "1.2.1.0": cf86ba8d638b4d4e1d74c927426e9953
-                "1.2.2.0": 3553d5d071eabdc84173860ead439f85
-                "1.2.3.0": bf974b73a948a0c514d298424227f09e
-                "1.2.3.1": bb34591e3afcb71f8c5a66eacfb471e3
-                "1.2.4.0": 13ea084ba4df644373ef4c2e189a2bf9
-                "1.2.4.1": 8ac98ef9362171a889c5ac8dca8a2a47
-                "1.2.4.2": 9c4946851b0aa77f61ce204648595094
-                "1.2.4.3": d1d96fa568ef031a4b62a54a4c01df5e
-                "1.2.5.0": 86779e759adcbbd38e1d058125ace737
-                "1.2.6.0": ee07a413034b54ec25d02f60305c2c7d
-                "1.2.6.1": 959954175a14916201e2818b87a5d03f
-                "1.2.7.0": 7e1d10d55ea92781d87ae4026d1aa9dc
-                "1.2.7.1": ec445d08e90343a9eda23c940169bc2d
-                "1.2.7.2": 5afd6f6f3a7e1c9f1be7989bd0548544
-                "1.2.7.3": 75b4b659d95c6ba401000355a0ace18b
-                
-                
-        "Autodesk Maya 2015 SP3": 
-            package: 6b24ca0ea1085ebad536c18307192dce
-            v-ray-maya: 
-                "2.40.02": 5d55ff82632840e1be4899ea9948c40e
-                "3.10.01": 23bd3ad1a061c4f1dfd44f4056818b51
-                "3.30.01": c7660703da7549861541dbb4fb0df2ad
-                "3.30.02": 3adda21284cd6839a91193a78d6f7b27
-                "3.40.01": bd6dfc5565868910fcf160d73d37a3c9
-                "3.40.02": 92d795017a06487b1f8234bfcd21035d
-                "3.00.01": 0d287007fbe9928248c6859df9845f11
-            "arnold-maya": 
-                "1.1.0.3": 4d00c30662c5d0f978987c5f109318eb
-                "1.1.0.4": a30673f9379a8c9f6695c79044d27343
-                "1.1.1.0": 60fb7c2ade69d1dba794c6d46e7f2b60
-                "1.1.1.1": 2b6ebd523c11123af625d1204f9c1529
-                "1.1.2.0": 03be394b4f84ec9a0d86e4b6f5f3fe26
-                "1.1.2.1": c183235a9e4744fd6a607a083dfe36ef
-                "1.1.2.2": a8e233e072380db63f340b176c2bb81c
-                "1.2.0.2": 0b360526eb14bf52bb6c6dd9b685c2ba
-                "1.2.0.3": 3689f70d404dabe8ab707f07e8e34e71
-                "1.2.0.4": cfe4d6af946b6b5be8bb9be117745fcc
-                "1.2.1.0": cf86ba8d638b4d4e1d74c927426e9953
-                "1.2.2.0": 3553d5d071eabdc84173860ead439f85
-                "1.2.3.0": bf974b73a948a0c514d298424227f09e
-                "1.2.3.1": bb34591e3afcb71f8c5a66eacfb471e3
-                "1.2.4.0": 13ea084ba4df644373ef4c2e189a2bf9
-                "1.2.4.1": 8ac98ef9362171a889c5ac8dca8a2a47
-                "1.2.4.2": 9c4946851b0aa77f61ce204648595094
-                "1.2.4.3": d1d96fa568ef031a4b62a54a4c01df5e
-                "1.2.5.0": 86779e759adcbbd38e1d058125ace737
-                "1.2.6.0": ee07a413034b54ec25d02f60305c2c7d
-                "1.2.6.1": 959954175a14916201e2818b87a5d03f
-                "1.2.7.0": 7e1d10d55ea92781d87ae4026d1aa9dc
-                "1.2.7.1": ec445d08e90343a9eda23c940169bc2d
-                "1.2.7.2": 5afd6f6f3a7e1c9f1be7989bd0548544
-                "1.2.7.3": 75b4b659d95c6ba401000355a0ace18b
-                
-                
-        "Autodesk Maya 2015 SP4": 
-            package: a66102b6b69c988ad5e02958e898467e
-            v-ray-maya: 
-                "2.40.02": 5d55ff82632840e1be4899ea9948c40e
-                "3.10.01": 23bd3ad1a061c4f1dfd44f4056818b51
-                "3.30.01": c7660703da7549861541dbb4fb0df2ad
-                "3.30.02": 3adda21284cd6839a91193a78d6f7b27
-                "3.40.01": bd6dfc5565868910fcf160d73d37a3c9
-                "3.40.02": 92d795017a06487b1f8234bfcd21035d
-                "3.00.01": 0d287007fbe9928248c6859df9845f11
-            "arnold-maya": 
-                "1.1.0.3": 4d00c30662c5d0f978987c5f109318eb
-                "1.1.0.4": a30673f9379a8c9f6695c79044d27343
-                "1.1.1.0": 60fb7c2ade69d1dba794c6d46e7f2b60
-                "1.1.1.1": 2b6ebd523c11123af625d1204f9c1529
-                "1.1.2.0": 03be394b4f84ec9a0d86e4b6f5f3fe26
-                "1.1.2.1": c183235a9e4744fd6a607a083dfe36ef
-                "1.1.2.2": a8e233e072380db63f340b176c2bb81c
-                "1.2.0.2": 0b360526eb14bf52bb6c6dd9b685c2ba
-                "1.2.0.3": 3689f70d404dabe8ab707f07e8e34e71
-                "1.2.0.4": cfe4d6af946b6b5be8bb9be117745fcc
-                "1.2.1.0": cf86ba8d638b4d4e1d74c927426e9953
-                "1.2.2.0": 3553d5d071eabdc84173860ead439f85
-                "1.2.3.0": bf974b73a948a0c514d298424227f09e
-                "1.2.3.1": bb34591e3afcb71f8c5a66eacfb471e3
-                "1.2.4.0": 13ea084ba4df644373ef4c2e189a2bf9
-                "1.2.4.1": 8ac98ef9362171a889c5ac8dca8a2a47
-                "1.2.4.2": 9c4946851b0aa77f61ce204648595094
-                "1.2.4.3": d1d96fa568ef031a4b62a54a4c01df5e
-                "1.2.5.0": 86779e759adcbbd38e1d058125ace737
-                "1.2.6.0": ee07a413034b54ec25d02f60305c2c7d
-                "1.2.6.1": 959954175a14916201e2818b87a5d03f
-                "1.2.7.0": 7e1d10d55ea92781d87ae4026d1aa9dc
-                "1.2.7.1": ec445d08e90343a9eda23c940169bc2d
-                "1.2.7.2": 5afd6f6f3a7e1c9f1be7989bd0548544
-                "1.2.7.3": 75b4b659d95c6ba401000355a0ace18b
-        
-        
-        "Autodesk Maya 2015 SP5": 
-            package: 1fbf8da53468d8a127df788d43df23af
-            v-ray-maya: 
-                "2.40.02": 5d55ff82632840e1be4899ea9948c40e
-                "3.10.01": 23bd3ad1a061c4f1dfd44f4056818b51
-                "3.30.01": c7660703da7549861541dbb4fb0df2ad
-                "3.30.02": 3adda21284cd6839a91193a78d6f7b27
-                "3.40.01": bd6dfc5565868910fcf160d73d37a3c9
-                "3.40.02": 92d795017a06487b1f8234bfcd21035d
-                "3.00.01": 0d287007fbe9928248c6859df9845f11
-            "arnold-maya": 
-                "1.1.0.3": 4d00c30662c5d0f978987c5f109318eb
-                "1.1.0.4": a30673f9379a8c9f6695c79044d27343
-                "1.1.1.0": 60fb7c2ade69d1dba794c6d46e7f2b60
-                "1.1.1.1": 2b6ebd523c11123af625d1204f9c1529
-                "1.1.2.0": 03be394b4f84ec9a0d86e4b6f5f3fe26
-                "1.1.2.1": c183235a9e4744fd6a607a083dfe36ef
-                "1.1.2.2": a8e233e072380db63f340b176c2bb81c
-                "1.2.0.2": 0b360526eb14bf52bb6c6dd9b685c2ba
-                "1.2.0.3": 3689f70d404dabe8ab707f07e8e34e71
-                "1.2.0.4": cfe4d6af946b6b5be8bb9be117745fcc
-                "1.2.1.0": cf86ba8d638b4d4e1d74c927426e9953
-                "1.2.2.0": 3553d5d071eabdc84173860ead439f85
-                "1.2.3.0": bf974b73a948a0c514d298424227f09e
-                "1.2.3.1": bb34591e3afcb71f8c5a66eacfb471e3
-                "1.2.4.0": 13ea084ba4df644373ef4c2e189a2bf9
-                "1.2.4.1": 8ac98ef9362171a889c5ac8dca8a2a47
-                "1.2.4.2": 9c4946851b0aa77f61ce204648595094
-                "1.2.4.3": d1d96fa568ef031a4b62a54a4c01df5e
-                "1.2.5.0": 86779e759adcbbd38e1d058125ace737
-                "1.2.6.0": ee07a413034b54ec25d02f60305c2c7d
-                "1.2.6.1": 959954175a14916201e2818b87a5d03f
-                "1.2.7.0": 7e1d10d55ea92781d87ae4026d1aa9dc
-                "1.2.7.1": ec445d08e90343a9eda23c940169bc2d
-                "1.2.7.2": 5afd6f6f3a7e1c9f1be7989bd0548544
-                "1.2.7.3": 75b4b659d95c6ba401000355a0ace18b
-        
-        "Autodesk Maya 2015 SP6": 
-            package: d5d2b675c41740e2d31279c8c55882e3
-            v-ray-maya: 
-                "2.40.02": 5d55ff82632840e1be4899ea9948c40e
-                "3.10.01": 23bd3ad1a061c4f1dfd44f4056818b51
-                "3.30.01": c7660703da7549861541dbb4fb0df2ad
-                "3.30.02": 3adda21284cd6839a91193a78d6f7b27
-                "3.40.01": bd6dfc5565868910fcf160d73d37a3c9
-                "3.40.02": 92d795017a06487b1f8234bfcd21035d
-                "3.00.01": 0d287007fbe9928248c6859df9845f11
-            "arnold-maya": 
-                "1.1.0.3": 4d00c30662c5d0f978987c5f109318eb
-                "1.1.0.4": a30673f9379a8c9f6695c79044d27343
-                "1.1.1.0": 60fb7c2ade69d1dba794c6d46e7f2b60
-                "1.1.1.1": 2b6ebd523c11123af625d1204f9c1529
-                "1.1.2.0": 03be394b4f84ec9a0d86e4b6f5f3fe26
-                "1.1.2.1": c183235a9e4744fd6a607a083dfe36ef
-                "1.1.2.2": a8e233e072380db63f340b176c2bb81c
-                "1.2.0.2": 0b360526eb14bf52bb6c6dd9b685c2ba
-                "1.2.0.3": 3689f70d404dabe8ab707f07e8e34e71
-                "1.2.0.4": cfe4d6af946b6b5be8bb9be117745fcc
-                "1.2.1.0": cf86ba8d638b4d4e1d74c927426e9953
-                "1.2.2.0": 3553d5d071eabdc84173860ead439f85
-                "1.2.3.0": bf974b73a948a0c514d298424227f09e
-                "1.2.3.1": bb34591e3afcb71f8c5a66eacfb471e3
-                "1.2.4.0": 13ea084ba4df644373ef4c2e189a2bf9
-                "1.2.4.1": 8ac98ef9362171a889c5ac8dca8a2a47
-                "1.2.4.2": 9c4946851b0aa77f61ce204648595094
-                "1.2.4.3": d1d96fa568ef031a4b62a54a4c01df5e
-                "1.2.5.0": 86779e759adcbbd38e1d058125ace737
-                "1.2.6.0": ee07a413034b54ec25d02f60305c2c7d
-                "1.2.6.1": 959954175a14916201e2818b87a5d03f
-                "1.2.7.0": 7e1d10d55ea92781d87ae4026d1aa9dc
-                "1.2.7.1": ec445d08e90343a9eda23c940169bc2d
-                "1.2.7.2": 5afd6f6f3a7e1c9f1be7989bd0548544
-                "1.2.7.3": 75b4b659d95c6ba401000355a0ace18b
-        
-        
         "Autodesk Maya 2016 SP1": 
-            package: 5787e38e6ffcead5c67dbfd7cec921d6
+            package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya: 
                 "3.10.01": debb2da484387978a7da8da1c728227a
                 "3.30.01": 781b03c5609da53bcf254c5760ef9a25
@@ -453,7 +138,7 @@ package_ids:
                 "1.2.7.3": 88872a43918591b0e215c5a3390a5e71   
         
         "Autodesk Maya 2016 SP2": 
-            package: 1ad28804f9ee499213b15135a0de276e
+            package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya:  
                 "3.10.01": debb2da484387978a7da8da1c728227a
                 "3.30.01": 781b03c5609da53bcf254c5760ef9a25
@@ -477,7 +162,7 @@ package_ids:
                 "1.2.7.3": 88872a43918591b0e215c5a3390a5e71   
                 
         "Autodesk Maya 2016 SP3": 
-            package: af7ecc0d56c84b2ec2500329af25ca40
+            package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya: 
                 "3.10.01": debb2da484387978a7da8da1c728227a
                 "3.30.01": 781b03c5609da53bcf254c5760ef9a25
@@ -501,7 +186,7 @@ package_ids:
                 "1.2.7.3": 88872a43918591b0e215c5a3390a5e71   
                 
         "Autodesk Maya 2016 SP4": 
-            package: 5d6dd77564e9ed786fe3a38381fc26e7
+            package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya:  
                 "3.10.01": debb2da484387978a7da8da1c728227a
                 "3.30.01": 781b03c5609da53bcf254c5760ef9a25
@@ -525,7 +210,7 @@ package_ids:
                 "1.2.7.3": 88872a43918591b0e215c5a3390a5e71   
                 
         "Autodesk Maya 2016 SP5": 
-            package: 7c53a84e8001dc40aca7a844ca60ba0b
+            package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya: 
                 "3.10.01": debb2da484387978a7da8da1c728227a
                 "3.30.01": 781b03c5609da53bcf254c5760ef9a25
@@ -549,7 +234,7 @@ package_ids:
                 "1.2.7.3": 88872a43918591b0e215c5a3390a5e71   
         
         "Autodesk Maya 2016 SP6": 
-            package: 8515d5c5a971e368db7780e54433ff78
+            package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya: 
                 "3.10.01": debb2da484387978a7da8da1c728227a
                 "3.30.01": 781b03c5609da53bcf254c5760ef9a25
@@ -572,8 +257,8 @@ package_ids:
                 "1.2.7.2": ae6b6564ca05e5f9f7c5df0ce72f47c2
                 "1.2.7.3": 88872a43918591b0e215c5a3390a5e71   
         
-        "Autodesk Maya 2016 Extension 1 + SP5": 
-            package: None
+        "Autodesk Maya 2016 Extension 1 + SP5":
+            package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya:
                 "3.10.01": debb2da484387978a7da8da1c728227a
                 "3.30.01": 781b03c5609da53bcf254c5760ef9a25
@@ -597,7 +282,7 @@ package_ids:
                 "1.2.7.3": 88872a43918591b0e215c5a3390a5e71   
         
         "Autodesk Maya 2016 Extension 2 + SP1": 
-            package: None
+            package: 358ec09e234da63c29d612b49a77fb58 # Autodesk_MayaIO_2016_EXT2
             v-ray-maya:
                 "3.40.01": 61c716542e4a8dd4a834390e3b41d4b1
                 "3.40.02": a5e93d6fd07e290f4ab0660a921f8272
