@@ -1,25 +1,17 @@
 ############################################################################################
 #      NSIS Installation Script created by NSIS Quick Setup Script Generator v1.09.18
-#               Entirely Edited with NullSoft Scriptable Installation System                
-#              by Vlasis K. Barkas aka Red Wine red_wine@freemail.gr Sep 2006               
+#               Entirely Edited with NullSoft Scriptable Installation System
+#              by Vlasis K. Barkas aka Red Wine red_wine@freemail.gr Sep 2006
 ############################################################################################
 
 !define APP_NAME "Conductor"
 !define COMP_NAME "ConductorIO"
 !define WEB_SITE "http://www.conductorio.com"
-<<<<<<< HEAD
 #!define VERSION "00.00.00.01"
 !define COPYRIGHT "ConductorIO"
 !define DESCRIPTION "ConductorClient"
 #!define LICENSE_TXT "eula.txt"
 #!define INSTALLER_NAME "ConductorClient.exe"
-=======
-!define VERSION "00.00.00.01"
-!define COPYRIGHT "ConductorIO"
-!define DESCRIPTION "ConductorClient"
-!define LICENSE_TXT "eula.txt"
-!define INSTALLER_NAME "ConductorClient.exe"
->>>>>>> 9a31ddf... windows installer
 !define INSTALL_TYPE "SetShellVarContext current"
 !define REG_ROOT "HKCU"
 !define UNINSTALL_PATH "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
