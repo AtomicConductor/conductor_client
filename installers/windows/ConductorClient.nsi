@@ -7,11 +7,19 @@
 !define APP_NAME "Conductor"
 !define COMP_NAME "ConductorIO"
 !define WEB_SITE "http://www.conductorio.com"
+<<<<<<< HEAD
 #!define VERSION "00.00.00.01"
 !define COPYRIGHT "ConductorIO"
 !define DESCRIPTION "ConductorClient"
 #!define LICENSE_TXT "eula.txt"
 #!define INSTALLER_NAME "ConductorClient.exe"
+=======
+!define VERSION "00.00.00.01"
+!define COPYRIGHT "ConductorIO"
+!define DESCRIPTION "ConductorClient"
+!define LICENSE_TXT "eula.txt"
+!define INSTALLER_NAME "ConductorClient.exe"
+>>>>>>> 9a31ddf... windows installer
 !define INSTALL_TYPE "SetShellVarContext current"
 !define REG_ROOT "HKCU"
 !define UNINSTALL_PATH "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
@@ -123,3 +131,4 @@ DeleteRegKey ${REG_ROOT} "${UNINSTALL_PATH}"
 SectionEnd
 
 ######################################################################
+

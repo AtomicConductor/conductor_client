@@ -119,10 +119,13 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         Return the command string that Conductor will execute
         
         example:
-            "-X AFWrite.write_exr -F %f /Volumes/af/show/walk/shots/114/114_100/sandbox/mjtang/tractor/nuke_render_job_122/walk_114_100_main_comp_v136.nk"
+            "-X AFWrite.write_exr <frame_args> /Volumes/af/show/walk/shots/114/114_100/sandbox/mjtang/tractor/nuke_render_job_122/walk_114_100_main_comp_v136.nk"
 
+        The <frame_args> portion of the command will have values substitited into
+        into it by conductor (when the job is submitted).  These values will be
+        dictated by the "frames" argument.
         '''
-        base_cmd = "nuke-render -F %%f %s %s"
+        base_cmd = "nuke-render <frame_args> %s %s"
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = ["-X %s" % write_node for write_node in write_nodes]
@@ -214,7 +217,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                 "dependencies":dependencies,
                 "output_path":output_path,
                 "enforced_md5s":enforced_md5s}
-
 
     def getJobTitle(self):
         '''
