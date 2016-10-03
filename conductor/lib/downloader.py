@@ -75,11 +75,8 @@ class DownloadWorker(multiprocessing.Process):
 
     def get_next_download(self):
         "fetch the next downloadable file, return siugned url."
-        # TODO: replace psuedo-code when service is up
-        # req = requests.get(NEXT_DL_URL)
-        # result = req.body
-        # return result
-        return "http://download.thinkbroadband.com/1GB.zip"
+        result = Backend.next(self.account)[0]
+        return result
 
     def wait(self):
         "pause between empty get_next_download() calls"
@@ -89,9 +86,8 @@ class DownloadWorker(multiprocessing.Process):
         "stream a file to disk, report progress to server periodically."
         # TODO: check existing file/hash
         # TODO: retry mechanism
-        url = dl_info
-        # TODO: make rel local path
-        local_file = "/tmp/1gb-%s.zip" % time.time()
+        url = dl_info["url"]
+        local_file = self.make_local_path(dl_info)
         req = requests.get(url, stream=True)
         try:
             with open(local_file, 'wb') as f:
@@ -104,7 +100,7 @@ class DownloadWorker(multiprocessing.Process):
                             if not self._chunks % 1000:
                                 print "proc: %s  file chunks -> %s  total_size: %s" % ( self.name, self._chunks, self._total_size )
                                 # TODO: proper logging
-                                # TODO: call /downloader/touch/:id
+                                Backend.touch(dl_info["id"])
                     else:
                         print "quit!"
                         # TODO: cancel/stop event cleanup, if any
@@ -117,8 +113,95 @@ class DownloadWorker(multiprocessing.Process):
             return
         else:
             # TODO: validate md5, retry etc
-            # TODO: call /downloader/finish/:id
+            Backend.finish(dl_info["id"])
             return local_file
+
+    def make_local_path(self, dl_info):
+        # TODO: mod with passed in local root
+        path = dl_info["download_file"]["destination"]
+        return path
+
+
+class Backend:
+
+    @classmethod
+    def next(cls, account, project=None, location=None, number=1):
+        """
+        Sample result:
+
+        [
+            {
+                "bytes_transferred": 0,
+                "download_file": {
+                    "account": "foo",
+                    "destination": "/tmp/cental/cental.001.exr",
+                    "dlid": "2000001",
+                    "id": 2,
+                    "jid": "12345",
+                    "location": "location",
+                    "md5": "p1vB6LLIQIoJDvDtjqJocQ==",
+                    "priority": 1,
+                    "project": null,
+                    "source_file": "cental/cental.001.exr",
+                    "status": "in-progress",
+                    "tid": "001"
+                },
+                "id": 2,
+                "inserted_at": "2016-10-03T22:30:31",
+                "url": "https://storage.googleapis.com/moon-walk-1/accounts/foo/hashstore/p1vB6LLIQIoJDvDtjqJocQ==?Expires=1478115003&GoogleAccessId=moon-walk-1%40appspot.gserviceaccount.com&Signature=lSJxTsRPLw0KqjDJLDQq526wJEr5surD1rqWy8ZiWWChroITtX8Tq1FBFJS41wmDNglviw8N7Q7k9eC6clLWHCh9fDs8nJHVcUloBvnirCsPkBwUqTY%2FyR2Du7MgQ6XkLfp3JQnO12orSFKLf9TDSyZbjyKIst5I0AQsdapxeavhRp3ZxyQpaWrOLgaZ%2BRHkrrwMJGaAOweRlzWuoOWqGHWIYrvaI7FRmjpUnSNAkQNY58KDO%2Far2TEtOGRob9SNfsysH%2BuSWOvYRgxEbtjDkq11hAlofSnHiWO4qRHdoyLyxLz5rXJXeBy%2FMSpv8tDN5WBNI9wCDSXX%2FAHRTb%2BBwA%3D%3D"
+            }
+        ]
+        """
+        path = "downloader/next"
+        params = {"account": account, "project": project, "location": location}
+        return get(cls, path, params)
+
+    @classmethod
+    def touch(cls, id, bytes_transferred=0):
+        path = "downloader/touch/%s" % id
+        kwargs = {"bytes_transferred": bytes_transferred}
+        return put(cls, path, kwargs)
+
+    @classmethod
+    def finish(cls, id):
+        path = "downloader/finish/%s" % id
+        return put(cls, path, {})
+        return
+
+    @classmethod
+    def get(cls, path, params):
+        url = cls.make_url(path)
+        headers = cls.make_headers()
+        result = requests.get(url, params=params, headers=headers)
+        return result.json
+
+    @classmethod
+    def put(cls, path, data):
+        url = cls.make_url(path)
+        headers = cls.make_headers()
+        result = requests.put(url, headers=headers, data=data)
+        return result.json
+
+    @classmethod
+    def post(cls, path, data):
+        url = cls.make_url(path)
+        headers = cls.make_headers()
+        result = requests.post(url, headers=headers, data=data)
+        return result.json
+
+    @staticmethod
+    def make_url(path):
+        url_base = "104.196.62.220"
+        return "http://%s/api/%s" % (url_base, path)
+
+    @staticmethod
+    def make_headers():
+        token = CONFIG.get("conductor_token")
+        return {
+            "accept-version": "v1",
+            "authorization": token
+        }
+
 
 class Downloader(object):
     """
