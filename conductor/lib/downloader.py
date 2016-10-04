@@ -52,7 +52,7 @@ class DownloadWorker(multiprocessing.Process):
         - "stopping":      stop everything and cleanup.
 
     """
-    def __init__(self, run_state):
+    def __init__(self, run_state, account, output_dir="", project=None, location=None):
         """
         Initialize download worker process.
 
@@ -61,6 +61,8 @@ class DownloadWorker(multiprocessing.Process):
         self._run_state = run_state
         self._chunks = 0
         self._total_size = 0
+        self.output_dir = output_dir
+        self.location = location
 
     def run(self):
         "called at Instance.start()"
@@ -75,7 +77,7 @@ class DownloadWorker(multiprocessing.Process):
 
     def get_next_download(self):
         "fetch the next downloadable file, return siugned url."
-        result = Backend.next(self.account)[0]
+        result = Backend.next(CONFIG.get("account"), location=self.location)[0]
         return result
 
     def wait(self):
@@ -117,8 +119,7 @@ class DownloadWorker(multiprocessing.Process):
             return local_file
 
     def make_local_path(self, dl_info):
-        # TODO: mod with passed in local root
-        path = dl_info["download_file"]["destination"]
+        path = os.path.join(self.output_dir, dl_info["download_file"]["destination"])
         return path
 
 
@@ -244,7 +245,11 @@ class Downloader(object):
 
     def init_workers(self):
         "initialize workers with shared state object"
-        self._workers = [DownloadWorker(self._run_state) for i in range(self.thread_count)]
+        self._workers = [DownloadWorker(self._run_state,
+                                        CONFIG.get("account"),
+                                        output_dir=getattr(self, "output", ""),
+                                        project=getattr(self, "project", None)
+                                        location=getattr(self, "location", None)) for i in range(self.thread_count)]
 
     def sig_handler(self, sig, frm):
         print "ctrl-c exit..."
