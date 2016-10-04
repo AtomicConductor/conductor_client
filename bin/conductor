@@ -382,8 +382,10 @@ def run_uploader(args):
 
 
 def run_downloader(args):
-    if vars(args).get("alt"):
-        return downloader.run_downloader(args)
+    dargs = vars(args)
+    if dargs.get("alt"):
+        if not any([dargs.get(i) for i in ["job_ids, task_id"]]):
+            return downloader.run_downloader(args)
     return downloader2.run_downloader(args)
 
 
