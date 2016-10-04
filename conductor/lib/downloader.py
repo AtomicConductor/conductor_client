@@ -216,13 +216,8 @@ class Downloader(object):
         self._run_state = multiprocessing.Value('c', "running")
         signal.signal(signal.SIGINT, self.sig_handler)
 
-    def main(self):
-        if getattr(self, "job_ids", None):
-            print "use downloader2"
-        elif getattr(self, "task_id", None):
-            print "use downloader2"
-        else:
-            self.start_daemon()
+    def run(self):
+        self.start_daemon()
 
     def start_daemon(self):
         """
@@ -249,9 +244,37 @@ class Downloader(object):
 
     def init_workers(self):
         "initialize workers with shared state object"
-        self._workers = [DownloadWorker(self._run_state) for i in range(WORKER_POOL_SIZE)]
+        self._workers = [DownloadWorker(self._run_state) for i in range(self.thread_count)]
 
     def sig_handler(self, sig, frm):
         print "ctrl-c exit..."
         self.stop()
         sys.exit(0)
+
+
+def run_downloader(args):
+    '''
+    '''
+    # convert the Namespace object to a dictionary
+    args_dict = vars(args)
+
+    # Set up logging
+    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level = loggeria.LEVEL_MAP.get(log_level_name)
+    logger.debug('Downloader parsed_args is %s', args_dict)
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
+
+    d = Downloader(args_dict)
+    d.run()
+    return
+
+
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_dl_log")
+    loggeria.setup_conductor_logging(logger_level=level,
+                                     console_formatter=LOG_FORMATTER,
+                                     file_formatter=LOG_FORMATTER,
+                                     log_filepath=log_filepath)
