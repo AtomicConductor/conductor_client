@@ -10,11 +10,10 @@ import sys
 import signal
 import time
 import ctypes
+import traceback
 import multiprocessing
 import requests
 
-NEXT_DL_URL = ""
-WORKER_POOL_SIZE = 2
 WORKER_PAUSE_DURATION = 15
 DOWNLOAD_CHUNK_SIZE = 2048
 
@@ -77,8 +76,11 @@ class DownloadWorker(multiprocessing.Process):
 
     def get_next_download(self):
         "fetch the next downloadable file, return siugned url."
-        result = Backend.next(CONFIG.get("account"), location=self.location)[0]
-        return result
+        account = CONFIG.get("account")
+        result = Backend.next(account, location=self.location)
+        if result:
+            return result[0]
+        return {}
 
     def wait(self):
         "pause between empty get_next_download() calls"
@@ -86,41 +88,71 @@ class DownloadWorker(multiprocessing.Process):
 
     def download_file(self, dl_info):
         "stream a file to disk, report progress to server periodically."
-        # TODO: check existing file/hash
         # TODO: retry mechanism
         url = dl_info["url"]
         local_file = self.make_local_path(dl_info)
-        req = requests.get(url, stream=True)
-        try:
-            with open(local_file, 'wb') as f:
-                for chunk in req.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
-                    if self._run_state.value != "stopping":
-                        if chunk:
-                            f.write(chunk)
-                            self._chunks += 1
-                            self._total_size += sys.getsizeof(chunk)
-                            if not self._chunks % 1000:
-                                print "proc: %s  file chunks -> %s  total_size: %s" % ( self.name, self._chunks, self._total_size )
-                                # TODO: proper logging
-                                Backend.touch(dl_info["id"])
-                    else:
-                        print "quit!"
-                        # TODO: cancel/stop event cleanup, if any
-                        return
-        except:
-            error = sys.exc_info()[0]
-            print error
-            # TODO: proper logging
-            # TODO: cancel/stop event cleanup, if any
-            return
+        if not self.file_exists_and_is_valid(local_file, dl_info["download_file"]["md5"]):
+            req = requests.get(url, stream=True)
+            try:
+                basedir = os.path.dirname(local_file)
+                if not os.path.exists(basedir):
+                    print "MAKING DIRS!! ", basedir
+                    os.makedirs(basedir)
+                os.remove(local_file)
+                with open(local_file, 'wb') as f:
+                    for chunk in req.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
+                        if self._run_state.value != "stopping":
+                            if chunk:
+                                f.write(chunk)
+                                self._chunks += 1
+                                self._total_size += sys.getsizeof(chunk)
+                                if not self._chunks % 1000:
+                                    print "proc: %s  file chunks -> %s  total_size: %s" % ( self.name, self._chunks, self._total_size )
+                                    # TODO: proper logging
+                                    Backend.touch(dl_info["id"])
+                        else:
+                            print "quit!"
+                            # TODO: cancel/stop event cleanup, if any
+                            return
+            except:
+                logger.error("download error")
+                tb = traceback.format_exc()
+                print tb
+                error = sys.exc_info()[0]
+                print error
+                self.reset()
+                # TODO: proper logging
+                # TODO: cancel/stop event cleanup, if any
+                Backend.fail(dl_info["id"], bytes_downloaded=self._total_size)
+                self.reset()
+                return
+            else:
+                # TODO: validate md5, retry etc
+                Backend.finish(dl_info["id"], bytes_downloaded=None)
+                self.reset()
+                return local_file
         else:
-            # TODO: validate md5, retry etc
-            Backend.finish(dl_info["id"])
-            return local_file
+            logger.warning("file %s already exists and is valid" % local_file)
+            Backend.finish(dl_info["id"], bytes_downloaded=self._total_size)
+            self.reset()
+            return
+
+    def file_exists_and_is_valid(self, local_path, md5sum):
+        if not os.path.exists(local_path):
+            return False
+        else:
+            local_md5 = common.generate_md5(local_path, base_64=True)
+            return local_md5 == md5sum
 
     def make_local_path(self, dl_info):
-        path = os.path.join(self.output_dir, dl_info["download_file"]["destination"])
+        # path = os.path.join(self.output_dir, dl_info["download_file"]["destination"])
+        path = self.output_dir + dl_info["download_file"]["destination"]
         return path
+
+    def reset(self):
+        self._chunks = 0
+        self._total_size = 0
+        return
 
 
 class Backend:
@@ -154,45 +186,54 @@ class Backend:
         ]
         """
         path = "downloader/next"
-        params = {"account": account, "project": project, "location": location}
-        return get(cls, path, params)
+        params = {"account": account} #, "project": project, "location": location}
+        return Backend.get(path, params)
 
     @classmethod
     def touch(cls, id, bytes_transferred=0):
         path = "downloader/touch/%s" % id
         kwargs = {"bytes_transferred": bytes_transferred}
-        return put(cls, path, kwargs)
+        return Backend.put(path, kwargs)
 
     @classmethod
-    def finish(cls, id):
+    def finish(cls, id, bytes_downloaded=0):
         path = "downloader/finish/%s" % id
-        return put(cls, path, {})
-        return
+        if bytes_downloaded == None:
+            payload = {}
+        else:
+            payload = {"bytes_downloaded": bytes_downloaded}
+        return Backend.put(path, payload)
+
+    @classmethod
+    def fail(cls, id):
+        path = "downloader/fail/%s" % id
+        return Backend.put(path, {})
 
     @classmethod
     def get(cls, path, params):
         url = cls.make_url(path)
         headers = cls.make_headers()
         result = requests.get(url, params=params, headers=headers)
-        return result.json
+        return result.json()
 
     @classmethod
     def put(cls, path, data):
         url = cls.make_url(path)
         headers = cls.make_headers()
         result = requests.put(url, headers=headers, data=data)
-        return result.json
+        return result.json()
 
     @classmethod
     def post(cls, path, data):
         url = cls.make_url(path)
         headers = cls.make_headers()
         result = requests.post(url, headers=headers, data=data)
-        return result.json
+        return result.json()
 
     @staticmethod
     def make_url(path):
-        url_base = "104.196.62.220"
+        # url_base = "104.196.62.220"
+        url_base = "127.0.0.1:8080"
         return "http://%s/api/%s" % (url_base, path)
 
     @staticmethod
@@ -200,7 +241,7 @@ class Backend:
         token = CONFIG.get("conductor_token")
         return {
             "accept-version": "v1",
-            "authorization": token
+            "authorization": "Token %s" % token
         }
 
 
@@ -214,7 +255,8 @@ class Downloader(object):
     def __init__(self, args):
         self.__dict__.update(args)
         self._workers = []
-        self._run_state = multiprocessing.Value('c', "running")
+        self._run_state = multiprocessing.Array('c', "stoppingorstuff")
+        self._run_state.value = "running"
         signal.signal(signal.SIGINT, self.sig_handler)
 
     def run(self):
@@ -248,7 +290,7 @@ class Downloader(object):
         self._workers = [DownloadWorker(self._run_state,
                                         CONFIG.get("account"),
                                         output_dir=getattr(self, "output", ""),
-                                        project=getattr(self, "project", None)
+                                        project=getattr(self, "project", None),
                                         location=getattr(self, "location", None)) for i in range(self.thread_count)]
 
     def sig_handler(self, sig, frm):
@@ -269,6 +311,8 @@ def run_downloader(args):
     logger.debug('Downloader parsed_args is %s', args_dict)
     log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
     set_logging(log_level, log_dirpath)
+    if not args_dict["thread_count"]:
+        args_dict["thread_count"] = 5
 
     d = Downloader(args_dict)
     d.run()
