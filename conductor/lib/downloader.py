@@ -16,6 +16,7 @@ import requests
 
 WORKER_PAUSE_DURATION = 15
 DOWNLOAD_CHUNK_SIZE = 2048
+MAX_DOWNLOAD_RETRIES = 5
 
 
 try:
@@ -62,6 +63,7 @@ class DownloadWorker(multiprocessing.Process):
         self._total_size = 0
         self.output_dir = output_dir
         self.location = location
+        self.account = CONFIG.get("account")
 
     def run(self):
         "called at Instance.start()"
@@ -69,15 +71,14 @@ class DownloadWorker(multiprocessing.Process):
         while self._run_state.value == "running":
             next_dl = self.get_next_download()
             if next_dl:
-                self.download_file(next_dl)
+                self.maybe_download_file(next_dl)
             else:
                 self.wait()
         return
 
     def get_next_download(self):
         "fetch the next downloadable file, return siugned url."
-        account = CONFIG.get("account")
-        result = Backend.next(account, location=self.location)
+        result = Backend.next(self.account, location=self.location)
         if result:
             return result[0]
         return {}
@@ -86,56 +87,85 @@ class DownloadWorker(multiprocessing.Process):
         "pause between empty get_next_download() calls"
         time.sleep(WORKER_PAUSE_DURATION)
 
-    def download_file(self, dl_info):
-        "stream a file to disk, report progress to server periodically."
+    def maybe_download_file(self, dl_info):
+        """
+        checks for existing file and validates md5, if valid, skip download
+        """
         # TODO: retry mechanism
         url = dl_info["url"]
         local_file = self.make_local_path(dl_info)
         if not self.file_exists_and_is_valid(local_file, dl_info["download_file"]["md5"]):
-            req = requests.get(url, stream=True)
-            try:
-                basedir = os.path.dirname(local_file)
-                if not os.path.exists(basedir):
-                    print "MAKING DIRS!! ", basedir
-                    os.makedirs(basedir)
-                os.remove(local_file)
-                with open(local_file, 'wb') as f:
-                    for chunk in req.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
-                        if self._run_state.value != "stopping":
-                            if chunk:
-                                f.write(chunk)
-                                self._chunks += 1
-                                self._total_size += sys.getsizeof(chunk)
-                                if not self._chunks % 1000:
-                                    print "proc: %s  file chunks -> %s  total_size: %s" % ( self.name, self._chunks, self._total_size )
-                                    # TODO: proper logging
-                                    Backend.touch(dl_info["id"])
-                        else:
-                            print "quit!"
-                            # TODO: cancel/stop event cleanup, if any
-                            return
-            except:
-                logger.error("download error")
-                tb = traceback.format_exc()
-                print tb
-                error = sys.exc_info()[0]
-                print error
-                self.reset()
-                # TODO: proper logging
-                # TODO: cancel/stop event cleanup, if any
-                Backend.fail(dl_info["id"], bytes_downloaded=self._total_size)
-                self.reset()
-                return
-            else:
-                # TODO: validate md5, retry etc
-                Backend.finish(dl_info["id"], bytes_downloaded=None)
-                self.reset()
-                return local_file
+            self.start_download(url, local_file)
         else:
             logger.warning("file %s already exists and is valid" % local_file)
             Backend.finish(dl_info["id"], bytes_downloaded=self._total_size)
             self.reset()
             return
+
+    def start_download(self, url, local_file, try_count=1):
+        """
+        helper function that wraps _start_download() in try except
+        """
+        try:
+            self._start_download(url, local_file)
+        except:
+            self._handle_download_error(url, local_file, try_count)
+        else:
+            # TODO: validate md5, retry etc
+            Backend.finish(dl_info["id"], bytes_downloaded=None)
+            self.reset()
+            return local_file
+
+    def _start_download(self, url, local_file):
+        """
+        The actual download loop implementation
+        """
+        req = requests.get(url, stream=True)
+        basedir = os.path.dirname(local_file)
+        if not os.path.exists(basedir):
+            os.makedirs(basedir)
+        os.remove(local_file)
+        with open(local_file, 'wb') as f:
+            for chunk in req.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
+                if self._run_state.value != "stopping":
+                    self._process_file_chunk(f, chunk, dl_info)
+                else:
+                    print "quit!"
+                    # TODO: either mark as failed or clanup and mark as pending?
+                    return
+
+    def _handle_download_error(self, url, local_file, try_count):
+        """
+        properly handle errors during download chunk streaming.
+        """
+        logger.error("download error file=%s try_count=%s" % (local_file, try_count))
+        tb = traceback.format_exc()
+        print tb
+        error = sys.exc_info()[0]
+        print error
+        self.reset()
+        # TODO: proper logging
+        # TODO: cancel/stop event cleanup, if any
+        if try_count == MAX_DOWNLOAD_RETRIES:
+            logger.error("max download tries exceeded file=%s" % local_file)
+            Backend.fail(dl_info["id"], bytes_downloaded=self._total_size)
+            self.reset()
+            return
+        else:
+            logger.info("retrying download file=%s" % local_file)
+            self._download_file(url, local_file, try_count=try_count+1)
+
+    def _process_file_chunk(self, file_obj, chunk, dl_info):
+        """
+        process each chunk in a streaming download.
+        """
+        file_obj.write(chunk)
+        self._chunks += 1
+        self._total_size += sys.getsizeof(chunk)
+        if not self._chunks % 1000:
+            print "proc: %s  file chunks -> %s  total_size: %s" % ( self.name, self._chunks, self._total_size )
+            # TODO: proper logging
+            Backend.touch(dl_info["id"])
 
     def file_exists_and_is_valid(self, local_path, md5sum):
         if not os.path.exists(local_path):
@@ -160,30 +190,6 @@ class Backend:
     @classmethod
     def next(cls, account, project=None, location=None, number=1):
         """
-        Sample result:
-
-        [
-            {
-                "bytes_transferred": 0,
-                "download_file": {
-                    "account": "foo",
-                    "destination": "/tmp/cental/cental.001.exr",
-                    "dlid": "2000001",
-                    "id": 2,
-                    "jid": "12345",
-                    "location": "location",
-                    "md5": "p1vB6LLIQIoJDvDtjqJocQ==",
-                    "priority": 1,
-                    "project": null,
-                    "source_file": "cental/cental.001.exr",
-                    "status": "in-progress",
-                    "tid": "001"
-                },
-                "id": 2,
-                "inserted_at": "2016-10-03T22:30:31",
-                "url": "https://storage.googleapis.com/moon-walk-1/accounts/foo/hashstore/p1vB6LLIQIoJDvDtjqJocQ==?Expires=1478115003&GoogleAccessId=moon-walk-1%40appspot.gserviceaccount.com&Signature=lSJxTsRPLw0KqjDJLDQq526wJEr5surD1rqWy8ZiWWChroITtX8Tq1FBFJS41wmDNglviw8N7Q7k9eC6clLWHCh9fDs8nJHVcUloBvnirCsPkBwUqTY%2FyR2Du7MgQ6XkLfp3JQnO12orSFKLf9TDSyZbjyKIst5I0AQsdapxeavhRp3ZxyQpaWrOLgaZ%2BRHkrrwMJGaAOweRlzWuoOWqGHWIYrvaI7FRmjpUnSNAkQNY58KDO%2Far2TEtOGRob9SNfsysH%2BuSWOvYRgxEbtjDkq11hAlofSnHiWO4qRHdoyLyxLz5rXJXeBy%2FMSpv8tDN5WBNI9wCDSXX%2FAHRTb%2BBwA%3D%3D"
-            }
-        ]
         """
         path = "downloader/next"
         params = {"account": account} #, "project": project, "location": location}
