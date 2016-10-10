@@ -83,12 +83,6 @@ ${EnvVarUpdate} $0 "XBMLANGPATH" "A" "HKLM" "$INSTDIR\Conductor\conductor\resour
 ${EnvVarUpdate} $0 "NUKE_PATH" "A" "HKLM" "$INSTDIR\Conductor\nuke_menu"
 ${EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "A" "HKCU" "$APPDATA\ConductorIO\Conductor\config.yml"
 
-CreateDirectory "$APPDATA\ConductorIO\Conductor\"
-FileOpen $1 "$APPDATA\ConductorIO\Conductor\config.yml" w
-FileWrite $1 "account: bananalabs$\r$\n"
-FileWrite $1 "token_path: $APPDATA\ConductorIO\Conductor\CONDUCTOR_TOKEN$\r$\n"
-FileClose $1
-
 SectionEnd
 
 ######################################################################
