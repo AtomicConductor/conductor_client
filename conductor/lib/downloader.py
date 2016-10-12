@@ -17,6 +17,7 @@ import requests
 WORKER_PAUSE_DURATION = 15
 DOWNLOAD_CHUNK_SIZE = 2048
 MAX_DOWNLOAD_RETRIES = 5
+TOUCH_INTERVAL = 1000 # number of DOWNLOAD_CHUNK_SIZE chunks to process before touching file in db.
 
 
 try:
@@ -167,7 +168,7 @@ class DownloadWorker(multiprocessing.Process):
         file_obj.write(chunk)
         self._chunks += 1
         self._total_size += sys.getsizeof(chunk)
-        if not self._chunks % 1000:
+        if not self._chunks % TOUCH_INTERVAL:
             print "proc: %s  file chunks -> %s  total_size: %s" % ( self.name, self._chunks, self._total_size )
             # TODO: proper logging
             Backend.touch(dl_info["id"])
