@@ -61,7 +61,7 @@ class DownloadWorker(multiprocessing.Process):
         self._run_state = run_state
         self._chunks = 0
         self._total_size = 0
-        self.output_dir = output_dir
+        self.output_dir = output_dir or ""
         self.location = location
         self.account = CONFIG.get("account")
 
@@ -95,28 +95,29 @@ class DownloadWorker(multiprocessing.Process):
         url = dl_info["url"]
         local_file = self.make_local_path(dl_info)
         if not self.file_exists_and_is_valid(local_file, dl_info["download_file"]["md5"]):
-            self.start_download(url, local_file)
+            self.start_download(url, local_file, dl_info)
         else:
             logger.warning("file %s already exists and is valid" % local_file)
             Backend.finish(dl_info["id"], bytes_downloaded=self._total_size)
             self.reset()
             return
 
-    def start_download(self, url, local_file, try_count=1):
+    def start_download(self, url, local_file, dl_info, try_count=1):
         """
         helper function that wraps _start_download() in try except
         """
         try:
-            self._start_download(url, local_file)
+            self._start_download(url, local_file, dl_info)
         except:
-            self._handle_download_error(url, local_file, try_count)
+            self._handle_download_error(url, local_file, dl_info, try_count)
         else:
             # TODO: validate md5, retry etc
             Backend.finish(dl_info["id"], bytes_downloaded=None)
             self.reset()
+            logger.info("finished download of %s" % local_file)
             return local_file
 
-    def _start_download(self, url, local_file):
+    def _start_download(self, url, local_file, dl_info):
         """
         The actual download loop implementation
         """
@@ -124,7 +125,11 @@ class DownloadWorker(multiprocessing.Process):
         basedir = os.path.dirname(local_file)
         if not os.path.exists(basedir):
             os.makedirs(basedir)
-        os.remove(local_file)
+        try:
+            os.remove(local_file)
+        except:
+            pass
+        logger.debug("startuing download of %s" % local_file)
         with open(local_file, 'wb') as f:
             for chunk in req.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
                 if self._run_state.value != "stopping":
@@ -134,7 +139,7 @@ class DownloadWorker(multiprocessing.Process):
                     # TODO: either mark as failed or clanup and mark as pending?
                     return
 
-    def _handle_download_error(self, url, local_file, try_count):
+    def _handle_download_error(self, url, local_file, dl_info, try_count):
         """
         properly handle errors during download chunk streaming.
         """
@@ -153,7 +158,7 @@ class DownloadWorker(multiprocessing.Process):
             return
         else:
             logger.info("retrying download file=%s" % local_file)
-            self._download_file(url, local_file, try_count=try_count+1)
+            self.start_download(url, local_file, dl_info, try_count=try_count+1)
 
     def _process_file_chunk(self, file_obj, chunk, dl_info):
         """
@@ -260,6 +265,7 @@ class Downloader(object):
 
     def __init__(self, args):
         self.__dict__.update(args)
+        self.output_dir = self.output or ""
         self._workers = []
         self._run_state = multiprocessing.Array('c', "stoppingorstuff")
         self._run_state.value = "running"
