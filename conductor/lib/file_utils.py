@@ -27,6 +27,9 @@ logger = logging.getLogger(__name__)
 
 
 
+class InvalidPathException(Exception):
+    pass
+
 def separate_path(path, no_extension=False):
     '''
     Seperate the given path into three pieces:
@@ -70,16 +73,19 @@ def process_dependencies(paths):
     '''
     For the given lists of dependency paths, return a dictionary where the keys 
     are the depenency filepaths and the values are paths, and the values are a 
-    bool, indicating whether the dependency path is valid. 
+    a string, describing what is wrong with the path (if anything). If the path
+    is valid, the value will be None
     
     '''
     dependencies = {}
     for path in paths:
+
         try:
             process_upload_filepath(path)
-            dependencies[path] = True
-        except:
-            dependencies[path] = False
+            dependencies[path] = None
+        except InvalidPathException as e:
+            dependencies[path] = str(e)
+
 
     return dependencies
 
@@ -101,7 +107,7 @@ def process_upload_filepath(path, strict=True):
     '''
     Process the given path to ensure that the path is valid (exists on disk), 
     and return any/all files which the path may represent.  
-    For example, if the path is a directory or an image sequence, then explicity 
+    For example, if the path is a directory or an image sequence, then explicitly 
     list and return all files that that path represents/contains.
     
        
@@ -144,7 +150,15 @@ def process_upload_filepath(path, strict=True):
         # If the path is a file (and it exits)
         if os.path.isfile(path):
             # Condition the path to conform to Conductor's expectations
-            paths.append(conform_platform_filepath(path))
+            filepath = conform_platform_filepath(path)
+
+            # Validate that the path meets all expectations
+            error_msg = validate_path(filepath)
+            if error_msg:
+                logger.warning(error_msg)
+                if strict:
+                    raise InvalidPathException(error_msg)
+            paths.append(filepath)
 
 
         # If the path is a directory
@@ -157,10 +171,10 @@ def process_upload_filepath(path, strict=True):
         # If the path is a symlink (which must be broken bc os.path.isfile or
         # os.path.isdir would have been True if it existed)
         elif os.path.islink(path):
-            message = "No files found for path: %s" % path
+            message = "No file(s) found for path: %s" % path
             # If we're being strict, then raise an exception
             if strict:
-                raise Exception(message)
+                raise InvalidPathException(message)
             # otherwise warn
             logger.warning(message)
 
@@ -181,7 +195,7 @@ def process_upload_filepath(path, strict=True):
                 if not filepaths:
                     message = "No files found for path: %s" % path
                     if strict:
-                        raise Exception(message)
+                        raise InvalidPathException(message)
                     logger.warning(message)
 
 
@@ -229,7 +243,7 @@ def get_common_dirpath(paths):
         # if the output "path" ends with a slash, then we know it's actually a
         # directory path, and can return it
         if output_path.endswith(os.sep) and _is_valid_path(output_path):
-            return output_path.rstrip(os.sep) # strip of the trailing path separator
+            return output_path.rstrip(os.sep)  # strip of the trailing path separator
 
         # Otherwise ask for the directory of the output "path"
         dirpath = os.path.dirname(output_path)
@@ -312,12 +326,7 @@ def conform_platform_filepath(filepath):
     if platform.startswith('win'):
         filepath = conform_win_path(filepath)
 
-    # If the platform is posixthen run specific posix rules
-    else:
-        filepath = conform_unix_path(filepath)
-
     return filepath
-
 
 def conform_win_path(filepath):
     '''
@@ -327,16 +336,26 @@ def conform_win_path(filepath):
     exp_file = os.path.abspath(os.path.expandvars(filepath))
     return os.path.normpath(exp_file).replace('\\', "/")
 
-def conform_unix_path(filepath):
+def validate_path(filepath):
     '''
-    For the given filepath, resolve any environment variables and ensure that
-    absolute filepaths are being used
+    Validate that the given filepath:
+        1. Does not contain colons.  This is docker path limitation
+        2. Starts with a "/".  Otherwise the path cannot be mounted in a linux filesystem
+    
+    If the filepath is valid, retur None. Otherwise return a message that describes
+    why the filepath is invalid
+        
     '''
-    filepath = os.path.abspath(os.path.expandvars(filepath))
-    if not filepath.startswith('/'):
-        raise IOError('All files should be passed in as absolute linux paths!\n'
-                      'File does not start at root mount "/", %s' % filepath)
-    return filepath
+    # Validate against any forbidden characters
+    forbidden_chars = (":",)
+    for char in forbidden_chars:
+        if char in filepath:
+            return "Forbidden character %r found in filepath: %r" % (char, filepath)
+
+    # Ensure filepath begins with a slash
+    if not filepath.startswith("/"):
+        return "Filepath does not begin with expected %r. Got %r" % ("/", filepath)
+
 
 def reconstruct_filename(matched, file_pieces):
     full_file_string = ""
