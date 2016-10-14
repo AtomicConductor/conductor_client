@@ -1,11 +1,8 @@
-import base64
-import binascii
 import datetime
 from pprint import pformat
 import time
 import ast
 import json
-import hashlib
 import logging
 import os
 import Queue
@@ -14,12 +11,11 @@ import thread
 from threading import Thread
 import time
 import traceback
-import requests
-import urllib
-import collections
+
 
 from conductor import CONFIG
 from conductor.lib import api_client, common, worker, client_db, loggeria
+from conductor.lib.common import sstr
 
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
 
@@ -83,7 +79,6 @@ class MD5Worker(worker.ThreadWorker):
         logger.debug("Using md5 cache for file: %s", filepath)
         return file_cache["md5"]
 
-
     def cache_file_info(self, file_info):
         '''
         Store the given file_info into the database
@@ -93,14 +88,14 @@ class MD5Worker(worker.ThreadWorker):
                                    thread_safe=True)
 
 
-
-
-
 '''
 This worker will batch the computed md5's into self.batch_size chunks.
 It will send a partial batch after waiting self.wait_time seconds
 '''
+
+
 class MD5OutputWorker(worker.ThreadWorker):
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.batch_size = 20  # the controlls the batch size for http get_signed_urls
@@ -152,8 +147,6 @@ class MD5OutputWorker(worker.ThreadWorker):
             self.mark_done()
 
 
-
-
 '''
 This worker recieves a batched dict of (filename: md5) pairs and makes a
 batched http api call which returns a list of (filename: signed_upload_url)
@@ -161,17 +154,20 @@ of files that need to be uploaded.
 
 Each item in the return list is added to the out_queue.
 '''
+
+
 class HttpBatchWorker(worker.ThreadWorker):
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.api_client = api_client.ApiClient()
-        self.project = kwargs.get('project')
+        self.project_id = kwargs.get('project_id')
 
     def make_request(self, job):
         uri_path = '/api/files/get_upload_urls'
-        headers = {'Content-Type':'application/json'}
+        headers = {'Content-Type': 'application/json'}
         data = {"upload_files": job,
-                "project": self.project}
+                "project": self.project_id}
 
         response_str, response_code = self.api_client.make_request(uri_path=uri_path,
                                                                    verb='POST',
@@ -204,7 +200,10 @@ The bytes_to_upload arg is used to hold the aggregrated size of all files that n
 to be uploaded. Note: This is stored as an [int] in order to pass it by
 reference, as it needs to be accessed and reset by the caller.
 '''
+
+
 class FileStatWorker(worker.ThreadWorker):
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
 
@@ -222,8 +221,6 @@ class FileStatWorker(worker.ThreadWorker):
                 return None
             # logger.debug('stat: %s', path)
             byte_count = os.path.getsize(path)
-
-            self.metric_store.increment('bytes_to_upload', byte_count)
             self.metric_store.increment('num_files_to_upload')
 
             self.put_job((path, upload_url))
@@ -233,12 +230,14 @@ class FileStatWorker(worker.ThreadWorker):
         return None
 
 
-
 '''
 This woker recieves a (filepath: signed_upload_url) pair and performs an upload
 of the specified file to the provided url.
 '''
+
+
 class UploadWorker(worker.ThreadWorker):
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.chunk_size = 1048576  # 1M
@@ -272,9 +271,6 @@ class UploadWorker(worker.ThreadWorker):
             logger.error(error_message)
             raise
 
-
-
-
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def do_upload(self, upload_url, filename, md5):
         '''
@@ -294,51 +290,109 @@ class UploadWorker(worker.ThreadWorker):
                                             use_api_key=True)
 
 
-
-
-
-
-
 class Uploader():
+
+    endpoint_fail = "uploads/%s/fail"
+    endpoint_finish = "uploads/%s/finish"
+    endpoint_next = "uploads/client/next"
+    endpoint_update = "uploads/%s/update"
 
     sleep_time = 10
 
-    def __init__(self, args=None):
-        logger.debug("Uploader.__init__")
-        self.api_client = api_client.ApiClient()
-        self.args = args or {}
-        self.args['thread_count'] = CONFIG['thread_count']
-        logger.debug("args: %s", self.args)
+    def __init__(self, location=None, thread_count=None, database_filepath=None, md5_caching=True):
 
-        self.location = self.args.get("location")
-        self.project = self.args.get("project")
+        logger.debug("location: %s", location)
+        logger.debug("thread_count: %s", thread_count)
+        logger.debug("database_filepath: %s", database_filepath)
+        logger.debug("md5_caching: %s", md5_caching)
+
+        self.location = location
+        self.thread_count = thread_count
+        self.database_filepath = database_filepath
+        self.md5_caching = md5_caching
+
+    def run_daemon_(self):
+        '''
+        Run the uploader in daemon mode. This will continuously until killed
+        via SIGINT
+        '''
+
+        request_data = {'location': self.location}
+        logger.debug("request_data: %s", sstr(request_data))
+
+        while not common.SIGINT_EXIT:
+            try:
+                upload = self.get_next_upload(request_data)
+                if not upload:
+                    logger.debug('no files to upload')
+                    sys.stdout.write('.')
+                    sys.stdout.flush()
+                    self.sleep(self.sleep_time)
+                    continue
+
+                error_message = self.handle_upload(upload)
+                if error_message:
+                    self.mark_upload_failed(upload, error_message)
+
+            except:
+                logger.exception("######## ENCOUNTERED EXCEPTION #########\n")
+                self.sleep(self.sleep_time)
+                continue
+
+        logger.info('Daemon Exited')
+
+    def upload_one(self, upload):
+        '''
+        Run the uploader for the given upload, and then exit.
+        '''
+        logger.info('Uploading...')
+
+        logger.debug("upload: %s", sstr(upload))
+        error_message = self.handle_upload(upload)
+        if error_message:
+            self.mark_upload_failed(upload, error_message)
 
     def prepare_workers(self):
         logger.debug('preparing workers...')
         common.register_sigint_signal_handler()
         self.num_files_to_process = 0
-        self.job_start_time = 0
+        self.job_start_time = time.time()
         self.manager = None
 
-    def create_manager(self, project, md5_only=False):
-        if md5_only:
-            job_description = [
-                (MD5Worker, [], {'thread_count': self.args['thread_count'],
-                                 "database_filepath": self.args['database_filepath'],
-                                 "md5_caching": self.args['md5_caching']})
-            ]
-        else:
-            job_description = [
-                (MD5Worker, [], {'thread_count': self.args['thread_count'],
-                                 "database_filepath": self.args['database_filepath'],
-                                 "md5_caching": self.args['md5_caching']}),
+    def create_manager(self, project_id, md5_only=False):
 
-                (MD5OutputWorker, [], {'thread_count': 1}),
-                (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
-                                       "project": project}),
-                (FileStatWorker, [], {'thread_count': 1}),
-                (UploadWorker, [], {'thread_count': self.args['thread_count']}),
-            ]
+        # IF only performing md5 calculations
+        if md5_only:
+            job_description = [(MD5Worker,
+                                [],
+                                {'thread_count': self.thread_count,
+                                 "database_filepath": self.database_filepath,
+                                 "md5_caching": self.md5_caching})]
+
+        # Otherwise construct all workers required for uploading
+        else:
+            job_description = [(MD5Worker,
+                                [],
+                                {'thread_count': self.thread_count,
+                                 "database_filepath": self.database_filepath,
+                                 "md5_caching": self.md5_caching}),
+
+                               (MD5OutputWorker,
+                                [],
+                                {'thread_count': 1}),
+
+
+                               (HttpBatchWorker,
+                                [], {'thread_count': self.thread_count,
+                                     "project_id": project_id}),
+
+                               (FileStatWorker,
+                                [],
+                                {'thread_count': 1}),
+
+                               (UploadWorker,
+                                [],
+                                {'thread_count': self.thread_count})]
 
         manager = worker.JobManager(job_description)
         manager.start()
@@ -350,31 +404,24 @@ class Uploader():
         while True:
 
             # don't report status if we are doing a local_upload
-            if not self.upload_id:
+            if not self.upload:
                 logger.debug('not updating status as we were not provided an upload_id')
                 return
 
             if self.working:
                 bytes_to_upload = self.manager.metric_store.get('bytes_to_upload')
                 bytes_uploaded = self.manager.metric_store.get('bytes_uploaded')
+
+                json_data = {'upload_id': self.upload["id"],
+                             'transfer_size': bytes_to_upload,
+                             'bytes_transfered': bytes_uploaded}
+
                 try:
-                    status_dict = {
-                        'upload_id': self.upload_id,
-                        'transfer_size': bytes_to_upload,
-                        'bytes_transfered': bytes_uploaded,
-                    }
-                    logger.debug('reporting status as: %s', status_dict)
-                    resp_str, resp_code = self.api_client.make_request(
-                        '/uploads/%s/update' % self.upload_id,
-                        data=json.dumps(status_dict),
-                        verb='POST', use_api_key=True)
+                    self.update_upload_status(self.upload, json_data)
+                except:
+                    logger.exception("####### Report Status Thread Exception #####\n")
 
-                except Exception, e:
-                    logger.error('could not report status:')
-                    logger.error(traceback.print_exc())
-                    logger.error(traceback.format_exc())
-
-            time.sleep(update_interval)
+            self.sleep(update_interval)
 
     def create_report_status_thread(self):
         logger.debug('creating reporter thread')
@@ -404,7 +451,6 @@ class Uploader():
         return estimated_time
 
     def convert_byte_count_to_string(self, byte_count, transfer_rate=False):
-        apend_string = ' '
 
         if byte_count > 2 ** 30:
             return str(round(byte_count / float(2 ** 30), 1)) + ' GB'
@@ -415,30 +461,26 @@ class Uploader():
         else:
             return str(byte_count) + ' B'
 
-
     def convert_time_to_string(self, time_remaining):
         if time_remaining > 3600:
-            return str(round(time_remaining / float(3600) , 1)) + ' hours'
+            return str(round(time_remaining / float(3600), 1)) + ' hours'
         elif time_remaining > 60:
-            return str(round(time_remaining / float(60) , 1)) + ' minutes'
+            return str(round(time_remaining / float(60), 1)) + ' minutes'
         else:
             return str(round(time_remaining, 1)) + ' seconds'
 
-
     def upload_status_text(self):
         num_files_to_upload = self.manager.metric_store.get('num_files_to_upload')
-        files_to_upload = str(num_files_to_upload)
-        files_to_analyze = str(self.num_files_to_process)
 
         if self.job_start_time:
             elapsed_time = int(time.time()) - self.job_start_time
         else:
             elapsed_time = 0
 
-        bytes_to_upload = self.manager.metric_store.get('bytes_to_upload')
         bytes_uploaded = self.manager.metric_store.get('bytes_uploaded')
-        if bytes_to_upload:
-            percent_complete = bytes_uploaded / float(bytes_to_upload)
+
+        if self.upload["total_size"] and bytes_uploaded != None:
+            percent_complete = bytes_uploaded / float(self.upload["total_size"])
         else:
             percent_complete = 0
 
@@ -447,61 +489,54 @@ class Uploader():
         else:
             transfer_rate = 0
 
-
         unformatted_text = '''
 ################################################################################
-     files to process: {files_to_analyze}
-      files to upload: {files_to_upload}
-       data to upload: {bytes_to_upload}
-             uploaded: {bytes_uploaded}
-         elapsed time: {elapsed_time}
-     percent complete: {percent_complete}
-        transfer rate: {transfer_rate}
-       time remaining: {time_remaining}
+     files to process: %(files_to_analyze)s
+      files to upload: %(files_to_upload)s
+       data to upload: %(bytes_to_upload)s
+             uploaded: %(bytes_uploaded)s
+         elapsed time: %(elapsed_time)s
+     percent complete: %(percent_complete)s
+        transfer rate: %(transfer_rate)s
+       time remaining: %(time_remaining)s
         file progress:
 '''
 
-        bytes_to_upload = self.manager.metric_store.get('bytes_to_upload')
         bytes_uploaded = self.manager.metric_store.get('bytes_uploaded')
 
-        formatted_text = unformatted_text.format(
-            files_to_analyze=files_to_analyze,
-            files_to_upload=files_to_upload,
-            bytes_to_upload=self.convert_byte_count_to_string(bytes_to_upload),
-            bytes_uploaded=self.convert_byte_count_to_string(bytes_uploaded),
-            elapsed_time=self.convert_time_to_string(elapsed_time),
-            percent_complete=str(round(percent_complete * 100, 1)) + ' %',
-            transfer_rate=self.convert_byte_count_to_string(transfer_rate) + '/s',
-            time_remaining=self.convert_time_to_string(
-                self.estimated_time_remaining(elapsed_time, percent_complete)),
-        )
+        data = {}
+        data["bytes_to_upload"] = self.convert_byte_count_to_string(self.upload["total_size"])
+        data["bytes_uploaded"] = self.convert_byte_count_to_string(bytes_uploaded)
+        data["elapsed_time"] = self.convert_time_to_string(elapsed_time)
+        data["percent_complete"] = str(round(percent_complete * 100, 1)) + '%'
+        data["transfer_rate"] = self.convert_byte_count_to_string(transfer_rate) + '/s'
+        data["time_remaining"] = self.estimated_time_remaining(elapsed_time, percent_complete)
+        data["files_to_upload"] = str(num_files_to_upload)
+        data["time_remaining"] = self.estimated_time_remaining(elapsed_time, percent_complete)
+        data["files_to_analyze"] = str(self.num_files_to_process)
+
+        formatted_text = unformatted_text % data
 
         file_progress = self.manager.metric_store.get_dict('files')
-        for filename in file_progress:
-            formatted_text += "%s: %s\n" % (filename, file_progress[filename])
+        for filename, file_progress in file_progress.iteritems():
+            formatted_text += "%s: %s\n" % (filename, common.get_human_bytes(file_progress))
 
         formatted_text += "################################################################################"
 
         return formatted_text
 
-
     def print_status(self):
         logger.debug('starting print_status thread')
         update_interval = 3
-
-        def sleep():
-            time.sleep(update_interval)
 
         while True:
             if self.working:
                 try:
                     logger.info(self.manager.worker_queue_status_text())
                     logger.info(self.upload_status_text())
-                except Exception, e:
-                    print e
-                    print traceback.format_exc()
-                    # pass
-            sleep()
+                except:
+                    logger.exception("#### Print Status Thread exception ####\n")
+            self.sleep(update_interval)
 
     def create_print_status_thread(self):
         logger.debug('creating console status thread')
@@ -513,51 +548,79 @@ class Uploader():
         # start thread
         thd.start()
 
+    @classmethod
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
+    def mark_upload_finished(cls, upload, upload_files):
 
-    def mark_upload_finished(self, upload_id, upload_files):
+        upload_id = upload.get("id")
+        logger.info("Finishing Upload: %s", upload_id)
 
-        data = {'upload_id':upload_id,
-                'status': 'server_pending',
-                'upload_files': upload_files}
+        endpoint = cls.endpoint_finish % upload_id
 
-        resp_str, resp_code = self.api_client.make_request('/uploads/%s/finish' % upload_id,
-                                                           data=json.dumps(data),
-                                                           verb='POST', use_api_key=True)
-        return True
+        json_data = {'upload_id': upload_id,
+                     'status': 'server_pending',
+                     'upload_files': upload_files}
 
-    def mark_upload_failed(self, error_message, upload_id):
-        logger.error('failing upload due to: \n%s' % error_message)
+        response = api_client.AppRequest.app_request(http_method="POST",
+                                                     endpoint=endpoint,
+                                                     json_data=json_data,
+                                                     raise_error=True)
 
-        # report error_message to the app
-        resp_str, resp_code = self.api_client.make_request(
-            '/uploads/%s/fail' % upload_id,
-            data=error_message,
-            verb='POST', use_api_key=True)
+        logger.debug("Mark Finished response: %s", sstr(response.content))
 
-        return True
+    @classmethod
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
+    def update_upload_status(cls, upload, json_data):
+        upload_id = upload.get("id")
+        logger.info("Updating Upload: %s", upload_id)
+        logger.debug("json_data: %s", sstr(json_data))
 
-    def handle_upload_response(self, project, upload_files, upload_id=None, md5_only=False):
+        endpoint = cls.endpoint_update % upload_id
+
+        response = api_client.AppRequest.app_request(http_method="POST",
+                                                     endpoint=endpoint,
+                                                     json_data=json_data,
+                                                     raise_error=True)
+        logger.debug("Update Upload response: %s", sstr(response.content))
+
+    @classmethod
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
+    def mark_upload_failed(cls, upload, error_message):
+        upload_id = upload.get("id")
+        logger.info("Failing Upload: %s", upload_id)
+
+        endpoint = cls.endpoint_fail % upload_id
+        json_data = {"message": error_message}
+
+        response = api_client.AppRequest.app_request(http_method="POST",
+                                                     endpoint=endpoint,
+                                                     json_data=json_data,
+                                                     raise_error=True)
+        logger.debug("Mark Failed response: %s", sstr(response.content))
+
+    def handle_upload(self, upload, md5_only=False):
         '''
-        This is a reallly confusing method and should probably be split into
-        to clear logic branches: one that is called when in daemon mode, and 
-        one that is not.  
-        If not called in daemon mode (local_upload=True), then md5_only is True 
-        and project is not None.Otherwise we're in daemon mode, where the project 
-        information is not required because the daemon will only be fed uploads 
-        by the app which have valid projects attached to them.
+        Upload the given upload dict
+
+
         '''
+        assert upload
+
+        self.upload = upload
+        logger.info('upload: %r', self.upload)
+        logger.info("%s", "  NEXT UPLOAD  ".center(30, "#"))
+        logger.info('Handling Upload: %r', self.upload["id"])
+        logger.info('project_id: %r', self.upload["project"])
+
         try:
-
-            logger.info("%s", "  NEXT UPLOAD  ".center(30, "#"))
-            logger.info('project: %s', project)
-            logger.info('upload_id is %s', upload_id)
-            logger.info('upload_files %s:(truncated)\n\t%s',
-                        len(upload_files), "\n\t".join(upload_files.keys()[:5]))
+            upload_files = dict([(finfo["destination"], finfo.get("md5")) for finfo in self.upload["files"]])
+            logger.info('Handling %s files: \n\t%s', len(upload_files),
+                        sstr("\n\t".join(upload_files)))
 
             # reset counters
             self.num_files_to_process = len(upload_files)
             self.job_start_time = int(time.time())
-            self.upload_id = upload_id
+
             self.job_failed = False
 
             # signal the reporter to start working
@@ -566,11 +629,12 @@ class Uploader():
             self.prepare_workers()
 
             # create worker pools
-            self.manager = self.create_manager(project, md5_only)
+            self.manager = self.create_manager(self.upload["project"], md5_only)
 
             # create reporters
             logger.debug('creating report status thread...')
             self.create_report_status_thread()
+
             logger.info('creating console status thread...')
             self.create_print_status_thread()
 
@@ -589,69 +653,45 @@ class Uploader():
             if error_message:
                 return "\n".join(error_message)
 
-            #  Despite storing lots of data about new uploads, we will only send back the things
-            #  that have changed, to keep payloads small.
-            if self.upload_id:
+            if self.upload:
                 finished_upload_files = {path: {"source": path,
                                                 "md5": md5}
                                          for path, md5 in self.return_md5s().iteritems()}
 
-                self.mark_upload_finished(self.upload_id, finished_upload_files)
+                self.mark_upload_finished(upload, finished_upload_files)
 
         except:
+            logger.exception("######## ENCOUNTERED EXCEPTION #########\n")
             return traceback.format_exc()
 
+    @classmethod
+    def sleep(cls, seconds):
+        for i in range(seconds):
+            if common.SIGINT_EXIT:
+                return
+            time.sleep(1)
 
-    def main(self, run_one_loop=False):
-        logger.info('Uploader Started. Checking for uploads...')
+    @classmethod
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
+    def get_next_upload(cls, data):
+        '''
+        Return the next upload (201) or None (204)
 
-        while not common.SIGINT_EXIT:
-            try:
-                # TODO: we should pass args as url params, not http data
-                data = {}
-                data['location'] = self.location
-                logger.debug("Data: %s", data)
-                resp_str, resp_code = self.api_client.make_request('/uploads/client/next',
-                                                                   data=json.dumps(data),
-                                                                   verb='PUT', use_api_key=True)
-                if resp_code == 204:
-                    logger.debug('no files to upload')
-                    sys.stdout.write('.')
-                    sys.stdout.flush()
-                    time.sleep(self.sleep_time)
-                    continue
-                elif resp_code != 201:
-                    logger.error('received invalid response code from app %s', resp_code)
-                    logger.error('response is %s', resp_str)
-                    time.sleep(self.sleep_time)
-                    continue
+        '''
 
-                print ''  # to make a newline after the 204 loop
-                # logger.debug('recieved next upload from app: %s\n\t%s', resp_code, resp_str)
+        response = api_client.AppRequest.app_request(http_method="PUT",
+                                                     endpoint=cls.endpoint_next,
+                                                     json_data=data,
+                                                     raise_error=True)
+        # If 201, return the upload entity
+        if response.status_code == 201:
+            return response.json()["data"]
 
-                try:
-                    json_data = json.loads(resp_str)
-                    upload = json_data.get("data", {})
-                except ValueError, e:
-                    logger.error('response was not valid json: %s', resp_str)
-                    time.sleep(self.sleep_time)
-                    continue
+        # If 204, then simply return (no work to do)
+        elif response.status_code == 204:
+            return
 
-                upload_files = upload['upload_files']
-                upload_id = upload['id']
-                project = upload['project']
-
-                error_message = self.handle_upload_response(project, upload_files, upload_id)
-                if error_message:
-                    self.mark_upload_failed(error_message, upload_id)
-
-            except:
-                logger.exception('Caught exception:\n')
-                time.sleep(self.sleep_time)
-                continue
-
-        logger.info('exiting uploader')
-
+        raise Exception("This should never happen")
 
     def return_md5s(self):
         '''
@@ -670,24 +710,63 @@ def set_logging(level=None, log_dirpath=None):
                                      file_formatter=LOG_FORMATTER,
                                      log_filepath=log_filepath)
 
-def run_uploader(args):
+
+def run_uploader_daemon(args):
     '''
-    Start the uploader process. This process will run indefinitely, polling
+
+    Run the uploader in daemon mode. This process will run indefinitely, polling
     the Conductor cloud app for files that need to be uploaded.
     '''
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
 
     # Set up logging
-    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level_name = resolve_arg("log_level", args_dict, CONFIG)
     log_level = loggeria.LEVEL_MAP.get(log_level_name)
-    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    log_dirpath = resolve_arg("log_dir", args_dict, CONFIG)
     set_logging(log_level, log_dirpath)
 
-    logger.debug('Uploader parsed_args is %s', args_dict)
-    resolved_args = resolve_args(args_dict)
-    uploader = Uploader(resolved_args)
-    uploader.main()
+    # Resolve args from command line/config
+    database_filepath = resolve_arg("database_filepath", args_dict, CONFIG)
+    location = resolve_arg("location", args_dict, CONFIG)
+    md5_caching = resolve_arg("md5_caching", args_dict, CONFIG)
+    thread_count = resolve_arg("thread_count", args_dict, CONFIG)
+
+    logger.info('Running Uploader Daemon...')
+    uploader_ = Uploader(location=location,
+                         thread_count=thread_count,
+                         database_filepath=database_filepath,
+                         md5_caching=md5_caching)
+    uploader_.run_daemon_()
+
+
+def run_upload(args, upload):
+    '''
+
+    Run the uploader in daemon mode. This process will run indefinitely, polling
+    the Conductor cloud app for files that need to be uploaded.
+    '''
+    # convert the Namespace object to a dictionary
+    args_dict = vars(args)
+
+    # Set up logging
+    log_level_name = resolve_arg("log_level", args_dict, CONFIG)
+    log_level = loggeria.LEVEL_MAP.get(log_level_name)
+    log_dirpath = resolve_arg("log_dir", args_dict, CONFIG)
+    set_logging(log_level, log_dirpath)
+
+    # Resolve args from command line/config
+    database_filepath = resolve_arg("database_filepath", args_dict, CONFIG)
+    location = resolve_arg("location", args_dict, CONFIG)
+    md5_caching = resolve_arg("md5_caching", args_dict, CONFIG)
+    thread_count = resolve_arg("thread_count", args_dict, CONFIG)
+
+    logger.info('Running Uploader Daemon...')
+    uploader_ = Uploader(location=location,
+                         thread_count=thread_count,
+                         database_filepath=database_filepath,
+                         md5_caching=md5_caching)
+    uploader_.upload_one(upload)
 
 
 def get_file_info(filepath):
@@ -696,7 +775,7 @@ def get_file_info(filepath):
         "filepath": filepath (str)
         "modtime": modification time (datetime.datetime) 
         "size": filesize in bytes (int)
-        
+
     '''
     assert os.path.isfile(filepath), "Filepath does not exist: %s" % filepath
     stat = os.stat(filepath)
@@ -705,18 +784,6 @@ def get_file_info(filepath):
     return {"filepath": filepath,
             "modtime": modtime,
             "size": stat.st_size}
-
-def resolve_args(args):
-    '''
-    Resolve all arguments, reconsiling differences between command line args
-    and config.yml args.  See resolve_arg function.
-    '''
-    args["md5_caching"] = resolve_arg("md5_caching", args, CONFIG)
-    args["database_filepath"] = resolve_arg("database_filepath", args, CONFIG)
-    args["location"] = resolve_arg("location", args, CONFIG)
-
-    return args
-
 
 
 def resolve_arg(arg_name, args, config):
@@ -739,8 +806,6 @@ def resolve_arg(arg_name, args, config):
         return value
     # Otherwise use the value in the config if it's there, otherwise default to None
     return config.get(arg_name)
-
-
 
 
 # @common.dec_timer_exitlog_level=logging.DEBUG
@@ -812,11 +877,3 @@ def resolve_arg(arg_name, args, config):
 #
 #     logger.debug("Complete")
 #     return md5s
-
-
-
-
-
-
-
-

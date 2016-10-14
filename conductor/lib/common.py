@@ -4,6 +4,7 @@ import datetime
 import functools
 import hashlib
 import json
+import itertools
 import logging
 import math
 import multiprocessing
@@ -28,10 +29,13 @@ logger = logging.getLogger(__name__)
 
 # Use this global variable across all modules to query whether the the SIGINT signal has been triggered
 SIGINT_EXIT = False
+
+
 def signal_handler(sig_number, stack_frame):
     logger.debug('in signal_handler. setting common.SIGINT_EXIT to True')
     global SIGINT_EXIT
     SIGINT_EXIT = True
+
 
 def register_sigint_signal_handler(signal_handler=signal_handler):
     logger.debug("REGISTERING SIGNAL HANDLER")
@@ -53,7 +57,7 @@ class ExceptionAction(object):
     the exception is raised, and then (optionally) raise the exception.
     Optionally specify particular exceptions (classes) to be omiited from taking
     action on (though still raise the exception)
-    
+
     disable_var: str. An environment variable name, which if found in the runtime
                       environement will disable the action from being taken. This
                       can be useful when a developer is activeky developing and
@@ -76,7 +80,7 @@ class ExceptionAction(object):
         def decorater_function(*args, **kwargs):
             '''
             The decorator function
-            
+
             Tries to execute the decorated function. If an exception occurs,
             it is caught, takes the action, and then raises the exception. 
             '''
@@ -98,22 +102,21 @@ class ExceptionAction(object):
                     failed_method_name = "%s.%s.%s" % (__name__, self.__class__.__name__, self.take_action.__name__)
                     logger.error("%s failed:\n%s", failed_method_name, traceback.format_exc())
 
-
                 # Raise the original exception if indicated to do so
                 if self.raise_:
                     raise e
 
         return decorater_function
 
-
     def take_action(self, e):
         '''
         Overide this method to do something useful before raising the exception.
-        
+
         e.g.: 
             print "sending error message to mom: %s" % traceback.format_exc()
         '''
         raise NotImplementedError
+
 
 class ExceptionLogger(ExceptionAction):
     '''
@@ -121,9 +124,9 @@ class ExceptionLogger(ExceptionAction):
     If the decorated function raises an exception, this decorator can log
     the exception and continue (suppressing the actual exception.  A message 
     may be prepended to the exception message.
-        
+
     example output:
-    
+
         >> broken_function()
         # Warning: conductor.lib.common : My prependend message
         Traceback (most recent call last):
@@ -131,9 +134,10 @@ class ExceptionLogger(ExceptionAction):
             return function(*args, **kwargs)
           File "<maya console>", line 4, in broken_function
         ZeroDivisionError: integer division or modulo by zero
-     
-    
+
+
     '''
+
     def __init__(self, message="", log_traceback=True, log_level=logging.WARNING,
                  raise_=False, omitted_exceptions=(), disable_var=""):
         '''
@@ -181,8 +185,51 @@ def dec_timer_exit(log_level=logging.INFO):
 
     return timer_decorator
 
-def dec_catch_exception(raise_=False):
 
+def dec_retry(retry_exceptions=Exception, tries=8, static_sleep=None):
+    '''
+    DECORATOR
+
+    Retry calling the decorated function using an exponential backoff.
+
+    retry_exceptions: An Exception class (or a tuple of Exception classes) that
+                    this decorator will catch/retry.  All other exceptions that
+                    occur will NOT be retried. By default, all exceptions are
+                    caught (due to the default arguemnt of Exception)
+
+    tries: int. number of times to try (not retry) before raising
+    static_sleep: The amount of seconds to sleep before retrying. If None,
+                 the sleep time will use exponential backoff. See below.  
+
+    This retry function not only incorporates exponential backoff, but also
+    "jitter".  see http://www.awsarchitectureblog.com/2015/03/backoff.html.
+    Instead of merely increasing the backoff time exponentially (determininstically),
+    there is a randomness added that will set the sleeptime anywhere between
+    0 and the full exponential backoff time length.
+
+    '''
+    def retry_decorator(f):
+
+        @functools.wraps(f)
+        def retry_(*args, **kwargs):
+            for try_num in range(1, tries + 1):
+                try:
+                    return f(*args, **kwargs)
+                except retry_exceptions, e:
+                    if static_sleep != None:
+                        sleep_time = static_sleep
+                    else:
+                        # use random for jitter.
+                        sleep_time = random.randrange(0, 2 ** try_num)
+                    msg = "%s, Retrying in %d seconds..." % (str(e), sleep_time)
+                    logger.warning(msg)
+                    time.sleep(sleep_time)
+            return f(*args, **kwargs)
+        return retry_
+    return retry_decorator
+
+
+def dec_catch_exception(raise_=False):
     '''
     DECORATOR
     Wraps the decorated function/method so that if the function raises an
@@ -221,7 +268,7 @@ class DecRetry(object):
     skip_exceptions:  An Exception class (or a tuple of Exception classes) that
                      this decorator will NOT catch/retry.  This will take precedence
                      over the retry_exceptions.
-    
+
     tries: int. number of times to try (not retry) before raising
     static_sleep: The amount of seconds to sleep before retrying. When set to 
                   None, the sleep time will use exponential backoff. See below.  
@@ -233,6 +280,7 @@ class DecRetry(object):
     0 and the full exponential backoff time length.
 
     '''
+
     def __init__(self, retry_exceptions=Exception, skip_exceptions=(), tries=8, static_sleep=None):
         self.retry_exceptions = retry_exceptions
         self.skip_exceptions = skip_exceptions
@@ -243,7 +291,6 @@ class DecRetry(object):
 
         @functools.wraps(orig_function)
         def wrapper_function(*args, **kwargs):
-
             # Attempt to call the function in a try/excet as many times as specified by the tries, minus 1)
             # if tries=1, this loop wont even happen
             for try_num in range(self.tries - 1):
@@ -251,7 +298,7 @@ class DecRetry(object):
                     return orig_function(*args, **kwargs)
                 except Exception as e:
                     if not isinstance(e, self.retry_exceptions) or isinstance(e, self.skip_exceptions):
-                        logger.debug("Skipping retry because mismatched exception type: %s" , type(e))
+                        logger.debug("Skipping retry because mismatched exception type: %s", type(e))
                         raise
                     if self.static_sleep != None:
                         sleep_time = self.static_sleep
@@ -271,7 +318,6 @@ class DecRetry(object):
         time.sleep(seconds)
 
 
-
 def run(cmd):
     logger.debug("about to run command: " + cmd)
     command = subprocess.Popen(
@@ -284,6 +330,7 @@ def run(cmd):
     status = command.returncode
     return status, stdout, stderr
 
+
 def get_md5(file_path, blocksize=65536):
     hasher = hashlib.md5()
     afile = open(file_path, 'rb')
@@ -293,6 +340,7 @@ def get_md5(file_path, blocksize=65536):
         buf = afile.read(blocksize)
     return hasher.digest()
 
+
 def get_base64_md5(*args, **kwargs):
     if not os.path.isfile(args[0]):
         return None
@@ -300,33 +348,34 @@ def get_base64_md5(*args, **kwargs):
     b64 = base64.b64encode(md5)
     return b64
 
+
 def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
                  callback=None, log_level=logging.INFO):
     '''
     Generate and return md5 hash (base64) for the given filepath
-    
+
     filepath: str. The file path to generate an md5 hash for.
-    
+
     base_64: bool. whether or not to return a base64 string.
-    
+
     poll_seconds: int, the number of seconds to wait between logging out to the 
                    console when md5 hashing (particularly a large file which
                    may take a while)
     log_level: logging.level. The log level that should be used
                 when logging messages.
-                     
+
    callback: A callable that is called during the md5 hashing process. It's called
              every time a block of data has been hashed (see blocksize arg).The
              callable receives the following arguments:
-             
+
              filepath: see above
-             
+
              file_size: the total size of the file (in bytes)
-             
+
              bytes_processed: the amount of bytes that has currently been hashed
-             
+
              log_level: see above
-               
+
     '''
     file_size = os.path.getsize(filepath)
     hash_obj = hashlib.md5()
@@ -343,7 +392,7 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
 
         if poll_seconds and curtime - last_time >= poll_seconds:
             logger.log(log_level, "MD5 hashing %s%% (size %s bytes): %s ",
-                        percentage_processed, file_size, filepath)
+                       percentage_processed, file_size, filepath)
             last_time = curtime
 
         if callback:
@@ -375,6 +424,7 @@ def base_dir():
                                                   "%s%s" % (os.getcwd(), os.sep))
 
     return os.path.dirname(os.path.dirname(os.path.dirname(module_filepath)))
+
 
 class Config():
     required_keys = []
@@ -463,10 +513,6 @@ class Config():
             raise ValueError(message)
         config['conductor_token'] = conductor_token
 
-
-
-
-
     def get_environment_config(self):
         '''
         Look for any environment settings that start with CONDUCTOR_
@@ -503,7 +549,6 @@ class Config():
 
         return bool_values.get(env_var.lower(), env_var)
 
-
     def get_config_file_path(self, config_file=None):
         default_config_file = os.path.join(base_dir(), 'config.yml')
         if os.environ.has_key('CONDUCTOR_CONFIG'):
@@ -516,7 +561,6 @@ class Config():
     def get_user_config(self):
         config_file = self.get_config_file_path()
         logger.debug('using config: %s' % config_file)
-
 
         if os.path.isfile(config_file):
             logger.debug('loading config: %s', config_file)
@@ -534,7 +578,6 @@ class Config():
         else:
             logger.warn('config file %s does not exist', config_file)
             return {}
-
 
         if config.__class__.__name__ != 'dict':
             message = 'config found at %s is not in proper yaml syntax' % config_file
@@ -558,7 +601,7 @@ class Config():
 def load_resources_file():
     '''
     Return the resource yaml file as a dict.
-    
+
     If the $CONDUCTOR_RESOURCES_PATH environment variable is set, then use it
     to find load the resource file from. Otherwise look for it in the default 
     location.
@@ -577,12 +620,19 @@ def load_resources_file():
     with open(resources_filepath, 'r') as file_:
         return yaml.load(file_)
 
-def get_conductor_instance_types():
+
+def get_conductor_instance_types(as_dict=False):
     '''
     Get the list of available instances types from the resources.yml file
     '''
     resources = load_resources_file()
-    return resources.get("instance_types") or []
+    instance_types = resources.get("instance_types") or []
+
+    if as_dict:
+        return dict([(instance["name"], instance) for instance in instance_types])
+
+    return instance_types
+
 
 def get_package_ids():
     '''
@@ -591,18 +641,20 @@ def get_package_ids():
     resources = load_resources_file()
     return resources.get("package_ids") or {}
 
+
 def get_human_bytes(bytes_):
     '''
     For the given bytes (integer), convert and return a "human friendly:
     representation of that data size. 
     '''
     if bytes_ > BYTES_1TB:
-        return  "%.2fTB" % (bytes_ / float(BYTES_1TB))
+        return "%.2fTB" % (bytes_ / float(BYTES_1TB))
     elif bytes_ > BYTES_1GB:
-        return  "%.2fGB" % (bytes_ / float(BYTES_1GB))
+        return "%.2fGB" % (bytes_ / float(BYTES_1GB))
     elif bytes_ > BYTES_1MB:
-        return  "%.2fMB" % (bytes_ / float(BYTES_1MB))
-    return  "%.2fKB" % (bytes_ / float(BYTES_1KB))
+        return "%.2fMB" % (bytes_ / float(BYTES_1MB))
+    return "%.2fKB" % (bytes_ / float(BYTES_1KB))
+
 
 def get_progress_percentage(current, total):
     '''
@@ -615,11 +667,13 @@ def get_progress_percentage(current, total):
         progress_int = int(current / float(total) * 100)
     return "%s%%" % progress_int
 
+
 def get_human_duration(seconds):
     '''
     convert the given seconds (float) into a human friendly unit
     '''
     return str(datetime.timedelta(seconds=round(seconds)))
+
 
 def get_human_timestamp(seconds_since_epoch):
     '''
@@ -627,3 +681,32 @@ def get_human_timestamp(seconds_since_epoch):
     '''
     return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
 
+
+def sstr(object_, char_count=1000):
+    '''
+    Return a string representation of the given object, shortened to the given
+    char_count. This can be useful when printing/logging out data for debugging
+    purposes, but don't want an overwhelming wall of text to troll through.
+    '''
+    assert type(char_count) == int, "char_count must be int. Got: %s (type)" % (char_count, type(char_count))
+    try:
+        s_str = str(object_)
+    except:
+        s_str = "<object cannot be cast to string (%s)>" % type(object_)
+
+    if len(s_str) > char_count:
+        s_str = s_str[:char_count] + "...<TRUNCATED>"
+
+    return s_str
+
+
+def chunk_iter(chunk_size, iterable):
+    '''
+    Return an iterable 
+    '''
+    it = iter(iterable)
+    while True:
+        chunk = tuple(itertools.islice(it, chunk_size))
+        if not chunk:
+            return
+        yield chunk

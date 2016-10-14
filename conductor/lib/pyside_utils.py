@@ -6,7 +6,7 @@ from Qt import QtGui, QtCore, QtWidgets
 try:
     from Qt import QtUiTools
 except ImportError as e:
-    if Qt.__binding__ in ('PySide'):
+    if Qt.__binding__ in ('PySide', ):
         from PySide import QtUiTools
     else:
         from PySide2 import QtUiTools
@@ -109,7 +109,7 @@ def wait_message(title, message):
 
 def launch_message_box(title, message, is_richtext=False, parent=None):
     """
-    Launches a very basic message dialog box with the given title and message.
+    Launches a very basic message dialog box with the given title and message. 
 
     is_richtext: bool. If True, willl set the given as RichText.  This will also
                  allow the text to support hyperlink behavior.
@@ -234,6 +234,19 @@ def get_widgets_by_property(widget, property_name, match_value=False, property_v
     return widgets
 
 
+class HeaderStateTreeWidgetMixin(QtWidgets.QTreeWidget):
+
+    def __init__(self, parent=None):
+        QtWidgets.QTreeWidget.__init__(self, parent=parent)
+        self.saveHeaderState()
+
+    def restoreHeaderState(self):
+        self.header().restoreState(self._header_state)
+
+    def saveHeaderState(self):
+        self._header_state = self.header().saveState()
+
+
 class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
     '''
     This is a QTreeWidget that has been modified to
@@ -293,7 +306,7 @@ class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
         Check or uncheck all of the checkboxes
         '''
 
-        for item in [self.topLevelItem(idx) for idx in range(self.topLevelItemCount())]:
+        for item in self.getRowItems():
             item.setCheckState(self.checkbox_column_idx, get_qt_check_flag(check))
 
     def _check_all_selected(self, check=True):
@@ -301,7 +314,7 @@ class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
         Check or uncheck all of the checkboxes that are currently selected by the user
         '''
 
-        for item in self.selectedItems():
+        for item in self.getRowItems(highlighted=True):
             item.setCheckState(self.checkbox_column_idx, get_qt_check_flag(check))
 
     def addTopLevelCheckboxItem(self, tree_item, is_checked=False):
@@ -330,6 +343,25 @@ class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
             stylesheet += "%s { image: url(%s);}" % (indicator, filepath.replace("\\", "/"))  # The filepaths must always use forward slashes (regardless of platform)
 
         self.setStyleSheet(stylesheet)
+
+    def getRowItems(self, checked=None, highlighted=None):
+        '''
+        Return each item in all rows (top level).
+        Optionally, filter items by whether they're checked on/off and/or whether
+        a user has selected the row (highlighted)
+        '''
+        items = []
+        for row_idx in range(self.topLevelItemCount()):
+            item = self.topLevelItem(row_idx)
+            if checked != None and item.checkState(0) != get_qt_check_flag(bool(checked)):
+                continue
+
+            if highlighted != None and self.isItemSelected(item) != (bool(highlighted)):
+                continue
+
+            items.append(item)
+
+        return items
 
 
 def get_qt_check_flag(is_checked):
@@ -558,7 +590,7 @@ class UserPrefs(object):
         Create a user settings file for the given company and application name
         The prefs file is located/created via the company_name and application_name.
 
-        company_name: str. Dictates the subdirecty directory name of where the
+        company_name: str. Dictates the subdirecty directory name of where the 
                       settings file is found on disk
 
         application_name: str. Dictates the name of the settings file (excluding
@@ -568,7 +600,7 @@ class UserPrefs(object):
         self.application_name = application_name
         self.qsettings = QtCore.QSettings(company_name, application_name)
 
-    # GETTERS #####
+    #### GETTERS #####
 
     def getSettingsFilepath(self):
         '''
@@ -769,7 +801,7 @@ class FilePrefs(UserPrefs):
 
         return self.getGlobalPrefs()
 
-    # SETTERS #####
+    #### SETTERS #####
 
     def setPref(self, pref_name, value, filepath=None):
         '''
@@ -825,7 +857,7 @@ class FilePrefs(UserPrefs):
         '''
         return self.getValues(self.GROUP_GLOBAL_PREFS)
 
-    # SETTERS #####
+    #### SETTERS #####
 
     def setGlobalPref(self, pref_name, value):
         '''
@@ -847,7 +879,7 @@ class FilePrefs(UserPrefs):
     # FILE PREFS
     ##########################
 
-    # GETTERS #####
+    #### GETTERS #####
 
     def getFilePref(self, filepath, pref_name):
         '''
@@ -863,7 +895,7 @@ class FilePrefs(UserPrefs):
         group = self.GROUP_FILE_PREFS + "/" + self.encodeGroupName(filepath)
         return self.getValues(group)
 
-    # SETTERS #####
+    #### SETTERS #####
 
     def setFilePref(self, filepath, pref_name, value):
         '''
@@ -940,7 +972,7 @@ class UiFilePrefs(FilePrefs):
                                directory path)
 
 
-        file_widgets: list of Qt Widget objects to have settings saved/loaded for,
+        file_widgets: list of Qt Widget objects to have settings saved/loaded for, 
                       for EACH SCENE FILE that is opened.
         global_widgets: list of Qt Widget objects to have settings saved/loaded for to
                        be applied GLOBALLY (across all scene files)
@@ -955,9 +987,9 @@ class UiFilePrefs(FilePrefs):
 
     def getPref(self, pref_name, filepath=None, is_widget=False):
         '''
-        High level convenence function that returns the value for the given
-        preference name. If a filepath is given, return  the preference stored
-        for that specific file, otherwise return the global value.
+        High level convenence function that returns the value for the given 
+        preference name. If a filepath is given, return  the preference stored 
+        for that specific file, otherwise return the global value.  
 
         pref_name: str. The name of the preference, such as "Dont_bug_me",
 
@@ -982,7 +1014,7 @@ class UiFilePrefs(FilePrefs):
 
         filepath: str. The name of the file to return the preference values for.
                   If the filepath is not provided, then the global preferences will
-                  be returned.
+                  be returned.  
 
         filepath: str. The name of the file to return the preference value for.
 
@@ -998,7 +1030,7 @@ class UiFilePrefs(FilePrefs):
 
         return super(UiFilePrefs, self).getPrefs(filepath=filepath)
 
-    # SETTERS #####
+    #### SETTERS #####
 
     def setPref(self, pref_name, value, filepath=None, is_widget=False):
         '''
@@ -1107,7 +1139,7 @@ class UiFilePrefs(FilePrefs):
     # GLOBAL PREFS
     ##########################
 
-    # GETTERS #####
+    #### GETTERS #####
 
     def getGlobalWidgetPref(self, widget_name):
         '''
@@ -1123,7 +1155,7 @@ class UiFilePrefs(FilePrefs):
         '''
         return self.getValues(self.GROUP_GLOBAL_WIDGETS)
 
-    # SETTERS #####
+    #### SETTERS #####
 
     def setGlobalWidgetPref(self, widget_name, value):
         '''
@@ -1146,11 +1178,11 @@ class UiFilePrefs(FilePrefs):
     # FILE PREFS
     ##########################
 
-    # GETTERS #####
+    #### GETTERS #####
 
     def getFileWidgetPref(self, filepath, widget_name):
         '''
-        Return the preference for the given widget name for the given file
+        Return the preference for the given widget name for the given file 
 
         filepath: str. The filepath to get preferences for
         widget_name: the name of the widget object, e.g. "ui_frames_lnedt"
@@ -1160,7 +1192,7 @@ class UiFilePrefs(FilePrefs):
 
     def getFileWidgetPrefs(self, filepath):
         '''
-        Return all widget preferences for the given file
+        Return all widget preferences for the given file 
 
         filepath: str. The filepath to get preferences for
 
@@ -1168,7 +1200,7 @@ class UiFilePrefs(FilePrefs):
         group = self.GROUP_FILE_WIDGETS + "/" + self.encodeGroupName(filepath)
         return self.getValues(group)
 
-    # SETTERS #####
+    #### SETTERS #####
 
     def setFileWidgetPref(self, filepath, widget_name, value):
         '''
@@ -1202,7 +1234,7 @@ class UiFilePrefs(FilePrefs):
                 return widget
         raise Exception("Expected widget not found: %s" % widget_name)
 
-    # CLEAR PREFS ####
+    #### CLEAR PREFS ####
 
     # Clear GLOBAL prefs
     def clearGlobalPrefs(self):

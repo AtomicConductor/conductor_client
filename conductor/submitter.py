@@ -3,10 +3,13 @@ import functools
 import imp
 import inspect
 from itertools import groupby
+import getpass
+import json
 import logging
 import os
 import operator
 from pprint import pformat
+
 from Qt import QtGui, QtCore, QtWidgets
 import sys
 import traceback
@@ -17,8 +20,8 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG
-
-from conductor.lib import conductor_submit, pyside_utils, common, api_client, loggeria, package_utils
+from conductor.lib import api_client, common, submission, pyside_utils, loggeria, package_utils, uploader
+from conductor.lib.lsseq import seqLister
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -40,20 +43,20 @@ TODO:
 5. consider conforming all code to camel case (including .ui widgets).
 6. Consider adding validation to the base class so that inheritance can be used.
 7. tool tips for all widget fields
-8. What about the advanced options? ("Force Upload" and "Dependency Job" )
-9. what are the available commands for the "cmd" arg?
+8. what are the available commands for the "cmd" arg?
+
 
 '''
 
 
 class ConductorSubmitter(QtWidgets.QMainWindow):
-    '''
+    ''' 
     Base class for PySide front-end for submitting jobs to Conductor.
 
-    Intended to be subclassed for each software context that may need a Conductor
+    Intended to be subclassed for each software context that may need a Conductor 
     front end e.g. for Maya or Nuke.
 
-    The self.getExtendedWidget method acts as an opportunity for a developer to extend
+    The self.getExtendedWidget method acts as an opportunity for a developer to extend 
     the UI to suit his/her needs. See the getExtendedWidgetthe docstring
 
         '''
@@ -69,7 +72,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     # The instance type that is set by default in the UI. This integer
     # corresponds to the core count of the conductor instance type
-    default_instance_type = 16
+    default_instance_type = "n1-standard-16"
 
     link_color = "rgb(200,100,100)"
 
@@ -87,6 +90,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
+
+        self._instance_types = common.get_conductor_instance_types(as_dict=True)
 
         # Create widgets
         self.createUI()
@@ -209,9 +214,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self.ui_packages_splitter.setStretchFactor(0, 1)
         self.ui_packages_splitter.setStretchFactor(1, 2)
 
-        # Hide the widget that holds advanced settings. TODO: need to come back to this.
-        self.ui_advanced_wgt.hide()
-
         # Add the extended widget (must be implemented by the child class
         self._addExtendedWidget()
 
@@ -238,8 +240,12 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Set the radio button on for the start/end frames by default
         self.on_ui_start_end_rdbtn_toggled(True)
 
-        # Set the default instance type
-        self.setInstanceType(self.default_instance_type)
+        # Set the default instance type to one specified in user config, or user default value
+        # Note that user prefs will override this value (if one exists)
+        instance_type = CONFIG.get("instance_type") or self.default_instance_type
+        instance_type = self._instance_types.get(instance_type)
+        assert instance_type, "Invalid instance_type: %r" % instance_type
+        self.setInstanceType(instance_type)
 
         # Set the default project by querying the config
         default_project = CONFIG.get('project')
@@ -406,10 +412,10 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         Populate the Instance combobox with all of the available instance types
         '''
-        instance_types = common.get_conductor_instance_types()
+
         self.ui_instance_type_cmbx.clear()
-        for instance_info in instance_types:
-            self.ui_instance_type_cmbx.addItem(instance_info['description'], userData=instance_info)
+        for instance_type in sorted(self._instance_types.values(), key=operator.itemgetter("cores", "memory"), reverse=True):
+            self.ui_instance_type_cmbx.addItem(instance_type['description'], userData=instance_type)
 
     def populateProjectCmbx(self):
         '''
@@ -418,10 +424,16 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         for all projects
         '''
         self.ui_project_cmbx.clear()
-        projects = CONFIG.get("projects") or api_client.request_projects()
+        projects = CONFIG.get("projects") or api_client.get_projects(statuses=("active",))
         # sort alphabetically. may be unicode, so can't use str.lower directly
-        for project in sorted(projects, key=lambda x: x.lower()):
-            self.ui_project_cmbx.addItem(project)
+        for project in sorted(projects, key=lambda x: x["name"].lower()):
+            # ugh, convert project dict to a json string, otherwise PySide will throw an OverFlowError (due to long integers in the dict, such as 5654313976201216)
+            self.ui_project_cmbx.addItem(project["name"], userData=json.dumps(project))
+
+        # If there aren't any projects, warning the user via dialog box
+        if not projects:
+            message = "No Projects have been created. Please create a Project in Conductor's web dashboard"
+            pyside_utils.launch_message_box("No Projects exist", message, is_richtext=False, parent=self)
 
     def setFrameRange(self, start, end):
         '''
@@ -490,16 +502,16 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         return self.ui_chunk_size_spnbx.value()
 
-    def setInstanceType(self, core_count):
+    def setInstanceType(self, instance_type):
         '''
         Set the UI's "Instance Type" combobox.  This is done by specifying the
         core count int.
         '''
 
-        item_idx = self.ui_instance_type_cmbx.findData({"cores": core_count, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
+        item_idx = self.ui_instance_type_cmbx.findData(instance_type)
         if item_idx == -1:
-            raise Exception("Could not find combobox entry for core count: %s!"
-                            "This should never happen!" % core_count)
+            raise Exception("Could not find combobox entry for instance type: %s!"
+                            "This should never happen!" % instance_type)
         return self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
 
     def getInstanceType(self):
@@ -516,7 +528,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         return self.ui_preemptible_chkbx.isChecked()
 
     def setProject(self, project_str, strict=True):
-
         '''
         Set the UI's Project field
         '''
@@ -529,11 +540,28 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         self.ui_project_cmbx.setCurrentIndex(index)
 
-    def getProject(self):
+    def getLocation(self):
         '''
-        Return the UI's Projectj  field
+        Return the location from the CONFIG file, if any
         '''
-        return str(self.ui_project_cmbx.currentText())
+        return CONFIG.get("location")
+
+    def getProject(self, strict=True):
+        '''
+        Return the UI's Project  field
+        Note that the userdata  in the combobox is stored as a json string
+        (as opposed to a normal python dict) becuase PySide will throw an 
+        OverFlowError exception due to long integers contained in the dict, 
+        such as 5654313976201216).  jeez
+        '''
+        idx = self.ui_project_cmbx.currentIndex()
+        if idx is -1:
+            msg = "No project selected"
+            logger.warning(msg)
+            if strict:
+                raise Exception(msg)
+            return {}
+        return json.loads(self.ui_project_cmbx.itemData(idx))
 
     def setOutputDir(self, dirpath):
         '''
@@ -549,7 +577,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def getNotifications(self):
         '''
-        Return the UI's Notificaiton field
+        Return the UI's Notification field
         '''
         return str(self.ui_notify_lnedt.text())
 
@@ -559,10 +587,12 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         self.ui_notify_lnedt.setText(str(value))
 
-    def getScoutJobCheckbox(self):
+    def getScoutJobCheckbox(self, off_when_disabled=True):
         '''
         Return the checkbox value for the "Scout Job" checkbox
         '''
+        if off_when_disabled and not self.ui_scout_job_chkbx.isEnabled():
+            return False
         return self.ui_scout_job_chkbx.isChecked()
 
     def setScoutJobCheckbox(self, bool_):
@@ -570,34 +600,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         Set the checkbox value for the "Scout Job" checkbox
         '''
         return self.ui_scout_job_chkbx.setChecked(bool_)
-
-    def generateConductorArgs(self, data):
-        '''
-        Return a dictionary which contains the necessary conductor argument names
-        and their values.  This dictionary will ultimately be passed directly
-        into a conductor Submit object when instantiating/calling it.
-
-        Generally, the majority of the values that one would populate this dictionary
-        with would be found by quering this UI, e.g.from the "frames" section of ui.
-
-        '''
-        conductor_args = {}
-
-        conductor_args["cores"] = self.getInstanceType()['cores']
-        conductor_args["environment"] = self.getEnvironment()
-        conductor_args["force"] = self.getForceUploadBool()
-        conductor_args["chunk_size"] = self.getChunkSize()
-        conductor_args["job_title"] = self.getJobTitle()
-        conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["machine_type"] = self.getInstanceType()['flavor']
-        conductor_args["preemptible"] = self.getPreemptibleCheckbox()
-        conductor_args["notify"] = self.getNotifications()
-        conductor_args["output_path"] = self.getOutputDir()
-        conductor_args["project"] = self.getProject()
-        conductor_args["scout_frames"] = self.getScoutFrames()
-        conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
-
-        return conductor_args
 
     def getDockerImage(self):
         '''
@@ -621,6 +623,12 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         return package_utils.merge_package_environments(selected_packages,
                                                         base_env=config_environment)
 
+    def getMetadata(self):
+        '''
+        Return the metada from the CONFIG file, if any
+        '''
+        return CONFIG.get("metadata") or {}
+
     def getSoftwarePackageIds(self):
         '''
         Return the software packages that the submitted job will have access to
@@ -633,42 +641,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         selected_package_ids = [package["package_id"] for package in self.getJobPackages()]
         return list(set(config_package_ids + selected_package_ids))
 
-    def getForceUploadBool(self):
-        '''
-        Return whether the "Force Upload" checkbox is checked on or off.
-        '''
-        return self.ui_force_upload_chkbx.isChecked()
-
-    def runConductorSubmission(self, data):
-        '''
-        Instantiate a Conductor Submit object with the given conductor_args
-        (dict), and execute it.
-        '''
-        # Generate a dictionary of arguments to feed conductor
-        conductor_args = self.generateConductorArgs(data)
-
-        # Print out the values for each argument
-        logger.debug("runConductorSubmission ARGS:")
-        for arg_name, arg_value in conductor_args.iteritems():
-            logger.debug("%s: %s", arg_name, arg_value)
-
-        return self._runSubmission(conductor_args)
-
-    @pyside_utils.wait_cursor
-    @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
-    def _runSubmission(self, conductor_args):
-        try:
-            submission = conductor_submit.Submit(conductor_args)
-            response, response_code = submission.main()
-
-        except:
-            title = "Job submission failure"
-            message = "".join(traceback.format_exception(*sys.exc_info()))
-            pyside_utils.launch_error_box(title, message, self)
-            raise
-        return response_code, response
-
-    def getLocalUpload(self):
+    def isLocalUpload(self):
         '''
         Return a bool indicating whether the uploading process should occur on
         this machine or whether it should get offloaded to the uploader daemon.
@@ -679,28 +652,35 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         return CONFIG.get("local_upload")
 
-    def launch_result_dialog(self, response_code, response):
+    def isUploadOnly(self):
+        '''
+        Return whether the "Upload Only" checkbox is checked on or off.
+        '''
+        return self.ui_upload_only_chkbx.isChecked()
 
-        # If the job submitted successfully
-        if response_code in SUCCESS_CODES_SUBMIT:
-            job_id = str(response.get("jobid") or 0).zfill(5)
-            title = "Job Submitted"
-            job_url = CONFIG['url'] + "/job/" + job_id
-            message = ('<html><head/><body><p>Job submitted: '
-                       '<a href="%s"><span style=" text-decoration: underline; '
-                       'color:%s;">%s</span></a></p></body></html>') % (job_url, self.link_color, job_id)
-            pyside_utils.launch_message_box(title, message, is_richtext=True, parent=self)
-        # All other response codes indicate a submission failure.
-        else:
-            title = "Job Submission Failure"
-            message = "Job submission failed: error %s" % response_code
-            pyside_utils.launch_error_box(title, message, parent=self)
+    def setUploadOnly(self, upload_only):
+        '''
+        Set the the "Upload Only" checkbox to the given upload_only value (bool)
+        '''
+        return self.ui_upload_only_chkbx.setChecked(bool(upload_only))
 
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
     def on_ui_start_end_rdbtn_toggled(self, on):
 
         self.ui_start_end_wgt.setEnabled(on)
         self.ui_custom_wgt.setDisabled(on)
+
+    @QtCore.Slot(bool, name="on_ui_upload_only_chkbx_toggled")
+    def on_ui_upload_only_chkbx_toggled(self, toggled):
+        '''
+        When the "Upload Only" checkbox is checked on, disable the frame
+        range box, Scout Job checkbox.   
+        When the the Upload Only checkobx is checked off, re-enable all of those
+        other widgets
+        '''
+        self.ui_framerange_grpbx.setDisabled(toggled)
+        self.ui_scout_job_chkbx.setDisabled(toggled)
+        self.ui_instance_wgt.setDisabled(toggled)
 
     @QtCore.Slot(name="on_ui_submit_pbtn_clicked")
     def on_ui_submit_pbtn_clicked(self):
@@ -712,7 +692,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         Below is the method calling order of when a user presses the "submit"
         button in the UI:
             1. self.runPreSubmission()         # Run any pre-submission processes.
-            2. self.runConductorSubmission()   # Run the submission process.
+            2. self.runSubmission()            # Run the submission process.
             3. self.runPostSubmission()        # Run any post-submission processes.
 
         Each one of these methods has the opportunity to return data, which in turn
@@ -721,12 +701,21 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         is also an available/appropriate methodology.
 
         '''
+
         try:
             if not self.validateJobPackages():
                 return
-            data = self.runPreSubmission()
-            response_code, response = self.runConductorSubmission(data)
-            self.runPostSubmission(response_code)
+
+            pre_data = self.runPreSubmission()
+            results = self.runSubmission(pre_data)
+
+            if self.isLocalUpload():
+                # Dummy uploader args.  This is an opportunity to inject uploader args
+                # that the UI may have dictated.
+                uploader_args = {}
+                uploader.run_upload(uploader_args, upload)
+
+            self.runPostSubmission(results)
 
             # Launch a dialog box what diesplays the results of the job submission
             self.launch_result_dialog(response_code, response)
@@ -736,18 +725,173 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def runPreSubmission(self):
         '''
-        Run any pre submission processes, returning optional data that can
-        be passed into the main runConductorSubmission method
+        Run any pre submission processes
         '''
-        return
 
-    def runPostSubmission(self, data):
+        # Validate the chosen software packages (if the job is not an upload_only job)
+        if not self.isUploadOnly():
+            if not self.validateJobPackages():
+                raise Exception("Failed package validation")
+
+    @pyside_utils.wait_cursor
+    @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
+    def runSubmission(self, pre_data):
         '''
-        Run any post submission processes.  The "data" argument contains the results
-        of the main runConductorSubmission method, so that any results can
+        Run the submission process and return its results. Catch all exceptions 
+        and pass them as results
+        '''
+        try:
+            return self.runSubmission_(pre_data)
+        except Exception as e:
+            logger.debug("Caught exception:\n", exc_info=sys.exc_info())
+            return e
+
+    def runSubmission_(self, pre_data):
+        '''
+
+        High level flow:
+
+            1. Gather metadata args
+            2. POST Metadata resource
+            3. Gather upload args
+            4. POST Upload resource
+            5. Gather Job args
+            6. POST Job resource
+            7. enqueue Job
+
+        Note that some of these steps are potentially optional. The only resource
+        that's required to POST during submission, is the Job.
+            - A job may or may not have Metadata
+            - A job may or may not have Upload (unusual, but a job may not have 
+              any file dependencies) - actually in the context of these submitters,
+              this isn't true.  It will at least need to upload the currently
+              open file/scene.
+            - A Job may or may not have a Task (in the case of an "upload only" job.
+
+
+
+        Submit one Job per render layer.  Each Job will use the same Upload object
+        so uploading and syncing occurs only once.
+
+
+        If the job is a local upload_job (meaning that the uploading will happen
+        right now, as opposed to handled by a daemon later), then the status
+        of the Upload should be set to invalid status.  Not until it's finished
+        uploading, should the status be changed to "server/sync pending".
+        If local_upload is False (meaning that the uploading will be handled
+        later by a daemon), then set the status of the Upload to "client_pending"
+        '''
+        # Prompt user for scout frames
+        scout_frames = self.getScoutFrames()
+
+        # Metadata resource
+        metadata_args = self.getMetadataArgs(pre_data)
+        metadata = submission.Metadata(metadata_args) if metadata_args else None
+        logger.debug("metadata: %s", metadata)
+
+        # Upload resource
+        upload_args = self.getUploadArgs(pre_data)
+        upload = submission.Upload(upload_args) if upload_args else None
+        logger.debug("upload: %s", upload)
+        if upload and metadata:
+            upload.add_metadata(metadata)
+
+        submissions_args = []
+
+        for job_args, tasks_args in self.getJobsArgs():
+
+            # Job Resource
+            job = submission.Job(job_args)
+            if metadata:
+                job.add_metadata(metadata)
+            if upload:
+                job.add_metadata(upload)
+            job.post()
+
+            # Task Resources
+            tasks = []
+            # Inject job, metadata resource IDs into each task
+            for task_args in tasks_args or []:
+                # Hold the task if scout frames have been indicated, and this task is not one of them
+                hold = True if scout_frames and not set(task_args.get("frames", [])).intersection(set([str(f) for f in scout_frames])) else False
+                task = submission.Task(task_args, hold=hold)
+                task.add_job(job)
+                if metadata:
+                    task.add_metadata(metadata)
+                tasks.append(task)
+
+            if tasks:
+                # Post Task resources in batch
+                task_batcher = submission.TasksBatch(tasks)
+                task_batcher.post()
+
+            # Identify if there were any scout frames and hold all other frames
+            submissions_args.append({"id": job.id, "hold": [task.id for task in tasks if task.hold]})
+
+        return self.submitJobs(submissions_args)
+
+    def getMetadataArgs(self, pre_data):
+        '''
+        Only return a dict if there is metadata, else return  None
+        '''
+        items = self.getMetadata()
+        if items:
+            return {"items": items}
+
+    def getUploadArgs(self, pre_data):
+        upload_paths = pre_data.get("upload_paths") or []
+
+        if upload_paths:
+            upload_args = {
+                "location": self.getLocation(),
+                "project_id": self.getProject()["id"],
+                "upload_paths": upload_paths,
+                "enforced_md5s": pre_data.get("enforced_md5s") or {},
+            }
+            return upload_args
+
+    def submitJobs(self, submissions_args):
+        submission_ = submission.Submit(submissions_args)
+        return submission_.post()
+
+    def runPostSubmission(self, results):
+        '''
+        Run any post submission processes.  The "data" argument contains the results 
+        of the main runSubmission method, so that any results can
         be "inspected" and acted upon if desired.
         '''
-        return
+        # Launch a dialog box what displays the results of the job submission
+        self.launchResultsDialog(results)
+
+    def launchResultsDialog(self, results):
+        logger.debug("results: %s", results)
+
+        if isinstance(results, Exception):
+            title = "Job submission failure"
+            pyside_utils.launch_error_box(title, str(results), self)
+            raise results
+
+        message = "\n".join([str(j) for j in results])
+        pyside_utils.launch_message_box("Jobs submitted", message, is_richtext=False, parent=self)
+        # Launch a dialog box what diesplays the results of the job submission
+#                 self.launch_result_dialog(response_code, response)
+#
+#         response, response_code = results
+#
+#         # If the job submitted successfully
+#         if response_code in SUCCESS_CODES_SUBMIT:
+#             job_id = str(response.get("jobid") or 0).zfill(5)
+#             title = "Job Submitted"
+#             job_url = CONFIG['url'] + "/job/" + job_id
+#             message = ('<html><head/><body><p>Job submitted: '
+#                        '<a href="%s"><span style=" text-decoration: underline; '
+#                        'color:%s;">%s</span></a></p></body></html>') % (job_url, self.link_color, job_id)
+#             pyside_utils.launch_message_box(title, message, is_richtext=True, parent=self)
+#         # All other response codes indicate a submission failure.
+#         else:
+#             title = "Job Submission Failure"
+#             message = "Job submission failed: error %s" % response_code
+#             pyside_utils.launch_error_box(title, message, parent=self)
 
     @pyside_utils.wait_cursor
     @QtCore.Slot(name="on_ui_refresh_tbtn_clicked")
@@ -769,6 +913,17 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             return "%s-%sx%s" % (self.getStartFrame(), self.getEndFrame(), self.getStepFrame())
         else:
             return self.getCustomFrameString()
+
+    def getFrames(self):
+        '''
+        Read the frames information from the gui and cast it to a list of 
+        integers 
+        '''
+        frames_str = self.getFrameRangeString()
+        try:
+            return seqLister.expandSeq(frames_str.split(","), None)
+        except:
+            raise Exception("Failed to cast Frames string %r to frame integers" % frames_str)
 
     def _validateCustomFramesText(self, text):
         '''
@@ -812,6 +967,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                                                     match_value=True,
                                                     property_value=True)
 
+    def isMultiJobSubmission(self):
+        return False
+
     def getSourceFilepath(self):
         '''
         Return the filepath for the currently open file. This is  the currently
@@ -832,7 +990,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             self.prefs.loadSubmitterUserPrefs(source_filepath)
         except:
             settings_filepath = self.prefs.getSettingsFilepath()
-
             message = ("Unable to apply user settings. "
                        "You may want to modify/delete settings here: %s" % settings_filepath)
             logger.exception(message)
@@ -863,7 +1020,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         Note that this is only relevant when local_upload=False.
 
         Return a dictionary of any filepaths and their corresponding md5 hashes
-        that should be verified before uploading to cloud storage.
+        that should be verified before uploading to cloud storage.  
 
         When local_upload is False, uploading files to cloud storage is handled
         by an uploader daemon. Because there can be a time delay between when
@@ -875,7 +1032,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         this three time).  Though this is probably not a great workflow,
         it's something that needs to be guarded against.
 
-        This method returns a dictionary of filepaths and and their corresponding
+        This method returns a dictionary of filepaths and and their corresponding 
         md5 hashes, which is used by the uploader daemon when uploading the files
         to conductor. The daemon will do its own md5 hash of all files in
         this dictionary,and match it against the md5s that the dictionary provides.
@@ -935,7 +1092,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def getScoutFrames(self):
         '''
-        If the "Scout Job" checkbox is checked, promput the user to ender desired scout frames.
+        If the "Scout Job" checkbox is checked, promput the user to enter desired scout frames.
         If the user has submitted scout frames in the past, then prepopulate those frames
         in the dialog box. Otherwise generate default scout frames
         '''
@@ -953,11 +1110,18 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
             # if the user cancelled
             if not ok:
-                raise UserCanceled()
+                raise UserCanceled("User canceled")
 
             # Record the scout frames specified to the user prefs
             self.prefs.setFileScoutFrames(source_filepath, scout_frames)
-            return scout_frames
+
+            # Convert the scout_frames string into a list of actual frame integers
+            try:
+                return seqLister.expandSeq(str(scout_frames).split(","), None)
+            except:
+                msg = "Failed to cast Scout Frames string %r to frame integers" % scout_frames
+                logger.exception(msg + "\n")
+                raise Exception(msg)
 
     def launchScoutFramesDialog(self, default_scout_frames):
         '''
@@ -1102,7 +1266,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         matched_packages = []
         unmatched_software = []
         for software_info in softwares_info:
-            # package_item = self.getBestPackage(software_info, tree_packages)
+            #             package_item = self.getBestPackage(software_info, tree_packages)
             package_id = software_info.get("package_id")
             package = self.software_packages.get(package_id)
             if not package:
@@ -1132,7 +1296,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self.prefs.setJobPackagesIds(filepath, package_ids)
 
     ###########################################################################
-    #  AVAILABLE SOFTWARE TREEWIDGET  - self.ui_software_versions_trwgt
+    # AVAILABLE SOFTWARE TREEWIDGET  - self.ui_software_versions_trwgt
     ###########################################################################
 
     @QtCore.Slot(name="on_ui_add_to_job_pbtn_clicked")
@@ -1150,7 +1314,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         Populate the QTreeWidget with all of the available software packages
 
-        This is a little tricky because packages can be plugins of other packages,
+        This is a little tricky because packages can be plugins of other packages, 
         and we want to represent that relations (via nesting).  We also want
         to group packages that are of the same type (and have them be able to
         expand/collpase that group.
@@ -1201,7 +1365,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self.ui_software_versions_trwgt.clear()
 
         # Query Conductor for all of it's software packages
-        software_packages = api_client.request_software_packages()
+        software_packages = api_client.get_software_packages()
 
         # Create a dictioary of the software packages so that they can be retried by ID
         self.software_packages = dict([(package["package_id"], package) for package in software_packages])
@@ -1216,14 +1380,14 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # TODO:(LWS) This really ought to be a more clever recursive function. This is currently hard coded for only two depth levels.
         for host_package in host_packages:
 
-            # # # TOP LEVEL PRODUCT GROUP ##
-            # product_name = host_package["product"]
-            # product_group_item = top_level_product_items.get(product_name)
-            # if not product_group_item:
-            #     product_group_item = QtWidgets.QTreeWidgetItem([product_name, ""])
-            #     product_group_item.product = product_name
-            #     top_level_product_items[product_name] = product_group_item
-            #     self.ui_software_versions_trwgt.addTopLevelItem(product_group_item)
+            #             # # TOP LEVEL PRODUCT GROUP ##
+            #             product_name = host_package["product"]
+            #             product_group_item = top_level_product_items.get(product_name)
+            #             if not product_group_item:
+            #                 product_group_item = QtWidgets.QTreeWidgetItem([product_name, ""])
+            #                 product_group_item.product = product_name
+            #                 top_level_product_items[product_name] = product_group_item
+            #                 self.ui_software_versions_trwgt.addTopLevelItem(product_group_item)
 
             # HOST PRODUCT PACKAGE ###
             host_package_item = self.createPackageTreeWidgetItem(host_package)
@@ -1351,6 +1515,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                                                    "minor_version",
                                                    "release_version",
                                                    "build_version"]]))
+
         tree_item = QtWidgets.QTreeWidgetItem([software_name, software_version])
         tree_item.package_id = package["package_id"]
         return tree_item
@@ -1411,7 +1576,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             self.ui_software_versions_trwgt.setItemSelected(tree_item, True)
 
     ###########################################################################
-    #  JOB SOFTWARE TREEWIDGET  - self.ui_job_software_trwgt
+    # JOB SOFTWARE TREEWIDGET  - self.ui_job_software_trwgt
     ###########################################################################
 
     @QtCore.Slot(name="on_ui_auto_detect_pbtn_clicked")
@@ -1517,7 +1682,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         job_packages = self.getJobPackages()
         job_package_ids = [p["package_id"] for p in job_packages]
 
-        # LOOK FOR DUPLICATE PACKAGES ###
+        ### LOOK FOR DUPLICATE PACKAGES ###
         duplicate_ids = set([x for x in job_package_ids if job_package_ids.count(x) > 1])
         duplicate_packages = [self.get_package_by_id(package_id) for package_id in duplicate_ids]
 
@@ -1531,7 +1696,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
             return False
 
-        # LOOK FOR MULTIPLE PRODUCT PACKAGES ###
+        ### LOOK FOR MULTIPLE PRODUCT PACKAGES ###
         packages_by_product = collections.defaultdict(list)
         for package in job_packages:
             packages_by_product[package["product"]].append(package)
@@ -1539,7 +1704,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         for product_packages in packages_by_product.values():
             if len(product_packages) > 1:
                 s_ = "- %s  (%s)" % (product_packages[0]["product"], " vs ".join([self._constructJobPackageStr(p)
-                                                                                 for p in product_packages]))
+                                                                                  for p in product_packages]))
                 duplicate_product_strs.append(s_)
 
         if duplicate_product_strs:
@@ -1551,7 +1716,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
             return False
 
-        # LOOK FOR PRESENCE OF A HOST PACKAGE ###
+        ### LOOK FOR PRESENCE OF A HOST PACKAGE ###
         for package in self.getJobPackages():
             if package["product"] == self.product:
                 break
@@ -1575,11 +1740,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 class SubmitterPrefs(pyside_utils.UiFilePrefs):
 
     '''
-    A class for interfacing with User preferences for the submitter UI.
-    This subclasses adds functionality that is specific to the Conductor submitter.
+    A class for interfacing with User preferences for the submitter UI.  
+    This subclasses adds functionality that is specific to the Conductor submitter. 
 
     Preference names:
-        scoutframes_str # str. The frames that the user set for scout frames
+        scoutframes_str # str. The frames that the user set for scout frames 
 
     Things to consider:
         1. Because preferences are optional/"superflous" they should NEVER break
@@ -1588,9 +1753,8 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
         2. Because the getting/setting of a preference may fail, be sure to model
            preferences in a way so that they will not result in dangerous behavior
            if they fail. i.e. don't allow the absense of a preference value cause
-           the user to default to doing something dangerous (such as submit a
-           high frame/corecount job)
-
+           the user to default to doing something dangerous (such as submit a 
+           high frame/corecount job) 
     '''
     # PREFERENCE NAMES (these the names that are used/written to the preference file (non widget)
     PREF_SCOUTFRAMES_STR = "scoutframes_str"
@@ -1601,7 +1765,7 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
         '''
         Load both the global and file-specific (e.g.nuke/maya file) user
         preferences for the UI widgets. This will reinstate any values on the
-        widgets that that were recorded on them from the last time.
+        widgets that that were recorded on them from the last time. 
 
         First load the global preferences, then load the file-specific prefs
         which will override and of the global prefs
@@ -1634,7 +1798,6 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
 
     @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
     def setFileScoutFrames(self, filepath, value):
-
         '''
         Set the user settings for:
             the frame/range to use for scout frames
@@ -1651,7 +1814,6 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
 
     @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
     def setJobPackagesIds(self, filepath, value):
-
         '''
         Set the user settings for:
             the frame/range to use for scout frames
@@ -1662,11 +1824,11 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
 class TaskFramesGenerator(object):
     '''
     This base class provides functionality to Job's command to be suitable
-    for execution for a single Task. The general idea is that the submitted job
-    command has subsitutable characters (args) that should be populated
-    differently for each task (e.g. so that each task renders different frames, etc).
+    for execution for a single Task. The general idea is that the submitted job 
+    command has subsitutable characters (args) that should be populated 
+    differently for each task (e.g. so that each task renders different frames, etc). 
 
-    Because every rendering software has it's own rendering command with differing
+    Because every rendering software has it's own rendering command with differing 
     arguments/syntax, this class is intendeded to be subclassed for each product.
 
     Specific problems that this class addresses:
@@ -1674,8 +1836,8 @@ class TaskFramesGenerator(object):
         1. Converting a job's "frame_range" argument into individual frames so
            that each task is allocated unique frame(s) to render.
 
-        2. Reading and applying those frames to the Task's render command
-           arguments. The render command syntax may be different for each product.
+        2. Reading and applying those frames to the Task's render command  
+           arguments. The render command syntax may be different for each product. 
 
         3. Taking into consideration the job's "chunk_size" argument so that
            a single Task can work on multiple frames.  This also includes interpreting
@@ -1730,8 +1892,7 @@ class TaskFramesGenerator(object):
         items:
             - a new command (str) that is appropriate to be executed by a task.
               (unique from the prior ones)
-            - a list of corresponding frames (ints) that the command will render
-
+            - a list of corresponding frames (ints) that the command will render 
             start_frame, end_frame, step, task_frames
         '''
         # Generate w new task command (from the outstanding/undispensed frames
@@ -1791,7 +1952,7 @@ class TaskFramesGenerator(object):
              [1, 2 ,3]  # multiple frames
              [1,2,3,40,100,101] # multiple frames (No common step. This can be problematic depending on the render command)
 
-        uniform_chunk_step: bool. If True, will only return a chunk of frames
+        uniform_chunk_step: bool. If True, will only return a chunk of frames 
                             that have a uniform step size between them.
 
 
@@ -1820,7 +1981,7 @@ class TaskFramesGenerator(object):
 
             # If all frames have been dispensed, return the chuck (which could be empty)
             if not self._undispensed_frames:
-                # logger.debug("all frames dispensed")
+                #                 logger.debug("all frames dispensed")
                 return task_frames
 
             next_frame = self._undispensed_frames[0]
@@ -1845,7 +2006,7 @@ class TaskFramesGenerator(object):
         Inspect the list of frames and derive what the "step" is between them. If
         more than one step is found, return the lowest and highest steps
 
-        e.g.
+        e.g. 
              FRAMES                    STEPS
              -------------------------------------------------
              [1,2,3,4]         ->      [1]      # one step count between frames (1)
@@ -1878,10 +2039,10 @@ class TaskFramesGenerator(object):
         '''
         Separate the given list of frames into groups(sublists) of contiguous frames/
 
-        e.g. [1,2,3,15,16,17,21,85] --> [(1,2,3),(15,16,17), (21), (85)]
+        e.g. [1,2,3,15,16,17,21,85] --> [(1,2,3),(15,16,17), (21), (85)] 
 
         if ends_only==True, return only first and last frames of each group (i.e. "bookends only")
-            e.g. [(1,3),(15,17), (21), (85)]
+            e.g. [(1,3),(15,17), (21), (85)] 
 
         taken from: http://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
         '''
@@ -1899,6 +2060,69 @@ class UserCanceled(Exception):
     '''
     Custom Exception to indicate that the user cancelled their action
     '''
+
+
+class CheckBoxInstancesTreeWidget(pyside_utils.HeaderStateTreeWidgetMixin, pyside_utils.CheckBoxTreeWidget):
+
+    # The index of the QTreeWidgetItem that contains the Instance Types QComboBox
+    instance_cmbx_item_idx = 1
+    preemptible_chkbx_idx = 2
+
+    def __init__(self, instance_types, parent=None):
+        self._instance_types = instance_types
+        pyside_utils.CheckBoxTreeWidget.__init__(self, parent=parent)
+
+    def _make_context_menu(self, selected_item):
+        menu = super(CheckBoxInstancesTreeWidget, self)._make_context_menu(selected_item)
+
+        menu.addSeparator()
+
+        instance_type_menu = QtWidgets.QMenu("Set Instance Type")
+        menu.addMenu(instance_type_menu)
+
+        for instance_type in sorted(self._instance_types.values(), key=operator.itemgetter("cores", "memory"), reverse=True):
+            # "check all" menu item
+            action = instance_type_menu.addAction(self.checked_icon, instance_type["description"],
+                                                  lambda instance_type=instance_type: self._setItemInstanceType(instance_type, highlighted=True))
+            action.setIconVisibleInMenu(False)
+        return menu
+
+    def addTopLevelCheckboxInstanceItem(self, tree_item, is_checked=False):
+        '''
+        Add the given QTreeWidgetItem as a top level widget and add a checkbox
+        to it. 
+        '''
+        super(CheckBoxInstancesTreeWidget, self).addTopLevelCheckboxItem(tree_item, is_checked=is_checked)
+
+        instance_type_cmbx = QtWidgets.QComboBox(self)
+        for instance_type in sorted(self._instance_types.values(), key=operator.itemgetter("cores", "memory"), reverse=True):
+            instance_type_cmbx.addItem(instance_type['description'], userData=instance_type)
+
+        self.setItemWidget(tree_item, self.instance_cmbx_item_idx, instance_type_cmbx)
+
+        preemptible_chkbx = QtWidgets.QCheckBox(self)
+        self.setItemWidget(tree_item, self.preemptible_chkbx_idx, preemptible_chkbx)
+
+    def _getItemInstanceCombobox(self, item):
+        return self.itemWidget(item, self.instance_cmbx_item_idx)
+
+    def _setItemInstanceType(self, instance_type, highlighted=None):
+        '''
+        '''
+        for item in self.getRowItems(highlighted=highlighted):
+            cmbx = self._getItemInstanceCombobox(item)
+            cmbx_idx = cmbx.findData(instance_type)
+            if cmbx_idx == -1:
+                raise Exception("Instance type %r not found in Combobox!" % instance_type)
+            cmbx.setCurrentIndex(cmbx_idx)
+
+    def getItemInstanceType(self, item):
+        cmbx = self.itemWidget(item, self.instance_cmbx_item_idx)
+        return cmbx.itemData(cmbx.currentIndex())
+
+    def getItemPreemptible(self, item):
+        chkbx = self.itemWidget(item, self.preemptible_chkbx_idx)
+        return chkbx.isChecked()
 
 
 if __name__ == "__main__":

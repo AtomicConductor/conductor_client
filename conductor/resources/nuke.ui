@@ -6,110 +6,76 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>166</width>
-    <height>258</height>
+    <width>199</width>
+    <height>257</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>10</number>
+   </property>
    <property name="margin">
     <number>0</number>
    </property>
    <item>
-    <widget class="QGroupBox" name="ui_write_nodes_grpbx">
-     <property name="title">
-      <string/>
+    <widget class="QSplitter" name="splitter">
+     <property name="styleSheet">
+      <string notr="true">QSplitter::handle:vertical {
+background: qlineargradient(x1:0, y1:0, x2:0, y2:1 ,
+												       stop:0 rgba(0, 0, 1, 0),
+												       stop:0.1 rgba(0, 0, 0, 0),
+                                                     stop:0.4 rgba(0, 0, 0, 25), 
+												       stop:0.6 rgba(0, 0, 0, 25), 
+												       stop:0.9 rgba(0, 0, 0, 0), 
+ 												       stop:1 rgba(0, 0, 0, 0)); 
+    height: 1px;
+}
+QSplitter::handle {
+margin-top: 4px;
+margin-bottom: 4px}</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <property name="spacing">
-       <number>-1</number>
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <widget class="QGroupBox" name="ui_views_grpbx">
+      <property name="styleSheet">
+       <string notr="true"/>
       </property>
-      <property name="rightMargin">
-       <number>12</number>
+      <property name="title">
+       <string>Views</string>
       </property>
-      <item>
-       <widget class="QLabel" name="label_2">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Views</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QTreeWidget" name="ui_views_trwgt">
-        <property name="selectionMode">
-         <enum>QAbstractItemView::ExtendedSelection</enum>
-        </property>
-        <property name="indentation">
-         <number>0</number>
-        </property>
-        <property name="headerHidden">
-         <bool>true</bool>
-        </property>
-        <column>
-         <property name="text">
-          <string notr="true">1</string>
+      <layout class="QVBoxLayout" name="verticalLayout_3" stretch=""/>
+     </widget>
+     <widget class="QGroupBox" name="ui_write_nodes_grpbx">
+      <property name="toolTip">
+       <string>Choose the render layers to submit for rendering (green check)</string>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
+      <property name="title">
+       <string>Write Nodes</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QCheckBox" name="ui_write_node_jobs_chkbx">
+         <property name="toolTip">
+          <string>Indicates whether each render layer should be rendered as a separate Job (as opposed to rendering all layers in a single Job).  Separating layers into their own discrete jobs allows for greater parallization as well as memory efficiency during execution.</string>
          </property>
-        </column>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="label">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Write Nodes</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QTreeWidget" name="ui_write_nodes_trwgt">
-        <property name="selectionMode">
-         <enum>QAbstractItemView::ExtendedSelection</enum>
-        </property>
-        <property name="indentation">
-         <number>0</number>
-        </property>
-        <property name="headerHidden">
-         <bool>true</bool>
-        </property>
-        <column>
          <property name="text">
-          <string notr="true">Write Node</string>
+          <string>One Job per Write node?</string>
          </property>
-        </column>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="ui_upload_only">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="toolTip">
-         <string>Only upload dependencies. Don't submit render job</string>
-        </property>
-        <property name="text">
-         <string>Upload Only</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>ui_write_nodes_trwgt</tabstop>
-  <tabstop>ui_upload_only</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>
