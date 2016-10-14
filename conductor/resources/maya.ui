@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>145</width>
-    <height>59</height>
+    <height>36</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -24,12 +24,15 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QCheckBox" name="ui_upload_only">
+       <widget class="QCheckBox" name="ui_layer_jobs_chkbx">
         <property name="toolTip">
-         <string>Only upload dependencies. Don't submit render job</string>
+         <string>Indicates whether each render layer should be rendered as a separate Job (as opposed to rendering all layers in a single Job).  Separating layers into their own discrete jobs allows for greater parallization as well as memory efficiency during execution.</string>
         </property>
         <property name="text">
-         <string>Upload Only</string>
+         <string>Separate Job per Layer</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -38,9 +41,6 @@
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>ui_upload_only</tabstop>
- </tabstops>
  <resources>
   <include location="../submitter_maya_resources.qrc"/>
  </resources>

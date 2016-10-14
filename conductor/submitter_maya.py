@@ -2,6 +2,7 @@
 import os
 import imp
 import logging
+from pprint import pformat
 import sys
 import uuid
 from PySide import QtGui, QtCore
@@ -14,7 +15,7 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG, submitter
-from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria, package_utils
+from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria, package_utils, conductor_submit
 
 '''
 TODO: 
@@ -85,23 +86,11 @@ class MayaWidget(QtGui.QWidget):
                 selected_layers.append(item.text(0))
         return selected_layers
 
-
-    def getUploadOnlyBool(self):
+    def isRenderLayerJobs(self):
         '''
-        Return whether the "Upload Only" checkbox is checked on or off.
+        Return
         '''
-        return self.ui_upload_only.isChecked()
-
-
-    @QtCore.Slot(bool, name="on_ui_upload_only_toggled")
-    def on_ui_upload_only_toggled(self, toggled):
-        '''
-        when the "Upload Only" checkbox is checked on, disable the Render 
-        Layers widget. when the "Upload Only" checkbox is checked off, enable
-        the Render Layers widget.
-        '''
-        self.ui_render_layers_trwgt.setDisabled(toggled)
-
+        return self.ui_layer_jobs_chkbx.isChecked()
 
 class MayaConductorSubmitter(submitter.ConductorSubmitter):
     '''
@@ -156,30 +145,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def getExtendedWidget(self):
         return MayaWidget()
 
-    def generateConductorCmd(self):
-        '''
-        Return the command string that Conductor will execute.
-
-        
-        example:
-            "Render -rd /tmp/render_output/ <frame_args> -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
-
-        The <frame_args> portion of the command will have values substitited into
-        into it by conductor (when the job is submitted).  These values will be
-        dictated by the "frames" argument.
-        '''
-        base_cmd = "Render -rd /tmp/render_output/ <frame_args> %s %s"
-        render_layers = self.extended_widget.getSelectedRenderLayers()
-        render_layer_args = "-rl " + ",".join(render_layers)
-        maya_filepath = self.getSourceFilepath()
-
-        # Strip the lettered drive from the filepath (if one exists).
-        # This is a hack to allow a Windows filepath to be properly used
-        # as an argument in a linux shell on the backend. Not pretty.
-        maya_filepath_nodrive = os.path.splitdrive(maya_filepath)[-1]
-
-        cmd = base_cmd % (render_layer_args, maya_filepath_nodrive)
-        return cmd
 
 
     def collectDependencies(self):
@@ -238,11 +203,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return plugins_info
 
 
+
     def runPreSubmission(self):
         '''
-        Override the base class (which is an empty stub method) so that a 
-        validation pre-process can be run.  If validation fails, then indicate
-        that the the submission process should be aborted.   
+        Override the base class so that a validation pre-process can be run.  
         
         We also collect dependencies  at this point and pass that
         data along...
@@ -251,9 +215,12 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         again (after validation succeeds), we also pass the depenencies along
         in the returned dictionary (so that we don't need to collect them again).
         '''
+        # Call the parent presubmission method
+        super(MayaConductorSubmitter, self).runPreSubmission()
 
-        raw_dependencies = self.collectDependencies()
 
+        # collect a list of paths to upload.
+        upload_paths = self.collectDependencies()
 
         # If uploading locally (i.e. not using  uploader daemon
         if self.getLocalUpload():
@@ -264,10 +231,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             enforced_md5s = self.getEnforcedMd5s()
 
         # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
-        raw_dependencies.extend(enforced_md5s.keys())
-
-        # Process all of the dependendencies. This will create a dictionary of dependencies, and whether they are considred Valid or not (bool)
-        dependencies = file_utils.process_dependencies(raw_dependencies)
+        upload_paths.extend(enforced_md5s.keys())
 
 
         # If the renderer is arnold and "use .tx files is enabled", then add corresponding tx files.
@@ -275,18 +239,221 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # software-specific behavior. We're going to need start seperating behavior via classes (perhaps
         # one for each renderer type?)
         if maya_utils.is_arnold_renderer() and maya_utils.is_arnold_tx_enabled():
-            tx_filepaths = file_utils.get_tx_paths(dependencies.keys(), existing_only=True)
-            processed_tx_filepaths = file_utils.process_dependencies(tx_filepaths)
-            dependencies.update(processed_tx_filepaths)
+            tx_filepaths = file_utils.get_tx_paths(upload_paths, existing_only=True)
+            processed_tx_filepaths = file_utils.process_upload_filepaths(tx_filepaths)
+            upload_paths.update(processed_tx_filepaths)
 
-        raw_data = {"dependencies":dependencies}
+        # Validate the upload paths
+        self.validateUploadPaths(upload_paths)
 
-        is_valid = self.runValidation(raw_data)
-        return {"abort":not is_valid,
-                "dependencies":dependencies,
+
+        return {"upload_paths":upload_paths,
                 "enforced_md5s":enforced_md5s}
 
-    def getJobTitle(self):
+
+
+    def getUploadFiles(self, upload_paths, enforced_md5s):
+        '''
+        Parse/resolve all of the given upload paths (directories, path expressions
+        files) to full filepaths.
+        Generate a dictionary where the key is the filepath, and the value is
+        the md5 of the file (or None if there is no md5 enforcement) 
+        '''
+
+        processed_filepaths = file_utils.process_upload_filepaths(upload_paths)
+
+        # Convert the list of filepaths into a dictionary where all the values are None
+        upload_files = dict([(path, None) for path in processed_filepaths])
+
+        # process the enforced filepaths to ensure they exist/conform
+        for md5, filepath in enforced_md5s.iteritems():
+            processed_filepath = file_utils.process_upload_filepath(filepath)
+            # this will always be a list. make sure that only one file is in this list
+            # so that a single md5 value can corellate to it
+            assert len(processed_filepath) == 1, "Found more than one file for path: %s\nGot: %s" % (filepath, processed_filepath)
+            upload_files[processed_filepath[0]] = md5
+
+        return upload_files
+
+
+
+    def runSubmission_(self, pre_data):
+        '''
+        Submit one Job per render layer.  Each Job will use the same Upload object
+        so uploading and syncing occurs only once.
+        
+        
+        If the job is a local upload_job (meaning that the uploading will happen
+        right now, as opposed to handled by a daemon later), then the status
+        of the Upload should be set to invalid status.  Not until it's finished
+        uploading, should the status be changed to "server/sync pending".
+        If local_upload is False (meaning that the uploading will be handled
+        later by a daemon), then set the status of the Upload to "client_pending"
+        '''
+
+        args = self.generateSubmissionArgs()
+
+        project_id = "%s|%s" % (CONFIG["account"], args["project"])
+
+        # Grab the file dependencies from data (note that this comes from the presubmission phase
+        upload_files = self.getUploadFiles(upload_paths=pre_data.get("upload_paths") or [],
+                                           enforced_md5s=pre_data.get("enforced_md5s") or {})
+
+        metadata_id = None
+        if args.get("metadata"):
+            logger.info("Creating metadata...")
+            logger.debug("metadata args\n: %s", pformat(args["metadata"]))
+            metadata = api_client.MetadataResource.post(args["metadata"])
+            logger.debug("metadata: %s", metadata)
+            metadata_id = metadata['id']
+
+
+        upload_id = None
+        if upload_files:
+            # If there are upload files provided, then create an Upload resource
+
+            # Get the total bytes of all files that are part of the job
+            logger.info("Calculating upload files size...")
+            total_size = sum([os.stat(f).st_size for f in  upload_files.keys()])
+
+            upload_args = {"location": args.get("location"),
+                           "metadata": metadata_id,
+                           "owner": args["owner"],
+                           "project": project_id,
+                           "status": conductor_submit.STATUS_UNINITIALIZED,
+                           "metadata": metadata_id,
+                           "total_size":total_size,
+                           "upload_files": upload_files}
+
+            logger.debug("upload_args\n: %s", pformat(upload_args))
+            upload = api_client.UploadResource.post(upload_args)
+            logger.debug("upload: %s", upload)
+            upload_id = upload["id"]
+
+
+        render_layers = self.extended_widget.getSelectedRenderLayers()
+
+        job_args = {"chunk_size":   args.get("chunk_size"),
+                    "docker_image": args.get("docker_image"),
+                    "environment":  args.get("environment"),
+                    "frame_padding":args.get("frame_padding"),
+                    "frame_range":  args.get("frame_range"),
+                    "instance_type":args.get("instance_type"),
+                    "location":     args.get("location"),
+                    "max_instances":args.get("max_instances"),
+                    "metadata":     metadata_id,
+                    "notify":       args.get("notify"),
+                    "owner":        args.get("owner"),
+                    "output_path":  args.get("output_path"),
+                    "priority":     args.get("priority"),
+                    "project":      project_id,
+                    "scout_frames": args.get("scout_frames"),
+                    "software_packages": args.get("software_packages"),
+                    "upload":       upload_id}
+
+        job_ids = []
+
+        # Submit the first job
+
+        if self.extended_widget.isRenderLayerJobs() and not self.upload_only:
+
+            print " Submitting Render Layer Jobs"
+            for render_layer in render_layers:
+                logger.debug("render_layer: %s", render_layer)
+
+
+                job_args["command"] = self.getCommand(render_layers=[render_layer])
+                job_args["job_title"] = self.getJobTitle(render_layers=[render_layer])
+
+                print " Submitting Render layer Job: "
+                job = api_client.JobResource.post(job_args)
+                logger.debug("job: %s", job)
+                job_ids.append(job["id"])
+
+        else:
+            command = self.getCommand(render_layers=render_layers)
+            logger.debug("command: %s", command)
+
+            job_title = self.getJobTitle(render_layers=[render_layer])
+            logger.debug("job_title: %s", job_title)
+
+            args = cls.consume_args(inherit_config, **kwargs)
+            submission = cls(**args)
+            jobs_resources.append(submission.create_resources())
+
+
+        if upload_id:
+            if self.args.local_upload:
+                job_status = "uploading"
+            else:
+                job_status = "upload_pending"
+        else:
+            logger.warning("No upload created for job")
+            job_status = "pending"
+
+        job_ids = [job_resources["job"]["id"] for job_resources in jobs_resources]
+
+        return conductor_submit.Submission.initialize_jobs(job_ids, job_status)
+
+
+    def generateSubmissionArgs(self):
+        '''
+        Return a dictionary which contains the necessary conductor argument names
+        and their values.  This dictionary will ultimately be passed directly 
+        into a conductor Submit object when instantiating/calling it.
+        
+        Generally, the majority of the values that one would populate this dictionary
+        with would be found by quering this UI, e.g.from the "frames" section of ui.
+           
+        '''
+        args = {}
+        args["project"] = self.getProject()
+        args["notify"] = self.getNotifications()
+        args["local_upload"] = self.getLocalUpload()
+
+        if self.getUploadOnly():
+            args["upload_only"] = self.getUploadOnly()
+        else:
+            args["cores"] = self.getInstanceType()['cores']
+            args["environment"] = self.getEnvironment()
+            args["frames"] = self.getFrameRangeString()
+            args["chunk_size"] = self.getChunkSize()
+            args["machine_type"] = self.getInstanceType()['flavor']
+            args["output_path"] = self.getOutputDir()
+            args["scout_frames"] = self.getScoutFrames()
+            args["software_package_ids"] = self.getSoftwarePackageIds()
+
+
+
+        return args
+
+
+    def getCommand(self, render_layers=()):
+        '''
+        Return the command string that Conductor will execute.
+
+        
+        example:
+            "Render -rd /tmp/render_output/ <frame_args> -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
+
+        The <frame_args> portion of the command will have values substitited into
+        into it by conductor (when the job is submitted).  These values will be
+        dictated by the "frames" argument.
+        '''
+        base_cmd = "Render -rd /tmp/render_output/ <frame_args> %s %s"
+        render_layer_args = "-rl " + ",".join(render_layers)
+        maya_filepath = self.getSourceFilepath()
+
+        # Strip the lettered drive from the filepath (if one exists).
+        # This is a hack to allow a Windows filepath to be properly used
+        # as an argument in a linux shell on the backend. Not pretty.
+        maya_filepath_nodrive = os.path.splitdrive(maya_filepath)[-1]
+
+        cmd = base_cmd % (render_layer_args, maya_filepath_nodrive)
+        return cmd
+
+
+    def getJobTitle(self, render_layers=()):
         '''
         Generate and return the title to be given to the job.  This is the title
         that will be displayed in the webUI.
@@ -300,8 +467,11 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         
         example: "MAYA - my_maya_scene.ma - beauty, shadow, spec"
         '''
+        logger.debug("render_layers: %s", render_layers)
+
         maya_filepath = self.getSourceFilepath()
         _, maya_filename = os.path.split(maya_filepath)
+
 
         # Cross-reference all renderable renderlayers in the maya scene with
         # the renderlayers that the user has selected in the UI.  If there is
@@ -309,7 +479,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # it is assumed that all will be rendered).  If there is not a 1:1
         # match, then add the render layers to the title which the user has
         # selected in the UI
-        selected_render_layers = self.extended_widget.getSelectedRenderLayers()
 
         all_renderable_layers = []
         for render_layer_info in maya_utils.get_render_layers_info():
@@ -317,77 +486,34 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                 all_renderable_layers.append(render_layer_info['layer_name'])
 
         # If all render layers are being rendered, then don't specify them in the job title
-        if set(all_renderable_layers) == set(selected_render_layers):
+        if set(all_renderable_layers) == set(render_layers):
             render_layer_str = ""
         # Otherwise specify the user-selected layers in the job title
         else:
-            render_layer_str = " - " + ", ".join(selected_render_layers)
+            render_layer_str = " - " + ", ".join(render_layers)
 
         title = "MAYA - %s%s" % (maya_filename, render_layer_str)
         return title
 
 
-    def runValidation(self, raw_data):
+    def validateUploadPaths(self, upload_paths):
         '''
-        This is an added method (i.e. not a base class override), that allows
-        validation to occur when a user presses the "Submit" button. If the
-        validation fails, a notification dialog appears to the user, halting
-        the submission process. 
-        
-        Validate that the data being submitted is...valid.
-        
-        1. Dependencies
-        2. Output dir
+        Validate the given paths to upload. If the validation fails, 
+        launch a dialog box and raise an exception.
+
         '''
 
-        # ## Validate that all filepaths exist on disk
-        dependencies = raw_data["dependencies"]
+        validation = file_utils.validate_paths(upload_paths)
 
         # IF there are any error messages (stored in the dict values)
-        if any(dependencies.values()):
+        if any(validation.values()):
             message = ""
-            for _, error_message in dependencies.iteritems():
+            for _, error_message in validation.iteritems():
                 if error_message:
                     message += "\n%s" % error_message
 
             pyside_utils.launch_error_box("Invalid file paths!", message, parent=self)
             raise Exception(message)
-
-        return True
-
-
-    def generateConductorArgs(self, data):
-        '''
-        Override this method from the base class to provide conductor arguments that 
-        are specific for Maya.  See the base class' docstring for more details.
-
-        '''
-        # Get the core arguments from the UI via the parent's  method
-        conductor_args = super(MayaConductorSubmitter, self).generateConductorArgs(data)
-
-        # Construct the maya-specific command
-        conductor_args["cmd"] = self.generateConductorCmd()
-
-        # Get the maya-specific environment
-        conductor_args["environment"] = self.getEnvironment()
-
-        # Grab the enforced md5s files from data (note that this comes from the presubmission phase
-        conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
-
-        conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
-        # Grab the file dependencies from data (note that this comes from the presubmission phase
-        conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
-        return conductor_args
-
-
-    def runConductorSubmission(self, data):
-
-        # If an "abort" key has a True value then abort submission
-        if data.get("abort"):
-            logger.warning("Conductor: Submission aborted")
-            return data
-
-        return super(MayaConductorSubmitter, self).runConductorSubmission(data)
 
 
     def getSourceFilepath(self):

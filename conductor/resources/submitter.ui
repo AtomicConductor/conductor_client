@@ -487,10 +487,7 @@
           <property name="title">
            <string>Conductor Options</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_20">
-           <property name="bottomMargin">
-            <number>9</number>
-           </property>
+          <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
             <widget class="QWidget" name="ui_instance_type_wgt" native="true">
              <property name="toolTip">
@@ -561,47 +558,52 @@
              </layout>
             </widget>
            </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QWidget" name="ui_advanced_wgt" native="true">
-          <layout class="QVBoxLayout" name="verticalLayout_7">
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
            <item>
-            <widget class="QCheckBox" name="ui_force_upload_chkbx">
-             <property name="text">
-              <string>Force Upload</string>
+            <widget class="QWidget" name="ui_upload_only_wgt" native="true">
+             <property name="toolTip">
+              <string>Only upload dependencies. Don't submit render job</string>
              </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QWidget" name="widget_8" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <property name="spacing">
+               <number>6</number>
+              </property>
               <property name="margin">
                <number>0</number>
               </property>
               <item>
                <widget class="QLabel" name="label">
                 <property name="text">
-                 <string>Dependency Job</string>
+                 <string>Upload Only</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="lineEdit"/>
+               <spacer name="horizontalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="ui_upload_only_chkbx">
+                <property name="layoutDirection">
+                 <enum>Qt::RightToLeft</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
               </item>
              </layout>
             </widget>
            </item>
           </layout>
-          <zorder>widget_8</zorder>
-          <zorder>ui_force_upload_chkbx</zorder>
          </widget>
         </item>
         <item>
@@ -617,10 +619,6 @@
          </widget>
         </item>
        </layout>
-       <zorder>ui_advanced_wgt</zorder>
-       <zorder>ui_framerange_grpbx</zorder>
-       <zorder>ui_framerange_grpbx_2</zorder>
-       <zorder>ui_extended_container_wgt</zorder>
       </widget>
       <widget class="QWidget" name="ui_advanced_tab">
        <attribute name="title">
@@ -1030,8 +1028,6 @@ tasks before deciding to execute the job's remaining tasks.
   <tabstop>ui_start_frame_lnedt</tabstop>
   <tabstop>ui_end_frame_lnedt</tabstop>
   <tabstop>ui_step_frame_spnbx</tabstop>
-  <tabstop>ui_force_upload_chkbx</tabstop>
-  <tabstop>lineEdit</tabstop>
   <tabstop>ui_refresh_tbtn</tabstop>
  </tabstops>
  <resources>

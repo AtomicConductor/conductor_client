@@ -34,13 +34,14 @@ _ui_instance = None
 
 '''
 TODO:
+TODO:
 1. Create qt resource package or fix filepaths for all images to be set during code execution
 2. about menu? - provide link to studio's conductor url (via yaml config file) 
 5. consider conforming all code to camel case (including .ui widgets). 
 6. Consider adding validation to the base class so that inheritance can be used.
 7. tool tips for all widget fields
-8. What about the advanced options? ("Force Upload" and "Dependency Job" )
-9. what are the available commands for the "cmd" arg?
+8. what are the available commands for the "cmd" arg?
+
 
 '''
 
@@ -213,10 +214,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         self.ui_packages_splitter.setStretchFactor(0, 1)
         self.ui_packages_splitter.setStretchFactor(1, 2)
-
-
-        # Hide the widget that holds advanced settings. TODO: need to come back to this.
-        self.ui_advanced_wgt.hide()
 
         # Add the extended widget (must be implemented by the child class
         self._addExtendedWidget()
@@ -573,10 +570,13 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         self.ui_notify_lnedt.setText(str(value))
 
-    def getScoutJobCheckbox(self):
+
+    def getScoutJobCheckbox(self, off_when_disabled=True):
         '''
         Return the checkbox value for the "Scout Job" checkbox 
         '''
+        if off_when_disabled and not self.ui_scout_job_chkbx.isEnabled():
+            return False
         return self.ui_scout_job_chkbx.isChecked()
 
     def setScoutJobCheckbox(self, bool_):
@@ -585,41 +585,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         return self.ui_scout_job_chkbx.setChecked(bool_)
 
-    def generateConductorArgs(self, data):
-        '''
-        Return a dictionary which contains the necessary conductor argument names
-        and their values.  This dictionary will ultimately be passed directly 
-        into a conductor Submit object when instantiating/calling it.
-        
-        Generally, the majority of the values that one would populate this dictionary
-        with would be found by quering this UI, e.g.from the "frames" section of ui.
-           
-        '''
-        conductor_args = {}
-
-        conductor_args["cores"] = self.getInstanceType()['cores']
-        conductor_args["environment"] = self.getEnvironment()
-        conductor_args["force"] = self.getForceUploadBool()
-        conductor_args["frames"] = self.getFrameRangeString()
-        conductor_args["chunk_size"] = self.getChunkSize()
-        conductor_args["job_title"] = self.getJobTitle()
-        conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["machine_type"] = self.getInstanceType()['flavor']
-        conductor_args["notify"] = self.getNotifications()
-        conductor_args["output_path"] = self.getOutputDir()
-        conductor_args["project"] = self.getProject()
-        conductor_args["scout_frames"] = self.getScoutFrames()
-        conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
-
-        return conductor_args
-
-    def getCommand(self):
-        '''
-        Return the command string that Conductor will execute
-        '''
-        class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
-        message = "%s not implemented. Please override method as desribed in its docstring" % class_method
-        raise NotImplementedError(message)
 
     def getDockerImage(self):
         '''
@@ -656,42 +621,57 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return list(set(config_package_ids + selected_package_ids))
 
 
-    def getForceUploadBool(self):
-        '''
-        Return whether the "Force Upload" checkbox is checked on or off.
-        '''
-        return self.ui_force_upload_chkbx.isChecked()
-
-    def runConductorSubmission(self, data):
-        '''
-        Instantiate a Conductor Submit object with the given conductor_args 
-        (dict), and execute it. 
-        '''
-        # Generate a dictionary of arguments to feed conductor
-        conductor_args = self.generateConductorArgs(data)
-
-        # Print out the values for each argument
-        logger.debug("runConductorSubmission ARGS:")
-        for arg_name, arg_value in conductor_args.iteritems():
-            logger.debug("%s: %s", arg_name, arg_value)
-
-        return self._runSubmission(conductor_args)
-
-
 
     @pyside_utils.wait_cursor
     @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
-    def _runSubmission(self, conductor_args):
-        try:
-            submission = conductor_submit.Submit(conductor_args)
-            response, response_code = submission.main()
+    def runSubmission(self, pre_data):
+        '''
+        Run the submission process and return its results. Catch all exceptions 
+        and pass them as results
+        '''
 
-        except:
-            title = "Job submission failure"
-            message = "".join(traceback.format_exception(*sys.exc_info()))
-            pyside_utils.launch_error_box(title, message, self)
-            raise
-        return response_code, response
+        try:
+            return self.runSubmission_(pre_data)
+        except Exception as e:
+            return e
+
+
+
+    def runSubmission_(self, pre_data):
+        '''
+        submission = conductor_submit.Submit(conductor_args)
+        return submission.main()
+
+        return the results of the submissions
+        '''
+        raise NotImplementedError
+
+
+#     @pyside_utils.wait_cursor
+#     @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
+#     def runConductorMultiSubmission(self, data):
+#         '''
+#         Instantiate a Conductor Submit object with the given conductor_args
+#         (dict), and execute it.
+#         '''
+#         # Generate a dictionary of arguments to feed conductor
+#         conductor_args = self.generateConductorArgs(data)
+#
+#         # Print out the values for each argument
+#         logger.debug("runConductorSubmission ARGS:")
+#         for arg_name, arg_value in conductor_args.iteritems():
+#             logger.debug("%s: %s", arg_name, arg_value)
+#
+#         try:
+#             submission = conductor_submit.Submit(conductor_args)
+#             response, response_code = submission.main()
+#
+#         except:
+#             title = "Job submission failure"
+#             message = "".join(traceback.format_exception(*sys.exc_info()))
+#             pyside_utils.launch_error_box(title, message, self)
+#             raise
+#         return response_code, response
 
     def getLocalUpload(self):
         '''
@@ -705,22 +685,17 @@ class ConductorSubmitter(QtGui.QMainWindow):
         return CONFIG.get("local_upload")
 
 
-    def launch_result_dialog(self, response_code, response):
+    def getUploadOnly(self):
+        '''
+        Return whether the "Upload Only" checkbox is checked on or off.
+        '''
+        return self.ui_upload_only_chkbx.isChecked()
 
-        # If the job submitted successfully
-        if response_code in SUCCESS_CODES_SUBMIT:
-            job_id = str(response.get("jobid") or 0).zfill(5)
-            title = "Job Submitted"
-            job_url = CONFIG['url'] + "/job/" + job_id
-            message = ('<html><head/><body><p>Job submitted: '
-                       '<a href="%s"><span style=" text-decoration: underline; '
-                       'color:%s;">%s</span></a></p></body></html>') % (job_url, self.link_color, job_id)
-            pyside_utils.launch_message_box(title, message, is_richtext=True, parent=self)
-        # All other response codes indicate a submission failure.
-        else:
-            title = "Job Submission Failure"
-            message = "Job submission failed: error %s" % response_code
-            pyside_utils.launch_error_box(title, message, parent=self)
+    def setUploadOnly(self, upload_only):
+        '''
+        Set the the "Upload Only" checkbox to the given upload_only value (bool)
+        '''
+        return self.ui_upload_only_chkbx.setChecked(bool(upload_only))
 
 
     @QtCore.Slot(bool, name="on_ui_start_end_rdbtn_toggled")
@@ -728,6 +703,24 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         self.ui_start_end_wgt.setEnabled(on)
         self.ui_custom_wgt.setDisabled(on)
+
+
+
+    @QtCore.Slot(bool, name="on_ui_upload_only_chkbx_toggled")
+    def on_ui_upload_only_chkbx_toggled(self, toggled):
+        '''
+        When the "Upload Only" checkbox is checked on, disable the extended
+        widget (i.e. the software specific options e.g. Render layers or Write 
+        nodes,etc), as well as the Scout Job checkbox.   
+        When the the Upload Only checkobx is checked off, re-enable all of those
+        other widgets
+        '''
+        if self.extended_widget:
+            self.extended_widget.setDisabled(toggled)
+
+        self.ui_scout_job_chkbx.setDisabled(toggled)
+
+
 
 
     @QtCore.Slot(name="on_ui_submit_pbtn_clicked")
@@ -740,40 +733,77 @@ class ConductorSubmitter(QtGui.QMainWindow):
         Below is the method calling order of when a user presses the "submit" 
         button in the UI: 
             1. self.runPreSubmission()         # Run any pre-submission processes.
-            2. self.runConductorSubmission()   # Run the submission process.
+            2. self.runSubmission()            # Run the submission process.
             3. self.runPostSubmission()        # Run any post-submission processes.
-            
+        
         Each one of these methods has the opportunity to return data, which in turn
         will be available to the next method that is called.  If that mechanism
         does not meet all pre/post submission needs, then overriding those methods
-        is also an available/appropriate methodology.  
-        
+        is also an available/appropriate methodology.
+       
         '''
-        if not self.validateJobPackages():
-            return
-        data = self.runPreSubmission()
-        response_code, response = self.runConductorSubmission(data)
-        self.runPostSubmission(response_code)
 
-        # Launch a dialog box what diesplays the results of the job submission
-        self.launch_result_dialog(response_code, response)
+        pre_data = self.runPreSubmission()
+        results = self.runSubmission(pre_data)
+        self.runPostSubmission(results)
 
 
     def runPreSubmission(self):
         '''
-        Run any pre submission processes, returning optional data that can
-        be passed into the main runConductorSubmission method
+        Run any pre submission processes
         '''
-        return
+
+        # Validate the chosen software packages (if the job is not an upload_only job)
+        if not self.getUploadOnly():
+            if not self.validateJobPackages():
+                raise Exception("Failed package validation")
 
 
-    def runPostSubmission(self, data):
+
+    def runPostSubmission(self, results):
         '''
         Run any post submission processes.  The "data" argument contains the results 
-        of the main runConductorSubmission method, so that any results can
+        of the main runSubmission method, so that any results can
         be "inspected" and acted upon if desired.
         '''
-        return
+        # Launch a dialog box what displays the results of the job submission
+        self.launchResultsDialog(results)
+
+
+
+
+    def launchResultsDialog(self, results):
+        logger.debug("results: %s", results)
+
+        if isinstance(results, Exception):
+            title = "Job submission failure"
+            message = "".join(traceback.format_exception(*sys.exc_info()))
+            pyside_utils.launch_error_box(title, message, self)
+            raise
+
+
+        message = "\n".join([str(j) for j in results])
+        pyside_utils.launch_message_box("Jobs submitted", message, is_richtext=False, parent=self)
+            # Launch a dialog box what diesplays the results of the job submission
+#                 self.launch_result_dialog(response_code, response)
+#
+#         response, response_code = results
+#
+#         # If the job submitted successfully
+#         if response_code in SUCCESS_CODES_SUBMIT:
+#             job_id = str(response.get("jobid") or 0).zfill(5)
+#             title = "Job Submitted"
+#             job_url = CONFIG['url'] + "/job/" + job_id
+#             message = ('<html><head/><body><p>Job submitted: '
+#                        '<a href="%s"><span style=" text-decoration: underline; '
+#                        'color:%s;">%s</span></a></p></body></html>') % (job_url, self.link_color, job_id)
+#             pyside_utils.launch_message_box(title, message, is_richtext=True, parent=self)
+#         # All other response codes indicate a submission failure.
+#         else:
+#             title = "Job Submission Failure"
+#             message = "Job submission failed: error %s" % response_code
+#             pyside_utils.launch_error_box(title, message, parent=self)
+
 
 
     @pyside_utils.wait_cursor
@@ -842,6 +872,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
                                                     match_value=True,
                                                     property_value=True)
 
+    def isMultiJobSubmission(self):
+        return False
 
     def getSourceFilepath(self):
         '''
@@ -864,7 +896,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
             self.prefs.loadSubmitterUserPrefs(source_filepath)
         except:
             settings_filepath = self.prefs.getSettingsFilepath()
-
             message = ("Unable to apply user settings. "
                        "You may want to modify/delete settings here: %s" % settings_filepath)
             logger.exception(message)

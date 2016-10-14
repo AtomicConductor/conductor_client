@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 import argparse
+import collections
 import imp
 import json
+import logging
 import os
 import re
 import sys
@@ -14,8 +16,9 @@ except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import conductor
-from conductor.lib import conductor_submit, downloader, downloader2, uploader, loggeria
+from conductor.lib import common, conductor_submit, downloader, downloader2, uploader, loggeria
 
+logger = logging.getLogger(__name__)
 
 def parse_args():
 
@@ -39,12 +42,9 @@ def parse_args():
                                           description=submit_parser_desciption,
                                           formatter_class=argparse.RawTextHelpFormatter)
 
-    submit_parser.add_argument("--cmd",
+    submit_parser.add_argument("--command",
                                help="execute this command.")
 
-    submit_parser.add_argument("--cores",
-                               help="Number of cores that this job should run on (highmem and highcpu machines have a minimum of 2 cores)",
-                               type=int)
 
     submit_parser.add_argument("--database_filepath",
              help=("The filepath to the local md5 caching database. If no filepath "
@@ -86,23 +86,26 @@ def parse_args():
               " in single quotes,\n e.g. --metadata '{\"project\":\"Scrooge\"}'"),
         type=json.loads)  # use the json loads function to parse dict
 
-    submit_parser.add_argument("--force",
-                               help="Do not check for existing uploads, force a new upload",
-                               action='store_true')
 
     submit_parser.add_argument("--chunk_size",
                                help="number of frames to execute on a single instance",
+                               type=int,
                                default=1)
 
-    submit_parser.add_argument("--frames",
+    submit_parser.add_argument("--frame_range",
                                help="frame range to execute over.")
+
+    submit_parser.add_argument("--frame_padding",
+                               type=int,
+                               default=4,
+                               help="The frame digit padding for the rendered image file")
 
     submit_parser.add_argument("--scout_frames",
                                help="If specified, these frames will run first and the rest of the"
                                     "job will wait until verification has been given before continuing.")
 
     submit_parser.add_argument("--local_upload",
-                               help="Trigger files to be uploaded localy",
+                               help="Trigger files to be uploaded locally",
                                choices=[False, True],
                                type=cast_to_bool,
                                default=None)
@@ -128,8 +131,9 @@ def parse_args():
                   'running a downloader or uploader command).'))
 
     #  TODO: We should remove this arg
-    submit_parser.add_argument("--machine_type",
-                               help='Type of machine to run on ("standard", "highmem", or "highcpu")')
+    submit_parser.add_argument("--instance_type",
+                               choices=common.get_conductor_instance_types(),
+                               help='Type of instance to run the job on')
 
     submit_parser.add_argument("--md5_caching",
             help=("Use cached md5s. This can dramatically improve the uploading "
@@ -150,16 +154,14 @@ def parse_args():
     submit_parser.add_argument("--output_path",
                                help="path to copy renders to")
 
-    submit_parser.add_argument("--postcmd",
-                               help="Run this command once the entire job is complete and downloaded")
-
     submit_parser.add_argument("--priority",
+                               type=int,
                                help="Set the priority of the submitted job. Default is 5")
 
     submit_parser.add_argument("--project",
-                               help='The name of the project to submit the job. This will default to "default"')
+                               help='The id of the project to submit the job to')
 
-    submit_parser.add_argument("--software_package_ids",
+    submit_parser.add_argument("--software_packages",
                                help=('The ids for the software packages to use for the submitted '
                                      'job, e.g. maya or nuke. Packages are identified '
                                      'by their ID number, which can be queried from '
@@ -176,24 +178,18 @@ def parse_args():
                   "Valid paths are to files, directories (symlinked or not), as "
                   "well as glob expressions. e.g * wildcards accepted"))
 
-    submit_parser.add_argument("--upload_only",
-                               help="Only upload the files, don't start the render",
-                               action='store_true')
 
     submit_parser.add_argument("--upload_paths",
                                help="Paths to upload",
                                nargs="*")
 
-    submit_parser.add_argument("--user",
+    submit_parser.add_argument("--owner",
                                help="Username to submit as")
 
     submit_parser.add_argument("--notify",
                                help="Who to notify when job is complete",
-                               nargs="+")
-
-    submit_parser.add_argument("--slack_notify",
-                               help="Slack recipients to notify when job is complete",
-                               nargs="+")
+                               action=ValidateArgNotify,
+                               nargs="*")
 
     submit_parser.add_argument("--log_level",
                                choices=loggeria.LEVELS,
@@ -207,7 +203,12 @@ def parse_args():
                                      "of logs"))
 
     submit_parser.add_argument("--max_instances",
+                               type=int,
                                help="Maximum number of instances for this job")
+
+    submit_parser.add_argument("--thread_count",
+                               type=int,
+                               help=('The number of threads that should upload simultaneously'))
 
     submit_parser.set_defaults(func=run_submit)
 
@@ -245,6 +246,10 @@ def parse_args():
             default=None)
 
 
+    uploader_parser.add_argument("--thread_count",
+                                   type=int,
+                                   help=('The number of threads that should download simultaneously'))
+
     uploader_parser.add_argument("--log_level",
                                  choices=loggeria.LEVELS,
                                  help="The logging level to display")
@@ -256,7 +261,7 @@ def parse_args():
                                        "everyday, while storing the last 7 days "
                                        "of logs"))
 
-    uploader_parser.set_defaults(func=run_uploader)
+    uploader_parser.set_defaults(func=run_uploader_daemon)
 
 
 
@@ -366,23 +371,58 @@ class ValidateArgEnv(argparse.Action):
 
         setattr(namespace, self.dest, env_variables)
 
+class ValidateArgNotify(argparse.Action):
+    '''
+    Validate the "notify" argument that a user has provided, ensuring that it
+    adheres to proper syntax, and ultimately produces a dictionary object
+    consisting of notifiction type (as the key) and notification recipients (as the values)
+
+    Example:
+        {"email": ["fred@conductorio.com", "barney@conductorio.com"]
+         "slack": ["https://hooks.slack.com/services/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"]
+
+    '''
+    notification_types = ["slack", "email"]
+
+    # Regular expression to validate argument construction  <varname>=<value>
+    # Example: PYTHONPATH=/tmp:$PYTHONPATH
+    rx_notify = r'\s*(?P<notification_type>(%s)+)\s*=(?P<recipient>[^=]+)$' % "|".join(notification_types)
+
+    def __call__(self, parser, namespace, values, option_string):
+        '''
+        Read each variable definition and validate that it's constructed
+        properly.  Populate a dictionary where they keys are the variable names
+        and the values are the variable values
+        '''
+        notifications = getattr(namespace, self.dest) or collections.defaultdict(list)
+        for variable_definition in values:
+            re_result = re.match(self.rx_notify, variable_definition)
+            if not re_result:
+                msg = ("Invalid notification assignment: '%s'\n"
+                       "\tUse construct: <notification_type>=<recipient>  e.g\n"
+                       "\temail=fred@conductorio.com \n"
+                       "\tor \n"
+                       "\tslack=https://hooks.slack.com/services/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" % variable_definition)
+                raise argparse.ArgumentError(self, msg)
+
+            notification_type = re_result.group("notification_type").strip()
+            recipient = re_result.group("recipient").strip()
+            notifications[notification_type].append(recipient)
+
+        setattr(namespace, self.dest, notifications)
+
 
 class CastLogLevelName(argparse.Action):
     '''
-    Cast a log level name to it's contstant value, e.g.
+    Cast a log level name to it's constant value, e.g.
         "INFO" --> logging.INFO
     '''
     def __call__(self, parser, namespace, values, option_string):
         setattr(namespace, self.dest, loggeria.LEVEL_MAP[values])
 
 
-
-def run_submit(args):
-    conductor_submit.run_submit(args)
-
-
-def run_uploader(args):
-    uploader.run_uploader(args)
+def run_uploader_daemon(args):
+    uploader.run_uploader_daemon(args)
 
 
 def run_downloader(args):
@@ -398,6 +438,32 @@ def run_downloader(args):
         return downloader.run_downloader(args_dict)
 
     return downloader2.run_downloader(args_dict)
+
+def run_submit(args):
+    # convert the Namespace object to a dictionary
+    args_dict = vars(args)
+    # Set up logging
+    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level = loggeria.LEVEL_MAP.get(log_level_name)
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
+
+    args_dict = conductor_submit.cast_cli_args(**args_dict)
+    logger.debug('parsed_args is %s', args_dict)
+    if args_dict.get("command"):
+        conductor_submit.ComputeSubmission.submit(read_config=True, **args_dict)
+    else:
+        conductor_submit.UploadSubmission.submit(read_config=True, **args_dict)
+
+
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_submit_log")
+    loggeria.setup_conductor_logging(logger_level=level,
+                                     console_formatter=loggeria.FORMATTER_VERBOSE,
+                                     file_formatter=loggeria.FORMATTER_VERBOSE,
+                                     log_filepath=log_filepath)
 
 
 

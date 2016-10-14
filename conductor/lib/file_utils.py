@@ -69,26 +69,22 @@ def separate_path(path, no_extension=False):
     return dirpath, basename, extension
 
 
-def process_dependencies(paths):
+def validate_paths(paths):
     '''
-    For the given lists of dependency paths, return a dictionary where the keys 
-    are the depenency filepaths and the values are paths, and the values are a 
-    a string, describing what is wrong with the path (if anything). If the path
-    is valid, the value will be None
-    
+    For the given lists of paths, return a dictionary where the keys 
+    are the paths and the values are a a string, describing what is wrong with 
+    the path (if anything). If the path is valid, the value is None
     '''
-    dependencies = {}
+    processed_paths = {}
     for path in paths:
 
         try:
             process_upload_filepath(path)
-            dependencies[path] = None
+            processed_paths[path] = None
         except InvalidPathException as e:
             logger.debug("%s", e)
-            dependencies[path] = str(e)
-
-
-    return dependencies
+            processed_paths[path] = str(e)
+    return processed_paths
 
 
 

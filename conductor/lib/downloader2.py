@@ -3,20 +3,14 @@
 """ Command Line Process to run downloads.
 """
 
-import argparse
+
 import base64
-import collections
-import datetime
-import errno
 import functools
 import imp
 import json
+import logging
 import os
 import Queue
-import logging
-import logging.handlers
-import multiprocessing
-import ntpath
 import re
 import requests
 import random
@@ -25,7 +19,6 @@ import sys
 import tempfile
 import time
 import threading
-import traceback
 import urllib2
 import hashlib
 
@@ -48,7 +41,6 @@ CONNECTION_EXCEPTIONS = (requests.exceptions.SSLError,
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
 
 logger = logging.getLogger(__name__)
-
 
 
 def random_exeption(percentage_chance):
@@ -343,6 +335,7 @@ class Downloader(object):
         task_download_states = self.start_download_threads(self.downloading_queue, self.pending_queue)
         thread_states = {"task_downloads":task_download_states}
 
+
         self.start_summary_thread(thread_states, interval=summary_interval)
 
         # Record all of the original threads immediately so that we can monitor their state change
@@ -567,6 +560,7 @@ class Downloader(object):
                     output_dir = self.output_dir
                     logger.info("Overriding default output directory: %s", output_dir)
 
+
                 for file_info in task_download['files']:
 #                     logger.debug("file_info: %s", file_info)
 
@@ -649,6 +643,7 @@ class Downloader(object):
             task_download_state.reset()
 
 
+
         # IF the daemont is terminated, clean up the active Download, resetting
         # it's status on the app
         logger.debug("Exiting thread. Cleaning up state for Download: ")
@@ -657,6 +652,8 @@ class Downloader(object):
         self.report_download_status(task_download_state)
         downloading_queue.get(block=True)
         downloading_queue.task_done()
+
+
 
     def reporter_target(self, task_download_state, downloader_thread):
 
@@ -684,13 +681,6 @@ class Downloader(object):
             sleep_time = 5
             # logger.debug("sleeping6: %s", sleep_time)
             time.sleep(sleep_time)
-
-            # Check to make sure that that the downloader thread that this reporter thread
-            # is reporting about is still alive. Otherwise exit the reporter loop
-            if not downloader_thread.is_alive():
-                logger.warning("Detected %s thread is dead. Exiting %s thread now",
-                             downloader_thread.name, threading.current_thread().name)
-                return
 
             # Check to make sure that that the downloader thread that this reporter thread
             # is reporting about is still alive. Otherwise exit the reporter loop
@@ -737,12 +727,10 @@ class Downloader(object):
         # hack to use tempfile to generate a unique filename.  close file object immediately.  This will get thrown out soon
         tmpfile = tempfile.NamedTemporaryFile(prefix=filename, dir=dirpath)
         tmpfile.close()  # close this. otherwise we get warnings/errors about the file handler not being closed
-
         tmp_filepath = tmpfile.name
         logger.debug("tmp_filepath: %s", tmp_filepath)
         # download the file.
         new_md5 = download_file(url, tmp_filepath, poll_rate=self.download_progess_polling, state=file_state)
-
         logger.debug("new_md5: %s", new_md5)
         if new_md5 != md5:
             try:
@@ -751,7 +739,6 @@ class Downloader(object):
             except:
                 logger.warning("Could not cleanup temp file: %s", tmp_filepath)
             raise Exception("Downloaded file does not have expected md5. %s vs %s: %s" % (new_md5, md5, tmp_filepath))
-
         logger.debug("File md5 verified: %s", tmp_filepath)
 
         logger.debug("Moving: %s to %s", tmp_filepath, local_filepath)
@@ -932,6 +919,7 @@ class Downloader(object):
         dead_threads = set(self._original_threads).difference(set(threading.enumerate()))
         if dead_threads:
             logger.error("#### DEAD THREADS ####   THIS SHOULD NEVER HAPPEN!\n\t%s", "\n\t".join([str(thread) for thread in dead_threads]))
+
 
     def _print_download_history(self):
         '''
@@ -1270,8 +1258,4 @@ def report_error(self, download_id, error_message):
     except e:
         pass
     return True
-
-
-
-
 

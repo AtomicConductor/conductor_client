@@ -105,7 +105,6 @@ class NukeWidget(QtGui.QWidget):
 
 
 
-
 class NukeConductorSubmitter(submitter.ConductorSubmitter):
     '''
     The class is PySide front-end for submitting Nuke renders to Conductor.
@@ -139,7 +138,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         return NukeWidget()
 
 
-    def generateConductorCmd(self):
+    def getCommand(self):
         '''
         Return the command string that Conductor will execute
         
@@ -258,6 +257,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                 "output_path":output_path,
                 "enforced_md5s":enforced_md5s}
 
+
     def getJobTitle(self):
         '''
         Generate and return the title to be given to the job.  This is the title
@@ -343,13 +343,8 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # Get the core arguments from the UI via the parent's  method
         conductor_args = super(NukeConductorSubmitter, self).generateConductorArgs(data)
 
-        # Construct the nuke-specific command
-        conductor_args["cmd"] = self.generateConductorCmd()
-
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
-
-        conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
 
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()

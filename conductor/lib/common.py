@@ -2,6 +2,7 @@ import base64
 import datetime
 import functools
 import hashlib
+import itertools
 import logging
 import math
 import multiprocessing
@@ -15,6 +16,9 @@ import time
 import traceback
 import yaml
 
+BYTES_1KB = 1024
+BYTES_1MB = BYTES_1KB ** 2
+BYTES_1GB = BYTES_1KB ** 3
 
 BYTES_1KB = 1024
 BYTES_1MB = BYTES_1KB ** 2
@@ -181,6 +185,50 @@ def dec_timer_exit(log_level=logging.INFO):
         return wrapper
 
     return timer_decorator
+
+def dec_retry(retry_exceptions=Exception, tries=8, static_sleep=None):
+    '''
+    DECORATOR
+    
+    Retry calling the decorated function using an exponential backoff.
+
+    retry_exceptions: An Exception class (or a tuple of Exception classes) that
+                    this decorator will catch/retry.  All other exceptions that
+                    occur will NOT be retried. By default, all exceptions are
+                    caught (due to the default arguemnt of Exception)
+
+    tries: int. number of times to try (not retry) before raising
+    static_sleep: The amount of seconds to sleep before retrying. If None,
+                 the sleep time will use exponential backoff. See below.  
+
+    This retry function not only incorporates exponential backoff, but also
+    "jitter".  see http://www.awsarchitectureblog.com/2015/03/backoff.html.
+    Instead of merely increasing the backoff time exponentially (determininstically),
+    there is a randomness added that will set the sleeptime anywhere between
+    0 and the full exponential backoff time length.
+
+    '''
+    def retry_decorator(f):
+
+        @functools.wraps(f)
+        def retry_(*args, **kwargs):
+            for try_num in range(1, tries + 1):
+                try:
+                    return f(*args, **kwargs)
+                except retry_exceptions, e:
+                    if static_sleep != None:
+                        sleep_time = static_sleep
+                    else:
+                        # use random for jitter.
+                        sleep_time = random.randrange(0, 2 ** try_num)
+                    msg = "%s, Retrying in %d seconds..." % (str(e), sleep_time)
+                    logger.warning(msg)
+                    time.sleep(sleep_time)
+            return f(*args, **kwargs)
+        return retry_
+    return retry_decorator
+
+
 
 def dec_catch_exception(raise_=False):
 
@@ -582,11 +630,13 @@ def get_progress_percentage(current, total):
         progress_int = int(current / float(total) * 100)
     return "%s%%" % progress_int
 
+
 def get_human_duration(seconds):
     '''
     convert the given seconds (float) into a human friendly unit
     '''
     return str(datetime.timedelta(seconds=round(seconds)))
+
 
 def get_human_timestamp(seconds_since_epoch):
     '''
@@ -594,4 +644,32 @@ def get_human_timestamp(seconds_since_epoch):
     '''
     return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
 
+
+def sstr(object_, char_count=1000):
+    '''
+    Return a string representation of the given object, shortened to the given
+    char_count. This can be useful when printing/logging out data for debugging
+    purposes, but don't want an overwhelming wall of text to troll through.
+    '''
+    assert type(char_count) == int, "char_count must be int. Got: %s (type)" % (char_count, type(char_count))
+    try:
+        s_str = str(object_)
+    except:
+        s_str = "<object cannot be cast to string (%s)>" % type(object_)
+
+    if len(s_str) > char_count:
+        s_str = s_str[:char_count] + "...<TRUNCATED>"
+
+    return s_str
+
+def chunk_iter(chunk_size, iterable):
+    '''
+    Return an iterable 
+    '''
+    it = iter(iterable)
+    while True:
+        chunk = tuple(itertools.islice(it, chunk_size))
+        if not chunk:
+            return
+        yield chunk
 

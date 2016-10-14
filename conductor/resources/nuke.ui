@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>166</width>
-    <height>258</height>
+    <width>115</width>
+    <height>120</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -86,21 +86,6 @@
         </column>
        </widget>
       </item>
-      <item>
-       <widget class="QCheckBox" name="ui_upload_only">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="toolTip">
-         <string>Only upload dependencies. Don't submit render job</string>
-        </property>
-        <property name="text">
-         <string>Upload Only</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </widget>
    </item>
@@ -108,7 +93,6 @@
  </widget>
  <tabstops>
   <tabstop>ui_write_nodes_trwgt</tabstop>
-  <tabstop>ui_upload_only</tabstop>
  </tabstops>
  <resources/>
  <connections/>
