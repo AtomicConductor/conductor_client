@@ -84,6 +84,7 @@ def process_dependencies(paths):
             process_upload_filepath(path)
             dependencies[path] = None
         except InvalidPathException as e:
+            logger.debug("%s", e)
             dependencies[path] = str(e)
 
 

@@ -270,10 +270,15 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
         # ## Validate that all filepaths exist on disk
         dependencies = raw_data["dependencies"]
-        invalid_filepaths = [path for path, is_valid in dependencies.iteritems() if not is_valid]
-        if invalid_filepaths:
-            message = "Found invalid filepaths:\n\n%s" % "\n\n".join(invalid_filepaths)
-            pyside_utils.launch_error_box("Invalid filepaths!", message, parent=self)
+
+        # IF there are any error messages (stored in the dict values)
+        if any(dependencies.values()):
+            message = ""
+            for _, error_message in dependencies.iteritems():
+                if error_message:
+                    message += "\n%s" % error_message
+
+            pyside_utils.launch_error_box("Invalid file paths!", message, parent=self)
             raise Exception(message)
 
 
