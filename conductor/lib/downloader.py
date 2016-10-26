@@ -94,6 +94,7 @@ class DownloadWorker(multiprocessing.Process):
         """
         # TODO: retry mechanism
         url = dl_info["url"]
+        logger.info("downloading file %s" % url)
         local_file = self.make_local_path(dl_info)
         if not self.file_exists_and_is_valid(local_file, dl_info["download_file"]["md5"]):
             self.start_download(url, local_file, dl_info)
@@ -245,7 +246,8 @@ class Backend:
     @staticmethod
     def make_url(path):
         # url_base = "104.196.62.220"
-        url_base = "127.0.0.1:8080"
+        url_base = "104.198.192.129"
+        # url_base = "127.0.0.1:8080"
         return "http://%s/api/%s" % (url_base, path)
 
     @staticmethod
