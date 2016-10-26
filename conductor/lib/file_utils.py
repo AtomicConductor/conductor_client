@@ -343,10 +343,14 @@ def validate_path(filepath):
         1. Does not contain colons.  This is docker path limitation
         2. Starts with a "/".  Otherwise the path cannot be mounted in a linux filesystem
     
-    If the filepath is valid, retur None. Otherwise return a message that describes
+    If the filepath is valid, return None. Otherwise return a message that describes
     why the filepath is invalid
         
     '''
+    # Strip the lettered drive portion of the filepath (if there is one).
+    # This is only going to affect a path with a lettered drive on Windows filesystem
+    filepath = os.path.splitdrive(filepath)[-1]
+
     # Validate against any forbidden characters
     forbidden_chars = (":",)
     for char in forbidden_chars:
@@ -451,6 +455,4 @@ def get_tx_path(filepath, existing_only=False):
     if existing_only and not os.path.isfile(tx_filepath):
         return ""
     return tx_filepath
-
-
 
