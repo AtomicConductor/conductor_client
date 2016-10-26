@@ -172,7 +172,13 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
         maya_filepath = self.getSourceFilepath()
-        cmd = base_cmd % (render_layer_args, maya_filepath)
+
+        # Strip the lettered drive from the filepath (if one exists).
+        # This is a hack to allow a Windows filepath to be properly used
+        # as an argument in a linux shell on the backend. Not pretty.
+        maya_filepath_nodrive = os.path.splitdrive(maya_filepath)[-1]
+
+        cmd = base_cmd % (render_layer_args, maya_filepath_nodrive)
         return cmd
 
 

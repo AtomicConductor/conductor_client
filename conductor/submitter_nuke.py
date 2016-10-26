@@ -130,7 +130,13 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = ["-X %s" % write_node for write_node in write_nodes]
         nuke_scriptpath = self.getSourceFilepath()
-        cmd = base_cmd % (" ".join(write_nodes_args), nuke_scriptpath)
+
+        # Strip the lettered drive from the filepath (if one exists).
+        # This is a hack to allow a Windows filepath to be properly used
+        # as an argument in a linux shell command on the backend. Not pretty.
+        nuke_filepath_nodrive = os.path.splitdrive(nuke_scriptpath)[-1]
+
+        cmd = base_cmd % (" ".join(write_nodes_args), nuke_filepath_nodrive)
         return cmd
 
 
