@@ -94,7 +94,7 @@ class DownloadWorker(multiprocessing.Process):
         """
         # TODO: retry mechanism
         url = dl_info["url"]
-        logger.info("downloading file %s" % url)
+        logger.info("thread: %s  -  downloading file %s", self.name, url)
         local_file = self.make_local_path(dl_info)
         if not self.file_exists_and_is_valid(local_file, dl_info["download_file"]["md5"]):
             self.start_download(url, local_file, dl_info)
