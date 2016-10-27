@@ -218,9 +218,13 @@ class Backend:
         return Backend.put(path, payload)
 
     @classmethod
-    def fail(cls, id):
+    def fail(cls, id, bytes_downloaded=0):
         path = "downloader/fail/%s" % id
-        return Backend.put(path, {})
+        if bytes_downloaded == None:
+            payload = {}
+        else:
+            payload = {"bytes_downloaded": bytes_downloaded}
+        return Backend.put(path, payload)
 
     @classmethod
     def get(cls, path, params):
