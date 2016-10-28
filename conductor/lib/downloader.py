@@ -63,12 +63,13 @@ class DownloadWorker(multiprocessing.Process):
         self._chunks = 0
         self._total_size = 0
         self.output_dir = output_dir or ""
-        self.location = location
+        self.location = location or CONFIG.get("location")
         self.account = CONFIG.get("account")
 
     def run(self):
         "called at Instance.start()"
-        print "worker start %s" % self.name
+        info_str = "Starting worker %s - account: %s  location: %s"
+        logger.info(info_str, self.name, self.account, self.location)
         while self._run_state.value == "running":
             next_dl = self.get_next_download()
             if next_dl:
@@ -131,7 +132,9 @@ class DownloadWorker(multiprocessing.Process):
             os.remove(local_file)
         except:
             pass
-        logger.debug("startuing download of %s" % local_file)
+        log_str = "start_download id=%(id)s account=%(account)s project=%(project)s location=%(location)s jid=%(jid)s tid=%(tid)s source=%(source_file)s dest=%(local_file)s "
+        dl_info["download_file"]["local_file"]= local_file
+        logger.info(log_str % dl_info["download_file"])
         with open(local_file, 'wb') as f:
             for chunk in req.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
                 if self._run_state.value != "stopping":
@@ -145,7 +148,7 @@ class DownloadWorker(multiprocessing.Process):
         """
         properly handle errors during download chunk streaming.
         """
-        logger.error("download error file=%s try_count=%s" % (local_file, try_count))
+        logger.error("download error id=%s file=%s try_count=%s" % (dl_info["id"], local_file, try_count))
         tb = traceback.format_exc()
         print tb
         error = sys.exc_info()[0]
@@ -170,7 +173,7 @@ class DownloadWorker(multiprocessing.Process):
         self._chunks += 1
         self._total_size += sys.getsizeof(chunk)
         if not self._chunks % TOUCH_INTERVAL:
-            print "proc: %s  file chunks -> %s  total_size: %s" % ( self.name, self._chunks, self._total_size )
+            logger.debug("id=%s file chunk=%s total_size=%s" % ( dl_info["id"], self._chunks, self._total_size))
             # TODO: proper logging
             Backend.touch(dl_info["id"])
 
@@ -231,7 +234,15 @@ class Backend:
         url = cls.make_url(path)
         headers = cls.make_headers()
         result = requests.get(url, params=params, headers=headers)
-        return result.json()
+        try:
+            return result.json()
+        except:
+            tb = traceback.format_exc()
+            print tb
+            error = sys.exc_info()[0]
+            print error
+            return []
+
 
     @classmethod
     def put(cls, path, data):
