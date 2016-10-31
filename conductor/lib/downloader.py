@@ -202,7 +202,7 @@ class Backend:
         """
         """
         path = "downloader/next"
-        params = {"account": account} #, "project": project, "location": location}
+        params = {"account": account, "project": project, "location": location}
         return Backend.get(path, params)
 
     @classmethod
