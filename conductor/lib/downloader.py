@@ -17,7 +17,7 @@ import requests
 WORKER_PAUSE_DURATION = 15
 DOWNLOAD_CHUNK_SIZE = 2048
 MAX_DOWNLOAD_RETRIES = 5
-TOUCH_INTERVAL = 1000 # number of DOWNLOAD_CHUNK_SIZE chunks to process before touching file in db.
+TOUCH_INTERVAL = 2000 # number of DOWNLOAD_CHUNK_SIZE chunks to process before touching file in db.
 
 
 try:
@@ -132,7 +132,7 @@ class DownloadWorker(multiprocessing.Process):
             os.remove(local_file)
         except:
             pass
-        log_str = "start_download id=%(id)s account=%(account)s project=%(project)s location=%(location)s jid=%(jid)s tid=%(tid)s source=%(source_file)s dest=%(local_file)s "
+        log_str = "start_download id=%(id)s jid=%(jid)s tid=%(tid)s project=%(project)s dest=%(local_file)s "
         dl_info["download_file"]["local_file"]= local_file
         logger.info(log_str % dl_info["download_file"])
         with open(local_file, 'wb') as f:
@@ -173,7 +173,7 @@ class DownloadWorker(multiprocessing.Process):
         self._chunks += 1
         self._total_size += sys.getsizeof(chunk)
         if not self._chunks % TOUCH_INTERVAL:
-            logger.debug("id=%s file chunk=%s total_size=%s" % ( dl_info["id"], self._chunks, self._total_size))
+            logger.info("id=%s file chunk=%s total_size=%s" % ( dl_info["id"], self._chunks, self._total_size))
             # TODO: proper logging
             Backend.touch(dl_info["id"])
 
