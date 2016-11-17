@@ -1,4 +1,5 @@
 import base64
+import datetime
 import functools
 import hashlib
 import logging
@@ -6,12 +7,19 @@ import math
 import multiprocessing
 import os
 import platform
+import random
 import signal
 import subprocess
 import sys
 import time
 import traceback
 import yaml
+
+
+BYTES_1KB = 1024
+BYTES_1MB = BYTES_1KB ** 2
+BYTES_1GB = BYTES_1KB ** 3
+BYTES_1TB = BYTES_1KB ** 4
 
 
 logger = logging.getLogger(__name__)
@@ -234,6 +242,55 @@ def dec_catch_exception(raise_=False):
     return catch_decorator
 
 
+def dec_retry(retry_exceptions=Exception, skip_exceptions=(), tries=8, static_sleep=None):
+    '''
+    DECORATOR
+    
+    Retry calling the decorated function using an exponential backoff.
+
+    retry_exceptions: An Exception class (or a tuple of Exception classes) that
+                    this decorator will catch/retry.  All other exceptions that
+                    occur will NOT be retried. By default, all exceptions are
+                    caught (due to the default arguemnt of Exception)
+
+    skip_exceptions:  An Exception class (or a tuple of Exception classes) that
+                     this decorator will NOT catch/retry.  This will take precedence
+                     over the retry_exceptions.
+    
+    tries: int. number of times to try (not retry) before raising
+    static_sleep: The amount of seconds to sleep before retrying. When set to 
+                  None, the sleep time will use exponential backoff. See below.  
+
+    This retry function not only incorporates exponential backoff, but also
+    "jitter".  see http://www.awsarchitectureblog.com/2015/03/backoff.html.
+    Instead of merely increasing the backoff time exponentially (determininstically),
+    there is a randomness added that will set the sleeptime anywhere between
+    0 and the full exponential backoff time length.
+
+    '''
+    def retry_decorator(f):
+
+        @functools.wraps(f)
+        def retry_(*args, **kwargs):
+            for try_num in range(1, tries + 1):
+                try:
+                    return f(*args, **kwargs)
+                except Exception as e:
+                    if not isinstance(e, retry_exceptions) or isinstance(e, skip_exceptions):
+                        logger.debug("Skipping retry because mismatched exception type: %s" , type(e))
+                        raise
+                    if static_sleep != None:
+                        sleep_time = static_sleep
+                    else:
+                        # use random for jitter.
+                        sleep_time = random.randrange(0, 2 ** try_num)
+                    msg = "%s, Retrying in %d seconds..." % (str(e), sleep_time)
+                    logger.warning(msg)
+                    time.sleep(sleep_time)
+            return f(*args, **kwargs)
+        return retry_
+    return retry_decorator
+
 
 def run(cmd):
     logger.debug("about to run command: " + cmd)
@@ -263,7 +320,8 @@ def get_base64_md5(*args, **kwargs):
     b64 = base64.b64encode(md5)
     return b64
 
-def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, state=None):
+def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, 
+                 state=None, log_level=logging.INFO):
     '''
     Generate and return md5 hash (base64) for the given filepath
     
@@ -283,7 +341,8 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, st
         curtime = time.time()
         progress = int(((buffer_count * blocksize) / float(file_size)) * 100)
         if poll_seconds and curtime - last_time >= poll_seconds:
-            logger.debug("MD5 hashing %s%% (size %s bytes): %s ", progress, file_size, filepath)
+            logger.log(log_level, "MD5 hashing %s%% (size %s bytes): %s ",
+                        progress, file_size, filepath)
             last_time = curtime
 
         if state:
@@ -293,7 +352,7 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, st
 
     md5 = hash_obj.digest()
 
-    logger.debug("MD5 hashing 100%% (size %s bytes): %s ", file_size, filepath)
+    logger.log(log_level, "MD5 hashing 100%% (size %s bytes): %s ", file_size, filepath)
     if base_64:
         return base64.b64encode(md5)
     return md5
@@ -492,6 +551,40 @@ def get_package_ids():
     resources = load_resources_file()
     return resources.get("package_ids") or {}
 
+def get_human_bytes(bytes_):
+    '''
+    For the given bytes (integer), convert and return a "human friendly:
+    representation of that data size. 
+    '''
+    if bytes_ > BYTES_1TB:
+        return  "%.2fTB" % (bytes_ / float(BYTES_1TB))
+    elif bytes_ > BYTES_1GB:
+        return  "%.2fGB" % (bytes_ / float(BYTES_1GB))
+    elif bytes_ > BYTES_1MB:
+        return  "%.2fMB" % (bytes_ / float(BYTES_1MB))
+    return  "%.2fKB" % (bytes_ / float(BYTES_1KB))
 
-class Auth:
-    pass
+def get_progress_percentage(current, total):
+    '''
+    Return  a string percentage, e.g. "80%" given current bytes (int) and total
+    bytes (int)
+    '''
+    if not all([current, total]):
+        progress_int = 0
+    else:
+        progress_int = int(current / float(total) * 100)
+    return "%s%%" % progress_int
+
+def get_human_duration(seconds):
+    '''
+    convert the given seconds (float) into a human friendly unit
+    '''
+    return str(datetime.timedelta(seconds=round(seconds)))
+
+def get_human_timestamp(seconds_since_epoch):
+    '''
+    convert the given seconds since epoch (float)
+    '''
+    return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
+
+
