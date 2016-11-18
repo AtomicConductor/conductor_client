@@ -130,6 +130,135 @@ def get_conductor_logger():
     return logging.getLogger(CONDUCTOR_LOGGER_NAME)
 
 
+
+class TableStr(object):
+    '''
+    
+    A class to help log/print tables of data
+    
+    ############## DOWNLOAD HISTORY #################
+    COMPLETED AT         DOWNLOAD ID       JOB    TASK       SIZE  ACTION  DURATION  THREAD     FILEPATH
+    2016-01-16 01:12:46  5228833175240704  00208  010    137.51MB  DL      0:00:57   Thread-12  /tmp/conductor_daemon_dl/04/cental/cental.010.exr
+    2016-01-16 01:12:42  6032237141164032  00208  004    145.48MB  DL      0:02:24   Thread-2   /tmp/conductor_daemon_dl/04/cental/cental.004.exr
+    2016-01-16 01:12:40  5273802288136192  00208  012    140.86MB  DL      0:02:02   Thread-16  /tmp/conductor_daemon_dl/04/cental/cental.012.exr
+
+    '''
+
+    # A dict which contains callable functions that can be used to condition each column entry of the table
+    header_modifiers = {}
+
+    cell_modifiers = {}
+
+    # The characters to print between the columns (to separate them)
+    column_spacer = "  "
+
+    row_spacer = "\n"
+
+
+    def __init__(self, data, column_names, title="", footer="", upper_headers=True):
+        '''
+        args:
+            data: list of dicts. Each dict represents a row, where the key is the 
+                  column name, and the value is the...value 
+            
+            column_names: list of str. The columns of data to show (and the order 
+                          in which they are shown)
+            
+            title: str. if provided, will be printed above the table
+            
+            footer: str. if provided, will be printed below the table
+        
+            upper_headers: bool. If True, will automatically uppercase the column
+                           header names
+        '''
+        self.data = data
+        self.column_names = column_names
+        self.title = title
+        self.footer = footer
+        self.uppper_headers = upper_headers
+
+
+    def make_table_str(self):
+        '''
+        Create and return a final table string that is suitable to print/log.
+        
+        This is achieved by creating a list of items for each column in the table.
+        Once all column lists have been created, they are then joined via a constant
+        column space character(s) - self.column_spacer. The rows that are created 
+        from the columns are then prefixed with given title (self.title) and suffixed
+        with the given footer (self.footer) 
+
+          
+        '''
+        column_strs = {}
+        for column_name in self.column_names:
+            column_strs[column_name] = self.make_column_strs(column_name, self.data)
+
+        rows = []
+        for row_idx in range(len(self.data) + 1):  # add 1 to account for header row
+            row_data = []
+            for column_name in self.column_names:
+                row_data.append(column_strs[column_name][row_idx])
+            rows.append(self.column_spacer.join(row_data))
+
+        rows.insert(0, self.get_title())
+        rows.append(self.get_footer())
+        return self.row_spacer.join(rows)
+
+
+    def make_column_strs(self, column_name, data):
+        '''
+        
+        Return a two dimensial list (list of lists), where the inner lists
+        repersent a column of data. 
+        '''
+        column_header = self.modify_header(column_name)
+
+        column_cells = []
+        for row_dict in data:
+            cell_data = row_dict.get(column_name, "")
+            cell_data = self.modify_cell(column_name, cell_data)
+            column_cells.append(str(cell_data))
+
+        column_data = [column_header] + column_cells
+        column_width = len(max(column_data, key=len))
+
+        column_strs = []
+        for cell_str in column_data:
+            column_strs.append(cell_str.ljust(column_width))
+
+        return column_strs
+
+
+    def modify_header(self, column_name):
+        '''
+        Modify and return the given column name.  This provides an opportunity
+        to adjust what the header should consist of.
+        '''
+        header_modifier = self.header_modifiers.get(column_name)
+        if header_modifier:
+            column_name = header_modifier(column_name)
+        return column_name.upper() if self.uppper_headers else column_name
+
+
+    def modify_cell(self, column_name, cell_data):
+        '''
+        Modify and return the given cell data of the given column name.  
+        This provides an opportunity to adjust what the header should consist of.
+        '''
+        cell_modifier = self.cell_modifiers.get(column_name)
+        if cell_modifier:
+            cell_data = cell_modifier(cell_data)
+        return  cell_data
+
+
+    def get_title(self):
+        return self.title
+
+    def get_footer(self):
+        return self.footer
+
+
 # def get_logger_handlers(logger, handler_types=()):
 #     '''
 #     Return the handlers for the given logger.  Optionally filter which types
