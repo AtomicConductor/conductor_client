@@ -320,7 +320,7 @@ def get_base64_md5(*args, **kwargs):
     b64 = base64.b64encode(md5)
     return b64
 
-def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, 
+def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
                  state=None, log_level=logging.INFO):
     '''
     Generate and return md5 hash (base64) for the given filepath
@@ -455,9 +455,15 @@ class Config():
         '''
         Read the given value (which was read from an environment variable, and
         process it onto an appropriate value for the config.yml file.
-        1. cast bool strings into actual python bools
-        2. anything else... ?
+        1. cast integers strings to python ints
+        2. cast bool strings into actual python bools
+        3. anything else? 
         '''
+        # Cast integers
+        if env_var.isdigit():
+            return int(env_var)
+
+        # Cast booleans
         bool_values = {"true": True,
                        "false": False}
 
