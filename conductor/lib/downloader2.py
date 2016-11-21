@@ -1207,33 +1207,34 @@ def _in_queue(queue, item_dict, key):
 
 def run_downloader(args):
     '''
-    Start the downloader process. This process will run indefinitely, polling
+    Start the downloader. If a job id(s) were given, exit the downloader upon
+    completion.  Otherwise, run the downloader indefinitely (daemon mode), polling
     the Conductor cloud app for files that need to be downloaded.
     '''
-    # convert the Namespace object to a dictionary
-    args_dict = vars(args)
+
 
     # Set up logging
-    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level_name = args.get("log_level")
     log_level = loggeria.LEVEL_MAP.get(log_level_name)
-    logger.debug('Downloader parsed_args is %s', args_dict)
-    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    log_dirpath = args.get("log_dir")
     set_logging(log_level, log_dirpath)
 
-    job_ids = args_dict.get("job_id")
-    thread_count = args_dict.get("thread_count")
+    logger.debug('Downloader args: %s', args)
+
+    job_ids = args.get("job_id")
+    thread_count = args.get("thread_count")
 
 
     if job_ids:
         Downloader.download_jobs(job_ids,
-                            task_id=args_dict.get("task_id"),
+                            task_id=args.get("task_id"),
                             thread_count=thread_count,
-                            output_dir=args_dict.get("output"))
+                            output_dir=args.get("output"))
 
     else:
         Downloader.start_daemon(thread_count=thread_count,
-                                location=args_dict.get("location"),
-                                output_dir=args_dict.get("output"))
+                                location=args.get("location"),
+                                output_dir=args.get("output"))
 
 
 def set_logging(level=None, log_dirpath=None):
