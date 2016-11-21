@@ -792,20 +792,17 @@ def safe_mkdirs(dirpath):
 
 def run_downloader(args):
     '''
+    Run the downloader with the given arguments.
     '''
-    # convert the Namespace object to a dictionary
-    args_dict = vars(args)
-
     # Set up logging
-    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level_name = args.get("log_level")
     log_level = loggeria.LEVEL_MAP.get(log_level_name)
-    logger.debug('Downloader parsed_args is %s', args_dict)
-    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    log_dirpath = args.get("log_dir")
     set_logging(log_level, log_dirpath)
-    downloader = Downloader(args_dict)
+
+    logger.debug('Downloader args: %s', args)
+    downloader = Downloader(args)
     downloader.run()
-
-
 
 def set_logging(level=None, log_dirpath=None):
     log_filepath = None
