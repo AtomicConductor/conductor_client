@@ -264,7 +264,19 @@ class UploadWorker(worker.ThreadWorker):
             'Content-MD5': md5,
             'Content-Type': 'application/octet-stream',
         }
+        retries = 5
+        try:
+            common.retry(lambda: self.do_upload(upload_url, headers, filename), retries)
+        except Exception, e:
+            real_md5 = common.get_base64_md5(filename)
+            error_message = "ALERT! File %s retried %d times and still failed!\n" % (filename, retries)
+            error_message += "expected md5 is %s, real md5 is %s" % (md5, real_md5)
+            logger.error(error_message)
+            raise e
 
+        return None
+
+    def do_upload(self, upload_url, headers, filename):
         try:
             resp_str, resp_code = self.api_client.make_request(
                 conductor_url=upload_url,
