@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 class DownloaderExit(SystemExit):
     '''
-    Custom exception to handle (and raise) when the DownloadWorker processes 
+    Custom exception to handle (and raise) when the DownloadWorker processes
     should be halted.  This subclasses the SystemExit builtin exception. Raising it
     will exit the process with the given return code.
     '''
@@ -64,26 +64,26 @@ class DownloadWorker(multiprocessing.Process):
                  output_dir=None, project=None, location=None):
         """
         Initialize download worker process.
-        
+
         args:
-            
-            run_state:    multiprocessing.Array object. 
-            
+
+            run_state:    multiprocessing.Array object.
+
             result_queue: multiprocessing.Queue object. Stores the result of each
                           downloaded file.
-            
+
             account: str. account name
-            
-            log_interval: int.  The interval in seconds to log out progress % 
-                          while downloading the file. If no progress logging is 
-                          desired, set to None.    
+
+            log_interval: int.  The interval in seconds to log out progress %
+                          while downloading the file. If no progress logging is
+                          desired, set to None.
             output_dir:   str. If provided, will use this directory to download
                           the file to.  Otherwise, it will download the file to
                           it's own recorded output path.
-                                
+
             project:      str. if provided, will only download files with the given
                           project name
-            
+
             location:     str. if provided, will only download files with the given
                           location name
         """
@@ -106,12 +106,12 @@ class DownloadWorker(multiprocessing.Process):
     def run(self):
         '''
         called at Instance.start()
-        
+
         This is the "outer" run function that wraps the "real" run in try/except
-        so that it prevents the worker process from dying. 
-        
+        so that it prevents the worker process from dying.
+
         Continually query for and download files that are pending download.
-         
+
         '''
         # While the downloader is in a running state, continue to try to download
         # a file.  If an exception occurs, catch and log it, and restart the loop
@@ -136,12 +136,12 @@ class DownloadWorker(multiprocessing.Process):
 
         '''
         Query for and download the next pending file.
-        
+
         One of three things can happen to a file:
             - download the file (transfer the file to local disk)
             - skip/reuse the file bc it's already on local disk (after md5 checking)
             - fail the file (due to any variety of reasons)
-            
+
         Each file that is handled will have its "result" added to the results queue.
         '''
 
@@ -231,8 +231,8 @@ class DownloadWorker(multiprocessing.Process):
     def wait(self):
         '''
         pause between empty get_next_download() calls
-        
-        Instead of doing one long sleep call, we make a loop of many short sleep 
+
+        Instead of doing one long sleep call, we make a loop of many short sleep
         calls. This gives the opportunity to check the running state, and exit
         the sleep process if necessary.
         '''
@@ -268,7 +268,7 @@ class DownloadWorker(multiprocessing.Process):
         """
         checks for existing file and validates md5, if valid, skip download.
         Return True if the file is actually downloaded (and None if it is skipped)
-        
+
         args:
             local_file: str. The file path to download the file to.
             id_:        str.   The id of the file download
@@ -290,7 +290,7 @@ class DownloadWorker(multiprocessing.Process):
         """
         "outer" download function that wraps the "real" download function
         in retries and md5 verification.  All exceptions that are encountered
-        will be automatically retried...except for SystemExit  
+        will be automatically retried...except for SystemExit
 
         """
         jid, tid, md5 = dl_info["jid"], dl_info["tid"], dl_info["md5"]
@@ -320,7 +320,7 @@ class DownloadWorker(multiprocessing.Process):
 
     def _download(self, id_, local_file, url, dl_info):
         """
-        Download the given file url to the given local_file path. 
+        Download the given file url to the given local_file path.
         Return the md5 (base64) of the downloaded file.
         """
 
@@ -407,7 +407,7 @@ class DownloadWorker(multiprocessing.Process):
 
     def cleanup_download(self, id_, jid, tid, destination, local_file):
         '''
-        Cleanup the download.  This is currently a No-op, but serves as a 
+        Cleanup the download.  This is currently a No-op, but serves as a
         slot for any cleanup that may need to happen for the download
         before for the download worker process exits.
         '''
@@ -425,13 +425,13 @@ class DownloadWorker(multiprocessing.Process):
 
     def log_msg(self, jid, tid, message, local_file, ljust=37, log_level=logging.INFO):
         '''
-        Log a message about the given file.  This is a convenience function that 
+        Log a message about the given file.  This is a convenience function that
         creates a message that is structured and consistent throughout the downloading
         processes. This makes readability easier when trolling through logs.
-        
+
         example output:
             <jid>|<tid>  <message  <file path>
-        
+
         '''
         msg_template = "%(jid)s|%(tid)s  %(message)s  %(filepath)s"
         logger.log(log_level, msg_template, {"message":message.ljust(ljust),
@@ -442,12 +442,12 @@ class DownloadWorker(multiprocessing.Process):
     def log_progress(self, local_file, jid, tid, file_size, log_level=logging.INFO):
         '''
         Log a message about the download progress of the given file. This uses
-        the current state info (bytes_transferred) to calculate progress. 
-        
+        the current state info (bytes_transferred) to calculate progress.
+
         <jid>|<tid>  Downloading  <percentage>  <transferred/total>  <file path>
-        
+
         example output:
-        
+
             35748|000  Downloading   76%     859.38MB/1.09GB  /home/users/beanie/face.png
 
         '''
@@ -472,7 +472,7 @@ class DownloadWorker(multiprocessing.Process):
             - "Download ID:  the id of the Download resource that the file is part of.
             - "Job:  the job id. str. e.g. "02302"
             - "Task: the task id. str. e.g. "002"
-            - "Size: int. The size of the file (in bytes). 
+            - "Size: int. The size of the file (in bytes).
         '''
 
         result = {}
@@ -569,10 +569,10 @@ class Downloader(object):
     Downloader control object
 
     This class maintains the process worker "pool" and the shared state object.
-    
+
      This queue may be
-        to print out download history to the shell.    
-    
+        to print out download history to the shell.
+
     """
     RESULTS_MAX = 100
 
@@ -676,7 +676,7 @@ class Downloader(object):
     def exit(self):
         '''
         Raise a DownloaderExit exception. This will exit the process.
-        
+
         Log out the uptime of daemon processes
         '''
         self.log_uptime()
@@ -715,10 +715,10 @@ class HistoryWorker(multiprocessing.Process):
             self.print_history()
 
     def print_history(self):
-        '''            
+        '''
         #### HISTORY ####
         2016-11-10 00:49:03,311  conductor.lib.downloader     INFO  HistoryWorker-26:  ##### DOWNLOAD HISTORY ##### (last 100 files)
-        COMPLETED AT         DOWNLOAD ID       JOB    TASK  SIZE       ACTION  DURATION  THREAD             FILEPATH                                                                                                                                               
+        COMPLETED AT         DOWNLOAD ID       JOB    TASK  SIZE       ACTION  DURATION  THREAD             FILEPATH
         2016-11-10 00:48:53  6718909069656064  35681  010    542.05KB  Reuse   0:00:00   DownloadWorker-19  /tmp/FX_dirt_main_v067.01050.exr
         2016-11-10 00:48:53  6718829881196544  35681  056    340.87KB  Reuse   0:00:00   DownloadWorker-13  /tmp/FX_dirt_main_v067.01096.exr
         2016-11-10 00:48:53  6654165088468992  35681  057    334.88KB  DL      0:00:01   DownloadWorker-21  /tmp/FX_dirt_main_v067.01097.exr
@@ -753,7 +753,7 @@ class HistoryWorker(multiprocessing.Process):
 
     def construct_history_summary(self, results_list):
         '''
-        
+
         '''
         title = " DOWNLOAD HISTORY %s " % (("(last %s files)" % self._history_max) if self._history_max else "")
         column_names = ["Completed at", "Download ID", "Job", "Task", "Size", "Action", "Duration", "Thread", "Filepath"]
@@ -818,5 +818,3 @@ def set_logging(level=None, log_dirpath=None):
                                      console_formatter=formatter,
                                      file_formatter=formatter,
                                      log_filepath=log_filepath)
-
-
