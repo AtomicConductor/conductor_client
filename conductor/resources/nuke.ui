@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>145</width>
-    <height>149</height>
+    <width>166</width>
+    <height>258</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -17,9 +17,57 @@
    <item>
     <widget class="QGroupBox" name="ui_write_nodes_grpbx">
      <property name="title">
-      <string>Write Nodes</string>
+      <string/>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
+       <number>-1</number>
+      </property>
+      <property name="rightMargin">
+       <number>12</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Views</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTreeWidget" name="ui_views_trwgt">
+        <property name="selectionMode">
+         <enum>QAbstractItemView::ExtendedSelection</enum>
+        </property>
+        <property name="indentation">
+         <number>0</number>
+        </property>
+        <property name="headerHidden">
+         <bool>true</bool>
+        </property>
+        <column>
+         <property name="text">
+          <string notr="true">1</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Write Nodes</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QTreeWidget" name="ui_write_nodes_trwgt">
         <property name="selectionMode">
@@ -40,6 +88,11 @@
       </item>
       <item>
        <widget class="QCheckBox" name="ui_upload_only">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
         <property name="toolTip">
          <string>Only upload dependencies. Don't submit render job</string>
         </property>

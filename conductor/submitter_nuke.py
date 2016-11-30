@@ -35,8 +35,9 @@ class NukeWidget(QtGui.QWidget):
 
     def refreshUi(self):
         write_nodes = nuke_utils.get_all_write_nodes()
+        views = nuke_utils.get_views()
         self.populateWriteNodes(write_nodes)
-
+        self.populateViews(views)
 
     def populateWriteNodes(self, write_nodes):
         '''
@@ -55,12 +56,36 @@ class NukeWidget(QtGui.QWidget):
             if selected:
                 self.ui_write_nodes_trwgt.setItemSelected(tree_item, True)
 
+    def populateViews(self, views):
+        '''
+        Populate each view into the UI QTreeWidget.
+        All views will be selected by default
+        '''
+        self.ui_views_trwgt.clear()
+        assert isinstance(views, list), "views argument must be a list. Got %s" % type(views)
+        for view in views:
+            tree_item = QtGui.QTreeWidgetItem([view])
+            self.ui_views_trwgt.addTopLevelItem(tree_item)
+            self.ui_views_trwgt.setItemSelected(tree_item, True)
+
+        #  If there is only one view, disable this box...
+        if len(views) == 1:
+            self.ui_views_trwgt.setDisabled(True)
+        else:
+            self.ui_views_trwgt.setEnabled(True)
+
 
     def getSelectedWriteNodes(self):
         '''
         Return the names of the write nodes that are selected in the UI
         '''
         return [str(item.text(0)) for item in self.ui_write_nodes_trwgt.selectedItems()]
+
+    def getSelectedViews(self):
+        '''
+        Return the names of the views that are selected in the UI
+        '''
+        return [str(item.text(0)) for item in self.ui_views_trwgt.selectedItems()]
 
     def getUploadOnlyBool(self):
         '''
@@ -125,10 +150,12 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         into it by conductor (when the job is submitted).  These values will be
         dictated by the "frames" argument.
         '''
-        base_cmd = "nuke-render <frame_args> %s %s"
+        base_cmd = "nuke-render <frame_args> %s %s %s"
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = ["-X %s" % write_node for write_node in write_nodes]
+        selected_views = self.extended_widget.getSelectedViews()
+        view_args = "--view %s" % ",".join(selected_views)
         nuke_scriptpath = self.getSourceFilepath()
 
         # Strip the lettered drive from the filepath (if one exists).
@@ -136,11 +163,11 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # as an argument in a linux shell command on the backend. Not pretty.
         nuke_filepath_nodrive = os.path.splitdrive(nuke_scriptpath)[-1]
 
-        cmd = base_cmd % (" ".join(write_nodes_args), nuke_filepath_nodrive)
+        cmd = base_cmd % (" ".join(write_nodes_args), view_args, nuke_filepath_nodrive)
         return cmd
 
 
-    def collectDependencies(self, write_nodes):
+    def collectDependencies(self, write_nodes, views):
         '''
         For the given write nodes, return a list of filepaths that these write
         nodes rely upon (external file dependencies)
@@ -152,7 +179,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         dependency_knobs = resources.get("nuke_dependency_knobs") or {}
 
         # Collecte the depenecies for those write nodes
-        dependencies = nuke_utils.collect_dependencies(write_nodes, dependency_knobs)
+        dependencies = nuke_utils.collect_dependencies(write_nodes, views, dependency_knobs)
 
         # Add the open nuke file to the depencies list
         dependencies.append(self.getSourceFilepath())
@@ -199,7 +226,14 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             pyside_utils.launch_error_box("No Write nodes selected!", message, parent=self)
             raise Exception(message)
 
-        raw_dependencies = self.collectDependencies(write_nodes)
+        #  Get the applicable views
+        views = self.extended_widget.getSelectedViews()
+        if not views:
+            message = "No views selected for rendering!\nPlease select at least one view from the UI before pressing Submit"
+            pyside_utils.launch_error_box("No views selected!", message, parent=self)
+            raise Exception(message)
+
+        raw_dependencies = self.collectDependencies(write_nodes, views)
 
         # If uploading locally (i.e. not using  uploader daemon
         if self.getLocalUpload():
