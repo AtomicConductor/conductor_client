@@ -201,18 +201,24 @@ def retry(function, retry_count=5):
 
 
 
-def dec_timer_exit(func):
-    '''
-    '''
-    @functools.wraps(func)
-    def wrapper(*a, **kw):
-        func_name = getattr(func, "__name__", "<Unknown function>")
-        start_time = time.time()
-        result = func(*a, **kw)
-        finish_time = '%s :%.2f seconds' % (func_name, time.time() - start_time)
-        logger.info(finish_time)
-        return result
-    return wrapper
+def dec_timer_exit(logger=None, log_level=logging.INFO):
+    def timer_decorator(func):
+        '''
+        '''
+        @functools.wraps(func)
+        def wrapper(*a, **kw):
+            if not logger:
+                global logger
+
+            func_name = getattr(func, "__name__", "<Unknown function>")
+            start_time = time.time()
+            result = func(*a, **kw)
+            finish_time = '%s :%.2f seconds' % (func_name, time.time() - start_time)
+            logger.log(log_level, finish_time)
+            return result
+        return wrapper
+
+    return timer_decorator
 
 def dec_catch_exception(raise_=False):
 
@@ -321,7 +327,7 @@ def get_base64_md5(*args, **kwargs):
     return b64
 
 def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
-                 state=None, log_level=logging.INFO):
+                 callback=None, logger=logger, log_level=logging.INFO):
     '''
     Generate and return md5 hash (base64) for the given filepath
     
@@ -339,14 +345,16 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
         hash_obj.update(file_buffer)
         file_buffer = file_obj.read(blocksize)
         curtime = time.time()
-        progress = int(((buffer_count * blocksize) / float(file_size)) * 100)
+        bytes_processed = buffer_count * blocksize
+        percentage_processed = int((bytes_processed / float(file_size)) * 100)
+
         if poll_seconds and curtime - last_time >= poll_seconds:
             logger.log(log_level, "MD5 hashing %s%% (size %s bytes): %s ",
-                        progress, file_size, filepath)
+                        percentage_processed, file_size, filepath)
             last_time = curtime
 
-        if state:
-            state.hash_progress = progress
+        if callback:
+            callback(bytes_processed)
 
         buffer_count += 1
 
