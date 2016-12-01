@@ -182,7 +182,7 @@ class DownloadWorker(multiprocessing.Process):
 
         # attempt to download the file. The action will either be "DL" or "Reuse"
         try:
-            action = "DL" if self.maybe_download_file(local_file, id, url, dl_info) else "Reuse"
+            action = "DL" if self.maybe_download_file(local_file, id_, url, dl_info) else "Reuse"
 
             # Report to the app that that the file finished
             Backend.finish(id_, bytes_downloaded=self._bytes_downloaded)
@@ -217,7 +217,7 @@ class DownloadWorker(multiprocessing.Process):
         self._result_queue.put_nowait(result)
 
 
-
+    @common.dec_timer_exit
     def get_next_download(self):
         '''
         fetch and return the next downloadable file (or None if there aren't any)
