@@ -288,7 +288,7 @@ class FilesDB(TableDB):
 
 
     @classmethod
-#     @common.dec_timer_exit
+#     @common.dec_timer_exit(log_level=logging.DEBUG)
     def query_files(cls, filepaths, return_dict=False, db_filepath=None, thread_safe=True):
         '''
         Query the db for all files which match the given filepaths.
