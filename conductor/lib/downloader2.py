@@ -475,7 +475,7 @@ class Downloader(object):
             return
 
 
-    @common.dec_timer_exit
+    @common.dec_timer_exit(log_level=logging.DEBUG)
     def get_next_downloads(self, count):
         try:
             downloads = _get_next_downloads(self.location, self.endpoint_downloads_next, self.api_client, count=count)
@@ -714,7 +714,11 @@ class Downloader(object):
         # If the file already exists on disk
         if os.path.isfile(local_filepath):
             file_state.status = FileDownloadState.STATE_HASHING_EXISTING_FILE
-            local_md5 = common.generate_md5(local_filepath, base_64=True, poll_seconds=self.md5_progess_polling, state=file_state)
+
+            # Create a callback function that the md5 hashing function will call periodically
+            callback = functools.partial(self._update_file_state_callback, file_state)
+
+            local_md5 = common.generate_md5(local_filepath, base_64=True, poll_seconds=self.md5_progess_polling, callback=callback)
             # If the local md5 matchs the expected md5 then no need to download. Skip to next file
             if md5 == local_md5:
                 file_state.use_existing = True
@@ -756,6 +760,14 @@ class Downloader(object):
         # Set file permissions
         logger.debug('\tsetting file perms to 666')
         chmod(local_filepath, 0666)
+
+    def _update_file_state_callback(self, file_state, filepath, file_size, bytes_processed, log_level):
+        '''
+        Callback that updates the hash progress (while the hashing is occuring
+        chunk-by-chunk 
+        '''
+        file_state.hash_progress = int((bytes_processed / float(file_size)) * 100)
+
 
 
 #     @dec_random_exception(percentage_chance=0.05)

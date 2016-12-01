@@ -731,7 +731,7 @@ def resolve_arg(arg_name, args, config):
 
 
 
-# @common.dec_timer_exit
+# @common.dec_timer_exitlog_level=logging.DEBUG
 # def test_md5_system(dirpath):
 #     '''
 #     Recurse the given directory, md5-checking all files and returning a dictionary
