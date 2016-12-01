@@ -395,7 +395,7 @@ def run_downloader(args):
 
     # Code switcher between new downloader and old downloader
     if args_dict.get("alt"):
-            return downloader.run_downloader(args_dict)
+        return downloader.run_downloader(args_dict)
 
     return downloader2.run_downloader(args_dict)
 
