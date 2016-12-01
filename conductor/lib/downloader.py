@@ -163,11 +163,13 @@ class DownloadWorker(multiprocessing.Process):
         # TODO:(lws) validate payload values
         next_dl = self.adapt_payload(next_dl)
 
-        # extract the file id
-        id_ = next_dl["id_"]
-
         # extract the file download info
         dl_info = next_dl["dl_info"]
+
+        url = next_dl["url"]
+
+        # extract the file id
+        id_ = dl_info["id"]
 
         # unpack some values for convenience
         jid, tid, destination = dl_info["jid"], dl_info["tid"], dl_info["destination"]
@@ -180,7 +182,7 @@ class DownloadWorker(multiprocessing.Process):
 
         # attempt to download the file. The action will either be "DL" or "Reuse"
         try:
-            action = "DL" if self.maybe_download_file(local_file, **next_dl) else "Reuse"
+            action = "DL" if self.maybe_download_file(local_file, id, url, dl_info) else "Reuse"
 
             # Report to the app that that the file finished
             Backend.finish(id_, bytes_downloaded=self._bytes_downloaded)
@@ -524,31 +526,34 @@ class Backend:
         return Backend.put(path, payload)
 
     @classmethod
+    def bearer_token(cls, token):
+        url = cls.make_url("bearer")
+        headers = {"accept-version": "v1",
+                   "authorization": "Token %s" % token}
+        result = requests.get(url, headers=headers)
+        result.raise_for_status()
+        return result.json()
+
+    @classmethod
     def get(cls, path, params):
         '''
         Return a list of items
         '''
         url = cls.make_url(path)
-        headers = cls.make_headers()
-        result = requests.get(url, params=params, headers=headers)
-        result.raise_for_status()
-        return result.json()
+        fun = lambda headers: requests.get(url, params=params, headers=headers)
+        return cls.http_op(fun, retry=True)
 
     @classmethod
     def put(cls, path, data):
         url = cls.make_url(path)
-        headers = cls.make_headers()
-        result = requests.put(url, headers=headers, data=data)
-        result.raise_for_status()
-        return result.json()
+        fun = lambda headers: requests.put(url, data=data, headers=headers)
+        return cls.http_op(fun, retry=True)
 
     @classmethod
     def post(cls, path, data):
         url = cls.make_url(path)
-        headers = cls.make_headers()
-        result = requests.post(url, headers=headers, data=data)
-        result.raise_for_status()
-        return result.json()
+        fun = lambda headers: requests.post(url, data=data, headers=headers)
+        return cls.http_op(fun, retry=True)
 
     @staticmethod
     def make_url(path):
@@ -559,9 +564,31 @@ class Backend:
 
     @staticmethod
     def make_headers():
-        token = CONFIG.get("conductor_token")
+        bearer = CONFIG.get("bearer_token")
+        if not bearer:
+            token = CONFIG.get("conductor_token")
+            bearer = Backend.bearer_token(token)
+            CONFIG["bearer_token"] = bearer
         return {"accept-version": "v1",
-                "authorization": "Token %s" % token}
+                "authorization": "Bearer %s" % bearer}
+
+    @classmethod
+    def http_op(cls, fun, retry=True):
+        headers = cls.make_headers()
+        result = fun(headers)
+        if cls.check_status(result) == "expired" and retry:
+            return cls.http_op(fun, retry=False)
+        else:
+            result.raise_for_status()
+        return result.json()
+
+    @staticmethod
+    def check_status(result):
+        if result.status_code == 401:
+            CONFIG["bearer_token"] = None
+            return "expired"
+        else:
+            return result.raise_for_status()
 
 
 class Downloader(object):
