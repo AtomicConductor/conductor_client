@@ -24,7 +24,7 @@ from conductor.lib import common, loggeria, downloader2
 WORKER_PAUSE_DURATION = 15
 DOWNLOAD_CHUNK_SIZE = 2048  # 2KB
 MAX_DOWNLOAD_RETRIES = 5
-TOUCH_INTERVAL = 2000  # number of DOWNLOAD_CHUNK_SIZE chunks to process before touching file in db. (e.g. ~4MB)
+TOUCH_INTERVAL = 10000  # number of DOWNLOAD_CHUNK_SIZE chunks to process before touching file in db. (e.g. ~20MB)
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(message)s')
 DEBUG_LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(processName)s:  %(message)s')
 
