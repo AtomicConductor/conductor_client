@@ -307,16 +307,18 @@ class DownloadWorker(multiprocessing.Process):
         # and raise an exception.  This will trigger a retry (via the decorator).
         if new_md5 != md5:
             try:
-                self.log_msg(jid, tid, "Removing bad file", new_md5, local_file,
+                self.log_msg(jid, tid, "Removing bad file", local_file,
                              log_level=logging.DEBUG)
                 os.remove(local_file)
             except:
-                self.log_msg(jid, tid, "Could not cleanup bad file", new_md5,
-                             local_file, log_level=logging.WARNING)
+                self.log_msg(jid, tid, "Could not cleanup bad file", local_file,
+                             log_level=logging.WARNING)
 
             # Raise an exception. This will cause a retry
             raise Exception("Downloaded file does not have expected md5. "
                             "%s vs %s: %s" % (new_md5, md5, local_file))
+
+        self.log_msg(jid, tid, "MD5 Verified", local_file, log_level=logging.DEBUG)
 
 
 
