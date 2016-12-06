@@ -39,6 +39,13 @@ class DownloaderExit(SystemExit):
     will exit the process with the given return code.
     '''
 
+class FailDownload(Exception):
+    '''
+    Custom exception to raise when a download should be failed. This may be due to 
+    a variety of reasons, such as the remote file not existing, or not having adequate 
+    permisssions for writing to a local disk, etc.  
+    This exception is used to bypass the retry decorator so that the download is NOT retried.
+    '''
 
 
 class DownloadWorker(multiprocessing.Process):
@@ -287,7 +294,7 @@ class DownloadWorker(multiprocessing.Process):
 
 
 
-    @common.dec_retry(skip_exceptions=DownloaderExit, tries=MAX_DOWNLOAD_RETRIES)
+    @common.dec_retry(skip_exceptions=(DownloaderExit, FailDownload), tries=MAX_DOWNLOAD_RETRIES)
     def download(self, id_, local_file, url, dl_info):
         """
         "outer" download function that wraps the "real" download function
@@ -336,6 +343,12 @@ class DownloadWorker(multiprocessing.Process):
         # Request the url
         response = requests.get(url, stream=True)
 
+        # check the response and raise an exception if it's not legit
+        if response.status_code not in [200]:
+            msg = "Bad response code %s: %s" % (response.status_code, response.text)
+            self.log_msg(jid, tid, msg, local_file, log_level=logging.DEBUG)
+            raise FailDownload(msg)
+        
         # Create the local directory if it does not exist
         safe_mkdirs(os.path.dirname(local_file))
 
