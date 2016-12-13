@@ -34,6 +34,12 @@ class ApiClient():
 #         logger.debug("params: %s", params)
 #         logger.debug("data: %s", data)
 
+        if response.status_code and response.status_code >= 300:
+            logger.debug("*****  ERROR!!  *****")
+            logger.debug("Reason: %s" % response.reason)
+            logger.debug("Text: %s" % response.text)
+
+
         # trigger an exception to be raised for 4XX or 5XX http responses
         if raise_on_error:
             response.raise_for_status()
@@ -154,4 +160,3 @@ def request_sidecar(sidecar_id=None):
         raise Exception(msg)
 
     return json.loads(response)
-
