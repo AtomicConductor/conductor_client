@@ -1,4 +1,5 @@
 import os
+import re
 import nuke
 
 from conductor.lib import package_utils
@@ -79,7 +80,7 @@ def get_plugins_info():
     return plugins_info
 
 
-def collect_dependencies(write_nodes, dependency_knobs={}):
+def collect_dependencies(write_nodes, views, dependency_knobs={}):
     '''
     For the given Write nodes, traverse up their heirarchy to query any nodes
     for dependency filepaths and return them.  
@@ -103,7 +104,15 @@ def collect_dependencies(write_nodes, dependency_knobs={}):
                 for knob_name in dependency_knobs.get(dep_node.Class(), []):
                     knob = dep_node.knob(knob_name)
                     if knob:
-                        deps.add(knob.value())
+                        raw_file_path = knob.value()
+
+                        if re.search("%[Vv]", raw_file_path):
+                            for view in views:
+                                view_path = re.sub("%V", view, raw_file_path)
+                                view_path = re.sub("%v", view[0], view_path)
+                                deps.add(view_path)
+                        else:
+                            deps.add(raw_file_path)
 
     return sorted(deps)
 
@@ -143,6 +152,7 @@ def get_nuke_script_filepath():
         raise Exception("Nuke script has not been saved to a file location.  Please save file before submitting to Conductor.")
     return filepath
 
+
 def get_frame_range():
     '''
     Return the frame range found in Nuke's Project settings.
@@ -150,6 +160,13 @@ def get_frame_range():
     first_frame = int(nuke.Root()['first_frame'].value() or 0)
     last_frame = int(nuke.Root()['last_frame'].value() or 0)
     return first_frame, last_frame
+
+
+def get_views():
+    '''
+    Return a list of the views that are available in the scene.
+    '''
+    return nuke.views()
 
 
 def get_all_write_nodes():
