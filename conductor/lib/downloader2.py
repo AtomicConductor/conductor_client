@@ -700,7 +700,7 @@ class Downloader(object):
                 return
 
 #     @dec_random_exception(percentage_chance=0.05)
-    @common.dec_retry(tries=3, static_sleep=1)
+    @common.DecRetry(tries=3, static_sleep=1)
     def download_file(self, url, local_filepath, md5, file_state):
         '''
         For the given file information, download the file to disk.  Check whether
@@ -782,7 +782,7 @@ class Downloader(object):
 
 
 #     @dec_random_exception(percentage_chance=0.05)
-    @common.dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
+    @common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
     def report_download_status(self, task_download_state):
         download_id = task_download_state.task_download.get("download_id")
         if not download_id:
@@ -1096,11 +1096,11 @@ class Downloader(object):
 
 
 # @dec_random_exception(percentage_chance=0.05)
-@common.dec_retry(tries=3, static_sleep=1)
+@common.DecRetry(tries=3, static_sleep=1)
 def delete_file(filepath):
     os.remove(filepath)
 
-@common.dec_retry(tries=3, static_sleep=1)
+@common.DecRetry(tries=3, static_sleep=1)
 def chmod(filepath, mode):
     os.chmod(filepath, mode)
 
@@ -1116,7 +1116,7 @@ def prepare_dest_dirpath(dir_path):
 
 
 # @dec_random_exception(percentage_chance=0.05)
-@common.dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
+@common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_next_downloads(location, endpoint, client, count=1):
     params = {'location': location,
               "count": count}
@@ -1129,7 +1129,7 @@ def _get_next_downloads(location, endpoint, client, count=1):
 
     return json.loads(response_string).get("data", [])
 
-@common.dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
+@common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_job_download(endpoint, client, jid, tid):
     params = None
     if tid:
@@ -1146,7 +1146,7 @@ def _get_job_download(endpoint, client, jid, tid):
 
 
 # @dec_random_exception(percentage_chance=0.05)
-@common.dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
+@common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def download_file(download_url, filepath, poll_rate=2, state=None):
     '''
         
