@@ -163,44 +163,6 @@ class ExceptionLogger(ExceptionAction):
         logger.log(self._log_level, msg)
 
 
-def retry(function, retry_count=5):
-    def check_for_early_release(error):
-        logger.debug('checking for early_release. SIGINT_EXIT is %s' % SIGINT_EXIT)
-        if SIGINT_EXIT:
-            logger.debug('releasing in retry')
-            raise error
-
-    # disable retries in testing
-    if os.environ.get('FLASK_CONF') == 'TEST':
-        retry_count = 0
-
-    i = 0
-    while True:
-        try:
-            # logger.debug('trying to run %s' % function)
-            return_values = function()
-        except Exception, e:
-            logger.debug('caught error')
-            logger.debug('failed due to: \n%s' % traceback.format_exc())
-            if i < retry_count:
-                check_for_early_release(e)
-                # exponential backoff with 250ms base
-                sleep_time_in_ms = 250 * int(math.pow(2, i))
-                sleep_time = sleep_time_in_ms / 1000.0
-                logger.debug('retrying after %s seconds' % sleep_time)
-                time.sleep(sleep_time)
-                i += 1
-                check_for_early_release(e)
-                continue
-            else:
-                logger.debug('exceeded %s retries. throwing error...' % retry_count)
-                raise e
-        else:
-            # logger.debug('ran %s ok' % function)
-            return return_values
-
-
-
 def dec_timer_exit(func):
     '''
     '''

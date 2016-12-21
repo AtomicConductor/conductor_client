@@ -184,11 +184,10 @@ class HttpBatchWorker(worker.ThreadWorker):
             return None
         raise Exception('%s Failed request to: %s\n%s' % (response_code, uri_path, response_str))
 
-
     def do_work(self, job, thread_int):
         logger.debug('getting upload urls for %s', job)
-        url_list = common.retry(lambda: self.make_request(job))
-        return url_list
+        return self.make_request(job)
+
 
 '''
 This worker subscribes to a queue of (path,signed_upload_url) pairs.
@@ -260,35 +259,31 @@ class UploadWorker(worker.ThreadWorker):
         filename = job[0]
         upload_url = job[1]
         md5 = self.metric_store.get_dict('file_md5s', filename)
-        headers = {
-            'Content-MD5': md5,
-            'Content-Type': 'application/octet-stream',
-        }
-        retries = 5
         try:
-            common.retry(lambda: self.do_upload(upload_url, headers, filename), retries)
-        except Exception, e:
+            return self.do_upload(upload_url, filename, md5)
+        except:
+            logger.exception("Failed to upload file: %s because of:\n", filename)
             real_md5 = common.get_base64_md5(filename)
-            error_message = "ALERT! File %s retried %d times and still failed!\n" % (filename, retries)
+            error_message = "ALERT! File %s retried and still failed!\n" % filename
             error_message += "expected md5 is %s, real md5 is %s" % (md5, real_md5)
             logger.error(error_message)
-            raise e
+            raise
 
-        return None
 
-    def do_upload(self, upload_url, headers, filename):
-        try:
-            resp_str, resp_code = self.api_client.make_request(
-                conductor_url=upload_url,
-                headers=headers,
-                data=self.chunked_reader(filename),
-                verb='PUT')
-        except Exception, e:
-            error_message = 'failed to upload file %s because of:\n%s' % (filename, traceback.format_exc())
-            logger.error(error_message)
-            raise Exception(error_message)
 
-        return None
+
+    @common.dec_retry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=3)
+    def do_upload(self, upload_url, filename, md5):
+
+        headers = {'Content-MD5': md5,
+                   'Content-Type': 'application/octet-stream'}
+
+        return self.api_client.make_request(conductor_url=upload_url,
+                                            headers=headers,
+                                            data=self.chunked_reader(filename),
+                                            verb='PUT')
+
+
 
 
 
