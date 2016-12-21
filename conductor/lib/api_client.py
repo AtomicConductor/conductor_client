@@ -9,6 +9,11 @@ from conductor.lib import common
 
 logger = logging.getLogger(__name__)
 
+# A convenience tuple of network exceptions that can/should likely be retried by the retry decorator
+CONNECTION_EXCEPTIONS = (requests.exceptions.HTTPError,
+                         requests.exceptions.ConnectionError,
+                         requests.exceptions.Timeout)
+
 # TODO:
 # appspot_dot_com_cert = os.path.join(common.base_dir(),'auth','appspot_dot_com_cert2')
 # load appspot.com cert into requests lib
@@ -21,7 +26,7 @@ class ApiClient():
     def __init__(self):
         logger.debug('')
 
-
+    @common.dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS, tries=5)
     def _make_request(self, verb, conductor_url, headers, params, data, raise_on_error=True):
         response = requests.request(verb, conductor_url,
                                     headers=headers,
@@ -77,9 +82,8 @@ class ApiClient():
                 verb = 'GET'
 
         assert verb in self.http_verbs, "Invalid http verb: %s" % verb
-        response = common.retry(lambda: self._make_request(verb, conductor_url,
-                                                            headers, params, data,
-                                                            raise_on_error=raise_on_error))
+        response = self._make_request(verb, conductor_url, headers, params, data,
+                                      raise_on_error=raise_on_error)
 
 
 
