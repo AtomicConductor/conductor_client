@@ -272,7 +272,7 @@ class UploadWorker(worker.ThreadWorker):
 
 
 
-    @common.dec_retry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=3)
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=3)
     def do_upload(self, upload_url, filename, md5):
 
         headers = {'Content-MD5': md5,

@@ -46,6 +46,9 @@ DEBUG_LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(
 # Reusable authentication token  used across all processes/threads
 BEARER_TOKEN = multiprocessing.Array('c', 2000)
 
+# Global run-state variable that decorators and other functions can use to know when they should exit
+RUN_STATE = multiprocessing.Array('c', 'stoppingorstuff')
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,6 +94,36 @@ class DecAuthorize(object):
         info 
         '''
         return {"authorization": "Bearer %s" % bearer_token}
+
+
+
+class DecDownloaderRetry(common.DecRetry):
+    '''
+    '''
+    def __init__(self, run_value, retry_exceptions=Exception, skip_exceptions=(),
+                 tries=8, static_sleep=None):
+        self.run_value = run_value
+        super(DecDownloaderRetry, self).__init__(retry_exceptions=retry_exceptions,
+                                                 skip_exceptions=skip_exceptions,
+                                                 tries=tries,
+                                                 static_sleep=static_sleep)
+    def sleep(self, seconds):
+        '''
+        sleep for the given number of seconds.
+
+        Instead of doing one long sleep call, we make a loop of many short sleep
+        calls. This gives the opportunity to check the running state, and exit
+        the sleep process if necessary.
+        '''
+        global RUN_STATE
+
+        sleep_interval = seconds / 10.0
+
+        for _ in range(10):
+            if RUN_STATE.value != self.run_value:
+                raise DownloaderExit(0)
+            time.sleep(sleep_interval)
+
 
 
 class FailDownload(Exception):
@@ -202,6 +235,9 @@ class Downloader(object):
         """
         logger.info("starting downloader daemon")
 
+        global RUN_STATE
+        RUN_STATE.value = self.STATE_RUNNING
+
         # Record the start time of instantiation, so that we can report uptime
         self._start_time = time.time()
 
@@ -301,6 +337,11 @@ class Downloader(object):
         which process is calling it, and only execute it if it's the main (parent)
         process.
         '''
+        
+        # change the global 
+        global RUN_STATE
+        RUN_STATE.value = "killed"
+
         current_process = multiprocessing.current_process()
 
         # if the process that is calling this function is the "MainProcesS"
@@ -615,7 +656,7 @@ class DownloadWorker(multiprocessing.Process):
             # return True to indicate that the file was downloaded
             return True
 
-    @common.dec_retry(skip_exceptions=(DownloaderExit, FailDownload), tries=MAX_DOWNLOAD_RETRIES)
+    @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, skip_exceptions=(DownloaderExit, FailDownload), tries=MAX_DOWNLOAD_RETRIES)
     def download(self, id_, local_file, url, dl_info):
         """
         The "outer" download function that wraps the "real" download function
@@ -1098,7 +1139,7 @@ class Backend:
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
-    @common.dec_retry(tries=3)
+    @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, tries=3)
     def next(cls, account, project=None, location=None, number=1):
         """
         Return the next download (dict), or None if there isn't one.
@@ -1109,7 +1150,7 @@ class Backend:
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
-    @common.dec_retry(tries=3)
+    @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, tries=3)
     def touch(cls, id_, bytes_transferred=0):
         path = "downloader/touch/%s" % id_
         kwargs = {"bytes_transferred": bytes_transferred}
@@ -1123,7 +1164,7 @@ class Backend:
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
-    @common.dec_retry(tries=3)
+    @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, tries=3)
     def finish(cls, id_, bytes_downloaded=0):
         path = "downloader/finish/%s" % id_
         logger.debug(path)
@@ -1138,7 +1179,7 @@ class Backend:
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
-    @common.dec_retry(tries=3)
+    @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, tries=3)
     def fail(cls, id_, bytes_downloaded=0):
         path = "downloader/fail/%s" % id_
         payload = {"bytes_downloaded": bytes_downloaded}
