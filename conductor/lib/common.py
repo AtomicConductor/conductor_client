@@ -210,11 +210,9 @@ def dec_catch_exception(raise_=False):
     return catch_decorator
 
 
-def dec_retry(retry_exceptions=Exception, skip_exceptions=(), tries=8, static_sleep=None):
+class DecRetry(object):
     '''
-    DECORATOR
-    
-    Retry calling the decorated function using an exponential backoff.
+    Decorator that retries the decorated function using an exponential backoff sleep.
 
     retry_exceptions: An Exception class (or a tuple of Exception classes) that
                     this decorator will catch/retry.  All other exceptions that
@@ -236,28 +234,42 @@ def dec_retry(retry_exceptions=Exception, skip_exceptions=(), tries=8, static_sl
     0 and the full exponential backoff time length.
 
     '''
-    def retry_decorator(f):
+    def __init__(self, retry_exceptions=Exception, skip_exceptions=(), tries=8, static_sleep=None):
+        self.retry_exceptions = retry_exceptions
+        self.skip_exceptions = skip_exceptions
+        self.tries = tries
+        self.static_sleep = static_sleep
 
-        @functools.wraps(f)
-        def retry_(*args, **kwargs):
-            for try_num in range(1, tries + 1):
+    def __call__(self, orig_function):
+
+        @functools.wraps(orig_function)
+        def wrapper_function(*args, **kwargs):
+
+            # Attempt to call the function for as many times as specified
+            for try_num in range(1, self.tries + 1):
                 try:
-                    return f(*args, **kwargs)
+                    return orig_function(*args, **kwargs)
                 except Exception as e:
-                    if not isinstance(e, retry_exceptions) or isinstance(e, skip_exceptions):
+                    if not isinstance(e, self.retry_exceptions) or isinstance(e, self.skip_exceptions):
                         logger.debug("Skipping retry because mismatched exception type: %s" , type(e))
                         raise
-                    if static_sleep != None:
-                        sleep_time = static_sleep
+                    if self.static_sleep != None:
+                        sleep_time = self.static_sleep
                     else:
                         # use random for jitter.
                         sleep_time = random.randrange(0, 2 ** try_num)
                     msg = "%s, Retrying in %d seconds..." % (str(e), sleep_time)
                     logger.warning(msg)
-                    time.sleep(sleep_time)
-            return f(*args, **kwargs)
-        return retry_
-    return retry_decorator
+                    self.sleep(sleep_time)
+
+            # if we've gotten here, we've run out of retries. This is the last try.
+            # This will be unhandled exception if it fails.
+            return orig_function(*args, **kwargs)
+        return wrapper_function
+
+    def sleep(self, seconds):
+        time.sleep(seconds)
+
 
 
 def run(cmd):

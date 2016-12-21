@@ -26,7 +26,7 @@ class ApiClient():
     def __init__(self):
         logger.debug('')
 
-    @common.dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS, tries=5)
+    @common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS, tries=5)
     def _make_request(self, verb, conductor_url, headers, params, data, raise_on_error=True):
         response = requests.request(verb, conductor_url,
                                     headers=headers,
