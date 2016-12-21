@@ -85,7 +85,6 @@ class DecAuthorize(object):
                 raise
         return decorater_function
 
-
     def make_auth_header(self, bearer_token):
         '''
         Create and return a dictionary which contains the authorization token
@@ -111,6 +110,214 @@ class DownloaderExit(SystemExit):
     '''
 
 
+class Downloader(object):
+    """
+    Top-level Downloader class that maintains all worker processes/threads and 
+    terminates them using shared state objects (signaled via SIGINT -KeyboardInterrupt).
+       
+    Below is the structure of the Downloader and all of it's child process/threads
+    
+    Downloader                    # Main process
+        |
+        |_DownloadWorker-1        # Process
+        |    |_TouchWorker-1      # Thread  
+        |    
+        |_DownloadWorker-2        # Process
+        |    |_TouchWorker-2      # Thread
+        |    
+        |_DownloadWorker-N        # Process
+        |    |_TouchWorker-N      # Thread 
+        |    
+        |_HistoryWorker           # Process
+
+
+    NOTE: For the sake of the brevity we'll refer to "threads" as "processes" for
+    the rest of this documentation
+
+    In order to shutdown these child processes, each process (including their 
+    own child processes has a corresponding multiprocessing.Array object that the
+    parent uses to signal the child to shutdown.  Though processes can be terminated 
+    by having each one simply throwing an exception, we want to make sure that 
+    each process terminates cleanly (releasing resources and signaling to their 
+    own child processes). Therefore, every child process should only exit by returning
+    from it's "run" method (don't raise an exception!).
+    
+    Also, every parent should "join" any of it's child processes before exiting
+    itself.  This ensures that all children processes have indeed terminated
+    properly. Otherwise this could lead to "zombie" processes (no parents).  
+    
+    Life-cycle of a Process: 
+        1. a process (Process1) is started by parent process (Parent1). Parent1 retains a 
+          shared object to signal run-state change to Process1
+        2. Process1 creates and starts it's own child process (Child1)  
+        3. Process1 runs indefinitely (looping within it's "run" method), 
+          constantly checking the status of it's run-state object.
+        4. a KeyboardInterupt (SIGINT) is triggered by the user, and is handled
+          by Parent1.  Parent1 signals to Process1 to shutdown (by changing the value of the
+          run-state object).
+        5. Process1 detects that the run-state value has changed, and calls it's
+          own "_stop" method.  
+        6. The stop method changes the run-state object for the Child1 process, 
+           (triggering Child1 to go through the same shutdown logic (step 5)
+        7. Before returning from the "run" method, Process1 "joins" the Child1 process
+           so that it blocks (and waits for Child1 to exit).   
+    
+    The parent/calling process uses a process-safe multiprocessing.Array object
+    to communicate to this process when needing to shutdown/cleanup/exit.
+        Available state values:
+            - "running":       all systems go.
+            - "stopping":      stop everything and cleanup.
+            
+    The DownloadWorker process has a child thread of it's own (TouchWorker),
+    which is responsible for communicating the progress of the current file download 
+    to the conductor backend.  It, too, uses the a multiprocessing.Array object
+    to control signal when it should be stopped or not.
+    """
+
+    # Run State values
+    STATE_RUNNING = "running"
+    STATE_STOPPING = "stopping"
+
+    # the maximum number of dl result data to maintain (for history purposes, etc)
+    RESULTS_MAX = 100
+
+    def __init__(self, args):
+
+        # Contains the user-provided arguments
+        self.args = args
+
+        # Create a results queue that will hold the results of all files
+        # that are downloaded from each DownloadWorker
+        self._results_queue = multiprocessing.Queue(self.RESULTS_MAX)
+
+        # Register the SIGINT signal with our sigint handler
+        signal.signal(signal.SIGINT, self.sigint_handler)
+
+    def start_daemon(self):
+        """
+        Start the downloader daemon. Create all child worker processes, start 
+        them, and join them. This is blocking function and will not exit until 
+        all workers have exited their prococess.
+
+        """
+        logger.info("starting downloader daemon")
+
+        # Record the start time of instantiation, so that we can report uptime
+        self._start_time = time.time()
+
+        # Create and start all workers
+        self._workers = self._create_workers(start=True)
+        logger.debug("Started workers:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
+
+    def stop_daemon(self):
+        """
+        Stop the downloader daemon and exit the application.
+        
+        1. change the run_state value of each worker's shared object value.
+           This will trigger each worker's stop/cleanup behaviors.
+        2. Exit the application runtime by raising an exception (we must break
+           out of the join that occurred in the start_daemon method).       
+        """
+
+        # Cycle through each worker, and change the share object's state value to "stopping
+        for worker, run_state in self._workers.iteritems():
+            logger.debug("changing %s from %s to %s", worker.name, run_state.value, self.STATE_STOPPING)
+            run_state.value = self.STATE_STOPPING
+
+        # Join the workers. It's generally good practice to do this. Otherwise the
+        # parent process can exit (and return control back to shell) before
+        # the child processes exit (creating zombie processes).
+        # see here: https://docs.python.org/2/library/multiprocessing.html#all-platforms
+        [wrk.join() for wrk in self._workers]
+
+        logger.debug("All procs exited:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
+
+        # Log out the uptime of the daemon
+        self.log_uptime()
+
+    def _create_workers(self, start=True):
+        """
+        Create child worker processes.  For each worker, create a process/thread 
+        safe object that is used to communicate between this parent process and 
+        the worker.  Return a dictionary where the key is the process object, 
+        and the value its corresponding run_state state object.
+        
+        WORKERS:
+            - DownloadWorker # Downloads files
+            - HistoryWorker  # logs out history of downloaded files
+        """
+        account = CONFIG.get("account") or None
+        logger.info("account: %s", account)
+
+        project = self.args.get("project") or None
+        logger.info("project: %s", project)
+
+        location = self.args.get("location") or None
+        logger.info("location: %s", location)
+
+        output_dir = self.args.get("output") or ""
+        logger.info("output_dir: %s", output_dir)
+
+        thread_count = self.args.get("thread_count") or 5
+        logger.info("thread_count: %s", thread_count)
+
+        #### CREATE WORKER PROCESSES ####
+        workers = {}
+
+        # Create DownloadWorker processes
+        for _ in range(thread_count):
+
+            # Create a process-safe run_state object for controlling process
+            run_state = multiprocessing.Array('c', "stoppingorstuff")
+            worker = DownloadWorker(run_state,
+                                    self._results_queue,
+                                    account=account,
+                                    output_dir=output_dir,
+                                    project=project,
+                                    location=location)
+            workers[worker] = run_state
+
+        # Create a HistoryWorker process for printing out the history of downloaded files
+        run_state = multiprocessing.Array('c', "stoppingorstuff")
+        worker = HistoryWorker(run_state=run_state,
+                               results_queue=self._results_queue,
+                               print_interval=10,
+                               history_max=self.RESULTS_MAX)
+        workers[worker] = run_state
+
+        if start:
+            [wrk.start() for wrk in workers]
+
+        return workers
+
+    def sigint_handler(self, sig, frm):
+        '''
+        Handles the SIGINT signal (i.e. the KeyboardInterrupt python exception).
+        
+        This simply calls the Downloader's stop_daemon method.
+        
+        Note that when registering this function as the signint handler, this function
+        gets called by ALL child processes as well.  Because of this, we check
+        which process is calling it, and only execute it if it's the main (parent)
+        process.
+        '''
+        current_process = multiprocessing.current_process()
+
+        # if the process that is calling this function is the "MainProcesS"
+        if current_process.name == "MainProcess":
+            logger.warning("ctrl-c exit...")
+            logger.debug("Stopping...")
+            return self.stop_daemon()
+
+    def log_uptime(self):
+        '''
+        Return the amount of time that the uploader has been running, e.g "0:01:28"
+        '''
+        seconds = time.time() - self._start_time
+        human_duration = common.get_human_duration(seconds)
+        logger.info("Uptime: %s", human_duration)
+
+
 class DownloadWorker(multiprocessing.Process):
     """
     A multiprocessing.Process worker class that is responsible for: 
@@ -131,8 +338,6 @@ class DownloadWorker(multiprocessing.Process):
     which is responsible for communicating the progress of the current file download 
     to the conductor backend.  It, too, uses the a multiprocessing.Array object
     to control signal when it should be stopped or not.
-    
-
     """
     def __init__(self, run_state, result_queue, account, log_interval=5,
                  output_dir=None, project=None, location=None):
@@ -182,7 +387,6 @@ class DownloadWorker(multiprocessing.Process):
         # (hashed or downloaded) for the current file download.
         self._bytes_counter = Counter(0)
 
-
     def run(self):
         '''
         Overloaded method that is called by the inherited start() method.
@@ -202,9 +406,6 @@ class DownloadWorker(multiprocessing.Process):
         In order to shutdown the Downloader in general, it's important that this 
         method is exited properly (reaches the end of the method). i.e. don't
         allow any exceptions to be raised.    
-
-
-
         '''
         # Set the run_state value to "running"
         self._run_state.value = Downloader.STATE_RUNNING
@@ -240,7 +441,6 @@ class DownloadWorker(multiprocessing.Process):
 
         logger.debug("Exiting process")
 
-
     def _create_workers(self, start=True):
         """
         Create child worker processes.  For each worker, create a process/thread 
@@ -266,7 +466,6 @@ class DownloadWorker(multiprocessing.Process):
 
         return workers
 
-
     def _run(self):
         '''
         Query for and download the next pending file.
@@ -278,7 +477,6 @@ class DownloadWorker(multiprocessing.Process):
 
         Each file that is handled will have its "result" added to the results queue.
         '''
-
         # Reset the file state info
         self._reset_progress()
 
@@ -356,18 +554,15 @@ class DownloadWorker(multiprocessing.Process):
         # Add the result of the download to the result queue
         self._result_queue.put_nowait(result)
 
-
     def _get_next_download(self):
         '''
         fetch and return the next downloadable file (or None if there aren't any)
         '''
-
         # Fetch the next download (only 1)
         downloads = Backend.next(self.account, location=self.location, number=1) or []
         if downloads:
             # Return the one download in the list
             return downloads[0]
-
 
     def _wait(self):
         '''
@@ -380,7 +575,6 @@ class DownloadWorker(multiprocessing.Process):
         for _ in range(WORKER_SLEEP_DURATION):
             if self._run_state.value == Downloader.STATE_RUNNING:
                 time.sleep(1)
-
 
     def _adapt_payload(self, payload):
         '''
@@ -402,7 +596,6 @@ class DownloadWorker(multiprocessing.Process):
         payload.pop("inserted_at", None)
         return payload
 
-
     def _maybe_download_file(self, local_file, id_, url, dl_info):
         """
         checks for existing file and validates md5, if valid, skip download.
@@ -421,7 +614,6 @@ class DownloadWorker(multiprocessing.Process):
             self.download(id_, local_file, url, dl_info)
             # return True to indicate that the file was downloaded
             return True
-
 
     @common.dec_retry(skip_exceptions=(DownloaderExit, FailDownload), tries=MAX_DOWNLOAD_RETRIES)
     def download(self, id_, local_file, url, dl_info):
@@ -455,7 +647,6 @@ class DownloadWorker(multiprocessing.Process):
                             "%s vs %s: %s" % (new_md5, md5, local_file))
 
         self._log_msg(jid, tid, "MD5 Verified", local_file, log_level=logging.DEBUG)
-
 
     def _download(self, id_, local_file, url, dl_info, progress_queue):
         """
@@ -543,7 +734,6 @@ class DownloadWorker(multiprocessing.Process):
         new_md5 = hash_obj.digest()
         return base64.b64encode(new_md5)
 
-
     def _file_exists_and_is_valid(self, id_, local_file, md5, jid, tid):
         '''
         Validate that the give filepath exists on disk and its md5 matches that
@@ -599,7 +789,6 @@ class DownloadWorker(multiprocessing.Process):
         # flush the progress queue
         empty_queue(self._progress_queue)
 
-
     def _log_msg(self, jid, tid, message, local_file, ljust=37, log_level=logging.INFO):
         '''
         Log a message about the given file.  This is a convenience function that
@@ -635,7 +824,6 @@ class DownloadWorker(multiprocessing.Process):
         msg = "Downloading  %s  %s" % (progress.rjust(4), ratio_str.rjust(18))
         self._log_msg(jid, tid, msg, local_file, log_level=log_level)
 
-
     def _construct_result_dict(self, dl_info, id_, local_file, action, time_started, time_ended):
         '''
         Construct a "result" dictionary that contains information about how the
@@ -652,7 +840,6 @@ class DownloadWorker(multiprocessing.Process):
             - "Task: the task id. str. e.g. "002"
             - "Size: int. The size of the file (in bytes).
         '''
-
         result = {}
         result["ID"] = id_
         result["Download ID"] = dl_info["dlid"]
@@ -667,7 +854,6 @@ class DownloadWorker(multiprocessing.Process):
         result["Thread"] = self.name
         return result
 
-
     def _update_bytes_counter_callback(self, id_, filepath, file_size, bytes_processed, log_level):
         '''
         A callback function that the md5 hashing function uses to update the 
@@ -675,7 +861,6 @@ class DownloadWorker(multiprocessing.Process):
         
         Check the run_state value and raise a DownloaderExit exception in order
         to exit/break out of the md5 hashing process
-          
         '''
         if self._run_state.value != Downloader.STATE_RUNNING:
             logger.warning("Exiting hashing")
@@ -683,14 +868,12 @@ class DownloadWorker(multiprocessing.Process):
         self._bytes_counter.value = bytes_processed
         self._progress_queue.put_nowait((id_, "hash", bytes_processed))
 
-
     def _stop(self):
         """
         Cycle through all child worker processes and change their run_state objects
         to signal them to stop. Join all child processes to block until they all
         exit properly
         """
-
         for worker, state in self._workers.iteritems():
             logger.debug("changing %s from %s to %s", worker.name, state.value, Downloader.STATE_STOPPING)
             state.value = Downloader.STATE_STOPPING
@@ -699,6 +882,215 @@ class DownloadWorker(multiprocessing.Process):
         [wrk.join() for wrk in self._workers]
         logger.debug("All procs exited:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
 
+
+class TouchWorker(threading.Thread):
+    '''
+    A Thread that periodically reports/"touches" file progress to the Conductor 
+    backend. Aside from reporting the byte progress of a file, it also serves
+    as a "heartbeat" for a file download, indicating to the backend that the file 
+    is still in progress and to not consider it a stranded/dead file download.
+    
+    The frequency of the reporting is dictated by two things:
+        1. The self._interval variable (seconds). A potential "touch" will occur 
+           every _interval seconds
+        2. However, the touch will only be executed  if there is data in the 
+           progress_queue. If there is no data in the progress queue then a "touch" 
+           will not not be issued. The progress queueu should have constant data
+           streaming through it (either when md5 hashing or downloading the file).
+           If there is no data getting put into it, then it means that the DownloadWorker
+           has hung on that file for some reason.  Eventually the backend will
+           "reset" that download because it will not have been touched after a 
+           few minutes.     
+    '''
+
+    def __init__(self, run_state, progress_queue, interval=10, process_name=""):
+        '''
+        run_state:    multiprocessing.Array object. Used by the parent calling
+                      process to communicate when to shutdown/exit this Process.
+        
+        progress_queue: multiprocessing.Queue object.  
+        
+        interval: int/float. The frequency to potentially issue a Touch to the backend
+        process_name: str. the name of the parent process. This will serve as
+                      a prefix for the thread's name.   
+        '''
+
+        self._progress_queue = progress_queue
+        self._interval = interval
+        self._run_state = run_state
+        super(TouchWorker, self).__init__(name=process_name + " TouchWorker")
+
+    def run(self):
+        '''
+        Perpetually report the file progress to the app for a given interval.
+        
+        Report on the last entry found in the progress queue. If there are no entries,
+        then do not report anything. We want the backend to reset any "stranded"/"stuck"
+        downloads, so only report progress when there IS progress. Progress entries 
+        only get added to the queue when a file download is being actively hashed
+        or downloaded. 
+        '''
+        self._run_state.value = Downloader.STATE_RUNNING
+
+        self._last_touch = time.time()
+
+        while self._run_state.value == Downloader.STATE_RUNNING:
+            if time.time() - self._last_touch >= self._interval:
+
+                # Get the most recent file progress from the queue
+                file_progress = self._get_last_file_progress(self._progress_queue)
+
+                # If there is file progress, "touch" the backend with the progress data
+                if file_progress:
+                    file_id, action, bytes_processed = file_progress
+                    try:
+                        self._touch(file_id, action, bytes_processed)
+                    except:
+                        logger.exception("FAILED TO TOUCH:\n")
+
+                self._last_touch = time.time()
+
+            # sleep a lil so that we're not slamming the cpu
+            self._wait(seconds=.2)
+
+        logger.debug("Exiting thread")
+
+    def _touch(self, file_id, action, bytes_processed):
+        logger.debug("Touching backend: id=%s _bytes_action=%s bytes_processed=%s" % (file_id, action, bytes_processed))
+        Backend.touch(file_id, bytes_transferred=bytes_processed)
+
+    def _wait(self, seconds):
+        '''
+        sleep for the given number of seconds.
+
+        Instead of doing one long sleep call, we make a loop of many short sleep
+        calls. This gives the opportunity to check the running state, and exit
+        the sleep process if necessary.
+        '''
+        sleep_interval = seconds / 10.0
+
+        for _ in range(10):
+            if self._run_state.value == Downloader.STATE_RUNNING:
+                time.sleep(sleep_interval)
+
+    @classmethod
+    def _get_last_file_progress(cls, queue):
+        '''
+        Get the last item from the given queue object. We're only interested in 
+        the most recent item in the queue (all older ones are superseded by newer
+        entries), but unfortunately there are no FILO queues for multiprocessing.
+        No matter, we need to clear the contents of the queue anyway, so we'll
+        remove all items and return the last item 
+        '''
+        progress_items = empty_queue(queue)
+        if progress_items:
+            # return the last item
+            return progress_items[-1]
+
+
+class HistoryWorker(multiprocessing.Process):
+    '''
+    A process that periodically print/logs the "history" of the last x files
+    that have been downloaded.
+    '''
+
+    def __init__(self, run_state, results_queue, print_interval=10, history_max=100):
+        '''
+        run_state:    multiprocessing.Array object. Used by the parent calling
+                      process to communicate when to shutdown/exit this Process.
+        
+        results_queue: multiprocessing.Queue object.  Contains an entry for each
+                       file that was handled by the downloader and what happened
+                       with it. 
+        
+        print_interval: int/float. The frequency to print/log the history
+        
+        history_max: indicates how many files (the last n) to report about. 
+        '''
+        self._run_state = run_state
+        self._results_queue = results_queue
+        self._history_max = history_max
+        self._print_interval = print_interval
+        self._last_history = None
+        super(HistoryWorker, self).__init__()
+
+    def run(self):
+        '''
+        Start and return a thread that is responsible for pinging the app for
+        Downloads to download (and populating the queue)
+        '''
+        self._run_state.value = Downloader.STATE_RUNNING
+
+        while self._run_state.value == Downloader.STATE_RUNNING:
+            self._print_history()
+
+        logger.debug("Exiting process")
+
+    def _print_history(self):
+        '''
+        #### HISTORY ####
+        2016-11-10 00:49:03,311  conductor.lib.downloader     INFO  HistoryWorker-26:  ##### DOWNLOAD HISTORY ##### (last 100 files)
+        COMPLETED AT         DOWNLOAD ID       JOB    TASK  SIZE       ACTION  DURATION  THREAD             FILEPATH
+        2016-11-10 00:48:53  6718909069656064  35681  010    542.05KB  Reuse   0:00:00   DownloadWorker-19  /tmp/FX_dirt_main_v067.01050.exr
+        2016-11-10 00:48:53  6718829881196544  35681  056    340.87KB  Reuse   0:00:00   DownloadWorker-13  /tmp/FX_dirt_main_v067.01096.exr
+        2016-11-10 00:48:53  6654165088468992  35681  057    334.88KB  DL      0:00:01   DownloadWorker-21  /tmp/FX_dirt_main_v067.01097.exr
+        2016-11-10 00:48:53  6741280748994560  35681  068    305.68KB  Reuse   0:00:00   DownloadWorker-3   /tmp/FX_dirt_main_v067.01108.exr
+        2016-11-10 00:48:53  6736540447277056  35681  063    313.54KB  Reuse   0:00:00   DownloadWorker-10  /tmp/FX_dirt_main_v067.01103.exr
+        '''
+        results_list = []
+        while self._run_state.value == Downloader.STATE_RUNNING:
+            try:
+                # transfer/empty the results queue into the history list
+                while not self._results_queue.empty():
+                    results_list.append(self._results_queue.get_nowait())
+
+                # slice the list to contain only the last x values
+                results_list = results_list[-self._history_max:]
+
+                # Print the history
+                history_summary = self._construct_history_summary(results_list)
+
+                # Only print the history if it is different from before
+                if history_summary == self._last_history:
+                    logger.info('##### DOWNLOAD HISTORY ##### [No changes]')
+                else:
+                    logger.info("%s\n", history_summary)
+                    self._last_history = history_summary
+
+            except:
+                logger.exception("Failed to report Summary")
+
+            self._wait(self._print_interval)
+
+    def _construct_history_summary(self, results_list):
+        '''
+        For the given results list, return a printable/loggable history summary
+        for them. 
+
+        '''
+        title = " DOWNLOAD HISTORY %s " % (("(last %s files)" % self._history_max) if self._history_max else "")
+        column_names = ["Completed at", "Download ID", "Job", "Task", "Size", "Action", "Duration", "Thread", "Filepath"]
+        table = downloader2.HistoryTableStr(data=list(reversed(results_list)),
+                                            column_names=column_names,
+                                            title=title.center(100, "#"),
+                                            footer="#"*180,
+                                            upper_headers=True)
+
+        return table.make_table_str()
+
+    def _wait(self, seconds):
+        '''
+        pause between empty get_next_download() calls
+
+        Instead of doing one long sleep call, we make a loop of many short sleep
+        calls. This gives the opportunity to check the running state, and exit
+        the sleep process if necessary.
+        '''
+        sleep_interval = seconds / 10.0
+
+        for _ in range(10):
+            if self._run_state.value == Downloader.STATE_RUNNING:
+                time.sleep(sleep_interval)
 
 class Backend:
 
@@ -729,7 +1121,6 @@ class Backend:
                 return
         raise
 
-
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
     @common.dec_retry(tries=3)
@@ -758,7 +1149,6 @@ class Backend:
                 logger.warning("Cannot fail file %s.  File not active (410)", id_)
                 return
         raise
-
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
@@ -806,442 +1196,6 @@ class Backend:
         # url_base = "127.0.0.1:8080"
         url_base = "104.198.192.129"
         return "http://%s/api/%s" % (url_base, path)
-
-
-class Downloader(object):
-    """
-    Top-level Downloader class that maintains all worker processes/threads and 
-    terminates them using shared state objects (signaled via SIGINT -KeyboardInterrupt).
-       
-    Below is the structure of the Downloader and all of it's child process/threads
-    
-    Downloader                    # Main process
-        |
-        |_DownloadWorker-1        # Process
-        |    |_TouchWorker-1      # Thread  
-        |    
-        |_DownloadWorker-2        # Process
-        |    |_TouchWorker-2      # Thread
-        |    
-        |_DownloadWorker-N        # Process
-        |    |_TouchWorker-N      # Thread 
-        |    
-        |_HistoryWorker           # Process
-
-
-    NOTE: For the sake of the brevity we'll refer to "threads" as "processes" for
-    the rest of this documentation
-
-    In order to shutdown these child processes, each process (including their 
-    own child processes has a corresponding multiprocessing.Array object that the
-    parent uses to signal the child to shutdown.  Though processes can be terminated 
-    by having each one simply throwing an exception, we want to make sure that 
-    each process terminates cleanly (releasing resources and signaling to their 
-    own child processes). Therefore, every child process should only exit by returning
-    from it's "run" method (don't raise an exception!).
-    
-    Also, every parent should "join" any of it's child processes before exiting
-    itself.  This ensures that all children processes have indeed terminated
-    properly. Otherwise this could lead to "zombie" processes (no parents).  
-    
-    Life-cycle of a Process: 
-        1. a process (Process1) is started by parent process (Parent1). Parent1 retains a 
-          shared object to signal run-state change to Process1
-        2. Process1 creates and starts it's own child process (Child1)  
-        3. Process1 runs indefinitely (looping within it's "run" method), 
-          constantly checking the status of it's run-state object.
-        4. a KeyboardInterupt (SIGINT) is triggered by the user, and is handled
-          by Parent1.  Parent1 signals to Process1 to shutdown (by changing the value of the
-          run-state object).
-        5. Process1 detects that the run-state value has changed, and calls it's
-          own "_stop" method.  
-        6. The stop method changes the run-state object for the Child1 process, 
-           (triggering Child1 to go through the same shutdown logic (step 5)
-        7. Before returning from the "run" method, Process1 "joins" the Child1 process
-           so that it blocks (and waits for Child1 to exit).   
-    
-
-    The parent/calling process uses a process-safe multiprocessing.Array object
-    to communicate to this process when needing to shutdown/cleanup/exit.
-        Available state values:
-            - "running":       all systems go.
-            - "stopping":      stop everything and cleanup.
-            
-    The DownloadWorker process has a child thread of it's own (TouchWorker),
-    which is responsible for communicating the progress of the current file download 
-    to the conductor backend.  It, too, uses the a multiprocessing.Array object
-    to control signal when it should be stopped or not.
-
-    """
-    # Run State values
-    STATE_RUNNING = "running"
-    STATE_STOPPING = "stopping"
-
-    # the maximum number of dl result data to maintain (for history purposes, etc)
-    RESULTS_MAX = 100
-
-    def __init__(self, args):
-
-        # Contains the user-provided arguments
-        self.args = args
-
-        # Create a results queue that will hold the results of all files
-        # that are downloaded from each DownloadWorker
-        self._results_queue = multiprocessing.Queue(self.RESULTS_MAX)
-
-        # Register the SIGINT signal with our sigint handler
-        signal.signal(signal.SIGINT, self.sigint_handler)
-
-
-    def start_daemon(self):
-        """
-        Start the downloader daemon. Create all child worker processes, start 
-        them, and join them. This is blocking function and will not exit until 
-        all workers have exited their prococess.
-
-        """
-        logger.info("starting downloader daemon")
-
-        # Record the start time of instantiation, so that we can report uptime
-        self._start_time = time.time()
-
-        # Create and start all workers
-        self._workers = self._create_workers(start=True)
-        logger.debug("Started workers:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
-
-
-    def stop_daemon(self):
-        """
-        Stop the downloader daemon and exit the application.
-        
-        1. change the run_state value of each worker's shared object value.
-           This will trigger each worker's stop/cleanup behaviors.
-        2. Exit the application runtime by raising an exception (we must break
-           out of the join that occurred in the start_daemon method).       
-        """
-
-        # Cycle through each worker, and change the share object's state value to "stopping
-        for worker, run_state in self._workers.iteritems():
-            logger.debug("changing %s from %s to %s", worker.name, run_state.value, self.STATE_STOPPING)
-            run_state.value = self.STATE_STOPPING
-
-        # Join the workers. It's generally good practice to do this. Otherwise the
-        # parent process can exit (and return control back to shell) before
-        # the child processes exit (creating zombie processes).
-        # see here: https://docs.python.org/2/library/multiprocessing.html#all-platforms
-        [wrk.join() for wrk in self._workers]
-
-        logger.debug("All procs exited:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
-
-        # Log out the uptime of the daemon
-        self.log_uptime()
-
-
-    def _create_workers(self, start=True):
-        """
-        Create child worker processes.  For each worker, create a process/thread 
-        safe object that is used to communicate between this parent process and 
-        the worker.  Return a dictionary where the key is the process object, 
-        and the value its corresponding run_state state object.
-        
-        WORKERS:
-            - DownloadWorker # Downloads files
-            - HistoryWorker  # logs out history of downloaded files
-        """
-
-        account = CONFIG.get("account") or None
-        logger.info("account: %s", account)
-
-        project = self.args.get("project") or None
-        logger.info("project: %s", project)
-
-        location = self.args.get("location") or None
-        logger.info("location: %s", location)
-
-        output_dir = self.args.get("output") or ""
-        logger.info("output_dir: %s", output_dir)
-
-        thread_count = self.args.get("thread_count") or 5
-        logger.info("thread_count: %s", thread_count)
-
-        #### CREATE WORKER PROCESSES ####
-        workers = {}
-
-        # Create DownloadWorker processes
-        for _ in range(thread_count):
-
-            # Create a process-safe run_state object for controlling process
-            run_state = multiprocessing.Array('c', "stoppingorstuff")
-            worker = DownloadWorker(run_state,
-                                    self._results_queue,
-                                    account=account,
-                                    output_dir=output_dir,
-                                    project=project,
-                                    location=location)
-            workers[worker] = run_state
-
-
-        # Create a HistoryWorker process for printing out the history of downloaded files
-        run_state = multiprocessing.Array('c', "stoppingorstuff")
-        worker = HistoryWorker(run_state=run_state,
-                               results_queue=self._results_queue,
-                               print_interval=10,
-                               history_max=self.RESULTS_MAX)
-        workers[worker] = run_state
-
-        if start:
-            [wrk.start() for wrk in workers]
-
-        return workers
-
-
-    def sigint_handler(self, sig, frm):
-        '''
-        Handles the SIGINT signal (i.e. the KeyboardInterrupt python exception).
-        
-        This simply calls the Downloader's stop_daemon method.
-        
-        Note that when registering this function as the signint handler, this function
-        gets called by ALL child processes as well.  Because of this, we check
-        which process is calling it, and only execute it if it's the main (parent)
-        process.
-        '''
-        current_process = multiprocessing.current_process()
-
-        # if the process that is calling this function is the "MainProcesS"
-        if current_process.name == "MainProcess":
-            logger.warning("ctrl-c exit...")
-            logger.debug("Stopping...")
-            return self.stop_daemon()
-
-
-    def log_uptime(self):
-        '''
-        Return the amount of time that the uploader has been running, e.g "0:01:28"
-        '''
-        seconds = time.time() - self._start_time
-        human_duration = common.get_human_duration(seconds)
-        logger.info("Uptime: %s", human_duration)
-
-
-class HistoryWorker(multiprocessing.Process):
-    '''
-    A process that periodically print/logs the "history" of the last x files
-    that have been downloaded.
-    '''
-
-    def __init__(self, run_state, results_queue, print_interval=10, history_max=100):
-        '''
-        run_state:    multiprocessing.Array object. Used by the parent calling
-                      process to communicate when to shutdown/exit this Process.
-        
-        results_queue: multiprocessing.Queue object.  Contains an entry for each
-                       file that was handled by the downloader and what happened
-                       with it. 
-        
-        print_interval: int/float. The frequency to print/log the history
-        
-        history_max: indicates how many files (the last n) to report about. 
-        '''
-        self._run_state = run_state
-        self._results_queue = results_queue
-        self._history_max = history_max
-        self._print_interval = print_interval
-        self._last_history = None
-        super(HistoryWorker, self).__init__()
-
-
-    def run(self):
-        '''
-        Start and return a thread that is responsible for pinging the app for
-        Downloads to download (and populating the queue)
-        '''
-        self._run_state.value = Downloader.STATE_RUNNING
-
-        while self._run_state.value == Downloader.STATE_RUNNING:
-            self._print_history()
-
-        logger.debug("Exiting process")
-
-
-    def _print_history(self):
-        '''
-        #### HISTORY ####
-        2016-11-10 00:49:03,311  conductor.lib.downloader     INFO  HistoryWorker-26:  ##### DOWNLOAD HISTORY ##### (last 100 files)
-        COMPLETED AT         DOWNLOAD ID       JOB    TASK  SIZE       ACTION  DURATION  THREAD             FILEPATH
-        2016-11-10 00:48:53  6718909069656064  35681  010    542.05KB  Reuse   0:00:00   DownloadWorker-19  /tmp/FX_dirt_main_v067.01050.exr
-        2016-11-10 00:48:53  6718829881196544  35681  056    340.87KB  Reuse   0:00:00   DownloadWorker-13  /tmp/FX_dirt_main_v067.01096.exr
-        2016-11-10 00:48:53  6654165088468992  35681  057    334.88KB  DL      0:00:01   DownloadWorker-21  /tmp/FX_dirt_main_v067.01097.exr
-        2016-11-10 00:48:53  6741280748994560  35681  068    305.68KB  Reuse   0:00:00   DownloadWorker-3   /tmp/FX_dirt_main_v067.01108.exr
-        2016-11-10 00:48:53  6736540447277056  35681  063    313.54KB  Reuse   0:00:00   DownloadWorker-10  /tmp/FX_dirt_main_v067.01103.exr
-        '''
-        results_list = []
-        while self._run_state.value == Downloader.STATE_RUNNING:
-            try:
-                # transfer/empty the results queue into the history list
-                while not self._results_queue.empty():
-                    results_list.append(self._results_queue.get_nowait())
-
-                # slice the list to contain only the last x values
-                results_list = results_list[-self._history_max:]
-
-                # Print the history
-                history_summary = self._construct_history_summary(results_list)
-
-                # Only print the history if it is different from before
-                if history_summary == self._last_history:
-                    logger.info('##### DOWNLOAD HISTORY ##### [No changes]')
-                else:
-                    logger.info("%s\n", history_summary)
-                    self._last_history = history_summary
-
-            except:
-                logger.exception("Failed to report Summary")
-
-            self._wait(self._print_interval)
-
-
-    def _construct_history_summary(self, results_list):
-        '''
-        For the given results list, return a printable/loggable history summary
-        for them. 
-
-        '''
-        title = " DOWNLOAD HISTORY %s " % (("(last %s files)" % self._history_max) if self._history_max else "")
-        column_names = ["Completed at", "Download ID", "Job", "Task", "Size", "Action", "Duration", "Thread", "Filepath"]
-        table = downloader2.HistoryTableStr(data=list(reversed(results_list)),
-                                            column_names=column_names,
-                                            title=title.center(100, "#"),
-                                            footer="#"*180,
-                                            upper_headers=True)
-
-        return table.make_table_str()
-
-
-    def _wait(self, seconds):
-        '''
-        pause between empty get_next_download() calls
-
-        Instead of doing one long sleep call, we make a loop of many short sleep
-        calls. This gives the opportunity to check the running state, and exit
-        the sleep process if necessary.
-        '''
-        sleep_interval = seconds / 10.0
-
-        for _ in range(10):
-            if self._run_state.value == Downloader.STATE_RUNNING:
-                time.sleep(sleep_interval)
-
-
-class TouchWorker(threading.Thread):
-    '''
-    A Thread that periodically reports/"touches" file progress to the Conductor 
-    backend. Aside from reporting the byte progress of a file, it also serves
-    as a "heartbeat" for a file download, indicating to the backend that the file 
-    is still in progress and to not consider it a stranded/dead file download.
-    
-    The frequency of the reporting is dictated by two things:
-        1. The self._interval variable (seconds). A potential "touch" will occur 
-           every _interval seconds
-        2. However, the touch will only be executed  if there is data in the 
-           progress_queue. If there is no data in the progress queue then a "touch" 
-           will not not be issued. The progress queueu should have constant data
-           streaming through it (either when md5 hashing or downloading the file).
-           If there is no data getting put into it, then it means that the DownloadWorker
-           has hung on that file for some reason.  Eventually the backend will
-           "reset" that download because it will not have been touched after a 
-           few minutes.     
-    '''
-
-
-    def __init__(self, run_state, progress_queue, interval=10, process_name=""):
-        '''
-        run_state:    multiprocessing.Array object. Used by the parent calling
-                      process to communicate when to shutdown/exit this Process.
-        
-        progress_queue: multiprocessing.Queue object.  
-        
-        interval: int/float. The frequency to potentially issue a Touch to the backend
-        process_name: str. the name of the parent process. This will serve as
-                      a prefix for the thread's name.   
-        '''
-
-        self._progress_queue = progress_queue
-        self._interval = interval
-        self._run_state = run_state
-        super(TouchWorker, self).__init__(name=process_name + " TouchWorker")
-
-
-    def run(self):
-        '''
-        Perpetually report the file progress to the app for a given interval.
-        
-        Report on the last entry found in the progress queue. If there are no entries,
-        then do not report anything. We want the backend to reset any "stranded"/"stuck"
-        downloads, so only report progress when there IS progress. Progress entries 
-        only get added to the queue when a file download is being actively hashed
-        or downloaded. 
-        '''
-        self._run_state.value = Downloader.STATE_RUNNING
-
-        self._last_touch = time.time()
-
-        while self._run_state.value == Downloader.STATE_RUNNING:
-            if time.time() - self._last_touch >= self._interval:
-
-                # Get the most recent file progress from the queue
-                file_progress = self._get_last_file_progress(self._progress_queue)
-
-                # If there is file progress, "touch" the backend with the progress data
-                if file_progress:
-                    file_id, action, bytes_processed = file_progress
-                    try:
-                        self._touch(file_id, action, bytes_processed)
-                    except:
-                        logger.exception("FAILED TO TOUCH:\n")
-
-                self._last_touch = time.time()
-
-            # sleep a lil so that we're not slamming the cpu
-            self._wait(seconds=.2)
-
-        logger.debug("Exiting thread")
-
-
-    def _touch(self, file_id, action, bytes_processed):
-        logger.debug("Touching backend: id=%s _bytes_action=%s bytes_processed=%s" % (file_id, action, bytes_processed))
-        Backend.touch(file_id, bytes_transferred=bytes_processed)
-
-
-    def _wait(self, seconds):
-        '''
-        sleep for the given number of seconds.
-
-        Instead of doing one long sleep call, we make a loop of many short sleep
-        calls. This gives the opportunity to check the running state, and exit
-        the sleep process if necessary.
-        '''
-        sleep_interval = seconds / 10.0
-
-        for _ in range(10):
-            if self._run_state.value == Downloader.STATE_RUNNING:
-                time.sleep(sleep_interval)
-
-
-    @classmethod
-    def _get_last_file_progress(cls, queue):
-        '''
-        Get the last item from the given queue object. We're only interested in 
-        the most recent item in the queue (all older ones are superseded by newer
-        entries), but unfortunately there are no FILO queues for multiprocessing.
-        No matter, we need to clear the contents of the queue anyway, so we'll
-        remove all items and return the last item 
-          
-        '''
-        progress_items = empty_queue(queue)
-        if progress_items:
-            # return the last item
-            return progress_items[-1]
 
 
 class Counter(object):
@@ -1352,6 +1306,7 @@ def run_downloader(args):
     logger.debug('Downloader args: %s', args)
     downloader = Downloader(args)
     downloader.start_daemon()
+
 
 def set_logging(level=None, log_dirpath=None):
     log_filepath = None
