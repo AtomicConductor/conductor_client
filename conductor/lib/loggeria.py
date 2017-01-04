@@ -104,9 +104,9 @@ def create_file_handler(filepath, level=None, formatter=None, multiproc=False):
     stores up to 7 days of logs at a time (equaling up to as many as 7 log files 
     at a given time.
     '''
-    when = 's'
-    interval = 15
-    backupCount = 7
+    when = 'h'  # rotate unit is "h" (hours)
+    interval = 24  # rotate every  24 units (24 hours)
+    backupCount = 7  # Retain up to 7 log files (7 days of log files)
 
 
     log_dirpath = os.path.dirname(filepath)
@@ -159,6 +159,9 @@ class MPFileHandler(logging.Handler):
 
 
     def __init__(self, filename, when='h', interval=1, backupCount=0, encoding=None, delay=0, utc=0):
+        '''
+        See TimedRotatingFileHandler for arg docs
+        '''
         logging.Handler.__init__(self)
         self._handler = TimedRotatingFileHandler(filename,
                                                  when=when,
