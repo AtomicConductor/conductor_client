@@ -1,6 +1,11 @@
 import os
 import logging
 import logging.handlers
+from logging.handlers import TimedRotatingFileHandler
+import multiprocessing
+import sys
+import threading
+import traceback
 
 
 
@@ -36,13 +41,13 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
                             console_formatter=FORMATTER_LIGHT,
                             log_filepath=None,
                             file_level=None,
-                            file_formatter=FORMATTER_VERBOSE):
+                            file_formatter=FORMATTER_VERBOSE,
+                            multiproc=False):
     '''
     The is convenience function to help set up logging. 
     
     THIS SHOULD ONLY BE CALLED ONCE within an execution environment.
 
-    
     This function does the following:
     
     1. Creates/retrieves the logger object for the "conductor" package
@@ -57,6 +62,10 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
     console_formatter & file_formatter:
     Formatters are the formatter objects. Not just a string such as "DEBUG".  
     This is because you may need more than just a string to define a formatter object.
+
+    multiproc: bool. If True, a custom file handler will be used that handles multiprocess
+               logging correctly. This file handler creates an additional Process.
+
     '''
     # Get the top/parent conductor logger
     logger = get_conductor_logger()
@@ -83,27 +92,36 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
         if file_level:
             assert file_level in LEVEL_MAP.values(), "Not a valid log level: %s" % file_level
         # Rotating file handler. Rotates every day (24 hours). Stores 7 days at a time.
-        file_handler = create_file_handler(log_filepath, level=file_level, formatter=file_formatter)
+        file_handler = create_file_handler(log_filepath, level=file_level, formatter=file_formatter, multiproc=multiproc)
         logger.addHandler(file_handler)
 
 
 
-def create_file_handler(filepath, level=None, formatter=None):
+def create_file_handler(filepath, level=None, formatter=None, multiproc=False):
     '''
     Create a file handler object for the given filepath.
     This is a ROTATING file handler, which rotates every day (24 hours) and 
-    stores up to 7 days of logs at a time (equalling up to as many as 7 log files 
+    stores up to 7 days of logs at a time (equaling up to as many as 7 log files 
     at a given time.
     '''
+    when = 's'
+    interval = 15
+    backupCount = 7
+
 
     log_dirpath = os.path.dirname(filepath)
     if not os.path.exists(log_dirpath):
         os.makedirs(log_dirpath)
 
-    # Rotating file handler. Rotates every day (24 hours). Stores 7 days at a time.
-    handler = logging.handlers.TimedRotatingFileHandler(filepath,
-                                                        interval=24,
-                                                        backupCount=7)
+    if multiproc:
+        # Use custom rotating file handler that handles multiprocessing properly
+        handler = MPFileHandler(filepath, when=when, interval=interval, backupCount=backupCount)
+    else:
+        # Rotating file handler. Rotates every day (24 hours). Stores 7 days at a time.
+        handler = logging.handlers.TimedRotatingFileHandler(filepath,
+                                                            when=when,
+                                                            interval=interval,
+                                                            backupCount=backupCount)
     if formatter:
         handler.setFormatter(formatter)
 
@@ -128,6 +146,81 @@ def get_conductor_logger():
     Return the "conductor" package's logger object
     '''
     return logging.getLogger(CONDUCTOR_LOGGER_NAME)
+
+
+
+
+class MPFileHandler(logging.Handler):
+    '''
+    Multiprocess-safe Rotating File Handler
+    
+    Copied from: http://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python
+    '''
+
+
+    def __init__(self, filename, when='h', interval=1, backupCount=0, encoding=None, delay=0, utc=0):
+        logging.Handler.__init__(self)
+        self._handler = TimedRotatingFileHandler(filename,
+                                                 when=when,
+                                                 interval=interval,
+                                                 backupCount=backupCount,
+                                                 encoding=encoding,
+                                                 delay=delay,
+                                                 utc=utc)
+
+
+        self.queue = multiprocessing.Queue()
+
+        t = threading.Thread(target=self.receive)
+        t.daemon = True
+        t.start()
+
+    def setFormatter(self, fmt):
+        logging.Handler.setFormatter(self, fmt)
+        self._handler.setFormatter(fmt)
+
+    def receive(self):
+        while True:
+            try:
+                record = self.queue.get()
+                self._handler.emit(record)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except EOFError:
+                break
+            except:
+                traceback.print_exc(file=sys.stderr)
+
+    def send(self, s):
+        self.queue.put_nowait(s)
+
+    def _format_record(self, record):
+        # ensure that exc_info and args
+        # have been stringified.  Removes any chance of
+        # unpickleable things inside and possibly reduces
+        # message size sent over the pipe
+        if record.args:
+            record.msg = record.msg % record.args
+            record.args = None
+        if record.exc_info:
+            dummy = self.format(record)
+            record.exc_info = None
+
+        return record
+
+    def emit(self, record):
+        try:
+            s = self._format_record(record)
+            self.send(s)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.handleError(record)
+
+    def close(self):
+        self._handler.close()
+        logging.Handler.close(self)
+
 
 
 
