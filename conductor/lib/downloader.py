@@ -337,8 +337,8 @@ class Downloader(object):
         which process is calling it, and only execute it if it's the main (parent)
         process.
         '''
-        
-        # change the global 
+
+        # change the global
         global RUN_STATE
         RUN_STATE.value = "killed"
 
@@ -1362,6 +1362,7 @@ def set_logging(level=None, log_dirpath=None):
     loggeria.setup_conductor_logging(logger_level=level,
                                      console_formatter=formatter,
                                      file_formatter=formatter,
-                                     log_filepath=log_filepath)
+                                     log_filepath=log_filepath,
+                                     multiproc=True)
 
 
