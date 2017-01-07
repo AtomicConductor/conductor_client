@@ -165,6 +165,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         self.api_client = api_client.ApiClient()
         self.project = kwargs.get('project')
 
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=3)
     def make_request(self, job):
         uri_path = '/api/files/get_upload_urls'
         headers = {'Content-Type':'application/json'}
@@ -175,7 +176,7 @@ class HttpBatchWorker(worker.ThreadWorker):
                                                                    verb='POST',
                                                                    headers=headers,
                                                                    data=json.dumps(data),
-                                                                   raise_on_error=False)
+                                                                   raise_on_error=True)
 
         if response_code == 200:
             url_list = json.loads(response_str)
