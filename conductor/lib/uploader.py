@@ -369,7 +369,7 @@ class Uploader():
 
     def create_report_status_thread(self):
         logger.debug('creating reporter thread')
-        thd = Thread(target=self.report_status)
+        thd = Thread(name="ReporterThread", target=self.report_status)
         thd.daemon = True
         thd.start()
 
@@ -496,7 +496,7 @@ class Uploader():
 
     def create_print_status_thread(self):
         logger.debug('creating console status thread')
-        thd = Thread(target=self.print_status)
+        thd = Thread(name="PrintStatusThread", target=self.print_status)
 
         # make sure threads don't stop the program from exiting
         thd.daemon = True
@@ -633,9 +633,8 @@ class Uploader():
                 if error_message:
                     self.mark_upload_failed(error_message, upload_id)
 
-            except Exception, e:
-                logger.error('hit exception %s', e)
-                logger.error(traceback.format_exc())
+            except:
+                logger.exception('Caught exception:\n')
                 time.sleep(self.sleep_time)
                 continue
 
