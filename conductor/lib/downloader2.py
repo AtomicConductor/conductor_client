@@ -782,7 +782,6 @@ class Downloader(object):
 
 
 #     @dec_random_exception(percentage_chance=0.05)
-    @common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
     def report_download_status(self, task_download_state):
         download_id = task_download_state.task_download.get("download_id")
         if not download_id:
@@ -1116,7 +1115,6 @@ def prepare_dest_dirpath(dir_path):
 
 
 # @dec_random_exception(percentage_chance=0.05)
-@common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_next_downloads(location, endpoint, client, count=1):
     params = {'location': location,
               "count": count}
@@ -1129,7 +1127,6 @@ def _get_next_downloads(location, endpoint, client, count=1):
 
     return json.loads(response_string).get("data", [])
 
-@common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_job_download(endpoint, client, jid, tid):
     params = None
     if tid:
