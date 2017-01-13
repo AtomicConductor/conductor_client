@@ -1,5 +1,6 @@
 import base64
 import datetime
+from pprint import pformat
 import time
 import ast
 import json
@@ -165,7 +166,6 @@ class HttpBatchWorker(worker.ThreadWorker):
         self.api_client = api_client.ApiClient()
         self.project = kwargs.get('project')
 
-    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=3)
     def make_request(self, job):
         uri_path = '/api/files/get_upload_urls'
         headers = {'Content-Type':'application/json'}
@@ -273,8 +273,13 @@ class UploadWorker(worker.ThreadWorker):
 
 
 
-    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=3)
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def do_upload(self, upload_url, filename, md5):
+        '''
+        Note that we don't rely on the make_request's own retry mechanism because
+        we need to recreate the chunked_reader generator before retrying the request.
+        Instead, we wrap this method in a retry decorator.
+        '''
 
         headers = {'Content-MD5': md5,
                    'Content-Type': 'application/octet-stream'}
@@ -282,7 +287,8 @@ class UploadWorker(worker.ThreadWorker):
         return self.api_client.make_request(conductor_url=upload_url,
                                             headers=headers,
                                             data=self.chunked_reader(filename),
-                                            verb='PUT')
+                                            verb='PUT',
+                                            tries=1)
 
 
 
@@ -540,7 +546,7 @@ class Uploader():
         '''
         try:
 
-
+            logger.info("%s", "  NEXT UPLOAD  ".center(30, "#"))
             logger.info('project: %s', project)
             logger.info('upload_id is %s', upload_id)
             logger.info('upload_files %s:(truncated)\n\t%s',
@@ -609,7 +615,7 @@ class Uploader():
                     time.sleep(self.sleep_time)
                     continue
                 elif resp_code != 201:
-                    logger.error('recieved invalid response code from app %s', resp_code)
+                    logger.error('received invalid response code from app %s', resp_code)
                     logger.error('response is %s', resp_str)
                     time.sleep(self.sleep_time)
                     continue
