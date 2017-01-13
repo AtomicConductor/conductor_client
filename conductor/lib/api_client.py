@@ -26,7 +26,6 @@ class ApiClient():
     def __init__(self):
         logger.debug('')
 
-    @common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS, tries=5)
     def _make_request(self, verb, conductor_url, headers, params, data, raise_on_error=True):
         response = requests.request(verb, conductor_url,
                                     headers=headers,
@@ -54,7 +53,7 @@ class ApiClient():
         return response
 
     def make_request(self, uri_path="/", headers=None, params=None, data=None,
-                     verb=None, conductor_url=None, raise_on_error=True):
+                     verb=None, conductor_url=None, raise_on_error=True, tries=5):
         '''
         verb: PUT, POST, GET, DELETE, HEAD, PATCH
         '''
@@ -82,9 +81,17 @@ class ApiClient():
                 verb = 'GET'
 
         assert verb in self.http_verbs, "Invalid http verb: %s" % verb
-        response = self._make_request(verb, conductor_url, headers, params, data,
-                                      raise_on_error=raise_on_error)
 
+        # Create a retry wrapper function
+        retry_wrapper = common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS,
+                                       tries=tries)
+
+        # wrap the request function with the retry wrapper
+        wrapped_func = retry_wrapper(self._make_request)
+
+        # call the wrapped request function
+        response = wrapped_func(verb, conductor_url, headers, params, data,
+                                      raise_on_error=raise_on_error)
 
 
         return response.text, response.status_code
