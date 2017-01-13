@@ -245,8 +245,9 @@ class DecRetry(object):
         @functools.wraps(orig_function)
         def wrapper_function(*args, **kwargs):
 
-            # Attempt to call the function for as many times as specified
-            for try_num in range(1, self.tries + 1):
+            # Attempt to call the function in a try/excet as many times as specified by the tries, minus 1)
+            # if tries=1, this loop wont even happen
+            for try_num in range(self.tries - 1):
                 try:
                     return orig_function(*args, **kwargs)
                 except Exception as e:
