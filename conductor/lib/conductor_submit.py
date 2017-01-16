@@ -377,8 +377,14 @@ class Submit():
         upload_size = 0
 
         # Create a dictionary of upload_files with None as the values.
+        upload_file_info = {}
+        for path in upload_files:
+            upload_file_info[path] = {"md5": None,
+                                      "source": path,
+                                      "destination": path}
         upload_files = dict([(path, None) for path in upload_files])
 
+        logger.debug("Upload files is %s" % upload_files)
         # If opting to upload locally (i.e. from this machine) then run the uploader now
         # This will do all of the md5 hashing and uploading files to the conductor (if necesary).
         if self.local_upload:
@@ -390,24 +396,39 @@ class Submit():
             if upload_error_message:
                 raise Exception("Could not upload files:\n%s" % upload_error_message)
             # Get the resulting dictionary of the file's and their corresponding md5 hashes
-            upload_files = uploader_.return_md5s()
+            upload_md5s = uploader_.return_md5s()
+            for path, md5 in upload_md5s.iteritems():
+                upload_file_info[path]['md5'] = md5
 
         # If the NOT uploading locally (i.e. offloading the work to the uploader daemon
         else:
             # update the upload_files dictionary with md5s that should be enforced
             # this will override the None values with actual md5 hashes
             for filepath, md5 in self.enforced_md5s.iteritems():
+                logger.debug("filepath is %s" % filepath)
                 processed_filepaths = file_utils.process_upload_filepath(filepath)
                 assert len(processed_filepaths) == 1, "Did not get exactly one filepath: %s" % processed_filepaths
-                upload_files[processed_filepaths[0]] = md5
+                upload_file_info[processed_filepaths[0]]["md5"] = md5
 
-        for upload_file in upload_files:
-            upload_size += os.stat(upload_file).st_size
+        for upload_file in upload_file_info:
+            logger.debug("doing stat of %s" % upload_file)
+            filestat = os.stat(upload_file)
+            upload_size += filestat.st_size
+            upload_file_info[upload_file]["st_mode"] = filestat.st_mode
+            upload_file_info[upload_file]["st_ino"] = filestat.st_ino
+            upload_file_info[upload_file]["st_dev"] = filestat.st_dev
+            upload_file_info[upload_file]["st_nlink"] = filestat.st_nlink
+            upload_file_info[upload_file]["st_uid"] = filestat.st_uid
+            upload_file_info[upload_file]["st_gid"] = filestat.st_gid
+            upload_file_info[upload_file]["st_size"] = filestat.st_size
+            upload_file_info[upload_file]["st_atime"] = int(filestat.st_atime)
+            upload_file_info[upload_file]["st_mtime"] = int(filestat.st_mtime)
+            upload_file_info[upload_file]["st_ctime"] = int(filestat.st_ctime)
 
         # Submit the job to conductor. upload_files may have md5s included in dictionary or may not.
         # Any md5s that are incuded, are expected to be checked against if/when the uploader
         # daemon goes to upload them. If they do not match what is on disk, the uploader will fail the job
-        response, response_code = self.send_job(upload_files, upload_size)
+        response, response_code = self.send_job(upload_file_info, upload_size)
         return json.loads(response), response_code
 
     def get_upload_files(self):
