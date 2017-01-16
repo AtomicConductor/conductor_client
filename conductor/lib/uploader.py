@@ -588,7 +588,19 @@ class Uploader():
                 return "\n".join(error_message)
 
             if self.upload_id:
-                finished_upload_files = self.return_md5s()
+                finished_upload_files = {path: {"source": path, "md5": md5} for path, md5 in self.return_md5s().iteritems()}
+                for source, md5 in self.return_md5s().iteritems():
+                    filestat = os.stat(source)
+                    finished_upload_files[source]["st_mode"] = filestat.st_mode
+                    finished_upload_files[source]["st_ino"] = filestat.st_ino
+                    finished_upload_files[source]["st_dev"] = filestat.st_dev
+                    finished_upload_files[source]["st_nlink"] = filestat.st_nlink
+                    finished_upload_files[source]["st_uid"] = filestat.st_uid
+                    finished_upload_files[source]["st_gid"] = filestat.st_gid
+                    finished_upload_files[source]["st_size"] = filestat.st_size
+                    finished_upload_files[source]["st_atime"] = filestat.st_atime
+                    finished_upload_files[source]["st_mtime"] = filestat.st_mtime
+                    finished_upload_files[source]["st_ctime"] = filestat.st_ctime
                 self.mark_upload_finished(self.upload_id, finished_upload_files)
 
         except:
