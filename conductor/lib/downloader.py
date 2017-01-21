@@ -499,7 +499,10 @@ class DownloadWorker(multiprocessing.Process):
         worker = TouchWorker(run_state,
                              self._progress_queue,
                              interval=TOUCH_INTERVAL,
-                             process_name=self.name)
+                             process_name=self.name,
+                             account=self.account,
+                             location=self.location,
+                             project=self.project)
         workers[worker] = run_state
 
         if start:
@@ -563,7 +566,7 @@ class DownloadWorker(multiprocessing.Process):
             action = "DL" if downloaded else "Reuse"
 
             # Report to the app that that the file finished
-            Backend.finish(id_, bytes_downloaded=file_size)
+            Backend.finish(id_, bytes_downloaded=file_size, account=self.account, location=self.location, project=self.project)
 
 
         # Catch a DownloaderExit exception, perform any cleanup, then re-raise
@@ -580,7 +583,7 @@ class DownloadWorker(multiprocessing.Process):
             logger.exception("%s|%s  CAUGHT EXCEPTION  %s:\n", jid, tid, local_file)
             msg = "Failing id %s" % id_
             self._log_msg(jid, tid, msg, local_file, log_level=logging.ERROR)
-            Backend.fail(id_, bytes_downloaded=self._bytes_counter.value)
+            Backend.fail(id_, bytes_downloaded=self._bytes_counter.value, account=self.account, location=self.location, project=self.project)
 
         # Reset the file state info.
         self._reset_progress()
@@ -944,7 +947,7 @@ class TouchWorker(threading.Thread):
            few minutes.     
     '''
 
-    def __init__(self, run_state, progress_queue, interval=10, process_name=""):
+    def __init__(self, run_state, progress_queue, interval=10, process_name="", account=None, project=None, location=None):
         '''
         run_state:    multiprocessing.Array object. Used by the parent calling
                       process to communicate when to shutdown/exit this Process.
@@ -959,6 +962,9 @@ class TouchWorker(threading.Thread):
         self._progress_queue = progress_queue
         self._interval = interval
         self._run_state = run_state
+        self._account = account
+        self._project = project
+        self._location = location
         super(TouchWorker, self).__init__(name=process_name + " TouchWorker")
 
     def run(self):
@@ -998,7 +1004,7 @@ class TouchWorker(threading.Thread):
 
     def _touch(self, file_id, action, bytes_processed):
         logger.debug("Touching backend: id=%s _bytes_action=%s bytes_processed=%s" % (file_id, action, bytes_processed))
-        Backend.touch(file_id, bytes_transferred=bytes_processed)
+        Backend.touch(file_id, bytes_transferred=bytes_processed, account=self._account, location=self._location, project=self._project)
 
     def _wait(self, seconds):
         '''
@@ -1151,9 +1157,12 @@ class Backend:
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
     @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, tries=3)
-    def touch(cls, id_, bytes_transferred=0):
+    def touch(cls, id_, bytes_transferred=0, account=None, location=None, project=None):
         path = "downloader/touch/%s" % id_
-        kwargs = {"bytes_transferred": bytes_transferred}
+        kwargs = {"bytes_transferred": bytes_transferred,
+                  "account": account,
+                  "location": location,
+                  "project": project}
         try:
             return Backend.put(path, kwargs, headers=cls.headers)
         except requests.HTTPError as e:
@@ -1165,10 +1174,13 @@ class Backend:
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
     @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, tries=3)
-    def finish(cls, id_, bytes_downloaded=0):
+    def finish(cls, id_, bytes_downloaded=0, account=None, location=None, project=None):
         path = "downloader/finish/%s" % id_
         logger.debug(path)
-        payload = {"bytes_downloaded": bytes_downloaded}
+        payload = {"bytes_downloaded": bytes_downloaded,
+                   "account": account,
+                   "location": location,
+                   "project": project}
         try:
             return Backend.put(path, payload, headers=cls.headers)
         except requests.HTTPError as e:
@@ -1180,9 +1192,12 @@ class Backend:
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
     @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, tries=3)
-    def fail(cls, id_, bytes_downloaded=0):
+    def fail(cls, id_, bytes_downloaded=0, account=None, location=None, project=None):
         path = "downloader/fail/%s" % id_
-        payload = {"bytes_downloaded": bytes_downloaded}
+        payload = {"bytes_downloaded": bytes_downloaded,
+                   "account": account,
+                   "location": location,
+                   "project": project}
         try:
             return Backend.put(path, payload, headers=cls.headers)
         except requests.HTTPError as e:
@@ -1234,8 +1249,8 @@ class Backend:
         TODO: get rid of this hardcoding!!! 
         '''
         # url_base = "104.196.62.220"
-        # url_base = "127.0.0.1:8080"
-        url_base = "104.198.192.129"
+        url_base = "127.0.0.1:8080"
+        # url_base = "104.198.192.129"
         return "http://%s/api/%s" % (url_base, path)
 
 
