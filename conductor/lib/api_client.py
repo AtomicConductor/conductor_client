@@ -38,7 +38,8 @@ class ApiClient():
 #         logger.debug("params: %s", params)
 #         logger.debug("data: %s", data)
 
-        if response.status_code and response.status_code >= 300:
+        # If we get 300s/400s debug out the response. TODO(lws): REMOVE THIS
+        if response.status_code and response.status_code >= 300 and response.status_code < 500:
             logger.debug("*****  ERROR!!  *****")
             logger.debug("Reason: %s" % response.reason)
             logger.debug("Text: %s" % response.text)
