@@ -587,25 +587,14 @@ class Uploader():
             if error_message:
                 return "\n".join(error_message)
 
+            #  Despite storing lots of data about new uploads, we will only send back the things
+            #  that have changed, to keep payloads small. 
             if self.upload_id:
-                # finished_upload_files = {path: {"source": path, "md5": md5} for path, md5 in self.return_md5s().iteritems()}
-                finished_upload_files = []
-                for source, md5 in self.return_md5s().iteritems():
-                    filestat = os.stat(source)
-                    file_info = {"md5": md5,
-                                 "destination": source,
-                                 "gcs_url": common.get_upload_gcs_path(project, md5),
-                                 "st_mode": filestat.st_mode,
-                                 "st_ino": filestat.st_ino,
-                                 "st_dev": filestat.st_dev,
-                                 "st_nlink": filestat.st_nlink,
-                                 "st_uid": filestat.st_uid,
-                                 "st_gid": filestat.st_gid,
-                                 "st_size": filestat.st_size,
-                                 "st_atime": filestat.st_atime,
-                                 "st_mtime": filestat.st_mtime,
-                                 "st_ctime": filestat.st_ctime}
-                    finished_upload_files.append(file_info)
+                finished_upload_files = {path: {"source": path,
+                                                "md5": md5,
+                                                "gcs_url": common.get_upload_gcs_path(project, md5)}
+                                         for path, md5 in self.return_md5s().iteritems()}
+
                 self.mark_upload_finished(self.upload_id, finished_upload_files)
 
         except:
