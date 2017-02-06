@@ -1,4 +1,5 @@
 import base64
+import datetime
 import functools
 import hashlib
 import logging
@@ -6,12 +7,19 @@ import math
 import multiprocessing
 import os
 import platform
+import random
 import signal
 import subprocess
 import sys
 import time
 import traceback
 import yaml
+
+
+BYTES_1KB = 1024
+BYTES_1MB = BYTES_1KB ** 2
+BYTES_1GB = BYTES_1KB ** 3
+BYTES_1TB = BYTES_1KB ** 4
 
 
 logger = logging.getLogger(__name__)
@@ -155,56 +163,24 @@ class ExceptionLogger(ExceptionAction):
         logger.log(self._log_level, msg)
 
 
-def retry(function, retry_count=5):
-    def check_for_early_release(error):
-        logger.debug('checking for early_release. SIGINT_EXIT is %s' % SIGINT_EXIT)
-        if SIGINT_EXIT:
-            logger.debug('releasing in retry')
-            raise error
+def dec_timer_exit(log_level=logging.INFO):
+    def timer_decorator(func):
+        '''
+        '''
+        @functools.wraps(func)
+        def wrapper(*a, **kw):
+            if not logger:
+                global logger
 
-    # disable retries in testing
-    if os.environ.get('FLASK_CONF') == 'TEST':
-        retry_count = 0
+            func_name = getattr(func, "__name__", "<Unknown function>")
+            start_time = time.time()
+            result = func(*a, **kw)
+            finish_time = '%s :%.2f seconds' % (func_name, time.time() - start_time)
+            logger.log(log_level, finish_time)
+            return result
+        return wrapper
 
-    i = 0
-    while True:
-        try:
-            # logger.debug('trying to run %s' % function)
-            return_values = function()
-        except Exception, e:
-            logger.debug('caught error')
-            logger.debug('failed due to: \n%s' % traceback.format_exc())
-            if i < retry_count:
-                check_for_early_release(e)
-                # exponential backoff with 250ms base
-                sleep_time_in_ms = 250 * int(math.pow(2, i))
-                sleep_time = sleep_time_in_ms / 1000.0
-                logger.debug('retrying after %s seconds' % sleep_time)
-                time.sleep(sleep_time)
-                i += 1
-                check_for_early_release(e)
-                continue
-            else:
-                logger.debug('exceeded %s retries. throwing error...' % retry_count)
-                raise e
-        else:
-            # logger.debug('ran %s ok' % function)
-            return return_values
-
-
-
-def dec_timer_exit(func):
-    '''
-    '''
-    @functools.wraps(func)
-    def wrapper(*a, **kw):
-        func_name = getattr(func, "__name__", "<Unknown function>")
-        start_time = time.time()
-        result = func(*a, **kw)
-        finish_time = '%s :%.2f seconds' % (func_name, time.time() - start_time)
-        logger.info(finish_time)
-        return result
-    return wrapper
+    return timer_decorator
 
 def dec_catch_exception(raise_=False):
 
@@ -232,6 +208,68 @@ def dec_catch_exception(raise_=False):
                     raise
         return wrapper
     return catch_decorator
+
+
+class DecRetry(object):
+    '''
+    Decorator that retries the decorated function using an exponential backoff sleep.
+
+    retry_exceptions: An Exception class (or a tuple of Exception classes) that
+                    this decorator will catch/retry.  All other exceptions that
+                    occur will NOT be retried. By default, all exceptions are
+                    caught (due to the default arguemnt of Exception)
+
+    skip_exceptions:  An Exception class (or a tuple of Exception classes) that
+                     this decorator will NOT catch/retry.  This will take precedence
+                     over the retry_exceptions.
+    
+    tries: int. number of times to try (not retry) before raising
+    static_sleep: The amount of seconds to sleep before retrying. When set to 
+                  None, the sleep time will use exponential backoff. See below.  
+
+    This retry function not only incorporates exponential backoff, but also
+    "jitter".  see http://www.awsarchitectureblog.com/2015/03/backoff.html.
+    Instead of merely increasing the backoff time exponentially (determininstically),
+    there is a randomness added that will set the sleeptime anywhere between
+    0 and the full exponential backoff time length.
+
+    '''
+    def __init__(self, retry_exceptions=Exception, skip_exceptions=(), tries=8, static_sleep=None):
+        self.retry_exceptions = retry_exceptions
+        self.skip_exceptions = skip_exceptions
+        self.tries = tries
+        self.static_sleep = static_sleep
+
+    def __call__(self, orig_function):
+
+        @functools.wraps(orig_function)
+        def wrapper_function(*args, **kwargs):
+
+            # Attempt to call the function in a try/excet as many times as specified by the tries, minus 1)
+            # if tries=1, this loop wont even happen
+            for try_num in range(self.tries - 1):
+                try:
+                    return orig_function(*args, **kwargs)
+                except Exception as e:
+                    if not isinstance(e, self.retry_exceptions) or isinstance(e, self.skip_exceptions):
+                        logger.debug("Skipping retry because mismatched exception type: %s" , type(e))
+                        raise
+                    if self.static_sleep != None:
+                        sleep_time = self.static_sleep
+                    else:
+                        # use random for jitter.
+                        sleep_time = random.randrange(0, 2 ** try_num)
+                    msg = "%s, Retrying in %d seconds..." % (str(e), sleep_time)
+                    logger.warning(msg)
+                    self.sleep(sleep_time)
+
+            # if we've gotten here, we've run out of retries. This is the last try.
+            # This will be unhandled exception if it fails.
+            return orig_function(*args, **kwargs)
+        return wrapper_function
+
+    def sleep(self, seconds):
+        time.sleep(seconds)
 
 
 
@@ -263,13 +301,33 @@ def get_base64_md5(*args, **kwargs):
     b64 = base64.b64encode(md5)
     return b64
 
-def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, state=None):
+def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
+                 callback=None, log_level=logging.INFO):
     '''
     Generate and return md5 hash (base64) for the given filepath
+    
+    filepath: str. The file path to generate an md5 hash for.
+    
+    base_64: bool. whether or not to return a base64 string.
     
     poll_seconds: int, the number of seconds to wait between logging out to the 
                    console when md5 hashing (particularly a large file which
                    may take a while)
+    log_level: logging.level. The log level that should be used
+                when logging messages.
+                     
+   callback: A callable that is called during the md5 hashing process. It's called
+             every time a block of data has been hashed (see blocksize arg).The
+             callable receives the following arguments:
+             
+             filepath: see above
+             
+             file_size: the total size of the file (in bytes)
+             
+             bytes_processed: the amount of bytes that has currently been hashed
+             
+             log_level: see above
+               
     '''
     file_size = os.path.getsize(filepath)
     hash_obj = hashlib.md5()
@@ -281,19 +339,22 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None, st
         hash_obj.update(file_buffer)
         file_buffer = file_obj.read(blocksize)
         curtime = time.time()
-        progress = int(((buffer_count * blocksize) / float(file_size)) * 100)
+        bytes_processed = buffer_count * blocksize
+        percentage_processed = int((bytes_processed / float(file_size)) * 100)
+
         if poll_seconds and curtime - last_time >= poll_seconds:
-            logger.debug("MD5 hashing %s%% (size %s bytes): %s ", progress, file_size, filepath)
+            logger.log(log_level, "MD5 hashing %s%% (size %s bytes): %s ",
+                        percentage_processed, file_size, filepath)
             last_time = curtime
 
-        if state:
-            state.hash_progress = progress
+        if callback:
+            callback(filepath, file_size, bytes_processed, log_level=log_level)
 
         buffer_count += 1
 
     md5 = hash_obj.digest()
 
-    logger.debug("MD5 hashing 100%% (size %s bytes): %s ", file_size, filepath)
+    logger.log(log_level, "MD5 hashing 100%% (size %s bytes): %s ", file_size, filepath)
     if base_64:
         return base64.b64encode(md5)
     return md5
@@ -396,9 +457,15 @@ class Config():
         '''
         Read the given value (which was read from an environment variable, and
         process it onto an appropriate value for the config.yml file.
-        1. cast bool strings into actual python bools
-        2. anything else... ?
+        1. cast integers strings to python ints
+        2. cast bool strings into actual python bools
+        3. anything else? 
         '''
+        # Cast integers
+        if env_var.isdigit():
+            return int(env_var)
+
+        # Cast booleans
         bool_values = {"true": True,
                        "false": False}
 
@@ -492,6 +559,40 @@ def get_package_ids():
     resources = load_resources_file()
     return resources.get("package_ids") or {}
 
+def get_human_bytes(bytes_):
+    '''
+    For the given bytes (integer), convert and return a "human friendly:
+    representation of that data size. 
+    '''
+    if bytes_ > BYTES_1TB:
+        return  "%.2fTB" % (bytes_ / float(BYTES_1TB))
+    elif bytes_ > BYTES_1GB:
+        return  "%.2fGB" % (bytes_ / float(BYTES_1GB))
+    elif bytes_ > BYTES_1MB:
+        return  "%.2fMB" % (bytes_ / float(BYTES_1MB))
+    return  "%.2fKB" % (bytes_ / float(BYTES_1KB))
 
-class Auth:
-    pass
+def get_progress_percentage(current, total):
+    '''
+    Return  a string percentage, e.g. "80%" given current bytes (int) and total
+    bytes (int)
+    '''
+    if not all([current, total]):
+        progress_int = 0
+    else:
+        progress_int = int(current / float(total) * 100)
+    return "%s%%" % progress_int
+
+def get_human_duration(seconds):
+    '''
+    convert the given seconds (float) into a human friendly unit
+    '''
+    return str(datetime.timedelta(seconds=round(seconds)))
+
+def get_human_timestamp(seconds_since_epoch):
+    '''
+    convert the given seconds since epoch (float)
+    '''
+    return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
+
+

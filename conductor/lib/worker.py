@@ -136,15 +136,19 @@ class ThreadWorker(object):
                 try:
                     output = None
                     output = self.do_work(job, thread_int)
-                except Exception, e:
-                    if self.error_queue:
-                        self.mark_done()
-                        error_message = traceback.format_exc()
-                        logger.error('[thread %s]Hit error: \n', thread_int)
-                        self.error_queue.put(error_message)
-                        break
-                    else:
-                        raise e
+                except:
+                    logger.exception('CAUGHT EXCEPTION:\n')
+
+                    # if there is no error queue to dump data into, then simply raise the exception
+                    if not self.error_queue:
+                        # otherwise raise the exception
+                        raise
+
+                    # Otherwise put the exception in the error queue
+                    self.mark_done()
+                    self.error_queue.put(traceback.format_exc())
+                    # exit the while loop
+                    break
 
                 # put result in out_queue
                 self.put_job(output)
@@ -171,9 +175,10 @@ class ThreadWorker(object):
             return self.threads
 
         for thread_int in range(self.thread_count):
-            logger.debug('starting thread %s', thread_int)
+            name = "%s-%s" % (self.__class__.__name__, thread_int)
+            logger.debug('starting thread %s', name)
             # thread will begin execution on self.target()
-            thd = threading.Thread(target=self.target, args=(thread_int,), name=self.__class__.__name__)
+            thd = threading.Thread(target=self.target, args=(thread_int,), name=name)
 
             # make sure threads don't stop the program from exiting
             thd.daemon = True
@@ -423,7 +428,6 @@ class JobManager():
 
         for worker_description in self.job_description:
             worker_class = worker_description[0]
-            thread_count = worker_description[1]
             args = []
             kwargs = {}
 

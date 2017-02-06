@@ -9,6 +9,11 @@ from conductor.lib import common
 
 logger = logging.getLogger(__name__)
 
+# A convenience tuple of network exceptions that can/should likely be retried by the retry decorator
+CONNECTION_EXCEPTIONS = (requests.exceptions.HTTPError,
+                         requests.exceptions.ConnectionError,
+                         requests.exceptions.Timeout)
+
 # TODO:
 # appspot_dot_com_cert = os.path.join(common.base_dir(),'auth','appspot_dot_com_cert2')
 # load appspot.com cert into requests lib
@@ -20,7 +25,6 @@ class ApiClient():
 
     def __init__(self):
         logger.debug('')
-
 
     def _make_request(self, verb, conductor_url, headers, params, data, raise_on_error=True):
         response = requests.request(verb, conductor_url,
@@ -34,7 +38,8 @@ class ApiClient():
 #         logger.debug("params: %s", params)
 #         logger.debug("data: %s", data)
 
-        if response.status_code and response.status_code >= 300:
+        # If we get 300s/400s debug out the response. TODO(lws): REMOVE THIS
+        if response.status_code and response.status_code >= 300 and response.status_code < 500:
             logger.debug("*****  ERROR!!  *****")
             logger.debug("Reason: %s" % response.reason)
             logger.debug("Text: %s" % response.text)
@@ -49,7 +54,7 @@ class ApiClient():
         return response
 
     def make_request(self, uri_path="/", headers=None, params=None, data=None,
-                     verb=None, conductor_url=None, raise_on_error=True):
+                     verb=None, conductor_url=None, raise_on_error=True, tries=5):
         '''
         verb: PUT, POST, GET, DELETE, HEAD, PATCH
         '''
@@ -77,10 +82,17 @@ class ApiClient():
                 verb = 'GET'
 
         assert verb in self.http_verbs, "Invalid http verb: %s" % verb
-        response = common.retry(lambda: self._make_request(verb, conductor_url,
-                                                            headers, params, data,
-                                                            raise_on_error=raise_on_error))
 
+        # Create a retry wrapper function
+        retry_wrapper = common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS,
+                                       tries=tries)
+
+        # wrap the request function with the retry wrapper
+        wrapped_func = retry_wrapper(self._make_request)
+
+        # call the wrapped request function
+        response = wrapped_func(verb, conductor_url, headers, params, data,
+                                      raise_on_error=raise_on_error)
 
 
         return response.text, response.status_code
