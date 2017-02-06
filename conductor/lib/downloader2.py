@@ -39,11 +39,6 @@ except ImportError, e:
 from conductor import CONFIG
 from conductor.lib import common, api_client, loggeria
 
-BYTES_1KB = 1024
-BYTES_1MB = BYTES_1KB ** 2
-BYTES_1GB = BYTES_1KB ** 3
-
-
 CHUNK_SIZE = 1024
 
 CONNECTION_EXCEPTIONS = (requests.exceptions.SSLError,
@@ -54,48 +49,6 @@ LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(thread
 
 logger = logging.getLogger(__name__)
 
-
-def dec_retry(retry_exceptions=Exception, tries=8, static_sleep=None):
-    '''
-    DECORATOR
-    
-    Retry calling the decorated function using an exponential backoff.
-
-    retry_exceptions: An Exception class (or a tuple of Exception classes) that
-                    this decorator will catch/retry.  All other exceptions that
-                    occur will NOT be retried. By default, all exceptions are
-                    caught (due to the default arguemnt of Exception)
-
-    tries: int. number of times to try (not retry) before raising
-    static_sleep: The amount of seconds to sleep before retrying. When set to 
-                  None, the sleep time will use exponential backoff. See below.  
-
-    This retry function not only incorporates exponential backoff, but also
-    "jitter".  see http://www.awsarchitectureblog.com/2015/03/backoff.html.
-    Instead of merely increasing the backoff time exponentially (determininstically),
-    there is a randomness added that will set the sleeptime anywhere between
-    0 and the full exponential backoff time length.
-
-    '''
-    def retry_decorator(f):
-
-        @functools.wraps(f)
-        def retry_(*args, **kwargs):
-            for try_num in range(1, tries + 1):
-                try:
-                    return f(*args, **kwargs)
-                except retry_exceptions, e:
-                    if static_sleep != None:
-                        sleep_time = static_sleep
-                    else:
-                        # use random for jitter.
-                        sleep_time = random.randrange(0, 2 ** try_num)
-                    msg = "%s, Retrying in %d seconds..." % (str(e), sleep_time)
-                    logger.warning(msg)
-                    time.sleep(sleep_time)
-            return f(*args, **kwargs)
-        return retry_
-    return retry_decorator
 
 
 def random_exeption(percentage_chance):
@@ -160,102 +113,28 @@ class FileDownloadState(ThreadState):
 
 
 
-class TablePrinter(object):
-    '''
-    ############## DOWNLOAD HISTORY #################
-    COMPLETED AT         DOWNLOAD ID       JOB    TASK       SIZE  ACTION  DURATION  THREAD     FILEPATH
-    2016-01-16 01:12:46  5228833175240704  00208  010    137.51MB  DL      0:00:57   Thread-12  /tmp/conductor_daemon_dl/04/cental/cental.010.exr
-    2016-01-16 01:12:42  6032237141164032  00208  004    145.48MB  DL      0:02:24   Thread-2   /tmp/conductor_daemon_dl/04/cental/cental.004.exr
-    2016-01-16 01:12:40  5273802288136192  00208  012    140.86MB  DL      0:02:02   Thread-16  /tmp/conductor_daemon_dl/04/cental/cental.012.exr
 
-    '''
-
-    # The columns of data to show (and the order in which they are shown)
-    column_names = []
-
-    # The title of the table
-    title = ""
-
-    # A list of dictionaries, each dict represents a row, where the key is the column name, and the value is the...value
-    data = []
-
-    # A dict which contains callable functions that can be used to condition each column entry of the table
-    modifiers = {}
-
-    # The characters to print between the columns (to seperate them)
-    column_spacer = "  "
-
-    row_spacer = "\n"
-
-    upper_header = False
-
-    def __init__(self, data):
-        self.data = data
-
-    def make_table_str(self):
-        title = self.get_title()
-        header = self.get_table_header()
-
-        rows = [title, header]
-        for row_dict in self.data:
-            rows.append(self.make_row_str(row_dict))
-        return self.row_spacer.join(rows)
+class HistoryTableStr(loggeria.TableStr):
 
 
-    def make_row_str(self, row_dict):
-        column_values = []
-        for column_name in self.column_names:
-            column_value = self.make_column_str(column_name, row_dict)
-            column_values.append(column_value)
-        return self.column_spacer.join(column_values)
+    def __init__(self, data, column_names, title="", footer="", upper_headers=True):
 
+        self.cell_modifiers = {"Completed at": functools.partial(self.human_time),
+                                "Size": functools.partial(self.human_bytes, rjust=8),
+                                "Duration": functools.partial(common.get_human_duration)}
 
-    def make_column_str(self, column_name, row_dict):
-        column_data = str(row_dict.get(column_name, ""))
-        return self.modify_data(column_name, column_data)
+        super(HistoryTableStr, self).__init__(data=data,
+                                                  column_names=column_names,
+                                                  title=title,
+                                                  footer=footer,
+                                                  upper_headers=upper_headers)
 
+    def human_time(self, timestamp, ljust=0, rjust=0):
+        return common.get_human_timestamp(timestamp).ljust(ljust).rjust(rjust)
 
-    def modify_data(self, column_name, column_data):
+    def human_bytes(self, bytes_, ljust=0, rjust=0):
+        return common.get_human_bytes(bytes_).ljust(ljust).rjust(rjust)
 
-        modifier = self.modifiers.get(column_name)
-        if modifier:
-            func, args = modifier
-            column_data = func(column_data, *args)
-        return  column_data
-
-
-    def get_title(self):
-        return self.title
-
-    def get_table_header(self):
-        column_names = []
-        for column_name in self.column_names:
-            mod_column_name = self.modify_data(column_name, column_name)
-            mod_column_name = mod_column_name.upper() if self.upper_header else mod_column_name
-            column_names.append(mod_column_name)
-
-        return self.column_spacer.join(column_names)
-
-class HistoryTablePrinter(TablePrinter):
-
-
-    title = "############## DOWNLOAD HISTORY #################"
-
-    column_names = ["Completed at", "Download ID", "Job", "Task", "Size", "Action", "Duration", "Thread", "Filepath"]
-
-    modifiers = {
-
-                 "Completed at": (str.ljust, (19,)),
-                 "Download ID": (str.ljust, (16,)),
-                 "Job": (str.ljust, (5,)),
-                 "Task": (str.ljust, (4,)),
-                 "Size": (str.rjust, (9,)),
-                 "Action": (str.ljust, (6,)),
-                 "Duration": (str.ljust, (8,)),
-                 "Thread": (str.ljust, (9,))}
-
-
-    upper_header = True
 
 
 class TaskDownloadState(ThreadState):
@@ -475,7 +354,7 @@ class Downloader(object):
         Return the amount of time that the uploader has been running, e.g "0:01:28"
         '''
         seconds = time.time() - self.start_time
-        human_duration = get_human_duration(seconds)
+        human_duration = common.get_human_duration(seconds)
         logger.info("Uptime: %s", human_duration)
 
 
@@ -596,7 +475,7 @@ class Downloader(object):
             return
 
 
-    @common.dec_timer_exit
+    @common.dec_timer_exit(log_level=logging.DEBUG)
     def get_next_downloads(self, count):
         try:
             downloads = _get_next_downloads(self.location, self.endpoint_downloads_next, self.api_client, count=count)
@@ -805,7 +684,7 @@ class Downloader(object):
             sleep_time = 5
             # logger.debug("sleeping6: %s", sleep_time)
             time.sleep(sleep_time)
-            
+
             # Check to make sure that that the downloader thread that this reporter thread
             # is reporting about is still alive. Otherwise exit the reporter loop
             if not downloader_thread.is_alive():
@@ -821,7 +700,7 @@ class Downloader(object):
                 return
 
 #     @dec_random_exception(percentage_chance=0.05)
-    @dec_retry(tries=3, static_sleep=1)
+    @common.DecRetry(tries=3, static_sleep=1)
     def download_file(self, url, local_filepath, md5, file_state):
         '''
         For the given file information, download the file to disk.  Check whether
@@ -835,7 +714,11 @@ class Downloader(object):
         # If the file already exists on disk
         if os.path.isfile(local_filepath):
             file_state.status = FileDownloadState.STATE_HASHING_EXISTING_FILE
-            local_md5 = common.generate_md5(local_filepath, base_64=True, poll_seconds=self.md5_progess_polling, state=file_state)
+
+            # Create a callback function that the md5 hashing function will call periodically
+            callback = functools.partial(self._update_file_state_callback, file_state)
+
+            local_md5 = common.generate_md5(local_filepath, base_64=True, poll_seconds=self.md5_progess_polling, callback=callback)
             # If the local md5 matchs the expected md5 then no need to download. Skip to next file
             if md5 == local_md5:
                 file_state.use_existing = True
@@ -878,6 +761,14 @@ class Downloader(object):
         logger.debug('\tsetting file perms to 666')
         chmod(local_filepath, 0666)
 
+    def _update_file_state_callback(self, file_state, filepath, file_size, bytes_processed, log_level):
+        '''
+        Callback that updates the hash progress (while the hashing is occuring
+        chunk-by-chunk 
+        '''
+        file_state.hash_progress = int((bytes_processed / float(file_size)) * 100)
+
+
 
 #     @dec_random_exception(percentage_chance=0.05)
     def add_to_history(self, file_download_state):
@@ -891,7 +782,6 @@ class Downloader(object):
 
 
 #     @dec_random_exception(percentage_chance=0.05)
-    @dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
     def report_download_status(self, task_download_state):
         download_id = task_download_state.task_download.get("download_id")
         if not download_id:
@@ -1139,21 +1029,21 @@ class Downloader(object):
         task_size = task_download_state.task_download.get("size", 0)
 
         bytes_downloaded = task_download_state.get_bytes_downloaded()
-        progress_percentage = get_progress_percentage(bytes_downloaded, task_size)
+        progress_percentage = common.get_progress_percentage(bytes_downloaded, task_size)
 
-        human_bytes_downloaded = get_human_bytes(bytes_downloaded)
-        human_size = get_human_bytes(task_size)
+        human_bytes_downloaded = common.get_human_bytes(bytes_downloaded)
+        human_size = common.get_human_bytes(task_size)
 
         # Get the string length of the largest filepath that the task is download. This will be used for print margin purpise
         max_filepath_length = max([len(file_state.filepath) for file_state in task_download_state.file_download_states]or [0])
 
         summary = "Job %s Task %s - %s (%s/%s)  - %s" % (jid, tid, progress_percentage, human_bytes_downloaded, human_size, thread_name)
         for file_state in task_download_state.file_download_states:
-            file_size_human = get_human_bytes(file_state.file_info['size'])
+            file_size_human = common.get_human_bytes(file_state.file_info['size'])
             if file_state.status == FileDownloadState.STATE_HASHING_EXISTING_FILE:
                 progress_percentage = "%s%%" % file_state.hash_progress
             elif file_state.status == FileDownloadState.STATE_DOWNLOADING:
-                progress_percentage = get_progress_percentage(file_state.bytes_downloaded, file_state.file_info['size'])
+                progress_percentage = common.get_progress_percentage(file_state.bytes_downloaded, file_state.file_info['size'])
             else:
                 progress_percentage = ""
 
@@ -1180,31 +1070,36 @@ class Downloader(object):
 
         for file_download_state in file_download_history:
             row_data = {}
-            row_data["Completed at"] = get_human_timestamp(file_download_state.time_completed)
+            row_data["Completed at"] = file_download_state.time_completed
             row_data["Download ID"] = file_download_state.download_id
             row_data["Job"] = file_download_state.file_info["job_id"]
             row_data["Task"] = file_download_state.file_info["task_id"]
-            row_data["Size"] = get_human_bytes(file_download_state.file_info["size"])
+            row_data["Size"] = file_download_state.file_info["size"]
             row_data["Action"] = "Reused" if file_download_state.use_existing else "DL"
-            row_data["Duration"] = get_human_duration(file_download_state.get_duration())
+            row_data["Duration"] = file_download_state.get_duration()
             row_data["Thread"] = file_download_state.thread_name
             row_data["Filepath"] = file_download_state.filepath
             table_data.append(row_data)
 
 
-        table = HistoryTablePrinter(table_data)
-        table.title = "##### DOWNLOAD HISTORY ##### %s" % (("(last %s files)" % self.history_queue_max) if self.history_queue_max else "")
+        column_names = ["Completed at", "Download ID", "Job", "Task", "Size", "Action", "Duration", "Thread", "Filepath"]
+        title = " DOWNLOAD HISTORY %s " % (("(last %s files)" % self.history_queue_max) if self.history_queue_max else "")
+        table = HistoryTableStr(data=list(table_data),
+                                column_names=column_names,
+                                title=title.center(100, "#"),
+                                footer="#"*180,
+                                upper_headers=True)
 
         return table.make_table_str()
 
 
 
 # @dec_random_exception(percentage_chance=0.05)
-@dec_retry(tries=3, static_sleep=1)
+@common.DecRetry(tries=3, static_sleep=1)
 def delete_file(filepath):
     os.remove(filepath)
 
-@dec_retry(tries=3, static_sleep=1)
+@common.DecRetry(tries=3, static_sleep=1)
 def chmod(filepath, mode):
     os.chmod(filepath, mode)
 
@@ -1220,7 +1115,6 @@ def prepare_dest_dirpath(dir_path):
 
 
 # @dec_random_exception(percentage_chance=0.05)
-@dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_next_downloads(location, endpoint, client, count=1):
     params = {'location': location,
               "count": count}
@@ -1233,7 +1127,6 @@ def _get_next_downloads(location, endpoint, client, count=1):
 
     return json.loads(response_string).get("data", [])
 
-@dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def _get_job_download(endpoint, client, jid, tid):
     params = None
     if tid:
@@ -1250,7 +1143,7 @@ def _get_job_download(endpoint, client, jid, tid):
 
 
 # @dec_random_exception(percentage_chance=0.05)
-@dec_retry(retry_exceptions=CONNECTION_EXCEPTIONS)
+@common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def download_file(download_url, filepath, poll_rate=2, state=None):
     '''
         
@@ -1279,7 +1172,7 @@ def download_file(download_url, filepath, poll_rate=2, state=None):
                     state.bytes_downloaded += len(chunk)
                 now = time.time()
                 if now >= last_poll + poll_rate:
-                    progress_percentage = get_progress_percentage(progress_bytes, total_bytes)
+                    progress_percentage = common.get_progress_percentage(progress_bytes, total_bytes)
                     logger.debug('Downloading %s %s', progress_percentage, filepath)
                     last_poll = now
 
@@ -1323,33 +1216,34 @@ def _in_queue(queue, item_dict, key):
 
 def run_downloader(args):
     '''
-    Start the downloader process. This process will run indefinitely, polling
+    Start the downloader. If a job id(s) were given, exit the downloader upon
+    completion.  Otherwise, run the downloader indefinitely (daemon mode), polling
     the Conductor cloud app for files that need to be downloaded.
     '''
-    # convert the Namespace object to a dictionary
-    args_dict = vars(args)
+
 
     # Set up logging
-    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level_name = args.get("log_level")
     log_level = loggeria.LEVEL_MAP.get(log_level_name)
-    logger.debug('Downloader parsed_args is %s', args_dict)
-    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    log_dirpath = args.get("log_dir")
     set_logging(log_level, log_dirpath)
 
-    job_ids = args_dict.get("job_id")
-    thread_count = args_dict.get("thread_count")
+    logger.debug('Downloader args: %s', args)
+
+    job_ids = args.get("job_id")
+    thread_count = args.get("thread_count")
 
 
     if job_ids:
         Downloader.download_jobs(job_ids,
-                            task_id=args_dict.get("task_id"),
+                            task_id=args.get("task_id"),
                             thread_count=thread_count,
-                            output_dir=args_dict.get("output"))
+                            output_dir=args.get("output"))
 
     else:
         Downloader.start_daemon(thread_count=thread_count,
-                                location=args_dict.get("location"),
-                                output_dir=args_dict.get("output"))
+                                location=args.get("location"),
+                                output_dir=args.get("output"))
 
 
 def set_logging(level=None, log_dirpath=None):
@@ -1360,9 +1254,6 @@ def set_logging(level=None, log_dirpath=None):
                                      console_formatter=LOG_FORMATTER,
                                      file_formatter=LOG_FORMATTER,
                                      log_filepath=log_filepath)
-
-
-
 
 
 def report_error(self, download_id, error_message):
@@ -1378,45 +1269,6 @@ def report_error(self, download_id, error_message):
     return True
 
 
-
-def get_human_bytes(bytes):
-    '''
-    '''
-    if bytes > BYTES_1GB:
-        return  "%.2fGB" % (bytes / float(BYTES_1GB))
-
-    elif bytes > BYTES_1MB:
-        return  "%.2fMB" % (bytes / float(BYTES_1MB))
-
-    return  "%.2fKB" % (bytes / float(BYTES_1KB))
-
-
-def get_progress_percentage(current, total):
-    '''
-    Return  a string percentage, e.g. "80%" given current bytes (int) and total
-    bytes (int)
-
-    '''
-    if total:
-        progress_int = int(current / float(total) * 100)
-    else:
-        progress_int = 0
-
-    return "%s%%" % progress_int
-
-
-def get_human_duration(seconds):
-    '''
-    convert the given seconds (float) into a human friendly unit
-    '''
-    return str(datetime.timedelta(seconds=int(seconds)))
-    return str(datetime.timedelta(seconds=int(seconds)))
-
-def get_human_timestamp(seconds_since_epoch):
-    '''
-    convert the given seconds since epoch (float)
-    '''
-    return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
 
 
 

@@ -1,5 +1,6 @@
 import base64
 import datetime
+from pprint import pformat
 import time
 import ast
 import json
@@ -175,7 +176,7 @@ class HttpBatchWorker(worker.ThreadWorker):
                                                                    verb='POST',
                                                                    headers=headers,
                                                                    data=json.dumps(data),
-                                                                   raise_on_error=False)
+                                                                   raise_on_error=True)
 
         if response_code == 200:
             url_list = json.loads(response_str)
@@ -184,11 +185,10 @@ class HttpBatchWorker(worker.ThreadWorker):
             return None
         raise Exception('%s Failed request to: %s\n%s' % (response_code, uri_path, response_str))
 
-
     def do_work(self, job, thread_int):
         logger.debug('getting upload urls for %s', job)
-        url_list = common.retry(lambda: self.make_request(job))
-        return url_list
+        return self.make_request(job)
+
 
 '''
 This worker subscribes to a queue of (path,signed_upload_url) pairs.
@@ -260,35 +260,37 @@ class UploadWorker(worker.ThreadWorker):
         filename = job[0]
         upload_url = job[1]
         md5 = self.metric_store.get_dict('file_md5s', filename)
-        headers = {
-            'Content-MD5': md5,
-            'Content-Type': 'application/octet-stream',
-        }
-        retries = 5
         try:
-            common.retry(lambda: self.do_upload(upload_url, headers, filename), retries)
-        except Exception, e:
+            return self.do_upload(upload_url, filename, md5)
+        except:
+            logger.exception("Failed to upload file: %s because of:\n", filename)
             real_md5 = common.get_base64_md5(filename)
-            error_message = "ALERT! File %s retried %d times and still failed!\n" % (filename, retries)
+            error_message = "ALERT! File %s retried and still failed!\n" % filename
             error_message += "expected md5 is %s, real md5 is %s" % (md5, real_md5)
             logger.error(error_message)
-            raise e
+            raise
 
-        return None
 
-    def do_upload(self, upload_url, headers, filename):
-        try:
-            resp_str, resp_code = self.api_client.make_request(
-                conductor_url=upload_url,
-                headers=headers,
-                data=self.chunked_reader(filename),
-                verb='PUT')
-        except Exception, e:
-            error_message = 'failed to upload file %s because of:\n%s' % (filename, traceback.format_exc())
-            logger.error(error_message)
-            raise Exception(error_message)
 
-        return None
+
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
+    def do_upload(self, upload_url, filename, md5):
+        '''
+        Note that we don't rely on the make_request's own retry mechanism because
+        we need to recreate the chunked_reader generator before retrying the request.
+        Instead, we wrap this method in a retry decorator.
+        '''
+
+        headers = {'Content-MD5': md5,
+                   'Content-Type': 'application/octet-stream'}
+
+        return self.api_client.make_request(conductor_url=upload_url,
+                                            headers=headers,
+                                            data=self.chunked_reader(filename),
+                                            verb='PUT',
+                                            tries=1)
+
+
 
 
 
@@ -373,7 +375,7 @@ class Uploader():
 
     def create_report_status_thread(self):
         logger.debug('creating reporter thread')
-        thd = Thread(target=self.report_status)
+        thd = Thread(name="ReporterThread", target=self.report_status)
         thd.daemon = True
         thd.start()
 
@@ -500,7 +502,7 @@ class Uploader():
 
     def create_print_status_thread(self):
         logger.debug('creating console status thread')
-        thd = Thread(target=self.print_status)
+        thd = Thread(name="PrintStatusThread", target=self.print_status)
 
         # make sure threads don't stop the program from exiting
         thd.daemon = True
@@ -544,7 +546,7 @@ class Uploader():
         '''
         try:
 
-
+            logger.info("%s", "  NEXT UPLOAD  ".center(30, "#"))
             logger.info('project: %s', project)
             logger.info('upload_id is %s', upload_id)
             logger.info('upload_files %s:(truncated)\n\t%s',
@@ -613,7 +615,7 @@ class Uploader():
                     time.sleep(self.sleep_time)
                     continue
                 elif resp_code != 201:
-                    logger.error('recieved invalid response code from app %s', resp_code)
+                    logger.error('received invalid response code from app %s', resp_code)
                     logger.error('response is %s', resp_str)
                     time.sleep(self.sleep_time)
                     continue
@@ -637,9 +639,8 @@ class Uploader():
                 if error_message:
                     self.mark_upload_failed(error_message, upload_id)
 
-            except Exception, e:
-                logger.error('hit exception %s', e)
-                logger.error(traceback.format_exc())
+            except:
+                logger.exception('Caught exception:\n')
                 time.sleep(self.sleep_time)
                 continue
 
@@ -736,7 +737,7 @@ def resolve_arg(arg_name, args, config):
 
 
 
-# @common.dec_timer_exit
+# @common.dec_timer_exitlog_level=logging.DEBUG
 # def test_md5_system(dirpath):
 #     '''
 #     Recurse the given directory, md5-checking all files and returning a dictionary

@@ -13,7 +13,7 @@ try:
 except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-
+import conductor
 from conductor.lib import conductor_submit, downloader, downloader2, uploader, loggeria
 
 
@@ -285,13 +285,16 @@ def parse_args():
                                    help="Override for the output directory")
 
     downloader_parser.add_argument("--location",
+                                   default=conductor.CONFIG.get("location"),
                                    help=('An optional string to indicate which location this downloader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader process running. This location argument allows each downloader to target specific jobs (to download upon job-completion) that match its appropriate location.  Essentially this allows the location of which a job was submitted from to also be the destination in which to deliver completed renders to (which would typically be the desired behavior).'))
 
     downloader_parser.add_argument("--log_level",
                                    choices=loggeria.LEVELS,
+                                   default=conductor.CONFIG.get("log_level"),
                                    help="The logging level to display")
 
     downloader_parser.add_argument("--log_dir",
+                                   default=conductor.CONFIG.get("log_dir"),
                                    help=("When provided, will write a log file to "
                                         "the provided directory. This will be a "
                                         "rotating log, creating a new log file "
@@ -301,6 +304,7 @@ def parse_args():
 
     downloader_parser.add_argument("--thread_count",
                                    type=int,
+                                   default=conductor.CONFIG.get("thread_count"),
                                    help=('The number of threads that should download simultaneously'))
 
     downloader_parser.add_argument("--alt",
@@ -382,9 +386,18 @@ def run_uploader(args):
 
 
 def run_downloader(args):
-    if vars(args).get("alt"):
-        return downloader.run_downloader(args)
-    return downloader2.run_downloader(args)
+    '''
+    Convert the argparse Namespace object to a dictionary and run the downloader
+    with the given args.
+    '''
+    # Convert Namespace args object to args dict
+    args_dict = vars(args)
+
+    # Code switcher between new downloader and old downloader
+    if args_dict.get("alt"):
+        return downloader.run_downloader(args_dict)
+
+    return downloader2.run_downloader(args_dict)
 
 
 
