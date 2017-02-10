@@ -108,7 +108,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     @classmethod
     @pyside_utils.wait_cursor
-    def runUiStandalone(cls):
+    def runUiStandalone(cls, clarisse=False):
         '''
         Note that this UI class is to be run directly from a python shell, e.g.
         not within another software's context (such as maya/nuke).
@@ -122,7 +122,11 @@ class ConductorSubmitter(QtGui.QMainWindow):
             app = QtGui.QApplication(sys.argv)
         ui = cls()
         ui.show()
-        app.exec_()
+        if clarisse:
+            import pyqt_clarisse
+            pyqt_clarisse.exec_(app)
+        else:
+            app.exec_()
 
 
     @classmethod
