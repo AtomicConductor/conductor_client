@@ -31,16 +31,20 @@
 
 import os.path, tempfile, shutil, zipfile, ix, platform
 
+
 def get_clarisse_version():
     return ix.application.get_version()
+
 
 def get_clarisse_images():
     render_images = ix.api.OfObjectArray()
     ix.application.get_factory().get_all_objects("Image", render_images)
     return render_images
 
+
 def get_frame_range():
     return ix.application.get_current_frame_range()
+
 
 # create folders according to a path
 def create_path(path):
