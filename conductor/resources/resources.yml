@@ -391,5 +391,10 @@ package_ids:
         "10.0v3": 
             package: 570172b9af4dbfbcaf30f7c343498486
 
+    "clarisse":
+        "3.0.0.0.7":
+            package: c06d54ffe439005f18231f952afa545e
+
+
     
 
