@@ -1,4 +1,7 @@
-from conductor import submitter_clarisse_old
-reload(submitter_clarisse_old)
-sc = submitter_clarisse_old.ClarisseConductorSubmitter()
-sc.runUi()
+from PySide import QtGui
+from conductor.submitter_clarisse import ClarisseConductorSubmitter
+import pyqt_clarisse
+app = QtGui.QApplication(["Clarisse"])
+ui = ClarisseConductorSubmitter()
+ui.show()
+pyqt_clarisse.exec_(app)

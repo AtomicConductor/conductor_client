@@ -42,6 +42,33 @@ def get_clarisse_images():
     return render_images
 
 
+def get_clarisse_layers():
+    render_images = ix.api.OfObjectArray()
+    ix.application.get_factory().get_all_objects("Image", render_images)
+    layers = []
+    for image in render_images:
+        ll = image.attrs.layers
+        for i in range(len(ll)):
+            layers.append(ll[i].__str__())
+    return layers
+
+
+def get_clarisse_output_path():
+    layers = get_clarisse_layers()
+    output_paths = [str(get_clarisse_layer_output_path(layer)) for layer in layers]
+    return os.path.commonprefix(output_paths)
+
+
+def get_clarisse_image_layers(image_name):
+    image_obj = ix.application.get_factory().get_object(image_name)
+    return image_obj.attrs.layers
+
+
+def get_clarisse_layer_output_path(layer_name):
+    layer_obj = ix.application.get_factory().get_object(layer_name)
+    return layer_obj.attrs.save_as[0]
+
+
 def get_frame_range():
     return ix.application.get_current_frame_range()
 
@@ -108,6 +135,7 @@ def do_export():
     for i in range(attrs.get_count()):
         # deduplicating
         file = attrs[i].get_string()
+        print file
         if not os.path.isfile(file):
             #  Find the output path...
             if attrs[i].get_name() == "save_as":
@@ -118,11 +146,16 @@ def do_export():
         attr_list.append(attrs[i].get_full_name())
         if not file in unique_files:
             # de-windoify path
+            print "abs path: %s" % os.path.abspath(file)
             new_filename = os.path.abspath(file).replace("\\", '/').replace(':', '').replace('\\\\', '/')
             # getting the absolute path of the file
+            # if (not platform.system == "Windows" and not new_filename.startswith("/")) and \
+            #         not new_filename.startswith("$PDIR") and \
+            #         not new_filename.startswith("$CDIR"):
             new_filename = "$PDIR/" + new_filename
             unique_files[file] = new_filename
             new_file_list.append(new_filename)
+            print "became %s" % new_filename
         else:
             new_file_list.append(unique_files[file])
 
@@ -153,7 +186,9 @@ def do_export():
     scene_info["scene_file"] = "%s/%s" % (gen_tempdir, name)
     scene_info["dependencies"] = [gen_tempdir + '/' + name]
     for file in unique_files:
-        target = unique_files[file][5:]
+        target = unique_files[file]
+        if target.startswith("$PDIR") or target.startswith("$CDIR"):
+            target = unique_files[file][5:]
         target_dir = gen_tempdir + os.path.dirname(target)
         if not os.path.isdir(target_dir):
             os.makedirs(target_dir)

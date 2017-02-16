@@ -11,7 +11,7 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import submitter
-from conductor.lib import clarisse_utils, pyside_utils, file_utils
+from conductor.lib import clarisse_utils, pyside_utils, file_utils, package_utils
 
 '''
 TODO:
@@ -40,11 +40,21 @@ class ClarisseWidget(QtGui.QWidget):
     def refreshUi(self):
         self.populateImages()
 
+    def getLayers(self):
+        layers = []
+        num_layers = self.ui_render_images_trwgt.topLevelItemCount()
+        for i in range(num_layers):
+            layer = self.ui_render_images_trwgt.topLevelItem(i)
+            if layer.checkState(0) == QtCore.Qt.Checked:
+                layers.append(layer.text(0))
+        return layers
+
     #  Populate the images box in the submitter UI
     def populateImages(self):
         self.ui_render_images_trwgt.clear()
 
-        render_images = clarisse_utils.get_clarisse_images()
+        render_images = clarisse_utils.get_clarisse_layers()
+        print render_images
 
         for render_image in render_images:
             tree_item = QtGui.QTreeWidgetItem([render_image.__str__()])
@@ -55,6 +65,9 @@ class ClarisseWidget(QtGui.QWidget):
             # If the render layer is set to renderable, then check the item's checkbox on
             tree_item.setCheckState(0, QtCore.Qt.Checked)
         self.ui_render_images_trwgt.setHeaderLabel("Image Path")
+
+    def getUploadOnlyBool(self):
+        return self.ui_upload_only.isChecked()
 
     @QtCore.Slot(bool, name="on_ui_upload_only_toggled")
     def on_ui_upload_only_toggled(self, toggled):
@@ -93,6 +106,9 @@ class ClarisseConductorSubmitter(submitter.ConductorSubmitter):
         frame_range = clarisse_utils.get_frame_range()
         self.setFrameRange(int(frame_range[0]), int(frame_range[1]))
         self.extended_widget.refreshUi()
+        output_path = clarisse_utils.get_clarisse_output_path()
+        print("OUTPUT PATH = %s" % output_path)
+        self.setOutputDir(output_path)
 
     def getExtendedWidget(self):
         return ClarisseWidget()
@@ -110,10 +126,20 @@ class ClarisseConductorSubmitter(submitter.ConductorSubmitter):
         dictated by the "frames" argument.
         '''
 
-        frame_step = self.getStepFrame()
-        image_str = self.getImages()
-        base_cmd = "%s -start_frame %%f -end_frame %%f " % self.scene_file
-        base_cmd += "-frame_step %s -image %s" % (frame_step, image_str)
+        layers = self.extended_widget.getLayers()
+        layer_str = ""
+        output_str = ""
+        # image_frames_str = ""
+        for layer in layers:
+            print layer
+            if not layer:
+                continue
+            output_path = clarisse_utils.get_clarisse_layer_output_path(str(layer))
+            layer_str += "%s " % layer
+            output_str += "%s " % output_path
+            # image_frames_str += "<frame_args> "
+        base_cmd = "crender %s -image %s -frames_list <frame_args> -output %s " % (self.scene_file, layer_str,
+                                                                                   output_str)
         return base_cmd
 
     def collectDependencies(self):
@@ -133,12 +159,13 @@ class ClarisseConductorSubmitter(submitter.ConductorSubmitter):
         environment = super(ClarisseConductorSubmitter, self).getEnvironment()
         return environment
 
-    # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
-#     def getHostProductInfo(self):
-#         return maya_utils.MayaInfo.get()
-
     def getHostProductInfo(self):
-        return clarisse_utils.get_clarisse_version()
+        package_id = package_utils.get_host_package(self.product, clarisse_utils.get_clarisse_version(),
+                                                    strict=False).get("package")
+        host_info = {"product": "clarisse",
+                     "version": clarisse_utils.get_clarisse_version(),
+                     "package_id": package_id}
+        return host_info
 
 
 # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
@@ -176,6 +203,7 @@ class ClarisseConductorSubmitter(submitter.ConductorSubmitter):
         scene_info = self.collectDependencies()
         dependencies = file_utils.process_dependencies(scene_info["dependencies"])
         output_path = scene_info['output_path']
+        print output_path
         raw_data = {"dependencies": dependencies,
                     "output_path": [output_path],
                     "scene_file": self.scene_file}
