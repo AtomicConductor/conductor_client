@@ -394,6 +394,20 @@ package_ids:
     "clarisse":
         "3.0.0.0.7":
             package: c06d54ffe439005f18231f952afa545e
+        "3.0.0.0.6":
+            package: c06d54ffe439005f18231f952afa545e
+        "3.0.0.0.5":
+            package: c06d54ffe439005f18231f952afa545e
+        "3.0.0.0.4":
+            package: c06d54ffe439005f18231f952afa545e
+        "3.0.0.0.3":
+            package: c06d54ffe439005f18231f952afa545e
+        "3.0.0.0.2":
+            package: c06d54ffe439005f18231f952afa545e
+        "3.0.0.0.1":
+            package: c06d54ffe439005f18231f952afa545e
+        "3.0.0.0.0":
+            package: c06d54ffe439005f18231f952afa545e
 
 
     
