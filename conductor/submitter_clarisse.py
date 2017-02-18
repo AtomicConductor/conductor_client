@@ -63,8 +63,8 @@ class ClarisseWidget(QtGui.QWidget):
             self.ui_render_images_trwgt.addTopLevelItem(tree_item)
 
             # If the render layer is set to renderable, then check the item's checkbox on
-            tree_item.setCheckState(0, QtCore.Qt.Checked)
-        self.ui_render_images_trwgt.setHeaderLabel("Image Path")
+            tree_item.setCheckState(0, QtCore.Qt.Unchecked)
+        self.ui_render_images_trwgt.setHeaderLabel("Layer Path")
 
     def getUploadOnlyBool(self):
         return self.ui_upload_only.isChecked()
