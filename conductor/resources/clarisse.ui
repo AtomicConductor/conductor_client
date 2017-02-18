@@ -29,7 +29,7 @@
     <bool>true</bool>
    </property>
    <property name="title">
-    <string>Images to render</string>
+    <string>Layer to render</string>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>

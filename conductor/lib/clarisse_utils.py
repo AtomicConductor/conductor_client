@@ -111,6 +111,9 @@ def do_export():
     dest_dir = '/var/tmp'
     if platform.system() == "Windows":
         dest_dir = ix.api.GuiWidget.save_file(ix.application, '', 'Select temp folder',extensions)
+
+    # generating temp folder in Clarisse temp directory
+    gen_tempdir = tempfile.mkdtemp('', '', dest_dir)
     # if dest_file[-4:] == ".zip": dest_file = dest_file[:-4]
 
     # dest_dir = os.path.dirname(dest_file)
@@ -148,11 +151,12 @@ def do_export():
             # de-windoify path
             print "abs path: %s" % os.path.abspath(file)
             new_filename = os.path.abspath(file).replace("\\", '/').replace(':', '').replace('\\\\', '/')
+            new_filename = gen_tempdir + new_filename
             # getting the absolute path of the file
             # if (not platform.system == "Windows" and not new_filename.startswith("/")) and \
             #         not new_filename.startswith("$PDIR") and \
             #         not new_filename.startswith("$CDIR"):
-            new_filename = "$PDIR/" + new_filename
+            # new_filename = "$PDIR/" + new_filename
             unique_files[file] = new_filename
             new_file_list.append(new_filename)
             print "became %s" % new_filename
@@ -161,7 +165,6 @@ def do_export():
 
     # updating attribute path with new filename
     ix.enable_command_history()
-    ix.cmds.SetValues(attr_list, new_file_list)
 
     ix.log_info("saving project file...")
     ix.application.check_for_events()
@@ -175,10 +178,7 @@ def do_export():
     else:
         name += ".render"
 
-    # generating temp folder in Clarisse temp directory
-    gen_tempdir = tempfile.mkdtemp('', '', dest_dir)
     # ix.application.export_context_as_project(gen_tempdir + '/' + name, ix.application.get_factory().get_root())
-    ix.application.export_render_archive(gen_tempdir + '/' + name)
     # restoring file attributes with original paths
 
     # copying files in new directory
@@ -189,17 +189,22 @@ def do_export():
         target = unique_files[file]
         if target.startswith("$PDIR") or target.startswith("$CDIR"):
             target = unique_files[file][5:]
-        target_dir = gen_tempdir + os.path.dirname(target)
+        # target_dir = gen_tempdir + os.path.dirname(target)
+        target_dir = os.path.dirname(target)
         if not os.path.isdir(target_dir):
             os.makedirs(target_dir)
-        ix.log_info("copying file '" + file + "'..." )
+        ix.log_info("copying file '" + file + "' to " + target + "..." )
         ix.application.check_for_events()
-        new_path = gen_tempdir + target
-        scene_info["dependencies"].append(new_path)
+        # new_path = gen_tempdir + target
+        scene_info["dependencies"].append(target)
         if platform.system == "Windows":
-            shutil.copyfile(file, new_path)
+            shutil.copyfile(file, target)
         else:
-            os.symlink(file, new_path)
+            os.symlink(file, target)
+
+    ix.cmds.SetValues(attr_list, new_file_list)
+    ix.application.export_context_as_project(gen_tempdir + '/' + name, ix.application.get_factory().get_root())
+    ix.application.export_render_archive(gen_tempdir + '/' + name)
 
     #  The stuff that is commented out packages the dependencies into an archive
     #  this is something we do not support at the moment, but I'm leaving around 
