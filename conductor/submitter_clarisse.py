@@ -42,29 +42,37 @@ class ClarisseWidget(QtGui.QWidget):
 
     def getLayers(self):
         layers = []
-        num_layers = self.ui_render_images_trwgt.topLevelItemCount()
-        for i in range(num_layers):
-            layer = self.ui_render_images_trwgt.topLevelItem(i)
-            if layer.checkState(0) == QtCore.Qt.Checked:
-                layers.append(layer.text(0))
+        items = self.ui_render_images_lswgt.selectedItems()
+        for item in items:
+            layer = item.text()
+            print "got %s" % layer
+            layers.append(layer)
         return layers
+        # num_layers = self.ui_render_images_trwgt.topLevelItemCount()
+        # for i in range(num_layers):
+        #     layer = self.ui_render_images_trwgt.topLevelItem(i)
+        #     if layer.checkState(0) == QtCore.Qt.Checked:
+        #         layers.append(layer.text(0))
+        # return layers
 
     #  Populate the images box in the submitter UI
     def populateImages(self):
-        self.ui_render_images_trwgt.clear()
+        self.ui_render_images_lswgt.clear()
 
         render_images = clarisse_utils.get_clarisse_layers()
         print render_images
 
         for render_image in render_images:
-            tree_item = QtGui.QTreeWidgetItem([render_image.__str__()])
-
-            tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            self.ui_render_images_trwgt.addTopLevelItem(tree_item)
-
-            # If the render layer is set to renderable, then check the item's checkbox on
-            tree_item.setCheckState(0, QtCore.Qt.Unchecked)
-        self.ui_render_images_trwgt.setHeaderLabel("Layer Path")
+            list_item = QtGui.QListWidgetItem(render_image.__str__())
+            self.ui_render_images_lswgt.insertItem(0, list_item)
+            # tree_item = QtGui.QTreeWidgetItem([render_image.__str__()])
+            #
+            # tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
+            # self.ui_render_images_trwgt.addTopLevelItem(tree_item)
+            #
+            # # If the render layer is set to renderable, then check the item's checkbox on
+            # tree_item.setCheckState(0, QtCore.Qt.Unchecked)
+        # self.ui_render_images_trwgt.setHeaderLabel("Layer Path")
 
     def getUploadOnlyBool(self):
         return self.ui_upload_only.isChecked()
@@ -102,7 +110,7 @@ class ClarisseConductorSubmitter(submitter.ConductorSubmitter):
         super(ClarisseConductorSubmitter, self).__init__(parent=parent)
 
     def applyDefaultSettings(self):
-        # super(ClarisseConductorSubmitter, self).applyDefaultSettings()
+        super(ClarisseConductorSubmitter, self).applyDefaultSettings()
         frame_range = clarisse_utils.get_frame_range()
         self.setFrameRange(int(frame_range[0]), int(frame_range[1]))
         self.extended_widget.refreshUi()

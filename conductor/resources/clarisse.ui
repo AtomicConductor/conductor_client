@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>397</width>
+    <height>161</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,13 +33,7 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
-     <widget class="QTreeWidget" name="ui_render_images_trwgt">
-      <column>
-       <property name="text">
-        <string notr="true">1</string>
-       </property>
-      </column>
-     </widget>
+     <widget class="QListWidget" name="ui_render_images_lswgt"/>
     </item>
     <item>
      <widget class="QCheckBox" name="ui_upload_only">
@@ -52,6 +46,21 @@
      </widget>
     </item>
    </layout>
+  </widget>
+  <widget class="QTreeWidget" name="ui_render_images_trwgt">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>190</y>
+     <width>340</width>
+     <height>78</height>
+    </rect>
+   </property>
+   <column>
+    <property name="text">
+     <string notr="true">1</string>
+    </property>
+   </column>
   </widget>
  </widget>
  <resources/>
