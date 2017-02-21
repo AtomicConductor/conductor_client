@@ -580,7 +580,8 @@ class Downloader(object):
                     task_download_state.file_download_states[file_download_state] = file_info
 
                     # Define the local filepath to download to
-                    local_filepath = os.path.join(output_dir, file_info["relative_path"])
+                    # local_filepath = os.path.join(output_dir, file_info["relative_path"])
+                    local_filepath = file_info['filepath']
 
                     # Record the filepath to the state object
                     file_download_state.filepath = local_filepath
