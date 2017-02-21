@@ -114,9 +114,10 @@ class ClarisseConductorSubmitter(submitter.ConductorSubmitter):
         frame_range = clarisse_utils.get_frame_range()
         self.setFrameRange(int(frame_range[0]), int(frame_range[1]))
         self.extended_widget.refreshUi()
-        output_path = clarisse_utils.get_clarisse_output_path()
-        print("OUTPUT PATH = %s" % output_path)
-        self.setOutputDir(output_path)
+        # output_path = clarisse_utils.get_clarisse_output_path()
+        # print("OUTPUT PATH = %s" % output_path)
+        # self.setOutputDir(output_path)
+        self.ui_output_path_widget.hide()
 
     def getExtendedWidget(self):
         return ClarisseWidget()
@@ -193,6 +194,9 @@ class ClarisseConductorSubmitter(submitter.ConductorSubmitter):
         #
         #     plugins_info.append(plugin_info)
         return plugins_info
+
+    def getOutputDir(self):
+        return clarisse_utils.get_clarisse_output_paths()
 
     def runPreSubmission(self):
         '''

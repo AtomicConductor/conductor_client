@@ -59,6 +59,12 @@ def get_clarisse_output_path():
     return os.path.commonprefix(output_paths)
 
 
+def get_clarisse_output_paths():
+    layers = get_clarisse_layers()
+    output_paths = [str(get_clarisse_layer_output_path(layer)) for layer in layers]
+    return output_paths
+
+
 def get_clarisse_image_layers(image_name):
     image_obj = ix.application.get_factory().get_object(image_name)
     return image_obj.attrs.layers
@@ -150,8 +156,9 @@ def do_export():
         if not file in unique_files:
             # de-windoify path
             print "abs path: %s" % os.path.abspath(file)
-            new_filename = os.path.abspath(file).replace("\\", '/').replace(':', '').replace('\\\\', '/')
-            new_filename = gen_tempdir + new_filename
+            new_filename = os.path.abspath(file)
+            # new_filename = os.path.abspath(file).replace("\\", '/').replace(':', '').replace('\\\\', '/')
+            # new_filename = gen_tempdir + new_filename
             # getting the absolute path of the file
             # if (not platform.system == "Windows" and not new_filename.startswith("/")) and \
             #         not new_filename.startswith("$PDIR") and \
@@ -183,8 +190,8 @@ def do_export():
 
     # copying files in new directory
     # return_files = [gen_tempdir + '/' + name]
-    scene_info["scene_file"] = "%s/%s" % (gen_tempdir, name)
-    scene_info["dependencies"] = [gen_tempdir + '/' + name]
+    scene_info["scene_file"] = os.path.join(gen_tempdir, name)
+    scene_info["dependencies"] = [scene_info["scene_file"]]
     for file in unique_files:
         target = unique_files[file]
         if target.startswith("$PDIR") or target.startswith("$CDIR"):
@@ -197,14 +204,14 @@ def do_export():
         ix.application.check_for_events()
         # new_path = gen_tempdir + target
         scene_info["dependencies"].append(target)
-        if platform.system == "Windows":
-            shutil.copyfile(file, target)
-        else:
-            os.symlink(file, target)
+        # if platform.system() == "Windows":
+        #     shutil.copyfile(file, target)
+        # else:
+        #     os.symlink(file, target)
 
     ix.cmds.SetValues(attr_list, new_file_list)
-    ix.application.export_context_as_project(gen_tempdir + '/' + name, ix.application.get_factory().get_root())
-    ix.application.export_render_archive(gen_tempdir + '/' + name)
+    ix.application.export_context_as_project(scene_info["scene_file"], ix.application.get_factory().get_root())
+    ix.application.export_render_archive(scene_info["scene_file"])
 
     #  The stuff that is commented out packages the dependencies into an archive
     #  this is something we do not support at the moment, but I'm leaving around 

@@ -562,7 +562,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         Return the UI's Output Directory field
         '''
-        return str(self.ui_output_directory_lnedt.text()).replace("\\", "/")
+        return [str(self.ui_output_directory_lnedt.text()).replace("\\", "/")]
 
 
     def getNotifications(self):
@@ -610,7 +610,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["notify"] = self.getNotifications()
-        conductor_args["output_path"] = self.getOutputDir()
+        conductor_args["output_paths"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
         conductor_args["scout_frames"] = self.getScoutFrames()
         conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
