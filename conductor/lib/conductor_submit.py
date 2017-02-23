@@ -109,6 +109,9 @@ class Submit():
         self.output_path = self.resolve_arg(args, 'output_path', "")
         logger.debug("output_path: %s", self.output_path)
 
+        self.output_paths = self.resolve_arg(args, 'output_paths', [])
+        logger.debug("output_paths: %s", self.output_paths)
+
         self.priority = self.resolve_arg(args, 'priority', 5)
         logger.debug("priority: %s", self.priority)
 
@@ -313,6 +316,8 @@ class Submit():
                 submit_dict['priority'] = self.priority
             if self.output_path:
                 submit_dict['output_path'] = self.output_path
+            if self.output_paths:
+                submit_dict['output_paths'] = self.output_paths
             if self.environment:
                 submit_dict['environment'] = self.environment
             if self.max_instances:
