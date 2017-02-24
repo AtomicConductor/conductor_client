@@ -168,7 +168,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         into it by conductor (when the job is submitted).  These values will be
         dictated by the "frames" argument.
         '''
-        base_cmd = "Render -rd /tmp/render_output/ <frame_args> %s %s"
+        base_cmd = "Render -rd %s <frame_args> %s %s"
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
         maya_filepath = self.getSourceFilepath()
@@ -178,7 +178,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # as an argument in a linux shell on the backend. Not pretty.
         maya_filepath_nodrive = os.path.splitdrive(maya_filepath)[-1]
 
-        cmd = base_cmd % (render_layer_args, maya_filepath_nodrive)
+        cmd = base_cmd % (maya_utils.get_image_dirpath(), render_layer_args, maya_filepath_nodrive)
         return cmd
 
 
