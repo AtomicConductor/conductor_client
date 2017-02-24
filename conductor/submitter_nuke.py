@@ -380,7 +380,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
 
         # the output path gets dynamically generated based upon which write nodes the user has selected
-        conductor_args["output_path"] = data["output_path"]
+        conductor_args["output_paths"] = [data["output_path"]]
 
         return conductor_args
 
