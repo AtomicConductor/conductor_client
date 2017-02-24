@@ -187,7 +187,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         # Create a template command that be be used for each task's command
-        cmd_template = "Render -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
+        cmd_template = "Render -s %s -e %s -b %s %s %s"
 
 
         # Retrieve the source maya file
@@ -235,7 +235,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         dependency_attrs = resources.get("maya_dependency_attrs") or {}
 
         return maya_utils.collect_dependencies(dependency_attrs)
-
 
 
     def getEnvironment(self):
