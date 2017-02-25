@@ -169,9 +169,6 @@ def dec_timer_exit(log_level=logging.INFO):
         '''
         @functools.wraps(func)
         def wrapper(*a, **kw):
-            if not logger:
-                global logger
-
             func_name = getattr(func, "__name__", "<Unknown function>")
             start_time = time.time()
             result = func(*a, **kw)
