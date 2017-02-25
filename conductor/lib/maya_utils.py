@@ -553,6 +553,12 @@ def parse_xgen_file(path, node):
             paletteSection = True
             continue
 
+        m = re.match("\s+cacheFileName\s+(.+)", line)
+        if m:
+            file_path = m.group(1)
+            file_paths.append(file_path)
+            continue
+
         if paletteSection:
             print line
             m = re.match("^\w", line)
@@ -574,6 +580,7 @@ def parse_xgen_file(path, node):
             m = re.match("\s*xgProjectPath\s+(.+)", line)
             if m:
                 project_dir = m.group(1)
+                file_paths.append(os.path.join(project_dir, "xgen"))
                 continue
 
     return file_paths
