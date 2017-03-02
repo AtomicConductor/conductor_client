@@ -1247,6 +1247,7 @@ class Backend:
         Return a list of items
         '''
         url = cls.make_url(path)
+        print url, params, headers
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
         return response.json()
