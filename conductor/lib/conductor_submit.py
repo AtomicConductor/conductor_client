@@ -20,7 +20,7 @@ except ImportError, e:
 
 
 from conductor import CONFIG
-from conductor.lib import file_utils, api_client, uploader, loggeria
+from conductor.lib import file_utils, api_client, uploader, loggeria, common
 
 logger = logging.getLogger(__name__)
 
@@ -273,9 +273,8 @@ class Submit():
                     "/batman/v06/batman_v006_high.png": "s9y36AyAR5cYoMg0Vx1tzw=="}
 
         '''
-        assert isinstance(upload_files, dict), "Expected dictionary. Got: %s" % upload_files
-
-        logger.debug("upload_files:\n\t%s", "\n\t".join(upload_files or {}))
+        assert isinstance(upload_files, list), "Expected list. Got: %s" % upload_files
+        logger.debug("upload files: %s" % upload_files)
 
         submit_dict = {'owner':self.user}
         submit_dict['location'] = self.location
@@ -377,8 +376,14 @@ class Submit():
         upload_size = 0
 
         # Create a dictionary of upload_files with None as the values.
+        upload_file_info = []
+        # for path in upload_files:
+        #     upload_file_info[path] = {"md5": None,
+        #                               "source": path,
+        #                               "destination": path}
         upload_files = dict([(path, None) for path in upload_files])
 
+        logger.debug("Upload files is %s" % upload_files)
         # If opting to upload locally (i.e. from this machine) then run the uploader now
         # This will do all of the md5 hashing and uploading files to the conductor (if necesary).
         if self.local_upload:
@@ -390,24 +395,44 @@ class Submit():
             if upload_error_message:
                 raise Exception("Could not upload files:\n%s" % upload_error_message)
             # Get the resulting dictionary of the file's and their corresponding md5 hashes
-            upload_files = uploader_.return_md5s()
+            upload_md5s = uploader_.return_md5s()
+            for path, md5 in upload_md5s.iteritems():
+                upload_files[path] = md5
 
         # If the NOT uploading locally (i.e. offloading the work to the uploader daemon
         else:
             # update the upload_files dictionary with md5s that should be enforced
             # this will override the None values with actual md5 hashes
             for filepath, md5 in self.enforced_md5s.iteritems():
+                logger.debug("filepath is %s" % filepath)
                 processed_filepaths = file_utils.process_upload_filepath(filepath)
                 assert len(processed_filepaths) == 1, "Did not get exactly one filepath: %s" % processed_filepaths
                 upload_files[processed_filepaths[0]] = md5
 
         for upload_file in upload_files:
-            upload_size += os.stat(upload_file).st_size
+            logger.debug("doing stat of %s" % upload_file)
+            filestat = os.stat(upload_file)
+            upload_file_dict = {"md5": upload_files[upload_file],
+                                "destination": upload_file,
+                                "gcs_url": common.get_upload_gcs_path(self.project, upload_files[upload_file]),
+                                "st_mode": filestat.st_mode,
+                                "st_ino": filestat.st_ino,
+                                "st_dev": filestat.st_dev,
+                                "st_nlink": filestat.st_nlink,
+                                "st_uid": filestat.st_uid,
+                                "st_gid": filestat.st_gid,
+                                "st_size": filestat.st_size,
+                                "st_atime": filestat.st_atime,
+                                "st_mtime": filestat.st_mtime,
+                                "st_ctime": filestat.st_ctime}
+            upload_file_info.append(upload_file_dict)
+            upload_size += filestat.st_size
+
 
         # Submit the job to conductor. upload_files may have md5s included in dictionary or may not.
         # Any md5s that are incuded, are expected to be checked against if/when the uploader
         # daemon goes to upload them. If they do not match what is on disk, the uploader will fail the job
-        response, response_code = self.send_job(upload_files, upload_size)
+        response, response_code = self.send_job(upload_file_info, upload_size)
         return json.loads(response), response_code
 
     def get_upload_files(self):

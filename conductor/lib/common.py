@@ -1,4 +1,5 @@
 import base64
+import binascii
 import datetime
 import functools
 import hashlib
@@ -14,7 +15,6 @@ import sys
 import time
 import traceback
 import yaml
-
 
 BYTES_1KB = 1024
 BYTES_1MB = BYTES_1KB ** 2
@@ -169,9 +169,6 @@ def dec_timer_exit(log_level=logging.INFO):
         '''
         @functools.wraps(func)
         def wrapper(*a, **kw):
-            if not logger:
-                global logger
-
             func_name = getattr(func, "__name__", "<Unknown function>")
             start_time = time.time()
             result = func(*a, **kw)
@@ -595,4 +592,9 @@ def get_human_timestamp(seconds_since_epoch):
     '''
     return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
 
-
+def get_upload_gcs_path(project, b64_md5):
+    hex_md5 = ""
+    if b64_md5:
+        hex_md5 = binascii.b2a_hex(binascii.a2b_base64(b64_md5))
+    config = Config().config
+    return "%s/accounts/%s/%s" % (project, config.get('account'), hex_md5)

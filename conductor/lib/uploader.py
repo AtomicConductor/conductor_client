@@ -1,4 +1,5 @@
 import base64
+import binascii
 import datetime
 from pprint import pformat
 import time
@@ -522,7 +523,6 @@ class Uploader():
                                                            verb='POST')
         return True
 
-
     def mark_upload_failed(self, error_message, upload_id):
         logger.error('failing upload due to: \n%s' % error_message)
 
@@ -587,13 +587,18 @@ class Uploader():
             if error_message:
                 return "\n".join(error_message)
 
+            #  Despite storing lots of data about new uploads, we will only send back the things
+            #  that have changed, to keep payloads small. 
             if self.upload_id:
-                finished_upload_files = self.return_md5s()
+                finished_upload_files = {path: {"source": path,
+                                                "md5": md5,
+                                                "gcs_url": common.get_upload_gcs_path(project, md5)}
+                                         for path, md5 in self.return_md5s().iteritems()}
+
                 self.mark_upload_finished(self.upload_id, finished_upload_files)
 
         except:
             return traceback.format_exc()
-
 
 
     def main(self, run_one_loop=False):
