@@ -42,6 +42,8 @@ maya_dependency_attrs:
         - fileTextureName
     xgmPalette: # XGen (now maya builtin?)
         - xfn
+    xgmDescription:
+        - ai_batch_render_patch
     VRayMesh: # VRay
         - fileName
     VRaySettingsNode: # VRay
