@@ -142,6 +142,9 @@ def parse_args():
                                type=cast_to_bool,
                                help='Run job in preemptible instances')
 
+    submit_parser.add_argument("--instance_type",
+                               help="Type of machine to run on ('n1-standard-16', 'Standard_D2_v2', etc)")
+
     submit_parser.add_argument("--md5_caching",
             help=("Use cached md5s. This can dramatically improve the uploading "
                   "times, as md5 checking can be very time consuming. Caching md5s "

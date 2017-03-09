@@ -102,6 +102,9 @@ class Submit():
         self.preemptible = self.resolve_arg(args, 'preemptible', False)
         logger.debug("preemptible: %s", self.preemptible)
 
+        self.instance_type = self.resolve_arg(args, 'instance_type', "")
+        logger.debug("instance_type: %s" % self.instance_type)
+
         metadata = self.resolve_arg(args, 'metadata', {}, combine_config=True)
         self.metadata = self.cast_metadata(metadata, strict=False)
         logger.debug("metadata: %s", self.metadata)
@@ -294,12 +297,22 @@ class Submit():
         if not (self.upload_file or self.upload_paths):
             logger.warning("Submitted Job/tasks don't include any upload files")
 
-        if self.machine_flavor not in ["standard", "highmem", "highcpu"]:
-            raise BadArgumentError("Machine type %r is not one of %s" % (self.machine_flavor, ["highmem", "standard", "highcpu"]))
+        if not self.instance_type and self.machine_flavor not in ["standard", "highmem", "highcpu"]:
+            raise BadArgumentError("Machine type %s is not \"highmem\", \"standard\", or \"highcpu\"" % self.machine_flavor)
 
-        if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
+        if not self.instance_type and self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
 
+        if not self.instance_type and not self.cores:
+            raise BadArgumentError("Must specify either instance_type or cores!")
+
+        if self.instance_type and self.cores:
+            raise BadArgumentError("Cannot specify both instance_type AND cores!")
+
+        rx_number = "\d+"  # The "number" building block, eg.  acceptes 1001, or 1, or 002
+        rx_step = "x\d"  # the "step" building block, e.g. accepts x1000, or x1, or x002
+        rx_range_w_step = r"(?:%s-%s(?:%s)?)+" % (rx_number, rx_number, rx_step)  # the "range w option step" building block, e.g 100-100, or 100-100x3, oor
+        rx_validation = "((%s|%s), +)+" % (rx_number, rx_range_w_step)  # The final regex which uses a space and comma as a delimeter between multiple frame strings
 
 
     def send_job(self, upload_files, upload_size):
@@ -349,7 +362,8 @@ class Submit():
                                 'command':self.command,
                                 'tasks_data': self.tasks_data,
                                 'cores':self.cores,
-                                'machine_flavor':self.machine_flavor})
+                                'machine_flavor':self.machine_flavor,
+                                'instance_type':self.instance_type})
 
             if self.priority:
                 submit_dict['priority'] = self.priority
