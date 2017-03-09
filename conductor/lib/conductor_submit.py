@@ -99,6 +99,9 @@ class Submit():
         self.machine_flavor = self.resolve_arg(args, 'machine_type', "standard")
         logger.debug("machine_flavor: %s", self.machine_flavor)
 
+        self.instance_type = self.resolve_arg(args, 'instance_type', "")
+        logger.debug("instance_type: %s" % self.instance_type)
+
         metadata = self.resolve_arg(args, 'metadata', {}, combine_config=True)
         self.metadata = self.cast_metadata(metadata, strict=False)
         logger.debug("metadata: %s", self.metadata)
@@ -248,11 +251,17 @@ class Submit():
         else:
             raise BadArgumentError('The supplied arguments could not submit a valid request.')
 
-        if self.machine_flavor not in ["standard", "highmem", "highcpu"]:
+        if not self.instance_type and self.machine_flavor not in ["standard", "highmem", "highcpu"]:
             raise BadArgumentError("Machine type %s is not \"highmem\", \"standard\", or \"highcpu\"" % self.machine_flavor)
 
-        if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
+        if not self.instance_type and self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
+
+        if not self.instance_type and not self.cores:
+            raise BadArgumentError("Must specify either instance_type or cores!")
+
+        if self.instance_type and self.cores:
+            raise BadArgumentError("Cannot specify both instance_type AND cores!")
 
         rx_number = "\d+"  # The "number" building block, eg.  acceptes 1001, or 1, or 002
         rx_step = "x\d"  # the "step" building block, e.g. accepts x1000, or x1, or x002
@@ -307,7 +316,8 @@ class Submit():
             submit_dict.update({'frame_range':self.frames,
                                 'command':self.command,
                                 'cores':self.cores,
-                                'machine_flavor':self.machine_flavor})
+                                'machine_flavor':self.machine_flavor,
+                                'instance_type':self.instance_type})
 
             if self.priority:
                 submit_dict['priority'] = self.priority
@@ -321,10 +331,6 @@ class Submit():
                 submit_dict['software_package_ids'] = self.software_package_ids
             if self.scout_frames:
                 submit_dict['scout_frames'] = self.scout_frames
-
-
-
-
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
