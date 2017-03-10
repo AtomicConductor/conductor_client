@@ -257,11 +257,11 @@ class Submit():
         if not self.instance_type and self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
 
-        if not self.instance_type and not self.cores:
-            raise BadArgumentError("Must specify either instance_type or cores!")
-
-        if self.instance_type and self.cores:
-            raise BadArgumentError("Cannot specify both instance_type AND cores!")
+        # if not self.instance_type and not self.cores:
+        #     raise BadArgumentError("Must specify either instance_type or cores!")
+        #
+        # if self.instance_type and self.cores:
+        #     raise BadArgumentError("Cannot specify both instance_type AND cores!")
 
         rx_number = "\d+"  # The "number" building block, eg.  acceptes 1001, or 1, or 002
         rx_step = "x\d"  # the "step" building block, e.g. accepts x1000, or x1, or x002
