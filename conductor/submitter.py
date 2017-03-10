@@ -496,7 +496,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         core count int.
         '''
 
-        item_idx = self.ui_instance_type_cmbx.findData({"cores": core_count, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
+        item_idx = self.ui_instance_type_cmbx.findData({"cores": 16, "flavor": "standard", "classification": "n1-standard-16", "description": "16 core, 60.0GB Mem"})
         if item_idx == -1:
             raise Exception("Could not find combobox entry for core count: %s!"
                             "This should never happen!" % core_count)
@@ -594,7 +594,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
         conductor_args["scout_frames"] = self.getScoutFrames()
-        conductor_args["instance_type"] = self.getInstanceType()['instance_type']
+        conductor_args["instance_type"] = self.getInstanceType()['classification']
         conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
 
         return conductor_args
