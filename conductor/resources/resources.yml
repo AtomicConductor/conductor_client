@@ -10,7 +10,9 @@ instance_types:
     - {cores: 32, flavor: highcpu,  description: "32 core, 28.8GB Mem"}
     - {cores: 32, flavor: standard, description: "32 core, 120GB Mem"}
     - {cores: 32, flavor: highmem,  description: "32 core, 208GB Mem"}
-
+    - {cores: 64, flavor: highcpu,  description: "64 core, 57.6GB Mem"}
+    - {cores: 64, flavor: standard, description: "64 core, 240GB Mem"}
+    - {cores: 64, flavor: highmem,  description: "64 core, 416GB Mem"}
 
  # A dictionary of maya node types and their corresponing attributes name(s) for
  # seeking out file dependencies (external filepaths)
