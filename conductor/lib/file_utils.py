@@ -159,6 +159,10 @@ def process_upload_filepath(path, strict=True):
                 logger.warning(error_msg)
                 if strict:
                     raise InvalidPathException(error_msg)
+
+            # Squash all leading slashes to a single one to eliminate duplicates when both
+            # windows and linux mounts exist for the same file...
+            filepath = re.sub("^(/+)", "/", filepath)
             paths.append(filepath)
 
 
