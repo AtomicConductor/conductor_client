@@ -18,6 +18,8 @@ from pprint import pformat
 import Queue
 import requests
 
+from conductor import CONFIG
+from conductor.lib import common, loggeria, downloader2
 
 try:
     imp.find_module('conductor')
@@ -27,9 +29,6 @@ except ImportError, error:
             os.path.dirname(
                 os.path.dirname(
                     os.path.abspath(__file__)))))
-
-from conductor import CONFIG
-from conductor.lib import common, loggeria, downloader2
 
 # Duration that workers sleep when there's no work to perform
 WORKER_SLEEP_DURATION = 15
@@ -58,7 +57,7 @@ BEARER_TOKEN = multiprocessing.Array('c', 2000)
 # know when they should exit
 RUN_STATE = multiprocessing.Array('c', 'stoppingorstuff')
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def make_auth_header(bearer_token):
@@ -96,7 +95,7 @@ class DecAuthorize(object):
                 # If a 401 exception occurs, fetch a new token, update the auth header with it,
                 # and call the original function again
                 if  error.response.status_code == 401:
-                    logger.debug("Bearer token expired (401). Fetching a new one: %s", error)
+                    LOGGER.debug("Bearer token expired (401). Fetching a new one: %s", error)
                     bearer_token = get_bearer_token(refresh=True)
                     kwargs["headers"].update(make_auth_header(bearer_token.value))
                     return function(*args, **kwargs)
@@ -246,7 +245,7 @@ class Downloader(object):
         all workers have exited their prococess.
 
         """
-        logger.info("starting downloader daemon")
+        LOGGER.info("starting downloader daemon")
 
         global RUN_STATE
         RUN_STATE.value = self.STATE_RUNNING
@@ -256,7 +255,7 @@ class Downloader(object):
 
         # Create and start all workers
         self._workers = self._create_workers(start=True)
-        logger.debug("Started workers:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
+        LOGGER.debug("Started workers:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
 
     def stop_daemon(self):
         """
@@ -270,7 +269,7 @@ class Downloader(object):
 
         # Cycle through each worker, and change the share object's state value to "stopping
         for worker, run_state in self._workers.iteritems():
-            logger.debug(
+            LOGGER.debug(
                 "changing %s from %s to %s",
                 worker.name,
                 run_state.value,
@@ -284,7 +283,7 @@ class Downloader(object):
         for wrk in self._workers:
             wrk.join()
 
-        logger.debug(
+        LOGGER.debug(
             "All procs exited:\n\t%s",
             "\n\t".join(sorted([w.name for w in self._workers])))
 
@@ -303,19 +302,19 @@ class Downloader(object):
             - HistoryWorker  # logs out history of downloaded files
         """
         account = CONFIG.get("account") or None
-        logger.info("account: %s", account)
+        LOGGER.info("account: %s", account)
 
         project = self.args.get("project") or None
-        logger.info("project: %s", project)
+        LOGGER.info("project: %s", project)
 
         location = self.args.get("location") or None
-        logger.info("location: %s", location)
+        LOGGER.info("location: %s", location)
 
         output_dir = self.args.get("output") or ""
-        logger.info("output_dir: %s", output_dir)
+        LOGGER.info("output_dir: %s", output_dir)
 
         thread_count = self.args.get("thread_count") or 5
-        logger.info("thread_count: %s", thread_count)
+        LOGGER.info("thread_count: %s", thread_count)
 
         #### CREATE WORKER PROCESSES ####
         workers = {}
@@ -367,8 +366,8 @@ class Downloader(object):
 
         # if the process that is calling this function is the "MainProcesS"
         if current_process.name == "MainProcess":
-            logger.warning("ctrl-c exit...")
-            logger.debug("Stopping...")
+            LOGGER.warning("ctrl-c exit...")
+            LOGGER.debug("Stopping...")
             return self.stop_daemon()
 
     def log_uptime(self):
@@ -377,7 +376,7 @@ class Downloader(object):
         '''
         seconds = time.time() - self._start_time
         human_duration = common.get_human_duration(seconds)
-        logger.info("Uptime: %s", human_duration)
+        LOGGER.info("Uptime: %s", human_duration)
 
 
 class DownloadWorker(multiprocessing.Process):
@@ -490,7 +489,7 @@ class DownloadWorker(multiprocessing.Process):
             # catch all other exceptions here. This should hopefully never happen.
             # But catch it so that the worker process doesn't die.
             except:
-                logger.exception("Preventing process from exiting due to Exception:\n")
+                LOGGER.exception("Preventing process from exiting due to Exception:\n")
                 # wait a little to allow for exception recovery .
                 # TODO:(lws) this may be totally stupid/unnecessary)
                 self._wait()
@@ -503,7 +502,7 @@ class DownloadWorker(multiprocessing.Process):
         # emptied first. Hang forever from parent's call to Join.
         empty_queue(self._progress_queue)
 
-        logger.debug("Exiting process")
+        LOGGER.debug("Exiting process")
 
     def _create_workers(self, start=True):
         """
@@ -529,7 +528,7 @@ class DownloadWorker(multiprocessing.Process):
         workers[worker] = run_state
 
         if start:
-            [wrk.start() for wrk in workers]
+            _ = [wrk.start() for wrk in workers]
 
         return workers
 
@@ -556,7 +555,7 @@ class DownloadWorker(multiprocessing.Process):
             return
 
         # Otherwise handle the dl
-        logger.debug("next_dl:\n%s", pformat(next_dl))
+        LOGGER.debug("next_dl:\n%s", pformat(next_dl))
 
         # do some data mangling before allowing the data to continue any further
         # TODO:(lws) validate payload values
@@ -603,7 +602,7 @@ class DownloadWorker(multiprocessing.Process):
         except:
             action = "Failed"
             # log out the exception
-            logger.exception("%s|%s  CAUGHT EXCEPTION  %s:\n", jid, tid, local_file)
+            LOGGER.exception("%s|%s  CAUGHT EXCEPTION  %s:\n", jid, tid, local_file)
             msg = "Failing id %s" % id_
             self._log_msg(jid, tid, msg, local_file, log_level=logging.ERROR)
             Backend.fail(id_, bytes_downloaded=self._bytes_counter.value, account=self.account, location=self.location, project=self.project)
@@ -867,7 +866,7 @@ class DownloadWorker(multiprocessing.Process):
 
         '''
         msg_template = "%(jid)s|%(tid)s  %(message)s  %(filepath)s"
-        logger.log(log_level, msg_template, {"message":message.ljust(ljust),
+        LOGGER.log(log_level, msg_template, {"message":message.ljust(ljust),
                                                               "jid":jid,
                                                               "tid":tid,
                                                               "filepath":local_file})
@@ -930,7 +929,7 @@ class DownloadWorker(multiprocessing.Process):
         to exit/break out of the md5 hashing process
         '''
         if self._run_state.value != Downloader.STATE_RUNNING:
-            logger.warning("Exiting hashing")
+            LOGGER.warning("Exiting hashing")
             raise DownloaderExit(0)
         self._bytes_counter.value = bytes_processed
         self._progress_queue.put_nowait((id_, "hash", bytes_processed))
@@ -942,12 +941,12 @@ class DownloadWorker(multiprocessing.Process):
         exit properly
         """
         for worker, state in self._workers.iteritems():
-            logger.debug("changing %s from %s to %s", worker.name, state.value, Downloader.STATE_STOPPING)
+            LOGGER.debug("changing %s from %s to %s", worker.name, state.value, Downloader.STATE_STOPPING)
             state.value = Downloader.STATE_STOPPING
 
-        logger.debug("waiting for procs to exit:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
+        LOGGER.debug("waiting for procs to exit:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
         [wrk.join() for wrk in self._workers]
-        logger.debug("All procs exited:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
+        LOGGER.debug("All procs exited:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
 
 
 class TouchWorker(threading.Thread):
@@ -1016,17 +1015,17 @@ class TouchWorker(threading.Thread):
                     try:
                         self._touch(file_id, action, bytes_processed)
                     except:
-                        logger.exception("FAILED TO TOUCH:\n")
+                        LOGGER.exception("FAILED TO TOUCH:\n")
 
                 self._last_touch = time.time()
 
             # sleep a lil so that we're not slamming the cpu
             self._wait(seconds=.2)
 
-        logger.debug("Exiting thread")
+        LOGGER.debug("Exiting thread")
 
     def _touch(self, file_id, action, bytes_processed):
-        logger.debug("Touching backend: id=%s _bytes_action=%s bytes_processed=%s" % (file_id, action, bytes_processed))
+        LOGGER.debug("Touching backend: id=%s _bytes_action=%s bytes_processed=%s" % (file_id, action, bytes_processed))
         Backend.touch(file_id, bytes_transferred=bytes_processed, account=self._account, location=self._location, project=self._project)
 
     def _wait(self, seconds):
@@ -1094,7 +1093,7 @@ class HistoryWorker(multiprocessing.Process):
         while self._run_state.value == Downloader.STATE_RUNNING:
             self._print_history()
 
-        logger.debug("Exiting process")
+        LOGGER.debug("Exiting process")
 
     def _print_history(self):
         '''
@@ -1122,13 +1121,13 @@ class HistoryWorker(multiprocessing.Process):
 
                 # Only print the history if it is different from before
                 if history_summary == self._last_history:
-                    logger.info('##### DOWNLOAD HISTORY ##### [No changes]')
+                    LOGGER.info('##### DOWNLOAD HISTORY ##### [No changes]')
                 else:
-                    logger.info("%s\n", history_summary)
+                    LOGGER.info("%s\n", history_summary)
                     self._last_history = history_summary
 
             except:
-                logger.exception("Failed to report Summary")
+                LOGGER.exception("Failed to report Summary")
 
             self._wait(self._print_interval)
 
@@ -1190,7 +1189,7 @@ class Backend:
             return Backend.put(path, kwargs, headers=cls.headers)
         except requests.HTTPError as e:
             if e.response.status_code == 410:
-                logger.warning("Cannot Touch file %s.  Already finished (not active) (410)", id_)
+                LOGGER.warning("Cannot Touch file %s.  Already finished (not active) (410)", id_)
                 return
         raise
 
@@ -1199,7 +1198,7 @@ class Backend:
     @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, tries=3)
     def finish(cls, id_, bytes_downloaded=0, account=None, location=None, project=None):
         path = "downloader/finish/%s" % id_
-        logger.debug(path)
+        LOGGER.debug(path)
         payload = {"bytes_downloaded": bytes_downloaded,
                    "account": account,
                    "location": location,
@@ -1208,7 +1207,7 @@ class Backend:
             return Backend.put(path, payload, headers=cls.headers)
         except requests.HTTPError as e:
             if e.response.status_code == 410:
-                logger.warning("Cannot finish file %s.  File not active (410)", id_)
+                LOGGER.warning("Cannot finish file %s.  File not active (410)", id_)
                 return
         raise
 
@@ -1225,7 +1224,7 @@ class Backend:
             return Backend.put(path, payload, headers=cls.headers)
         except requests.HTTPError as e:
             if e.response.status_code == 410:
-                logger.warning("Cannot fail file %s.  File not active (410)", id_)
+                LOGGER.warning("Cannot fail file %s.  File not active (410)", id_)
                 return
         raise
 
@@ -1235,7 +1234,6 @@ class Backend:
         url = cls.make_url("bearer")
         headers = dict(cls.headers)
         headers.update({"authorization": "Token %s" % token})
-        print url, headers
         result = requests.get(url, headers=headers)
         result.raise_for_status()
         return result.json()
@@ -1247,7 +1245,6 @@ class Backend:
         Return a list of items
         '''
         url = cls.make_url(path)
-        print url, params, headers
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
         return response.json()
@@ -1278,14 +1275,17 @@ class Backend:
         # url_base = "104.198.192.129" # beta
         # url_base = "104.197.50.6" # dev (alpha)
         # FIXME: remove when public api is online
-        IP_MAP = {
-                "fiery-celerity-88718.appspot.com": "104.198.192.129",
-                "eloquent-vector-104019.appspot.com": "104.197.50.6",
-                "atomic-light-001.appspot.com": ""
-                }
+        ip_map = {
+            "fiery-celerity-88718.appspot.com": "104.198.192.129",
+            "eloquent-vector-104019.appspot.com": "104.197.50.6",
+            "atomic-light-001.appspot.com": ""
+        }
         config_url = CONFIG.get("url", CONFIG["base_url"]).split("//")[-1]
         project_url = string.join(config_url.split("-")[-3:], "-")
-        url_base = IP_MAP[project_url]
+        if os.environ.get("LOCAL"):
+            url_base = "localhost:8080"
+        else:
+            url_base = ip_map[project_url]
         return "http://%s/api/%s" % (url_base, path)
 
 
@@ -1341,7 +1341,7 @@ def empty_queue(queue):
         except Queue.Empty:
             break
         except:
-            logger.exception("recovered from exception:\n%s")
+            LOGGER.exception("recovered from exception:\n%s")
             break
     return items
 
@@ -1394,7 +1394,8 @@ def run_downloader(args):
     log_dirpath = args.get("log_dir")
     set_logging(log_level, log_dirpath)
 
-    logger.debug('Downloader args: %s', args)
+    LOGGER.debug('Downloader args: %s', args)
+    get_bearer_token()
     downloader = Downloader(args)
     downloader.start_daemon()
 
