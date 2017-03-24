@@ -10,7 +10,9 @@ instance_types:
     - {cores: 32, flavor: highcpu,  description: "32 core, 28.8GB Mem"}
     - {cores: 32, flavor: standard, description: "32 core, 120GB Mem"}
     - {cores: 32, flavor: highmem,  description: "32 core, 208GB Mem"}
-
+    - {cores: 64, flavor: highcpu,  description: "64 core, 57.6GB Mem"}
+    - {cores: 64, flavor: standard, description: "64 core, 240GB Mem"}
+    - {cores: 64, flavor: highmem,  description: "64 core, 416GB Mem"}
 
  # A dictionary of maya node types and their corresponing attributes name(s) for
  # seeking out file dependencies (external filepaths)
@@ -40,6 +42,8 @@ maya_dependency_attrs:
         - cam   
     file: # maya builtin
         - fileTextureName
+    McdGlobal: # Miarmy
+        - outMD2Folder
     xgmPalette: # XGen (now maya builtin?)
         - xfn
     xgmDescription:
@@ -124,6 +128,9 @@ package_ids:
                 "1.4.1.1": fa30710c95f1afe77019874515d122fe
                 "1.4.1.2": 8f8447ccf80421bfa7301815b034a2ac
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
+            miarmy:
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+
 
         "Autodesk Maya 2016 SP1": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
@@ -158,7 +165,9 @@ package_ids:
                 "1.4.1.1": fa30710c95f1afe77019874515d122fe
                 "1.4.1.2": 8f8447ccf80421bfa7301815b034a2ac
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
-        
+            miarmy:
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+
         "Autodesk Maya 2016 SP2": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya:  
@@ -192,8 +201,10 @@ package_ids:
                 "1.4.1.1": fa30710c95f1afe77019874515d122fe
                 "1.4.1.2": 8f8447ccf80421bfa7301815b034a2ac
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
-                
-                
+            miarmy:
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2    
+
+
         "Autodesk Maya 2016 SP3": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya: 
@@ -227,8 +238,10 @@ package_ids:
                 "1.4.1.1": fa30710c95f1afe77019874515d122fe
                 "1.4.1.2": 8f8447ccf80421bfa7301815b034a2ac
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
-                
-                
+            miarmy:
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2               
+                 
+
         "Autodesk Maya 2016 SP4": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya:  
@@ -262,6 +275,8 @@ package_ids:
                 "1.4.1.1": fa30710c95f1afe77019874515d122fe
                 "1.4.1.2": 8f8447ccf80421bfa7301815b034a2ac
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
+            miarmy:
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
                 
                 
         "Autodesk Maya 2016 SP5": 
@@ -297,6 +312,8 @@ package_ids:
                 "1.4.1.1": fa30710c95f1afe77019874515d122fe
                 "1.4.1.2": 8f8447ccf80421bfa7301815b034a2ac
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
+            miarmy:
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
                 
         
         "Autodesk Maya 2016 SP6": 
@@ -332,7 +349,9 @@ package_ids:
                 "1.4.1.1": fa30710c95f1afe77019874515d122fe
                 "1.4.1.2": 8f8447ccf80421bfa7301815b034a2ac
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
-                
+            miarmy:
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
+        
         
         "Autodesk Maya 2016 Extension 1 + SP5": # Not sure if this an actual product
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
@@ -367,7 +386,9 @@ package_ids:
                 "1.4.1.1": fa30710c95f1afe77019874515d122fe
                 "1.4.1.2": 8f8447ccf80421bfa7301815b034a2ac
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
-                 
+            miarmy:
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
+                
         
         "Autodesk Maya 2016 Extension 2":  # Not sure if this an actual product
             package: 358ec09e234da63c29d612b49a77fb58 # Autodesk_MayaIO_2016_EXT2
@@ -402,7 +423,8 @@ package_ids:
                 "1.4.1.1": cd75a431a4dc0db372d9b81cd142c3ff
                 "1.4.1.2": b594c5202575a5c1c245be072cf5eb76
                 "1.4.2.0": 6b4aa2c43227869df28703eaef3c3f2a
-    
+            miarmy:
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
     
     
     
