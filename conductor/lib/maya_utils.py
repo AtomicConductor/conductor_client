@@ -744,6 +744,15 @@ def get_node_by_type(node_type, must_exist=True, many=False):
 
 
 def get_plugin_info():
+    '''
+    Return the conductor package information for any supported plugins 
+    that are loaded.
+    
+     e.g. 
+        {'arnold-maya': u'1.4.2.1', 
+         'miarmy': u'5.2.25', 
+         'v-ray-maya': u'3.40.02'}
+    '''
     plugins_info = {}
     for PluginClass in PLUGIN_CLASSES:
         if PluginClass.exists():
@@ -947,5 +956,65 @@ class ArnoldInfo(MayaPluginInfo):
         rx = r'{}\.{}\.{}\.{}'.format(rx_major, rx_minor, rx_release, rx_build)
         return rx
 
+class MiarmyBaseInfo(MayaPluginInfo):
+    '''
+    Base class for all Miarmy plugins.  This base class DOES NOT 
+    represent any one miarmy plugin. It must be subclassed.
 
-PLUGIN_CLASSES = [VrayInfo, ArnoldInfo]
+    A class for retrieving version information about the Miarmy plugin in maya
+
+    Will ultimately produce something like this
+
+     {'product': 'miarmy',
+      'major_version': u'5',
+      'minor_version': u'2',
+      'release_version': u'25',
+      'build_version': u'',
+      'plugin_host_product': 'maya',
+      'plugin_host_version': u'2016'}
+
+    '''
+
+    @classmethod
+    def get_product(cls):
+        return "miarmy"
+
+    @classmethod
+    def get_regex(cls):
+        '''
+        '1.2.6'
+        '''
+        rx_major = r'(?P<major_version>\d+)'
+        rx_minor = r'(?P<minor_version>\d+)'
+        rx_release = r'(?P<release_version>\d+)'
+        rx = r'{}\.{}\.{}'.format(rx_major, rx_minor, rx_release)
+        return rx
+
+class MiarmyExpressForMaya2016Info(MiarmyBaseInfo):
+        plugin_name = "MiarmyExpressForMaya2016"
+
+class MiarmyExpressForMaya20165Info(MiarmyBaseInfo):
+        plugin_name = "MiarmyExpressForMaya20165"
+
+class MiarmyExpressForMaya2017Info(MiarmyBaseInfo):
+        plugin_name = "MiarmyExpressForMaya2017"
+
+class MiarmyProForMaya2016Info(MiarmyBaseInfo):
+        plugin_name = "MiarmyProForMaya2016"
+
+class MiarmyProForMaya20165Info(MiarmyBaseInfo):
+        plugin_name = "MiarmyProForMaya20165"
+
+class MiarmyProForMaya2017Info(MiarmyBaseInfo):
+        plugin_name = "MiarmyProForMaya2017"
+
+
+PLUGIN_CLASSES = [VrayInfo,
+                  ArnoldInfo,
+                  MiarmyExpressForMaya2016Info,
+                  MiarmyExpressForMaya20165Info,
+                  MiarmyExpressForMaya2017Info,
+                  MiarmyProForMaya2016Info,
+                  MiarmyProForMaya20165Info,
+                  MiarmyProForMaya2017Info,
+                  ]
