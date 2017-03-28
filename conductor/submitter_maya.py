@@ -15,6 +15,7 @@ except ImportError, e:
 
 from conductor import CONFIG, submitter
 from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria, package_utils
+from conductor.lib.lsseq import seqLister
 
 '''
 TODO: 
@@ -156,30 +157,73 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def getExtendedWidget(self):
         return MayaWidget()
 
-    def generateConductorCmd(self):
+    def generateTasksData(self):
         '''
-        Return the command string that Conductor will execute.
-
+        Return a list of tasks data.  Each item in the list represents one
+        task of work that will be created. 
         
-        example:
-            "Render -rd /tmp/render_output/ <frame_args> -rl render_layer1_name,render_layer2_name maya_maya_filepath.ma"
+        Each task dictionary has the following
+        keys:
+            command: The command for the task to execute
 
-        The <frame_args> portion of the command will have values substitited into
-        into it by conductor (when the job is submitted).  These values will be
-        dictated by the "frames" argument.
+            frames: [optional], helps to bind/display the relationship between a 
+                     task and the frames that the task is operating on.  Because
+                     a task can be any arbitrary command, the notion of "frames"
+                     may not be relevant and can be left empty.
+                     
+        Eventually we may want to populate this with *everything* a task needs 
+        (offloading it from the Job entity). This would allow more per-task flexiblity (such as differing environments, 
+        files, etc).  Just general containment in general.
+        
+        
+        Example(two tasks):
+
+            # Task 0    
+            [ {"command": "Render -s 1 -e 1 -rl renderlayer1 maya_filepath.ma"
+               "frames": "1"},
+            # Task 1    
+            {"command": "Render -s 10 -e 20 -b 2 maya_filepath.ma"
+             "frames": "10-20x2"} ]
         '''
-        base_cmd = "Render -rd /tmp/render_output/ <frame_args> %s %s"
-        render_layers = self.extended_widget.getSelectedRenderLayers()
-        render_layer_args = "-rl " + ",".join(render_layers)
-        maya_filepath = self.getSourceFilepath()
 
+        # Create a template command that be be used for each task's command
+        cmd_template = "Render -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
+
+
+        # Retrieve the source maya file
+        maya_filepath = self.getSourceFilepath()
         # Strip the lettered drive from the filepath (if one exists).
         # This is a hack to allow a Windows filepath to be properly used
         # as an argument in a linux shell on the backend. Not pretty.
         maya_filepath_nodrive = os.path.splitdrive(maya_filepath)[-1]
 
-        cmd = base_cmd % (render_layer_args, maya_filepath_nodrive)
-        return cmd
+        # Get the user-selected render layers
+        render_layers = self.extended_widget.getSelectedRenderLayers()
+        render_layer_args = "-rl " + ",".join(render_layers)
+
+        chunk_size = self.getChunkSize()
+        frames_str = self.getFrameRangeString()
+        frames = seqLister.expandSeq(frames_str.split(","), None)
+
+        # Use the task frames generator to dispense the appropriate amount of
+        # frames per task, generating a command for each task to execute
+        tasks_data = []
+        frames_generator = submitter.TaskFramesGenerator(frames, chunk_size=chunk_size, uniform_chunk_step=True)
+        for start_frame, end_frame, step, task_frames in frames_generator:
+            task_cmd = cmd_template % (start_frame,
+                                       end_frame,
+                                       step,
+                                       render_layer_args,
+                                       maya_filepath_nodrive)
+
+
+            # Generate tasks data
+            # convert the list of frame ints into a single string expression
+            # TODO:(lws) this is silly. We should keep this as a native int list.
+            task_frames_str = ", ".join(seqLister.condenseSeq(task_frames))
+            tasks_data.append({"command": task_cmd,
+                               "frames":  task_frames_str})
+        return tasks_data
 
 
     def collectDependencies(self):
@@ -365,8 +409,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Get the core arguments from the UI via the parent's  method
         conductor_args = super(MayaConductorSubmitter, self).generateConductorArgs(data)
 
-        # Construct the maya-specific command
-        conductor_args["cmd"] = self.generateConductorCmd()
+        # Construct the maya-specific commands for each task
+        conductor_args["tasks_data"] = self.generateTasksData()
 
         # Get the maya-specific environment
         conductor_args["environment"] = self.getEnvironment()
@@ -454,5 +498,3 @@ def get_maya_window():
     '''
     mainWindowPtr = OpenMayaUI.MQtUtil.mainWindow()
     return wrapInstance(long(mainWindowPtr), QtGui.QMainWindow)
-
-

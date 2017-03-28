@@ -121,6 +121,9 @@ class Submit():
         self.software_package_ids = self.resolve_arg(args, 'software_package_ids', [], combine_config=True)
         logger.debug("software_package_ids: %s", self.software_package_ids)
 
+        self.tasks_data = self.resolve_arg(args, 'tasks_data', [])
+        logger.debug("tasks_data: %s", self.tasks_data)
+
         self.upload_file = self.resolve_arg(args, 'upload_file', "")
         logger.debug("upload_file: %s", self.upload_file)
 
@@ -237,27 +240,62 @@ class Submit():
     def validate_args(self):
         '''
         Ensure that the combination of arguments don't result in an invalid job/request
+      
+        
+        # TODO: (lws)  Clean this shit up. Too complex. indicates poor design IMO.
         '''
-        # TODO: Clean this shit up
-        if self.command and self.frames:
-            pass
 
-        elif self.upload_only and (self.upload_file or self.upload_paths):
-            pass
+
+        # If a command was provided, make sure that it provies a frames argument.
+        # Also make sure that it doesn't also provide a tasks_data arg.
+        if self.command:
+            logger.warning('"command" argument deprecated. Please use "tasks_data" arg')
+            if not self.frames:
+                raise BadArgumentError('Must provide a "frames" argument when using the "command" argument')
+            if not self.output_path:
+                raise BadArgumentError('Must provide a "output_path" argument when using the "command" argument')
+            if self.tasks_data:
+                raise BadArgumentError('Cannot supply both the "command" and "tasks_data" arguments')
+            if self.upload_only:
+                raise BadArgumentError('Cannot supply both the "command" and "upload_only" arguments')
+
+        # If the tasks_data arg is provided,
+        elif self.tasks_data:
+
+            if not self.output_path:
+                raise BadArgumentError('Must provide a "output_path" argument when using the "tasks_data" argument')
+
+            # make sure upload_only isn't also specified
+            if self.upload_only:
+                raise BadArgumentError('Cannot supply both "tasks_data" and "upload_only" arguments')
+
+            # make sure frames isn't also specified
+            if self.frames:
+                raise BadArgumentError('Cannot supply both "tasks_data" and "frames" arguments')
+
+            # Ensure that a command has been provided per task
+            for task_data in self.tasks_data:
+                if "command" not in task_data:
+                    raise BadArgumentError('entry in "tasks_data" argument must specify a "command" key. Got %r' % task_data)
+
+        # if the upload_only arg is provided, ensure that there are provided files for upload
+        elif self.upload_only:
+            if not (self.upload_file or self.upload_paths):
+                raise BadArgumentError('"upload_only" job must provide either "upload_paths" and/or "upload_file"')
 
         else:
-            raise BadArgumentError('The supplied arguments could not submit a valid request.')
+            raise BadArgumentError('Job must either provide a "command" or "tasks_data" or indicate that it\'s "upload_only"')
+
+
+        # Warn if no upload files are provided. Not an error, but unusual
+        if not (self.upload_file or self.upload_paths):
+            logger.warning("Submitted Job/tasks don't include any upload files")
 
         if self.machine_flavor not in ["standard", "highmem", "highcpu"]:
-            raise BadArgumentError("Machine type %s is not \"highmem\", \"standard\", or \"highcpu\"" % self.machine_flavor)
+            raise BadArgumentError("Machine type %r is not one of %s" % (self.machine_flavor, ["highmem", "standard", "highcpu"]))
 
         if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
-
-        rx_number = "\d+"  # The "number" building block, eg.  acceptes 1001, or 1, or 002
-        rx_step = "x\d"  # the "step" building block, e.g. accepts x1000, or x1, or x002
-        rx_range_w_step = r"(?:%s-%s(?:%s)?)+" % (rx_number, rx_number, rx_step)  # the "range w option step" building block, e.g 100-100, or 100-100x3, oor
-        rx_validation = "((%s|%s), +)+" % (rx_number, rx_range_w_step)  # The final regex which uses a space and comma as a delimeter between multiple frame strings
 
 
 
@@ -307,6 +345,7 @@ class Submit():
 
             submit_dict.update({'frame_range':self.frames,
                                 'command':self.command,
+                                'tasks_data': self.tasks_data,
                                 'cores':self.cores,
                                 'machine_flavor':self.machine_flavor})
 
