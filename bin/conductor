@@ -40,7 +40,10 @@ def parse_args():
                                           formatter_class=argparse.RawTextHelpFormatter)
 
     submit_parser.add_argument("--cmd",
-                               help="execute this command.")
+           help=('[DEPRECATED. Use --tasks_data instead]\n'
+                 'The command to execute. This works in tandem with the --frames '
+                 'argument to construct a command per task\n'
+                 'Example: --cmd "Render <frame args> /tmp/mayafile.ma"'))
 
     submit_parser.add_argument("--cores",
                                help="Number of cores that this job should run on (highmem and highcpu machines have a minimum of 2 cores)",
@@ -95,7 +98,10 @@ def parse_args():
                                default=1)
 
     submit_parser.add_argument("--frames",
-                               help="frame range to execute over.")
+        help=('[DEPRECATED. Use --tasks_data instead]\n'
+              'The frame range to render. This works in tandem with the --command '
+              'argument to construct a command per task.\n'
+              'Example: --frames "10-20" or "100-200x2", or "1, 10-20, 100-200x2"'))
 
     submit_parser.add_argument("--scout_frames",
                                help="If specified, these frames will run first and the rest of the"
@@ -165,6 +171,21 @@ def parse_args():
                                      'by their ID number, which can be queried from '
                                      'Conductor\'s "web api"'),
                                nargs="*")
+
+    submit_parser.add_argument("--tasks_data",
+           help=('Specify a task\'s command to execute and it\'s corresponding frames '
+                 '(if applicable) in a json dictionary format. e.g.\n'
+                 '--tasks_data \"{\\"command\\": \\"Render -s 1 -e 1 /tmp/file.ma\\", '
+                 '\\"frames\\": \\"1\\"}" \n'
+                 '\nSpecify multiple tasks via multiple json dictionaries, separated by spaces, e.g.\n'
+                 '--tasks_data "{\\"command\\": \\"Render -s 10 -e 12 /tmp/file.ma\\", \\"frames\\": \\"10-12\\"}" '
+                 '"{\\"command\\": \\"Render -s 10 -e 12 /tmp/file.ma\\", \\"frames\\": \\"10-12\\"}"\n'
+                 '\nNote that that format of this argument must be valid json. This makes for '
+                 'piping in more verbose/complex arguments more bearable,\n'
+                 'Example of reading two task\'s data from an array within a json file:\n'
+                 'conductor submit --tasks_data "$(cat /tmp/task_cmds.json | jq -c \'.[1]\')"'),
+           type=json.loads,
+           nargs="*")
 
     submit_parser.add_argument("--job_title",
                                help=("The title to name the job.  This is the title "

@@ -13,6 +13,7 @@ except ImportError, e:
 
 from conductor import CONFIG, submitter
 from conductor.lib import file_utils, nuke_utils, pyside_utils, common, package_utils
+from conductor.lib.lsseq import seqLister
 
 logger = logging.getLogger(__name__)
 
@@ -139,21 +140,32 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         return NukeWidget()
 
 
-    def generateConductorCmd(self):
+    def generateTasksData(self):
         '''
-        Return the command string that Conductor will execute
-        
-        example:
-            "-X AFWrite.write_exr <frame_args> /Volumes/af/show/walk/shots/114/114_100/sandbox/mjtang/tractor/nuke_render_job_122/walk_114_100_main_comp_v136.nk"
+        Return a list of tasks data.  Each item in the list represents one
+        task of work that will be created. Each task dictionary has the following
+        keys:
+            command: The command for the task to execute
 
-        The <frame_args> portion of the command will have values substitited into
-        into it by conductor (when the job is submitted).  These values will be
-        dictated by the "frames" argument.
+            frames: [optional], helps to bind/display the relationship between a 
+                     task and the frames that the task is operating on.  Because
+                     a task can be any arbitrary command, the notion of "frames"
+                     may not be relevant and can be left empty.
+
+        Example(two tasks):
+        
+            # Task 0
+            [{"command": "nuke-render --view main -X AFWrite.write_exr -F 1-1x1 /tmp/my_nuke_file.nk
+              "frames": "1"},
+            # Task 1
+             {"command": "nuke-render --view main -X AFWrite.write_exr -F 10-20x2 /tmp/my_nuke_file.nk""
+              "frames": "10-20x2"}]
         '''
-        base_cmd = "nuke-render <frame_args> %s %s %s"
+
+        cmd_template = "nuke-render %s %s -F %s-%sx%s %s"
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
-        write_nodes_args = ["-X %s" % write_node for write_node in write_nodes]
+        write_nodes_args = " ".join(["-X %s" % write_node for write_node in write_nodes])
         selected_views = self.extended_widget.getSelectedViews()
         view_args = "--view %s" % ",".join(selected_views)
         nuke_scriptpath = self.getSourceFilepath()
@@ -163,8 +175,31 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # as an argument in a linux shell command on the backend. Not pretty.
         nuke_filepath_nodrive = os.path.splitdrive(nuke_scriptpath)[-1]
 
-        cmd = base_cmd % (" ".join(write_nodes_args), view_args, nuke_filepath_nodrive)
-        return cmd
+        chunk_size = self.getChunkSize()
+        frames_str = self.getFrameRangeString()
+        frames = seqLister.expandSeq(frames_str.split(","), None)
+
+        # Use the task frames generator to dispense the appropriate amount of
+        # frames per task, generating a command for each task to execute
+        tasks_data = []
+        frames_generator = submitter.TaskFramesGenerator(frames, chunk_size=chunk_size, uniform_chunk_step=True)
+        for start_frame, end_frame, step, task_frames in frames_generator:
+            task_cmd = cmd_template % (view_args,
+                                       write_nodes_args,
+                                       start_frame,
+                                       end_frame,
+                                       step,
+                                       nuke_filepath_nodrive)
+
+
+            # generate tasks data
+            # convert the list of frame ints into a single string expression
+            # TODO:(lws) this is silly. We should keep this as a native int list.
+            task_frames_str = ", ".join(seqLister.condenseSeq(task_frames))
+            tasks_data.append({"command": task_cmd,
+                               "frames":  task_frames_str})
+
+        return tasks_data
 
 
     def collectDependencies(self, write_nodes, views):
@@ -343,8 +378,8 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # Get the core arguments from the UI via the parent's  method
         conductor_args = super(NukeConductorSubmitter, self).generateConductorArgs(data)
 
-        # Construct the nuke-specific command
-        conductor_args["cmd"] = self.generateConductorCmd()
+        # Construct the nuke-specific commands for each task
+        conductor_args["tasks_data"] = self.generateTasksData()
 
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
