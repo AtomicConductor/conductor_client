@@ -42,3 +42,6 @@ config.yml
 
 # pycharm
 .idea
+
+# vim tags
+tags
