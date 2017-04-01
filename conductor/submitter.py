@@ -1,14 +1,15 @@
 import collections
-from pprint import pformat
+import functools
+import imp
+import inspect
+from itertools import groupby
 import logging
 import os
 import operator
-import sys
-import inspect
-import functools
-import traceback
+from pprint import pformat
 from PySide import QtGui, QtCore
-import imp
+import sys
+import traceback
 
 try:
     imp.find_module('conductor')
@@ -600,7 +601,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
         conductor_args["cores"] = self.getInstanceType()['cores']
         conductor_args["environment"] = self.getEnvironment()
         conductor_args["force"] = self.getForceUploadBool()
-        conductor_args["frames"] = self.getFrameRangeString()
         conductor_args["chunk_size"] = self.getChunkSize()
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["local_upload"] = self.getLocalUpload()
@@ -613,13 +613,6 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         return conductor_args
 
-    def getCommand(self):
-        '''
-        Return the command string that Conductor will execute
-        '''
-        class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
-        message = "%s not implemented. Please override method as desribed in its docstring" % class_method
-        raise NotImplementedError(message)
 
     def getDockerImage(self):
         '''
@@ -1744,6 +1737,253 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
             the frame/range to use for scout frames
         '''
         return self.setPref(self.PREF_JOB_PACKAGES_IDS, value, filepath=filepath)
+
+class TaskFramesGenerator(object):
+    '''
+    This base class provides functionality to Job's command to be suitable
+    for execution for a single Task. The general idea is that the submitted job 
+    command has subsitutable characters (args) that should be populated 
+    differently for each task (e.g. so that each task renders different frames, etc). 
+    
+    Because every rendering software has it's own rendering command with differing 
+    arguments/syntax, this class is intendeded to be subclassed for each product.
+    
+    Specific problems that this class addresses:
+           
+        1. Converting a job's "frame_range" argument into individual frames so
+           that each task is allocated unique frame(s) to render.
+        
+        2. Reading and applying those frames to the Task's render command  
+           arguments. The render command syntax may be different for each product. 
+        
+        3. Taking into consideration the job's "chunk_size" argument so that
+           a single Task can work on multiple frames.  This also includes interpreting
+           any "steps" that have been indicated in the job's "frame_range" argument.
+              
+    Note that this class is an iterator so that it can be iterated upon until
+    a command for each task has been dispensed. It provides two items upon each
+    iteration:
+        - A command that has been fully resolved for a task
+        - a list of frames (ints) that the task will be rendering
+    
+    Example usage (using MayaTaskCommand child class):
+        # Instantiate the class with proper args
+        >>> cmd_generator = base_utils.MayaTaskCommand(command="Render <frame_args> deadpool.ma", 
+        ...                                            frame_range ="1-10x2",
+        ...                                            frame_padding = 4,
+        ...                                            chunk_size= 2)
+
+        # Iterate over the class object, dispensing command and frame data for each task
+        >>> for command, frames in cmd_generator:
+        ...     print "command:", command
+        ...     print "frames:", frames
+        ...     
+        command: Render -s 1 -e 3 -b 2 deadpool.ma
+        frames: (1, 3)
+        command: Render -s 5 -e 7 -b 2 deadpool.ma
+        frames: (5, 7)
+        command: Render -s 9 -e 9 -b 1 deadpool.ma
+        frames: (9,)
+    
+     '''
+    task_frames = None
+
+
+
+    def __init__(self, frames, chunk_size=1, uniform_chunk_step=True):
+        '''
+        frames: list or integers (frame numbers) to render for the job
+        chunk_size: int. the "chunk_size" arg that was submitted for the job
+        # Dictates whether a chunk of frames must have the same step between them
+        '''
+        self._chunk_size = chunk_size
+
+        # copy the original frame list. This will track which frames have not been dispensed yet
+        self._undispensed_frames = list(frames)
+        self._uniform_chunk_step = uniform_chunk_step
+
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        '''
+        Everytime the object is iterated on, return a tuple that contains two
+        items:
+            - a new command (str) that is appropriate to be executed by a task.
+              (unique from the prior ones)
+            - a list of corresponding frames (ints) that the command will render 
+            
+            start_frame, end_frame, step, task_frames
+        '''
+        # Generate w new task command (from the outstanding/undispensed frames
+        # to be allocated)
+        next_task_frames = self._next(self._chunk_size, self._uniform_chunk_step)
+        if next_task_frames:
+            # Return the command for the task, and the accompanying frames list.
+            return next_task_frames
+
+        # If there isn't a command, then it means all frames have been allocated
+        # to task commands
+        raise StopIteration
+
+
+    def _next(self, chunk_size, uniform_chunk_step):
+        '''
+        Construct and return the command to be executed for a task. This command
+        is specific per product.  The returned command should be fully resolved 
+        and ready to be executed by the task. In other words, resolve all arguments for
+        the command, such as the frames(s) to be rendered (taking into consideration
+        steps and chunks, etc).
+        
+        Call this method repeatedly to dispense a new task command (until all
+        frames have been dispensed/allocated).
+        '''
+
+        # Get the list of frames that is appriate for the chunk size
+        task_frames = self.get_next_frames_chunk(chunk_size, uniform_chunk_step)
+        logger.debug("task_frames: %s", task_frames)
+
+        if task_frames:
+
+            # Get the first frame from the chunk
+            start_frame = str(task_frames[0])
+            logger.debug("start_frame: %s", start_frame)
+
+            # Get the last frame from the chunk
+            end_frame = str(task_frames[-1])
+            logger.debug("end_frame: %s", end_frame)
+
+            steps = self.derive_steps(task_frames)
+            logger.debug("steps: %s", steps)
+
+            # Validate that the there is only 1 step between the frames in the chunk
+            assert len(steps) == 1, "More than one step in frames chunk. Frames chunk: %s.  Steps found: %s" % (task_frames, steps)
+
+            step = str(steps[0])
+            logger.debug("step: %s", step)
+
+            return start_frame, end_frame, step, task_frames
+
+
+
+
+    def get_next_frames_chunk(self, chunk_size, uniform_chunk_step=True):
+        '''
+        Return then "next" chunk of frames (that the task will render). This
+        may be a list of one frame or several.
+        
+        e.g. [1] # single frame
+             [1, 2 ,3]  # multiple frames
+             [1,2,3,40,100,101] # multiple frames (No common step. This can be problematic depending on the render command)
+        
+        uniform_chunk_step: bool. If True, will only return a chunk of frames 
+                            that have a uniform step size between them.
+        
+        
+        more complicated example:
+            frame_range = "1-5x2,20-25,10-30x5,200,1000"
+            chunk_size = 4
+            step_size=5
+            
+            resulting task frames:
+                task 0: [1]
+                task 1: [3] 
+                task 2: [5, 10, 15, 20]  # range conforms to step size (5)
+                task 3: [21]
+                task 4: [22]
+                task 5: [23]
+                task 6: [24]
+                task 7: [25,30] # range conforms to step size (5)
+                task 8: [200]
+                task 9: [1000]
+
+        '''
+        task_frames = ()
+
+        # Cycle through each potential frame in the chunk size
+        for _ in range(chunk_size):
+
+            # If all frames have been dispensed, return the chuck (which could be empty)
+            if not self._undispensed_frames:
+#                 logger.debug("all frames dispensed")
+                return task_frames
+
+            next_frame = self._undispensed_frames[0]
+            # Add the frame to the chunk if we don't care what the step size is
+            # Or the frame is the only frame in the chunk (so far)...
+            # Or if the frame follows the same step as the rest of the chunk frames (it's uniform)
+            if not uniform_chunk_step or not task_frames or len(set(self.derive_steps(task_frames + (next_frame,)))) == 1:
+                task_frames += (next_frame,)
+
+                # Pop a frame off the undispensed listnext_frames_chunk
+                self._undispensed_frames.pop(0)
+
+            # Otherwise break the loop (and return whatever the chunk is at this point)
+            else:
+                break
+
+        return task_frames
+
+
+    @classmethod
+    def derive_steps(cls, frames):
+        '''
+        Inspect the list of frames and derive what the "step" is between them. If
+        more than one step is found, return the lowest and highest steps
+        
+        e.g. 
+             FRAMES                    STEPS
+             -------------------------------------------------
+             [1,2,3,4]         ->      [1]      # one step count between frames (1)
+             [-1,-3,-5,-7]     ->      [2]      # one step count between frames (2)
+             [1,3,5,17]        ->      [2, 12]  # multiple step counts between frames (2, 12)
+             [4]               ->      [1]      # if there isn't an actual step count, default to 1
+        
+        The main functionality taken from: http://stackoverflow.com/questions/3428769/finding-the-largest-delta-between-two-integers-in-a-list-in-python
+        '''
+        # make a copy of the frames list, and then sort it (it should be sorted already, but just to be sure)
+        frames = sorted(list(frames))
+
+        # Get the steps between each frame
+        steps = [abs(x - y) for (x, y) in zip(frames[1:], frames[:-1])]
+
+        # deduplicate steps from list
+        return sorted(set(steps)) or [1]
+
+
+    @classmethod
+    def get_padded_frame(cls, frame_int, padding_int):
+        '''
+        Return the given (frame) number as string with the given padding 
+        applied to it
+        '''
+        padded_str = "%%0%sd" % padding_int
+        return padded_str % frame_int
+
+
+    @classmethod
+    def group_contiguous_frames(cls, frames, ends_only=False):
+        '''
+        Separate the given list of frames into groups(sublists) of contiguous frames/
+        
+        e.g. [1,2,3,15,16,17,21,85] --> [(1,2,3),(15,16,17), (21), (85)] 
+        
+        if ends_only==True, return only first and last frames of each group (i.e. "bookends only")
+            e.g. [(1,3),(15,17), (21), (85)] 
+        
+        taken from: http://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
+        '''
+        ranges = []
+        for _, group in groupby(enumerate(frames), lambda (index, item):index - item):
+            group_ = map(operator.itemgetter(1), group)
+            if ends_only:
+                ranges.append((group_[0], group_[-1]))
+            else:
+                ranges.append(tuple(group_))
+        return ranges
+
+
 
 
 if __name__ == "__main__":
