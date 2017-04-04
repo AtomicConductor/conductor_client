@@ -1008,6 +1008,36 @@ class MiarmyProForMaya20165Info(MiarmyBaseInfo):
 class MiarmyProForMaya2017Info(MiarmyBaseInfo):
         plugin_name = "MiarmyProForMaya2017"
 
+class YetiInfo(MayaPluginInfo):
+    '''
+    A class for retrieving version information about the yeti plugin in maya
+
+    Will ultimately produce something like this
+
+     {"product": "yeti",
+      "major_version": "2",
+      "minor_version": "1",
+      "release_version": "9",
+      "build_version": "",
+      "plugin_host_product": "maya",
+      "plugin_host_version": "2016"}
+    '''
+    plugin_name = "pgYetiMaya"
+
+    @classmethod
+    def get_product(cls):
+        return "yeti"
+
+    @classmethod
+    def get_regex(cls):
+        '''
+        2.1.9
+        '''
+        rx_major = r'(?P<major_version>\d+)'
+        rx_minor = r'(?P<minor_version>\d+)'
+        rx_release = r'(?P<release_version>\d+)'
+        rx = r'{}\.{}\.{}'.format(rx_major, rx_minor, rx_release)
+        return rx
 
 PLUGIN_CLASSES = [VrayInfo,
                   ArnoldInfo,
@@ -1017,4 +1047,5 @@ PLUGIN_CLASSES = [VrayInfo,
                   MiarmyProForMaya2016Info,
                   MiarmyProForMaya20165Info,
                   MiarmyProForMaya2017Info,
+                  YetiInfo,
                   ]

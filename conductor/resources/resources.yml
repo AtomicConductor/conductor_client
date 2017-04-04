@@ -130,6 +130,18 @@ package_ids:
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+            yeti:
+                "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
+                "2.1.0": 664e1023da17797ef8d9b8c08647b69f
+                "2.1.1": e9b7e31930a2d1acfea7977b235a4dac
+                "2.1.2": af43d67d06faaa8ffa01746c8600df12
+                "2.1.3": 9cfbd3f575b147e23600d47aeb6adfba
+                "2.1.4": 44232760be932209338a3c56be0abaec
+                "2.1.5": 989232671901a31479078a4b4a466e7e
+                "2.1.6": 43fd54d822801762a80e7df2b2786cd0
+                "2.1.7": 4c923a9f1bcefe569bc1a2eb68830bf2
+                "2.1.8": e5eb0335b9eb4af8c7e69db4276d767b
+                "2.1.9": b5a0add0e1c215243ae764ec73235c90
 
 
         "Autodesk Maya 2016 SP1": 
@@ -167,7 +179,19 @@ package_ids:
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
-
+            yeti:
+                "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
+                "2.1.0": 664e1023da17797ef8d9b8c08647b69f
+                "2.1.1": e9b7e31930a2d1acfea7977b235a4dac
+                "2.1.2": af43d67d06faaa8ffa01746c8600df12
+                "2.1.3": 9cfbd3f575b147e23600d47aeb6adfba
+                "2.1.4": 44232760be932209338a3c56be0abaec
+                "2.1.5": 989232671901a31479078a4b4a466e7e
+                "2.1.6": 43fd54d822801762a80e7df2b2786cd0
+                "2.1.7": 4c923a9f1bcefe569bc1a2eb68830bf2
+                "2.1.8": e5eb0335b9eb4af8c7e69db4276d767b
+                "2.1.9": b5a0add0e1c215243ae764ec73235c90
+                
         "Autodesk Maya 2016 SP2": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya:  
@@ -203,7 +227,18 @@ package_ids:
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2    
-
+            yeti:
+                "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
+                "2.1.0": 664e1023da17797ef8d9b8c08647b69f
+                "2.1.1": e9b7e31930a2d1acfea7977b235a4dac
+                "2.1.2": af43d67d06faaa8ffa01746c8600df12
+                "2.1.3": 9cfbd3f575b147e23600d47aeb6adfba
+                "2.1.4": 44232760be932209338a3c56be0abaec
+                "2.1.5": 989232671901a31479078a4b4a466e7e
+                "2.1.6": 43fd54d822801762a80e7df2b2786cd0
+                "2.1.7": 4c923a9f1bcefe569bc1a2eb68830bf2
+                "2.1.8": e5eb0335b9eb4af8c7e69db4276d767b
+                "2.1.9": b5a0add0e1c215243ae764ec73235c90
 
         "Autodesk Maya 2016 SP3": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
@@ -240,7 +275,18 @@ package_ids:
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2               
-                 
+            yeti:
+                "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
+                "2.1.0": 664e1023da17797ef8d9b8c08647b69f
+                "2.1.1": e9b7e31930a2d1acfea7977b235a4dac
+                "2.1.2": af43d67d06faaa8ffa01746c8600df12
+                "2.1.3": 9cfbd3f575b147e23600d47aeb6adfba
+                "2.1.4": 44232760be932209338a3c56be0abaec
+                "2.1.5": 989232671901a31479078a4b4a466e7e
+                "2.1.6": 43fd54d822801762a80e7df2b2786cd0
+                "2.1.7": 4c923a9f1bcefe569bc1a2eb68830bf2
+                "2.1.8": e5eb0335b9eb4af8c7e69db4276d767b
+                "2.1.9": b5a0add0e1c215243ae764ec73235c90     
 
         "Autodesk Maya 2016 SP4": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
@@ -277,7 +323,18 @@ package_ids:
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
-                
+            yeti:
+                "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
+                "2.1.0": 664e1023da17797ef8d9b8c08647b69f
+                "2.1.1": e9b7e31930a2d1acfea7977b235a4dac
+                "2.1.2": af43d67d06faaa8ffa01746c8600df12
+                "2.1.3": 9cfbd3f575b147e23600d47aeb6adfba
+                "2.1.4": 44232760be932209338a3c56be0abaec
+                "2.1.5": 989232671901a31479078a4b4a466e7e
+                "2.1.6": 43fd54d822801762a80e7df2b2786cd0
+                "2.1.7": 4c923a9f1bcefe569bc1a2eb68830bf2
+                "2.1.8": e5eb0335b9eb4af8c7e69db4276d767b
+                "2.1.9": b5a0add0e1c215243ae764ec73235c90    
                 
         "Autodesk Maya 2016 SP5": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
@@ -314,7 +371,18 @@ package_ids:
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
-                
+            yeti:
+                "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
+                "2.1.0": 664e1023da17797ef8d9b8c08647b69f
+                "2.1.1": e9b7e31930a2d1acfea7977b235a4dac
+                "2.1.2": af43d67d06faaa8ffa01746c8600df12
+                "2.1.3": 9cfbd3f575b147e23600d47aeb6adfba
+                "2.1.4": 44232760be932209338a3c56be0abaec
+                "2.1.5": 989232671901a31479078a4b4a466e7e
+                "2.1.6": 43fd54d822801762a80e7df2b2786cd0
+                "2.1.7": 4c923a9f1bcefe569bc1a2eb68830bf2
+                "2.1.8": e5eb0335b9eb4af8c7e69db4276d767b
+                "2.1.9": b5a0add0e1c215243ae764ec73235c90    
         
         "Autodesk Maya 2016 SP6": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
@@ -351,7 +419,18 @@ package_ids:
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
-        
+            yeti:
+                "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
+                "2.1.0": 664e1023da17797ef8d9b8c08647b69f
+                "2.1.1": e9b7e31930a2d1acfea7977b235a4dac
+                "2.1.2": af43d67d06faaa8ffa01746c8600df12
+                "2.1.3": 9cfbd3f575b147e23600d47aeb6adfba
+                "2.1.4": 44232760be932209338a3c56be0abaec
+                "2.1.5": 989232671901a31479078a4b4a466e7e
+                "2.1.6": 43fd54d822801762a80e7df2b2786cd0
+                "2.1.7": 4c923a9f1bcefe569bc1a2eb68830bf2
+                "2.1.8": e5eb0335b9eb4af8c7e69db4276d767b
+                "2.1.9": b5a0add0e1c215243ae764ec73235c90
         
         "Autodesk Maya 2016 Extension 1 + SP5": # Not sure if this an actual product
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
@@ -388,7 +467,18 @@ package_ids:
                 "1.4.2.0": 37ec5de4a420c693845ae6051c958e17
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
-                
+            yeti:
+                "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
+                "2.1.0": 664e1023da17797ef8d9b8c08647b69f
+                "2.1.1": e9b7e31930a2d1acfea7977b235a4dac
+                "2.1.2": af43d67d06faaa8ffa01746c8600df12
+                "2.1.3": 9cfbd3f575b147e23600d47aeb6adfba
+                "2.1.4": 44232760be932209338a3c56be0abaec
+                "2.1.5": 989232671901a31479078a4b4a466e7e
+                "2.1.6": 43fd54d822801762a80e7df2b2786cd0
+                "2.1.7": 4c923a9f1bcefe569bc1a2eb68830bf2
+                "2.1.8": e5eb0335b9eb4af8c7e69db4276d767b
+                "2.1.9": b5a0add0e1c215243ae764ec73235c90                
         
         "Autodesk Maya 2016 Extension 2":  # Not sure if this an actual product
             package: 358ec09e234da63c29d612b49a77fb58 # Autodesk_MayaIO_2016_EXT2
@@ -406,6 +496,17 @@ package_ids:
                 "1.4.1.1": cd75a431a4dc0db372d9b81cd142c3ff
                 "1.4.1.2": b594c5202575a5c1c245be072cf5eb76
                 "1.4.2.0": 6b4aa2c43227869df28703eaef3c3f2a
+            yeti:
+                "2.1.0": 82119097eed76bf061c1a568b0e78b5e
+                "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
+                "2.1.2": 8cf37a9943ce9b87aa81ffed070151a7
+                "2.1.3": d46fb7b3d53ee89320e93a13c29d3425
+                "2.1.4": 7124af8ab1321ec0890e18cf71bc6e8c
+                "2.1.5": 38fac398dfef11c7ed81ba2a8d480b72
+                "2.1.6": 94f52b5a7f549419110cfb1789a2d2b8
+                "2.1.7": 2a34b061dc2cdd4ec1395e8cf01fd744
+                "2.1.8": 5e5ac987b34b944f6e1ed4e3221671f0
+                "2.1.9": f7046a2b83668247fabf6450e3da9bdf
     
         "Autodesk Maya 2016 Extension 2 + SP1": 
             package: 358ec09e234da63c29d612b49a77fb58 # Autodesk_MayaIO_2016_EXT2
@@ -425,7 +526,18 @@ package_ids:
                 "1.4.2.0": 6b4aa2c43227869df28703eaef3c3f2a
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
-    
+            yeti:
+                "2.1.0": 82119097eed76bf061c1a568b0e78b5e
+                "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
+                "2.1.2": 8cf37a9943ce9b87aa81ffed070151a7
+                "2.1.3": d46fb7b3d53ee89320e93a13c29d3425
+                "2.1.4": 7124af8ab1321ec0890e18cf71bc6e8c
+                "2.1.5": 38fac398dfef11c7ed81ba2a8d480b72
+                "2.1.6": 94f52b5a7f549419110cfb1789a2d2b8
+                "2.1.7": 2a34b061dc2cdd4ec1395e8cf01fd744
+                "2.1.8": 5e5ac987b34b944f6e1ed4e3221671f0
+                "2.1.9": f7046a2b83668247fabf6450e3da9bdf
+ 
     
     
    
