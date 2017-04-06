@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: lsseq
+Version: 1.800
+Summary: ls-like command for image frame sequences
+Home-page: http://www.orangeimagination.com/
+Author: James Philip Rowell
+Author-email: james@oic-inc.net
+License: BSD 3-Clause license
+Description: lsseq is built to behave very much like ls, but lists image sequences in a condensed manner.  A supporting module is included and two other useful command line utilities: expandseq and condenseseq.
+Platform: UNKNOWN
