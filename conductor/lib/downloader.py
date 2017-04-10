@@ -1236,7 +1236,7 @@ class Backend:
         headers.update({"authorization": "Token %s" % token})
         result = requests.get(url, headers=headers)
         result.raise_for_status()
-        return result.json()
+        return result.json()["access_token"]
 
     @classmethod
     @DecAuthorize()
@@ -1270,23 +1270,23 @@ class Backend:
         '''
         TODO: get rid of this hardcoding!!!
         '''
-        # url_base = "104.196.62.220"
-        # url_base = "127.0.0.1:8080"
-        # url_base = "104.198.192.129" # beta
-        # url_base = "104.197.50.6" # dev (alpha)
-        # FIXME: remove when public api is online
+        if path == "bearer":
+            config_url = CONFIG.get("url", CONFIG["base_url"])
+            return "%s/api/oauth_jwt?scope=user" % config_url
+
         ip_map = {
-            "fiery-celerity-88718.appspot.com": "104.198.192.129",
-            "eloquent-vector-104019.appspot.com": "104.197.50.6",
-            "atomic-light-001.appspot.com": ""
+            "fiery-celerity-88718.appspot.com": "https://beta-api.conductorio.com",
+            "eloquent-vector-104019.appspot.com": "https://dev-api.conductorio.com",
+            "atomic-light-001.appspot.com": "https://api.conductorio.com"
         }
         config_url = CONFIG.get("url", CONFIG["base_url"]).split("//")[-1]
         project_url = string.join(config_url.split("-")[-3:], "-")
         if os.environ.get("LOCAL"):
-            url_base = "localhost:8080"
+            url_base = "http://localhost:8080"
         else:
             url_base = ip_map[project_url]
-        return "http://%s/api/%s" % (url_base, path)
+        url = "%s/api/v1/fileio/%s" % (url_base, path)
+        return url
 
 
 class Counter(object):
