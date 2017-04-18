@@ -1282,7 +1282,7 @@ class Backend:
         config_url = CONFIG.get("url", CONFIG["base_url"]).split("//")[-1]
         project_url = string.join(config_url.split("-")[-3:], "-")
         if os.environ.get("LOCAL"):
-            url_base = "http://localhost:8080"
+            url_base = "http://localhost:8081"
         else:
             url_base = ip_map[project_url]
         url = "%s/api/v1/fileio/%s" % (url_base, path)
