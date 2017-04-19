@@ -419,7 +419,7 @@ def run_downloader(args):
     args_dict = vars(args)
 
     # Code switcher between new downloader and old downloader
-    if args_dict.get("alt") or any([args_dict.get(i) for i in ["job_ids, task_id"]]):
+    if args_dict.get("alt") or any([args_dict.get(i) for i in ["job_id", "task_id"]]):
         return downloader2.run_downloader(args_dict)
 
     return downloader.run_downloader(args_dict)
