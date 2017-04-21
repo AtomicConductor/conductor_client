@@ -625,7 +625,7 @@ class DownloadWorker(multiprocessing.Process):
         fetch and return the next downloadable file (or None if there aren't any)
         '''
         # Fetch the next download (only 1)
-        downloads = Backend.next(self.account, location=self.location, number=1) or []
+        downloads = Backend.next(self.account, location=self.location, project=self.project, number=1) or []
         if downloads:
             # Return the one download in the list
             return downloads[0]
