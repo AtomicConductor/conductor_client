@@ -138,6 +138,8 @@ def parse_args():
                                help='Type of machine to run on ("standard", "highmem", or "highcpu")')
 
     submit_parser.add_argument("--preemptible",
+                               choices=[False, True],
+                               type=cast_to_bool,
                                help='Run job in preemptible instances')
 
     submit_parser.add_argument("--md5_caching",
