@@ -309,6 +309,10 @@ def parse_args():
                                    default=conductor.CONFIG.get("location"),
                                    help=('An optional string to indicate which location this downloader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader process running. This location argument allows each downloader to target specific jobs (to download upon job-completion) that match its appropriate location.  Essentially this allows the location of which a job was submitted from to also be the destination in which to deliver completed renders to (which would typically be the desired behavior).'))
 
+    downloader_parser.add_argument("--project",
+                                   default=conductor.CONFIG.get("project"),
+                                   help=('An optional string to indicate which project that this downloader executable should register as.'))
+
     downloader_parser.add_argument("--log_level",
                                    choices=loggeria.LEVELS,
                                    default=conductor.CONFIG.get("log_level"),
@@ -415,8 +419,12 @@ def run_downloader(args):
     args_dict = vars(args)
 
     # Code switcher between new downloader and old downloader
-    if args_dict.get("alt"):
-        return downloader2.run_downloader(args_dict)
+    if args_dict.get("alt") or any([args_dict.get(i) for i in ["job_id", "task_id"]]):
+        if all([args_dict.get(i) for i in ["job_id", "task_id"]]) or args_dict.get("job_id") or args_dict.get("alt"):
+            return downloader2.run_downloader(args_dict)
+        else:
+            print "ERROR: Both job_id and task_id are required."
+            return
 
     return downloader.run_downloader(args_dict)
 
