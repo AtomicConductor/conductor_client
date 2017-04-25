@@ -1,4 +1,6 @@
-import json
+"""
+Uploader daemon v2
+"""
 import sys
 import signal
 import time
@@ -11,17 +13,17 @@ import string
 import requests
 
 from conductor import CONFIG
-from conductor.lib import common, loggeria
-from conductor.lib.downloader import DecAuthorize, DecDownloaderRetry
+from conductor.lib import common #, loggeria
+from conductor.lib.downloader import DecAuthorize #, DecDownloaderRetry
 
 try:
     imp.find_module('conductor')
 except ImportError, error:
     sys.path.append(
+        os.path.dirname(
             os.path.dirname(
                 os.path.dirname(
-                    os.path.dirname(
-                        os.path.abspath(__file__)))))
+                    os.path.abspath(__file__)))))
 
                     # Duration that workers sleep when there's no work to perform
 WORKER_SLEEP_DURATION = 15
@@ -46,6 +48,12 @@ RUN_STATE = multiprocessing.Array('c', 'stoppingorstuff')
 LOGGER = logging.getLogger(__name__)
 
 class Uploader(object):
+    """
+    Main Uploader process.
+
+    - Launch workers
+    - keep run states etc.
+    """
     STATE_RUNNING = "running"
     STATE_STOPPING = "stopping"
 
@@ -98,10 +106,10 @@ class Uploader(object):
         # Cycle through each worker, and change the share object's state value to "stopping
         for worker, run_state in self._workers.iteritems():
             LOGGER.debug(
-                    "changing %s from %s to %s",
-                    worker.name,
-                    run_state.value,
-                    self.STATE_STOPPING)
+                "changing %s from %s to %s",
+                worker.name,
+                run_state.value,
+                self.STATE_STOPPING)
             run_state.value = self.STATE_STOPPING
 
         # Join the workers. It's generally good practice to do this. Otherwise the
@@ -112,8 +120,8 @@ class Uploader(object):
             wrk.join()
 
         LOGGER.debug(
-                "All procs exited:\n\t%s",
-                "\n\t".join(sorted([w.name for w in self._workers])))
+            "All procs exited:\n\t%s",
+            "\n\t".join(sorted([w.name for w in self._workers])))
 
         # Log out the uptime of the daemon
         self.log_uptime()
@@ -149,10 +157,11 @@ class Uploader(object):
 
             # Create a process-safe run_state object for controlling process
             run_state = multiprocessing.Array('c', "stoppingorstuff")
-            wrk = UploaderWorker(run_state,
-                    account=account,
-                    project=project,
-                    location=location)
+            wrk = UploaderWorker(
+                run_state,
+                account=account,
+                project=project,
+                location=location)
             workers[wrk] = run_state
 
         if start:
@@ -199,11 +208,11 @@ class UploaderWorker(multiprocessing.Process):
     Worker process for uplpads.
 
     It's job is to periodically ask the server for an upload object:
-        
+
         {u'account': u'testaccountdomain',
          u'bytes_transferred': 0,
          u'filepath': u'/home/tester/maya/projects/Samples/Nuke/Nuke/nuke_test/img/sword_gas-l.png',
-         u'gcs_url': u'https://storage.googleapis.com/Testing-Scott/accounts/testaccountdomain/bd55f770c8e0566e272243d7555cf506?Expires=1495676505&GoogleAccessId=239744134952-1itjkr0cjbki5aicdoqka6u87tnc052i%40developer.gserviceaccount.com&Signature=mOqFkTRRoy4R0Cc4jDkNZ4pPKHb%2BM6J50GTsaKU7zO7Szb4Up8sYUh%2BUHd30i1iTjGv6M1jUjtTRJRHqdvRQFa6Gfihfvk6WzH%2BQ2rC%2F0FVQQJ%2FYgfX%2BBSOznFw%2FjaWjYIj3o9BFXAQNHMjLszbxspWoqiDvUrjNXyY9fCg3Pjq3DacPWdPTAWkqvaXelvkxNA1fSdnU4a%2Fp8XOXaEmz8eQvwZaQHfNsh%2FoUKEhpgxAXSPDHCQMFfzgZnCZyZG2%2BjmJE5XiTj50uiBdnA3lnXn3uMAwtXFBHKi9NL6HwtGFRZP3s7HyNZtSMKRtySfnogAuIj7G%2Fo489YbyA5zr8Gg%3D%3D',
+         u'gcs_url': u'https://storage.googleapis.com/Testing-Scott/accounts/testaccountdomain/...",
          u'id': u'bd55f770c8e0566e272243d7555cf506',
          u'jid': None,
          u'location': None,
@@ -228,7 +237,9 @@ class UploaderWorker(multiprocessing.Process):
         self.location = location
         self.project = project
 
-        self.reset()
+        self.current_upload = None
+        self.fileobj = None
+        self.upload_attempts = 0
 
     def run(self):
         # Set the run_state value to "running"
@@ -249,6 +260,9 @@ class UploaderWorker(multiprocessing.Process):
         LOGGER.debug("Exiting process")
 
     def reset(self):
+        """
+        Reset state
+        """
         self.current_upload = None
         self.fileobj = None
         self.upload_attempts = 0
@@ -256,51 +270,67 @@ class UploaderWorker(multiprocessing.Process):
     def _run(self):
         self.reset()
 
-        self.current_upload = next_upload()
+        self.current_upload = self.next_upload()
 
         if not self.current_upload:
             self.wait()
             return
 
-        return handle_upload()
+        return self.handle_upload()
 
     def handle_upload(self):
+        """
+        Process an upload json object
+        """
         filepath = self.current_upload.get("filepath")
         try:
             self.fileobj = FileGenerator(filepath, event_handler=self.handle_upload_event)
-        except UploaderMissingFile as e:
-            print e
+        except UploaderMissingFile as err:
+            print err
             return
         else:
             return self.put_upload()
 
     def put_upload(self):
+        """
+        Put the upload into GCS
+        """
         try:
             result = Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
-        except FilePutError as e:
-            return self.handle_put_error(e)
+        except FilePutError as err:
+            return self.handle_put_error(err)
         else:
+            print result
             return
 
     def handle_finish(self, result):
+        """
+        Callback for finish/success
+        """
         print "done", result
         return result
 
     def next_upload(self):
+        """
+        Get the next upload
+        """
         try:
             uploads = Backend.next(self.account, location=self.location, project=self.project) or []
-        except BackendDown as e:
-            print e
+        except BackendDown as err:
+            print err
             return
-        except BackendError as e:
-            print e
+        except BackendError as err:
+            print err
             return
         else:
             if uploads:
                 # Return the one download in the list
                 return uploads[0]
 
-    def handle_upload_event(self, filegen):
+    def handle_upload_event(self, filegen, event):
+        """
+        Callback for uploads
+        """
         print "Upload Event: ", event
         if event == "progress":
             self.handle_put_progress(filegen)
@@ -309,21 +339,29 @@ class UploaderWorker(multiprocessing.Process):
         return
 
     def handle_put_progress(self, filegen):
+        """
+        Callback for upload progress
+        """
         # TODO: periodically update (touch) server
-        print "bytes so-far: ", filegen._bytes_read
+        print "bytes so-far: ", filegen.bytes_read
 
     def handle_put_success(self, filegen):
+        """
+        Callback for finish/success
+        """
         # TODO: update server (finish)
         print "Done!"
 
-    def handle_put_error(self, error):
-        print error
+    def handle_put_error(self, err):
+        """
+        Callback for upload error
+        """
+        print err
         # TODO: handle different errors accordingly
         if self.upload_attempts < 3:
             self.upload_attempts += 1
             self.wait()
             self.put_upload()
-        
         return
 
 
@@ -340,6 +378,9 @@ class UploaderWorker(multiprocessing.Process):
                 time.sleep(1)
 
     def stop(self):
+        """
+        Call at the end of shutdown
+        """
         print "process shutdown complete"
 
 
@@ -368,38 +409,53 @@ class FileGenerator(object):
         self._chunk_size = chunk_size
         self._file = open(filepath, "rb")
 
-        self._bytes_read = 0
+        self.bytes_read = 0
         self._event_handler = event_handler
 
     def __iter__(self):
         return self
 
     def next(self):
+        """
+        Generator implementation
+        """
         chunk = self._file.read(self._chunk_size)
         if len(chunk) == 0:
             self.stop_event()
             raise StopIteration()
-        self._bytes_read += len(chunk)
+        self.bytes_read += len(chunk)
         self.progress_event()
         return chunk
 
     def progress_event(self):
+        """
+        Fire callback
+        """
         self._event_handler(self, event="progress")
 
     def stop_event(self):
+        """
+        Fire callback
+        """
         self._event_handler(self, event="success")
 
 
 class Backend:
+    """
+    Interface to backend (FileIO service)
+    """
     headers = {"accept-version": "v1"}
 
     @classmethod
     def put_file(cls, filegen, signed_url):
+        """
+        Upload a file (streaming) into GCS
+        """
         headers = {"Content-Type": "application/octet-stream"}
         try:
             resp = requests.put(signed_url, headers=headers, data=filegen)
-        except e:
-            raise FilePutError(e)
+        except Exception as err:
+            raise FilePutError(err)
         else:
             return resp
 
@@ -408,25 +464,27 @@ class Backend:
         """
         Return the next download (dict), or None if there isn't one.
         """
-        # path = "downloader/next"
-        # params = {"account": account, "project": project, "location": location}
-        # return Backend.get(path, params, headers=cls.headers)
-
-        strr = "[{\"ulid\":\"5273391011463168\",\"total_size\":12934,\"status\":null,\"priority\":1,\"md5\":\"vVX3cMjgVm4nIkPXVVz1Bg==\",\"location\":null,\"jid\":null,\"id\":\"bd55f770c8e0566e272243d7555cf506\",\"gcs_url\":\"https://storage.googleapis.com/Testing-Scott/accounts/testaccountdomain/bd55f770c8e0566e272243d7555cf506?Expires=1495676505&GoogleAccessId=239744134952-1itjkr0cjbki5aicdoqka6u87tnc052i%40developer.gserviceaccount.com&Signature=mOqFkTRRoy4R0Cc4jDkNZ4pPKHb%2BM6J50GTsaKU7zO7Szb4Up8sYUh%2BUHd30i1iTjGv6M1jUjtTRJRHqdvRQFa6Gfihfvk6WzH%2BQ2rC%2F0FVQQJ%2FYgfX%2BBSOznFw%2FjaWjYIj3o9BFXAQNHMjLszbxspWoqiDvUrjNXyY9fCg3Pjq3DacPWdPTAWkqvaXelvkxNA1fSdnU4a%2Fp8XOXaEmz8eQvwZaQHfNsh%2FoUKEhpgxAXSPDHCQMFfzgZnCZyZG2%2BjmJE5XiTj50uiBdnA3lnXn3uMAwtXFBHKi9NL6HwtGFRZP3s7HyNZtSMKRtySfnogAuIj7G%2Fo489YbyA5zr8Gg%3D%3D\",\"filepath\":\"/home/tester/maya/projects/Samples/Nuke/Nuke/nuke_test/img/sword_gas-l.png\",\"bytes_transferred\":0,\"account\":\"testaccountdomain\"}]"
-        return json.loads(strr)
+        path = "downloader/next"
+        params = {"account": account, "project": project, "location": location}
+        return Backend.get(path, params, headers=cls.headers)
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
     def touch(cls, id_, bytes_transferred=0, account=None, location=None, project=None):
+        """
+        Update backend with upload status
+        """
         path = "downloader/touch/%s" % id_
-        kwargs = {"bytes_transferred": bytes_transferred,
-                "account": account,
-                "location": location,
-                "project": project}
+        kwargs = {
+            "bytes_transferred": bytes_transferred,
+            "account": account,
+            "location": location,
+            "project": project
+        }
         try:
             return Backend.put(path, kwargs, headers=cls.headers)
-        except requests.HTTPError as e:
-            if e.response.status_code == 410:
+        except requests.HTTPError as err:
+            if err.response.status_code == 410:
                 LOGGER.warning("Cannot Touch file %s.  Already finished (not active) (410)", id_)
                 return
         raise
@@ -434,16 +492,21 @@ class Backend:
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
     def finish(cls, id_, bytes_downloaded=0, account=None, location=None, project=None):
+        """
+        Tell backend about upload success
+        """
         path = "downloader/finish/%s" % id_
         LOGGER.debug(path)
-        payload = {"bytes_downloaded": bytes_downloaded,
-                "account": account,
-                "location": location,
-                "project": project}
+        payload = {
+            "bytes_downloaded": bytes_downloaded,
+            "account": account,
+            "location": location,
+            "project": project
+        }
         try:
             return Backend.put(path, payload, headers=cls.headers)
-        except requests.HTTPError as e:
-            if e.response.status_code == 410:
+        except requests.HTTPError as err:
+            if err.response.status_code == 410:
                 LOGGER.warning("Cannot finish file %s.  File not active (410)", id_)
                 return
         raise
@@ -451,15 +514,20 @@ class Backend:
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
     def fail(cls, id_, bytes_downloaded=0, account=None, location=None, project=None):
+        """
+        Tell backend about upload failure
+        """
         path = "downloader/fail/%s" % id_
-        payload = {"bytes_downloaded": bytes_downloaded,
-                "account": account,
-                "location": location,
-                "project": project}
+        payload = {
+            "bytes_downloaded": bytes_downloaded,
+            "account": account,
+            "location": location,
+            "project": project
+        }
         try:
             return Backend.put(path, payload, headers=cls.headers)
-        except requests.HTTPError as e:
-            if e.response.status_code == 410:
+        except requests.HTTPError as err:
+            if err.response.status_code == 410:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)", id_)
                 return
         raise
@@ -467,6 +535,11 @@ class Backend:
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
     def bearer_token(cls, token):
+        """
+        Bearer
+
+        # FIXME: still needed?
+        """
         url = cls.make_url("bearer")
         headers = dict(cls.headers)
         headers.update({"authorization": "Token %s" % token})
@@ -488,18 +561,14 @@ class Backend:
     @classmethod
     @DecAuthorize()
     def put(cls, path, data, headers):
+        """
+        Call requests put
+        """
         url = cls.make_url(path)
         response = requests.put(url, data=data, headers=headers)
         response.raise_for_status()
         return response.json()
 
-    @classmethod
-    @DecAuthorize()
-    def post(cls, path, data, headers):
-        url = cls.make_url(path)
-        response = requests.post(url, data=data, headers=headers)
-        response.raise_for_status()
-        return response.json()
 
     @staticmethod
     def make_url(path):
@@ -511,10 +580,10 @@ class Backend:
             return "%s/api/oauth_jwt?scope=user" % config_url
 
         ip_map = {
-                "fiery-celerity-88718.appspot.com": "https://beta-api.conductorio.com",
-                "eloquent-vector-104019.appspot.com": "https://dev-api.conductorio.com",
-                "atomic-light-001.appspot.com": "https://api.conductorio.com"
-                }
+            "fiery-celerity-88718.appspot.com": "https://beta-api.conductorio.com",
+            "eloquent-vector-104019.appspot.com": "https://dev-api.conductorio.com",
+            "atomic-light-001.appspot.com": "https://api.conductorio.com"
+        }
         config_url = CONFIG.get("url", CONFIG["base_url"]).split("//")[-1]
         project_url = string.join(config_url.split("-")[-3:], "-")
         if os.environ.get("LOCAL"):
