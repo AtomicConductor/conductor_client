@@ -1,4 +1,5 @@
 from collections import defaultdict
+from PyQt5.QtWidgets import *
 import logging
 from functools import wraps
 from PySide import QtGui, QtCore, QtUiTools
@@ -196,8 +197,8 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
     dialog.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.No | QtGui.QDialogButtonBox.Yes)
     dialog.horizontalLayout.addWidget(dialog.buttonBox)
     # Connect the buttonbox signals
-    QtCore.QObject.connect(dialog.buttonBox, QtCore.SIGNAL("accepted()"), dialog.accept)
-    QtCore.QObject.connect(dialog.buttonBox, QtCore.SIGNAL("rejected()"), dialog.reject)
+    dialog.buttonBox.accepted.connect(dialog.accept)
+    dialog.buttonBox.rejected.connect(dialog.reject)
     QtCore.QMetaObject.connectSlotsByName(dialog)
 
     # Hide the checkbox if not desired

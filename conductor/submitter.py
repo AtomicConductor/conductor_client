@@ -1,4 +1,5 @@
 import collections
+from PyQt5.QtWidgets import *
 import functools
 import imp
 import inspect
