@@ -8,7 +8,7 @@ import logging
 import os
 import operator
 from pprint import pformat
-from PySide import QtGui, QtCore
+from Qt import QtGui, QtCore
 import sys
 import traceback
 
@@ -37,8 +37,8 @@ _ui_instance = None
 '''
 TODO:
 1. Create qt resource package or fix filepaths for all images to be set during code execution
-2. about menu? - provide link to studio's conductor url (via yaml config file) 
-5. consider conforming all code to camel case (including .ui widgets). 
+2. about menu? - provide link to studio's conductor url (via yaml config file)
+5. consider conforming all code to camel case (including .ui widgets).
 6. Consider adding validation to the base class so that inheritance can be used.
 7. tool tips for all widget fields
 8. What about the advanced options? ("Force Upload" and "Dependency Job" )
@@ -49,13 +49,13 @@ TODO:
 class ConductorSubmitter(QtGui.QMainWindow):
     '''
     Base class for PySide front-end for submitting jobs to Conductor.
-    
-    Intended to be subclassed for each software context that may need a Conductor 
+
+    Intended to be subclassed for each software context that may need a Conductor
     front end e.g. for Maya or Nuke.
-    
-    The self.getExtendedWidget method acts as an opportunity for a developer to extend 
+
+    The self.getExtendedWidget method acts as an opportunity for a developer to extend
     the UI to suit his/her needs. See the getExtendedWidgetthe docstring
-      
+
         '''
 
     # .ui designer filepath
@@ -83,7 +83,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         1. Load the ui file
         2. Initialize widgets (set behavior, populate options, resize/reformat)
-        3. Load any user settings to restore widget values from user preferences 
+        3. Load any user settings to restore widget values from user preferences
         '''
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
@@ -130,12 +130,12 @@ class ConductorSubmitter(QtGui.QMainWindow):
     @pyside_utils.wait_cursor
     def runUi(cls, force_new=False):
         '''
-        Launch the submitter UI.  This is intended to be run within a software 
-        context such as Maya or Nuke (as opposed to a shell).  By default, 
+        Launch the submitter UI.  This is intended to be run within a software
+        context such as Maya or Nuke (as opposed to a shell).  By default,
         this will show any existing submitter UI that had been closed prior by
-        the user (as opposed to creating a new instance of the UI). Use the 
+        the user (as opposed to creating a new instance of the UI). Use the
         force_new flag to force a new instance of it.
-        
+
         '''
         global _parent_window  # This global statement is particularly important (though it may not appear so when using simple usecases that don't use complex inheritence structures).
         global _ui_instance
@@ -170,7 +170,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
     @classmethod
     def getParentWindow(cls):
         '''
-        Return a QtWidget object that should act as the parent for the submitter 
+        Return a QtWidget object that should act as the parent for the submitter
         window. This is oftentime the case when launching the submitter within
         another application such as nuke or maya.  In these cases, return
         the main QtWindow object for those applications.
@@ -182,7 +182,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def createUI(self):
         '''
-        Create UI widgets and make 
+        Create UI widgets and make
         '''
 
         # Set the start/end fields to be restricted to integers only
@@ -282,13 +282,13 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def getExtendedWidget(self):
         '''
         This method extends the Conductor UI by providing a single PySide widget
-        that will be added to the UI. The widget may be any class object derived 
-        from QWidget. 
-         
-        In order to do so, subclass this class and override this method to 
-        return the desered widget object.  This widget will be inserted between 
+        that will be added to the UI. The widget may be any class object derived
+        from QWidget.
+
+        In order to do so, subclass this class and override this method to
+        return the desered widget object.  This widget will be inserted between
         the Frame Range area and the  Submit button. See illustration below:
-        
+
                  ____________________
                 |     Conductor      |
                 |--------------------|
@@ -300,7 +300,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
                 |--------------------|
                 |   submit button    |
                 |____________________|
-         
+
         '''
 
         class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
@@ -312,15 +312,15 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         Create a regular expression and set it as a validator on the custom frame
         range field.
-        
+
         The following text entry examples are valid:
             1001
             1001,1004
             1001-1004
             1001-1004x3
-            1001, 1004, 
+            1001, 1004,
             1001, 1004, 1006-1010x3, 1007, 1008-1010x2
-            
+
         The following text examples are NOT valid:
             1001x3
             1001,1004x3
@@ -350,7 +350,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def addLoggingMenu(self, menu):
         '''
         For the given menu object, dynamically generate a action item for
-        each log level (from the loggeria module). 
+        each log level (from the loggeria module).
         '''
         conductor_logger = loggeria.get_conductor_logger()
         current_level = conductor_logger.level
@@ -372,7 +372,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def addResetPreferencesMenu(self, menu):
         '''
         For the given menu object, dynamically generate a action item for
-        each log level (from the loggeria module). 
+        each log level (from the loggeria module).
         '''
 
         # RESET ALL PREFERENCES
@@ -397,7 +397,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def _resetPreferences(self, title, message, filepath=None):
         '''
         Prompt the user to delete their preferences, and delete them if yes.
-        
+
         If a filepath is given, then delete the preferenes for the given filepath.
         Otherwise delete the global preferences.
         '''
@@ -577,25 +577,25 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def getScoutJobCheckbox(self):
         '''
-        Return the checkbox value for the "Scout Job" checkbox 
+        Return the checkbox value for the "Scout Job" checkbox
         '''
         return self.ui_scout_job_chkbx.isChecked()
 
     def setScoutJobCheckbox(self, bool_):
         '''
-        Set the checkbox value for the "Scout Job" checkbox 
+        Set the checkbox value for the "Scout Job" checkbox
         '''
         return self.ui_scout_job_chkbx.setChecked(bool_)
 
     def generateConductorArgs(self, data):
         '''
         Return a dictionary which contains the necessary conductor argument names
-        and their values.  This dictionary will ultimately be passed directly 
+        and their values.  This dictionary will ultimately be passed directly
         into a conductor Submit object when instantiating/calling it.
-        
+
         Generally, the majority of the values that one would populate this dictionary
         with would be found by quering this UI, e.g.from the "frames" section of ui.
-           
+
         '''
         conductor_args = {}
 
@@ -627,7 +627,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def getEnvironment(self):
         '''
         Return a dictionary of environment variables to use for the Job's
-        environment. Merge any environment settings defined in the config with 
+        environment. Merge any environment settings defined in the config with
         the environment of the packages that the user has selected.
         '''
         #  Get any environment variable settings from config.yml
@@ -640,9 +640,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def getSoftwarePackageIds(self):
         '''
         Return the software packages that the submitted job will have access to
-        when running.  These packages are referred to by their ids. Merge the 
+        when running.  These packages are referred to by their ids. Merge the
         any packages that are defined in the config with those that are selected
-        by the user. 
+        by the user.
         '''
         config_package_ids = CONFIG.get("software_package_ids") or []
         assert isinstance(config_package_ids, list), "Not a list: %s" % config_package_ids
@@ -658,8 +658,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def runConductorSubmission(self, data):
         '''
-        Instantiate a Conductor Submit object with the given conductor_args 
-        (dict), and execute it. 
+        Instantiate a Conductor Submit object with the given conductor_args
+        (dict), and execute it.
         '''
         # Generate a dictionary of arguments to feed conductor
         conductor_args = self.generateConductorArgs(data)
@@ -692,7 +692,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         Return a bool indicating whether the uploading process should occur on
         this machine or whether it should get offloaded to the uploader daemon.
         If False, uploading will occur on the daemon.
-        
+
         Simply return the value set in the config.yml.  In the future this option
         may be exposed in the UI
         '''
@@ -728,20 +728,20 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def on_ui_submit_pbtn_clicked(self):
         '''
         This gets called when the user pressed the "Submit" button in the UI.
-        
-      
+
+
         -- Submission Control Flow ---
-        Below is the method calling order of when a user presses the "submit" 
-        button in the UI: 
+        Below is the method calling order of when a user presses the "submit"
+        button in the UI:
             1. self.runPreSubmission()         # Run any pre-submission processes.
             2. self.runConductorSubmission()   # Run the submission process.
             3. self.runPostSubmission()        # Run any post-submission processes.
-            
+
         Each one of these methods has the opportunity to return data, which in turn
         will be available to the next method that is called.  If that mechanism
         does not meet all pre/post submission needs, then overriding those methods
-        is also an available/appropriate methodology.  
-        
+        is also an available/appropriate methodology.
+
         '''
         if not self.validateJobPackages():
             return
@@ -763,7 +763,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def runPostSubmission(self, data):
         '''
-        Run any post submission processes.  The "data" argument contains the results 
+        Run any post submission processes.  The "data" argument contains the results
         of the main runConductorSubmission method, so that any results can
         be "inspected" and acted upon if desired.
         '''
@@ -811,11 +811,11 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def getUserPrefsGlobalWidgets(self):
         '''
         Return a list of widget objects that are appropriate for restoring their
-        state (values) from a user's preference file. Specifically, these widgets 
-        are those which a user's GLOBAL  preferences should be recorded/loaded for. 
-        These widgets are identified by a dynamic property that has been set on 
+        state (values) from a user's preference file. Specifically, these widgets
+        are those which a user's GLOBAL  preferences should be recorded/loaded for.
+        These widgets are identified by a dynamic property that has been set on
         them via Qt Designer.
-        
+
         '''
         pref_identifier = "isGlobalUserPref"
         return pyside_utils.get_widgets_by_property(self,
@@ -825,9 +825,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def getUserPrefsFileWidgets(self):
         '''
         Return a list of widget objects that are appropriate for restoring their
-        state (values) from a user's preference file. Specifically, these widgets 
-        are those which a user's FILE-SPECIFIC should be recorded/loaded for. 
-        These widgets are identified by a dynamic property that has been set on 
+        state (values) from a user's preference file. Specifically, these widgets
+        are those which a user's FILE-SPECIFIC should be recorded/loaded for.
+        These widgets are identified by a dynamic property that has been set on
         them via Qt Designer.
         '''
         pref_identifier = "isFileUserPref"
@@ -887,39 +887,39 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def getEnforcedMd5s(self):
         '''
         Note that this is only relevant when local_upload=False.
-        
+
         Return a dictionary of any filepaths and their corresponding md5 hashes
-        that should be verified before uploading to cloud storage.  
-        
+        that should be verified before uploading to cloud storage.
+
         When local_upload is False, uploading files to cloud storage is handled
         by an uploader daemon. Because there can be a time delay between when
         a user has pressed "submit" and when the daemon actually goes to upload
         the files to cloud storage, there is the possibility that files have
         actually changes on disk.  For example, a user may submit 3 jobs to
-        conductor within 7 seconds of one another, by quickly rotating the camera, 
+        conductor within 7 seconds of one another, by quickly rotating the camera,
         saving the maya scene on top of itself, and pressing "Submit" (and doing
-        this three time).  Though this is probably not a great workflow, 
+        this three time).  Though this is probably not a great workflow,
         it's something that needs to be guarded against.
-        
-        This method returns a dictionary of filepaths and and their corresponding 
+
+        This method returns a dictionary of filepaths and and their corresponding
         md5 hashes, which is used by the uploader daemon when uploading the files
-        to conductor. The daemon will do its own md5 hash of all files in 
+        to conductor. The daemon will do its own md5 hash of all files in
         this dictionary,and match it against the md5s that the dictionary provides.
         If the uploader finds a mismatch then it fails the upload process (and
         fails the job).
-        
+
         Generally there is gray area as to what is considered "acceptable" for
         files being changed from underneath the feet of the artist.  Because a source file (such
         as a maya scene or katana file, for example), has many external dependencies
-        (such as texture files, alembic, etc), those depencies could possibly be 
-        changed on disk by the time the uploader get a chance to upload them to Conductor. 
-        As a compromise on attempting to create an exact snapshot of the state 
-        of ALL files on disk (i.e. md5 hashes)that a job requires at the moment 
+        (such as texture files, alembic, etc), those depencies could possibly be
+        changed on disk by the time the uploader get a chance to upload them to Conductor.
+        As a compromise on attempting to create an exact snapshot of the state
+        of ALL files on disk (i.e. md5 hashes)that a job requires at the moment
         the artist presses "submit", Conductor only guarantees exact file integrity
         on the source file (maya/katana file).  That source file's dependencies
         are NOT guaranteed to match md5s.  In otherwords, a texture file or alembic cache file
         is not md5 checked to ensure it matches the md5 of when the user pressed
-        "submit".  Only the maya file is.       
+        "submit".  Only the maya file is.
         '''
         # Create a list of files that we want to guarantee to be in the same
         # state when uploading to conductor.  These files will need to md5 hashed here/now.
@@ -938,12 +938,12 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def getDefaultScoutFrames(self):
         '''
         Return the default scout frames for the open scene file.  This should
-        attempt to return the first, middle, and last frame 
+        attempt to return the first, middle, and last frame
         Logic order:
             1. If the "start" and "end" fields are active/populated in the submitter UI
                then use that range to determine first, middle, last scout frames
             2. If the use has specified a custom frame range in the submitter UI,
-               Then return None 
+               Then return None
         '''
         try:
             if self.ui_start_end_rdbtn.isChecked():
@@ -989,8 +989,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def launchScoutFramesDialog(self, default_scout_frames):
         '''
         Launch a dialog box to prompt the user to enter their desired scout
-        frames.  Prepopulate the lineedit field with any scout frames that have 
-        been submitted previous for the current file (read from preferences). 
+        frames.  Prepopulate the lineedit field with any scout frames that have
+        been submitted previous for the current file (read from preferences).
         '''
         lineedit_tooltip = ("Specify desired scout frames:\n"
                  "    - individual frame(s), e.g \"1001, 1006\"\n"
@@ -1089,7 +1089,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         1. query the prefs for package ids
         2. Query the config for package ids and add
         3. if none, then auto detect
-        
+
         '''
         self.ui_job_software_trwgt.clear()
         source_filepath = self.getSourceFilepath()
@@ -1198,15 +1198,15 @@ class ConductorSubmitter(QtGui.QMainWindow):
     def populateSoftwareVersionsTrWgt(self):
         '''
         Populate the QTreeWidget with all of the available software packages
-        
-        This is a little tricky because packages can be plugins of other packages, 
+
+        This is a little tricky because packages can be plugins of other packages,
         and we want to represent that relations (via nesting).  We also want
         to group packages that are of the same type (and have them be able to
         expand/collpase that group.
-        
-        
+
+
         Here is an example hierarchy:
-       
+
             maya  # The group for all maya version packages
                 |
                 |_maya 2014 SP1  # The actual package
@@ -1217,8 +1217,8 @@ class ConductorSubmitter(QtGui.QMainWindow):
                         |
                         |_arnold # The group for all arnold packages (for maya 2014 sp1)
                                 |
-                                |_arnold 2.73.1 # The actual package                            
-                |                                
+                                |_arnold 2.73.1 # The actual package
+                |
                 |_maya 2014 SP2  # The actual package
                         |
                         |_vray  # The group for all vray packages (for maya 2014 SP2)
@@ -1228,11 +1228,11 @@ class ConductorSubmitter(QtGui.QMainWindow):
                         |_arnold # The group for all Arnold packages (for maya 2014 SP2)
                                 |
                                 |_arnold 2.73.1  # The actual package
-                                 
-        
-        
+
+
+
         A package's data structure may look like this:
-        
+
            {"package_id": "6b24ca0ea1085ebad536c18307192dce"
             "product": "maya",
             "major_version": "2015",
@@ -1398,9 +1398,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def createPackageTreeWidgetItem(self, package):
         '''
-        For the given software package, create a QTreeWidgetItem for it. 
+        For the given software package, create a QTreeWidgetItem for it.
         with
-        a text/name that describes it 
+        a text/name that describes it
         '''
 
         # This will be used for the "Software Name" column
@@ -1535,7 +1535,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def getJobPackages(self):
         '''
-        Return the package dictionaries for ALL QTreeItems 
+        Return the package dictionaries for ALL QTreeItems
         '''
         job_packages = []
         for item in pyside_utils.get_top_level_items(self.ui_job_software_trwgt):
@@ -1558,9 +1558,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
     def createJobPackageTreeWidgetItem(self, package):
         '''
-        For the given software package, create a QTreeWidgetItem for it. 
+        For the given software package, create a QTreeWidgetItem for it.
         with
-        a text/name that describes it 
+        a text/name that describes it
         '''
 
         # This will be used for the "Software Name" column
@@ -1653,22 +1653,22 @@ class ConductorSubmitter(QtGui.QMainWindow):
 class SubmitterPrefs(pyside_utils.UiFilePrefs):
 
     '''
-    A class for interfacing with User preferences for the submitter UI.  
-    This subclasses adds functionality that is specific to the Conductor submitter. 
-    
+    A class for interfacing with User preferences for the submitter UI.
+    This subclasses adds functionality that is specific to the Conductor submitter.
+
     Preference names:
-        scoutframes_str # str. The frames that the user set for scout frames 
-        
+        scoutframes_str # str. The frames that the user set for scout frames
+
     Things to consider:
-        1. Because preferences are optional/"superflous" they should NEVER break 
-           the submitter UI. Therefore all pref reading/writing needs to be 
+        1. Because preferences are optional/"superflous" they should NEVER break
+           the submitter UI. Therefore all pref reading/writing needs to be
            safegaurded against(i.e. try/except) so that it doesn't halt usage.
         2. Because the getting/setting of a preference may fail, be sure to model
            preferences in a way so that they will not result in dangerous behavior
            if they fail. i.e. don't allow the absense of a preference value cause
-           the user to default to doing something dangerous (such as submit a 
-           high frame/corecount job) 
-    
+           the user to default to doing something dangerous (such as submit a
+           high frame/corecount job)
+
     '''
     # PREFERENCE NAMES (these the names that are used/written to the preference file (non widget)
     PREF_SCOUTFRAMES_STR = "scoutframes_str"
@@ -1678,10 +1678,10 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
     @common.ExceptionLogger("Failed to load Conductor user preferences. You may want to reset your preferences from the options menu")
     def loadSubmitterUserPrefs(self, source_filepath):
         '''
-        Load both the global and file-specific (e.g.nuke/maya file) user 
+        Load both the global and file-specific (e.g.nuke/maya file) user
         preferences for the UI widgets. This will reinstate any values on the
-        widgets that that were recorded on them from the last time. 
-        
+        widgets that that were recorded on them from the last time.
+
         First load the global preferences, then load the file-specific prefs
         which will override and of the global prefs
         '''
@@ -1742,34 +1742,34 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
 class TaskFramesGenerator(object):
     '''
     This base class provides functionality to Job's command to be suitable
-    for execution for a single Task. The general idea is that the submitted job 
-    command has subsitutable characters (args) that should be populated 
-    differently for each task (e.g. so that each task renders different frames, etc). 
-    
-    Because every rendering software has it's own rendering command with differing 
+    for execution for a single Task. The general idea is that the submitted job
+    command has subsitutable characters (args) that should be populated
+    differently for each task (e.g. so that each task renders different frames, etc).
+
+    Because every rendering software has it's own rendering command with differing
     arguments/syntax, this class is intendeded to be subclassed for each product.
-    
+
     Specific problems that this class addresses:
-           
+
         1. Converting a job's "frame_range" argument into individual frames so
            that each task is allocated unique frame(s) to render.
-        
-        2. Reading and applying those frames to the Task's render command  
-           arguments. The render command syntax may be different for each product. 
-        
+
+        2. Reading and applying those frames to the Task's render command
+           arguments. The render command syntax may be different for each product.
+
         3. Taking into consideration the job's "chunk_size" argument so that
            a single Task can work on multiple frames.  This also includes interpreting
            any "steps" that have been indicated in the job's "frame_range" argument.
-              
+
     Note that this class is an iterator so that it can be iterated upon until
     a command for each task has been dispensed. It provides two items upon each
     iteration:
         - A command that has been fully resolved for a task
         - a list of frames (ints) that the task will be rendering
-    
+
     Example usage (using MayaTaskCommand child class):
         # Instantiate the class with proper args
-        >>> cmd_generator = base_utils.MayaTaskCommand(command="Render <frame_args> deadpool.ma", 
+        >>> cmd_generator = base_utils.MayaTaskCommand(command="Render <frame_args> deadpool.ma",
         ...                                            frame_range ="1-10x2",
         ...                                            frame_padding = 4,
         ...                                            chunk_size= 2)
@@ -1778,14 +1778,14 @@ class TaskFramesGenerator(object):
         >>> for command, frames in cmd_generator:
         ...     print "command:", command
         ...     print "frames:", frames
-        ...     
+        ...
         command: Render -s 1 -e 3 -b 2 deadpool.ma
         frames: (1, 3)
         command: Render -s 5 -e 7 -b 2 deadpool.ma
         frames: (5, 7)
         command: Render -s 9 -e 9 -b 1 deadpool.ma
         frames: (9,)
-    
+
      '''
     task_frames = None
 
@@ -1813,8 +1813,8 @@ class TaskFramesGenerator(object):
         items:
             - a new command (str) that is appropriate to be executed by a task.
               (unique from the prior ones)
-            - a list of corresponding frames (ints) that the command will render 
-            
+            - a list of corresponding frames (ints) that the command will render
+
             start_frame, end_frame, step, task_frames
         '''
         # Generate w new task command (from the outstanding/undispensed frames
@@ -1832,11 +1832,11 @@ class TaskFramesGenerator(object):
     def _next(self, chunk_size, uniform_chunk_step):
         '''
         Construct and return the command to be executed for a task. This command
-        is specific per product.  The returned command should be fully resolved 
+        is specific per product.  The returned command should be fully resolved
         and ready to be executed by the task. In other words, resolve all arguments for
         the command, such as the frames(s) to be rendered (taking into consideration
         steps and chunks, etc).
-        
+
         Call this method repeatedly to dispense a new task command (until all
         frames have been dispensed/allocated).
         '''
@@ -1873,23 +1873,23 @@ class TaskFramesGenerator(object):
         '''
         Return then "next" chunk of frames (that the task will render). This
         may be a list of one frame or several.
-        
+
         e.g. [1] # single frame
              [1, 2 ,3]  # multiple frames
              [1,2,3,40,100,101] # multiple frames (No common step. This can be problematic depending on the render command)
-        
-        uniform_chunk_step: bool. If True, will only return a chunk of frames 
+
+        uniform_chunk_step: bool. If True, will only return a chunk of frames
                             that have a uniform step size between them.
-        
-        
+
+
         more complicated example:
             frame_range = "1-5x2,20-25,10-30x5,200,1000"
             chunk_size = 4
             step_size=5
-            
+
             resulting task frames:
                 task 0: [1]
-                task 1: [3] 
+                task 1: [3]
                 task 2: [5, 10, 15, 20]  # range conforms to step size (5)
                 task 3: [21]
                 task 4: [22]
@@ -1932,15 +1932,15 @@ class TaskFramesGenerator(object):
         '''
         Inspect the list of frames and derive what the "step" is between them. If
         more than one step is found, return the lowest and highest steps
-        
-        e.g. 
+
+        e.g.
              FRAMES                    STEPS
              -------------------------------------------------
              [1,2,3,4]         ->      [1]      # one step count between frames (1)
              [-1,-3,-5,-7]     ->      [2]      # one step count between frames (2)
              [1,3,5,17]        ->      [2, 12]  # multiple step counts between frames (2, 12)
              [4]               ->      [1]      # if there isn't an actual step count, default to 1
-        
+
         The main functionality taken from: http://stackoverflow.com/questions/3428769/finding-the-largest-delta-between-two-integers-in-a-list-in-python
         '''
         # make a copy of the frames list, and then sort it (it should be sorted already, but just to be sure)
@@ -1956,7 +1956,7 @@ class TaskFramesGenerator(object):
     @classmethod
     def get_padded_frame(cls, frame_int, padding_int):
         '''
-        Return the given (frame) number as string with the given padding 
+        Return the given (frame) number as string with the given padding
         applied to it
         '''
         padded_str = "%%0%sd" % padding_int
@@ -1967,12 +1967,12 @@ class TaskFramesGenerator(object):
     def group_contiguous_frames(cls, frames, ends_only=False):
         '''
         Separate the given list of frames into groups(sublists) of contiguous frames/
-        
-        e.g. [1,2,3,15,16,17,21,85] --> [(1,2,3),(15,16,17), (21), (85)] 
-        
+
+        e.g. [1,2,3,15,16,17,21,85] --> [(1,2,3),(15,16,17), (21), (85)]
+
         if ends_only==True, return only first and last frames of each group (i.e. "bookends only")
-            e.g. [(1,3),(15,17), (21), (85)] 
-        
+            e.g. [(1,3),(15,17), (21), (85)]
+
         taken from: http://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
         '''
         ranges = []

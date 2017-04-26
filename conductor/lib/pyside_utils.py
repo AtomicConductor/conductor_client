@@ -2,7 +2,7 @@ from collections import defaultdict
 from PyQt5.QtWidgets import *
 import logging
 from functools import wraps
-from PySide import QtGui, QtCore, QtUiTools
+from Qt import QtGui, QtCore, QtUiTools
 
 
 logger = logging.getLogger(__name__)
@@ -104,8 +104,8 @@ def wait_message(title, message):
 
 def launch_message_box(title, message, is_richtext=False, parent=None):
     """
-    Launches a very basic message dialog box with the given title and message. 
-    
+    Launches a very basic message dialog box with the given title and message.
+
     is_richtext: bool. If True, willl set the given as RichText.  This will also
                  allow the text to support hyperlink behavior.
     """
@@ -132,7 +132,7 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
 
 def launch_error_box(title, message, parent=None):
     """
-    Launches a QErrorMessage dialog box with the given title and message. 
+    Launches a QErrorMessage dialog box with the given title and message.
     """
 
     # create a QErrorMessage
@@ -160,7 +160,7 @@ def launch_error_box(title, message, parent=None):
 
 def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=None):
     '''
-    Launch a dialog box that has "yes" and "no" buttons.  
+    Launch a dialog box that has "yes" and "no" buttons.
     Optionally display a checkbox that asks whether to show this dialog box again.
     return the result of this dialog (True/False) and whether the user checked on
     the "Don't ask again" checkbox (True/False).
@@ -218,9 +218,9 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
 def get_widgets_by_property(widget, property_name, match_value=False, property_value=None):
     '''
     For the given widget, return all child widgets (and potentially the original widget),
-    which have a property of the given property_name.  
+    which have a property of the given property_name.
     Optionally, return only those widgets whose given property matches the given
-    property_value 
+    property_value
     '''
     widgets = []
     for widget_ in widget.findChildren(QtGui.QWidget):
@@ -233,7 +233,7 @@ def get_widgets_by_property(widget, property_name, match_value=False, property_v
 
 class CheckBoxTreeWidget(QtGui.QTreeWidget):
     '''
-    This is a QTreeWidget that has been modified to 
+    This is a QTreeWidget that has been modified to
     '''
 
     # The column index od where the checkbox is located within a treewidgetitem
@@ -313,7 +313,7 @@ class CheckBoxTreeWidget(QtGui.QTreeWidget):
     def addTopLevelCheckboxItem(self, tree_item, is_checked=False):
         '''
         Add the given QTreeWidgetItem as a top level widget and add a checkbox
-        to it. 
+        to it.
         '''
         tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
 
@@ -368,8 +368,8 @@ def get_all_tree_items(tree_widget):
 
 
 def _get_child_tree_items(tree_widget_item):
-    ''' 
-    For the given QTreeWidgetItem, recursively seek out and return all child 
+    '''
+    For the given QTreeWidgetItem, recursively seek out and return all child
     QTreeWidgetItems
     '''
     nodes = []
@@ -385,9 +385,9 @@ class WidgetGettrSettr(object):
     widget values.  This is particularly useful when needing to record a widget's
     value for user preferences, and conversely, reapplying those settings back
     to the widget.
-    
+
     Every widget type must be mapped to a getter and setter method.
-    
+
     '''
 
     @classmethod
@@ -396,9 +396,9 @@ class WidgetGettrSettr(object):
         Return a dictionary mapping of "getter" functions that provide a mapping
         between a Widget type and a function that can read a value from that
         widget type (i.e. read a human entered value from the widget).
-        
+
         This dictionary should be expanded as needed, when other widget types
-        are required for reading/loading data to/from. 
+        are required for reading/loading data to/from.
         '''
         return {QtGui.QLineEdit: cls.getLineeditValue,
                 QtGui.QComboBox: cls.getComboBoxValue,
@@ -412,9 +412,9 @@ class WidgetGettrSettr(object):
         Return a dictionary mapping of "setter" functions that provide a mapping
         between a Widget type and a function that can write a value to that
         widget type (i.e populat the widget with that value).
-        
+
         This dictionary should be expanded as needed, when other widget types
-        are required for reading/loading data to/from. 
+        are required for reading/loading data to/from.
         '''
         return {QtGui.QLineEdit: cls.setLineEditValue,
                 QtGui.QComboBox: cls.setComboBoxValue,
@@ -429,7 +429,7 @@ class WidgetGettrSettr(object):
         Return the value for the given widget object.  Because a widget can be
         of any class, and every widget class has different methods for retrieving
         its values, this function uses a mapping of different getter functions
-        for each widget type.  More widget types may need to be added to this 
+        for each widget type.  More widget types may need to be added to this
         mapping in the future.
         '''
         # Determine the widget type
@@ -448,12 +448,12 @@ class WidgetGettrSettr(object):
     @classmethod
     def setWidgetValue(cls, widget, widget_value):
         '''
-        
+
         Set the given value on the widget object  Because a widget can be
         of any class, and every widget class has different methods for setting
         its values, this function uses a mapping of different setter functions
         for each widget type. see cls.getGettrMap
-        
+
         widget: QWidget derivative (must have a getter/setter mapping in cls.getSettrMap)
         widget_value: the value to populate the widget with.
         '''
@@ -510,7 +510,7 @@ class WidgetGettrSettr(object):
     def setRadioButtonValue(cls, radiobutton, value):
         '''
         Define setter function for QRadioButton widgets.
-        Since the value comes from qsettings (which casts bools to strings and 
+        Since the value comes from qsettings (which casts bools to strings and
         lowercase), we  have to do a little processing.
         '''
         radiobutton.setChecked(value)
@@ -526,7 +526,7 @@ class WidgetGettrSettr(object):
     def setCheckBoxValue(cls, checkbox, value):
         '''
         Define setter function for QCheckbox widgets
-        Since the value comes from qsettings (which casts bools to strings and 
+        Since the value comes from qsettings (which casts bools to strings and
         lowercase), we  have to do a little processing.
         '''
         checkbox.setChecked(value)
@@ -559,12 +559,12 @@ class UserPrefs(object):
 
     def __init__(self, company_name, application_name):
         '''
-        Create a user settings file for the given company and application name 
+        Create a user settings file for the given company and application name
         The prefs file is located/created via the company_name and application_name.
-               
-        company_name: str. Dictates the subdirecty directory name of where the 
+
+        company_name: str. Dictates the subdirecty directory name of where the
                       settings file is found on disk
-                      
+
         application_name: str. Dictates the name of the settings file (excluding
                                directory path)
         '''
@@ -585,7 +585,7 @@ class UserPrefs(object):
         '''
         Return the value for the given key. If a group is given, search the group
         for the key and return its value.
-        
+
         key: str. The name of the preference to return a value for.
         group: str. The preference group/namespace to search for the preference.
                If not specified, will use the default/root namespace
@@ -609,7 +609,7 @@ class UserPrefs(object):
         a preference group is specified, use the default/root preference group.
         Return a dictionary, where the key is the preference name, and the value
         is the preference value.
-        
+
         key: str. The name of the preference to return a value for.
         group: str. The preference group/namespace to search for the preference.
                If not specified, will use the default/root namespace
@@ -631,17 +631,17 @@ class UserPrefs(object):
     def setValue(self, key, value, group=None):
         '''
         Set the value for the given preference in the given preference group.
-        If no preference group is specified, set the value in the default/root 
+        If no preference group is specified, set the value in the default/root
         preference group.
-          
-        Note that if a python bool is given as a value, QSettings automatically 
+
+        Note that if a python bool is given as a value, QSettings automatically
         converts this to a lowercase string version of it ("false", "true").
-        
+
         key: str. The name of the preference to set a value for.
         value: str, bool.  The value to set the preferece to.
         group: str. The preference group/namespace to set the preference for
                If not specified, will use the default/root namespace
-        
+
         '''
         logger.debug("Writing setting: %s/%s", group or "ROOT", key)
         if group:
@@ -658,7 +658,7 @@ class UserPrefs(object):
         a preference group is specified, use the default/root preference group.
         Return a dictionary, where the key is the preference name, and the value
         is the preference value.
-        
+
         key: str. The name of the preference to return a value for.
         group: str. The preference group/namespace to search for the preference.
                If not specified, will use the default/root namespace
@@ -677,7 +677,7 @@ class UserPrefs(object):
     @classmethod
     def castToBool(cls, value):
         '''
-        Cast the given value to a bool (if it's considered a "bool" type). 
+        Cast the given value to a bool (if it's considered a "bool" type).
         '''
         if value == "false":
             value = False
@@ -703,7 +703,7 @@ class UserPrefs(object):
         A convenience method to QSetting's synch method.  Syncs pref data from memory
         to disk and visa versa.  This doesn't *have* to be called, but QT doesn't
         write the settings to disk *everytime* a change is made...so this is a
-        way to ensure that it does at critical moments.  
+        way to ensure that it does at critical moments.
         '''
         self.qsettings.sync()
 
@@ -730,7 +730,7 @@ class FilePrefs(UserPrefs):
     This class facilicates the saving/loading of user preferences from/to disk
     while providing a structured scope to save that preference to.  A scope is
     either global or file-specific.  Scopes are achieved by using QtSettings'
-    "groups" (i.e. namespaces).  All scopes of settings are written to the same 
+    "groups" (i.e. namespaces).  All scopes of settings are written to the same
     preference file.  An example use-case for these scopes is when a user
     wants preferences to be saved for a particular file that they have opened at
     the moment.  Or a user might want preferences to be applied regardless of
@@ -756,11 +756,11 @@ class FilePrefs(UserPrefs):
         '''
         High level convenence function that will return the preference value
         for either a global or file-specific preference.
-        
+
         pref_name: str. the name of the preference to return a value for, e.g. "frame_range"
         filepath: str. The name of the file to return the preference value for.
                   If the filepath is not provided, then the global preference will
-                  be searched for.        
+                  be searched for.
         '''
         if filepath:
             return self.getFilePref(filepath, pref_name)
@@ -771,10 +771,10 @@ class FilePrefs(UserPrefs):
         '''
         High level convenence function that will return a dictionary of either
         file-specific preferences
-        
+
         filepath: str. The name of the file to return the preference values for.
                   If the filepath is not provided, then the global preferences will
-                  be returned.  
+                  be returned.
         '''
         if filepath:
             return self.getFilePrefs(self, filepath)
@@ -788,14 +788,14 @@ class FilePrefs(UserPrefs):
         '''
         High level convenence function that will set the preference value
         for either a global or file-specific preference.
-        
+
         pref_name: str. the name of the preference to set a value for, e.g. "frame_range"
-        
+
         value: the value to save for the preference, e.g. "1001-1040"
-        
+
         filepath: str. The name of the file to set the preference value for.
                   If the filepath is not provided, then a global preference will
-                  be set.       
+                  be set.
         '''
         if filepath:
             return self.setFilePref(filepath, pref_name, value)
@@ -806,14 +806,14 @@ class FilePrefs(UserPrefs):
         '''
         High level convenence function that will set the given preference values
         for either global or file-specific scope.
-        
+
         pref_name: str. the name of the preference to return a value for, e.g. "frame_range"
-        
+
         values: dict. key=preference name, value=preference value
-        
+
         filepath: str. The name of the file to set the preference values for.
                   If the filepath is not provided, then the values will be set
-                  for the global prefs.        
+                  for the global prefs.
         '''
         if filepath:
             return self.setFilePrefs(filepath, values)
@@ -831,7 +831,7 @@ class FilePrefs(UserPrefs):
     def getGlobalPref(self, pref_name):
         '''
         Return the value for given global preference
-        
+
         pref_name: the name of the preference to return a value for, e.g. "frame_range"
         '''
         return self.getValue(pref_name, group=self.GROUP_GLOBAL_PREFS)
@@ -848,7 +848,7 @@ class FilePrefs(UserPrefs):
     def setGlobalPref(self, pref_name, value):
         '''
         Set the value for given global preference
-        
+
         pref_name: the name of the preference to return a value for, e.g. "frame_range"
         '''
         self.setValue(pref_name, value, group=self.GROUP_GLOBAL_PREFS)
@@ -856,7 +856,7 @@ class FilePrefs(UserPrefs):
     def setGlobalPrefs(self, values):
         '''
         Set the the given values to the global preferences
-        
+
         values: dict. key=preference name, value=preference value
         '''
         self.setValues(values, self.GROUP_GLOBAL_PREFS)
@@ -871,14 +871,14 @@ class FilePrefs(UserPrefs):
 
     def getFilePref(self, filepath, pref_name):
         '''
-        Return the user preferences for the given preference for the given file 
+        Return the user preferences for the given preference for the given file
         '''
         group = self.GROUP_FILE_PREFS + "/" + self.encodeGroupName(filepath)
         return self.getValue(pref_name, group)
 
     def getFilePrefs(self, filepath):
         '''
-        Return a dictionary of all user preferences for the given file 
+        Return a dictionary of all user preferences for the given file
         '''
         group = self.GROUP_FILE_PREFS + "/" + self.encodeGroupName(filepath)
         return self.getValues(group)
@@ -889,7 +889,7 @@ class FilePrefs(UserPrefs):
     def setFilePref(self, filepath, pref_name, value):
         '''
         Set the given preference to the given value for the given file
-        
+
         pref_name: the name of the preference to set a value for, e.g. "frame_range"
         value: the value to save for the preference, e.g. "1001-1040"
         '''
@@ -899,7 +899,7 @@ class FilePrefs(UserPrefs):
     def setFilePrefs(self, filepath, values):
         '''
         Set the the given preference values for the given file
-        
+
         values: dict. key=preference name, value=preference value
         '''
         group = self.GROUP_FILE_PREFS + "/" + self.encodeGroupName(filepath)
@@ -928,20 +928,20 @@ class FilePrefs(UserPrefs):
 
 class UiFilePrefs(FilePrefs):
     '''
-    Extends the parent class to allow the state of the UI's widget to be recorded, 
-    and then restored at a later point. 
+    Extends the parent class to allow the state of the UI's widget to be recorded,
+    and then restored at a later point.
 
-    Because this class must read widget values and write those values to a text 
+    Because this class must read widget values and write those values to a text
     file and conversely, read those values from a text file and apply them back
     to the widgets, there needs to be binding/mapping of getters/setters so
     that different widget types can properly read/set the values from/to the
     preferences file.  This binding class must be provided upon instantiation.
-    
+
     This class adds two more scopes (groups) to it's parent classes':
-        
+
         - "global/widgets"   # Group for storing global widget preferences
         - "file/widgets"     # Group for storing file-specific widget preferences
-  
+
     '''
 
 
@@ -959,17 +959,17 @@ class UiFilePrefs(FilePrefs):
 
     def __init__(self, company_name, application_name, file_widgets=(), global_widgets=()):
         '''
-        company_name: str. Dictates the subdirecty directory name of where the 
+        company_name: str. Dictates the subdirecty directory name of where the
                       settings file is found on disk
-                      
+
         application_name: str. Dictates the name of the settings file (excluding
                                directory path)
-        
-        
-        file_widgets: list of Qt Widget objects to have settings saved/loaded for, 
+
+
+        file_widgets: list of Qt Widget objects to have settings saved/loaded for,
                       for EACH SCENE FILE that is opened.
         global_widgets: list of Qt Widget objects to have settings saved/loaded for to
-                       be applied GLOBALLY (across all scene files) 
+                       be applied GLOBALLY (across all scene files)
         '''
         self._file_widgets = file_widgets
         self._global_widgets = global_widgets
@@ -983,18 +983,18 @@ class UiFilePrefs(FilePrefs):
 
     def getPref(self, pref_name, filepath=None, is_widget=False):
         '''
-        High level convenence function that returns the value for the given 
-        preference name. If a filepath is given, return  the preference stored 
-        for that specific file, otherwise return the global value.  
-        
+        High level convenence function that returns the value for the given
+        preference name. If a filepath is given, return  the preference stored
+        for that specific file, otherwise return the global value.
+
         pref_name: str. The name of the preference, such as "Dont_bug_me",
-        
+
         filepath: str. The name of the file to return the preference value for.
-        
+
         is_widget: bool. Indicates that the pref_name is widget_name.
-        
+
         return: The value of the preference, e.g "yes", "no", "true", "false"
-        
+
         '''
         if is_widget:
             if filepath:
@@ -1008,17 +1008,17 @@ class UiFilePrefs(FilePrefs):
         '''
         High level convenence function that will return a dictionary of either
         file-specific preferences or global preferences.
-        
+
         filepath: str. The name of the file to return the preference values for.
                   If the filepath is not provided, then the global preferences will
-                  be returned.  
-        
+                  be returned.
+
         filepath: str. The name of the file to return the preference value for.
-        
+
         is_widget: bool. Indicates that the pref_name is widget_name.
-        
+
         return: dict.  values of the preferences.
-        
+
         '''
         if is_widget:
             if filepath:
@@ -1035,14 +1035,14 @@ class UiFilePrefs(FilePrefs):
         '''
         High level convenence function that will set the preference value
         for either a global preference or  file-specific preference.
-        
+
         pref_name: str. the name of the preference to set a value for, e.g. "frame_range"
-        
+
         value: the value to save for the preference, e.g. "1001-1040"
-        
+
         filepath: str. The name of the file to set the preference value for.
                   If the filepath is not provided, then a global preference will
-                  be set.       
+                  be set.
         '''
         if is_widget:
             if filepath:
@@ -1055,13 +1055,13 @@ class UiFilePrefs(FilePrefs):
         '''
         High level convenence function that will set the given preference values
         for either the global scope or a file-specific scope.
-        
+
         values: dict. key=preference name, value=preference value
-        
+
         filepath: str. The name of the file to set the preference values for.
                   If the filepath is not provided, then the values will be set
-                  for the global prefs. 
-       is_widget: bool. Indicates whether the preference if for a QWidget or not.       
+                  for the global prefs.
+       is_widget: bool. Indicates whether the preference if for a QWidget or not.
         '''
 
         # If the preference is for a widget, save it to the widget pref scrope
@@ -1079,7 +1079,7 @@ class UiFilePrefs(FilePrefs):
 
     def saveFileWidgetPrefs(self, filepath):
         '''
-        Save widget settings for the given file. 
+        Save widget settings for the given file.
         '''
         logger.debug("Saving user widget prefs for: %s", filepath)
         self._saveWidgetPrefs(self._file_widgets, filepath=filepath)
@@ -1094,7 +1094,7 @@ class UiFilePrefs(FilePrefs):
     def _saveWidgetPrefs(self, widgets, filepath=None):
         '''
         Save all user widget prefs.  If a filepath is provided, save the prefs
-        as file-specfic 
+        as file-specfic
         '''
         widget_prefs = {}
 
@@ -1114,9 +1114,9 @@ class UiFilePrefs(FilePrefs):
 
     def loadFileWidgetPrefs(self, filepath):
         '''
-        Load/apply any user prefs for the given file (read from the qt prefs file). 
+        Load/apply any user prefs for the given file (read from the qt prefs file).
         The prefs file is located/created via the company_name and application_name.
-        
+
         filepath: str. Filpath for the currently opened file to load widget
                        preferences for.
         '''
@@ -1129,7 +1129,7 @@ class UiFilePrefs(FilePrefs):
 
     def loadGlobalWidgetPrefs(self):
         '''
-        Load/apply any global user prefs. 
+        Load/apply any global user prefs.
         '''
         logger.debug("Loading User Global Widget prefs")
         for widget_name, widget_value in self.getGlobalWidgetPrefs().iteritems():
@@ -1149,14 +1149,14 @@ class UiFilePrefs(FilePrefs):
     def getGlobalWidgetPref(self, widget_name):
         '''
         Return the global preference value for the given widget name
-        
+
         widget_name: the name of the widget object, e.g. "ui_frames_lnedt"
         '''
         return self.getValue(widget_name, group=self.GROUP_GLOBAL_WIDGETS)
 
     def getGlobalWidgetPrefs(self):
         '''
-        Return the all global widget preferences 
+        Return the all global widget preferences
         '''
         return self.getValues(self.GROUP_GLOBAL_WIDGETS)
 
@@ -1166,7 +1166,7 @@ class UiFilePrefs(FilePrefs):
     def setGlobalWidgetPref(self, widget_name, value):
         '''
         Record the given value for the given widget (name) to the global preferences
-        
+
         widget_name: the name of the widget object, e.g. "ui_frames_lnedt"
         value: the value to record for the widget, .e.g "1001x2"
         '''
@@ -1176,7 +1176,7 @@ class UiFilePrefs(FilePrefs):
     def setGlobalWidgetPrefs(self, widget_values):
         '''
         Record the given widget values to the global preferences
-        
+
         widget_values: dict. key=widget name, value=widget value
         '''
         self.setValues(widget_values, self.GROUP_GLOBAL_WIDGETS)
@@ -1192,8 +1192,8 @@ class UiFilePrefs(FilePrefs):
 
     def getFileWidgetPref(self, filepath, widget_name):
         '''
-        Return the preference for the given widget name for the given file 
-        
+        Return the preference for the given widget name for the given file
+
         filepath: str. The filepath to get preferences for
         widget_name: the name of the widget object, e.g. "ui_frames_lnedt"
         '''
@@ -1202,10 +1202,10 @@ class UiFilePrefs(FilePrefs):
 
     def getFileWidgetPrefs(self, filepath):
         '''
-        Return all widget preferences for the given file 
-        
+        Return all widget preferences for the given file
+
         filepath: str. The filepath to get preferences for
-        
+
         '''
         group = self.GROUP_FILE_WIDGETS + "/" + self.encodeGroupName(filepath)
         return self.getValues(group)
@@ -1229,7 +1229,7 @@ class UiFilePrefs(FilePrefs):
     def setFileWidgetPrefs(self, filepath, widget_values):
         '''
         Record the given widget values for the given filepath
-        
+
         widget_values: dict. key=widget name, value=widget value
         '''
         group = self.GROUP_FILE_WIDGETS + "/" + self.encodeGroupName(filepath)
@@ -1238,7 +1238,7 @@ class UiFilePrefs(FilePrefs):
 
     def getWidgetByName(self, widget_name):
         '''
-        Return the widget object that has the given widget object name.  
+        Return the widget object that has the given widget object name.
         Raise an exception if it cannot be found.  Only widgets that have been
         provided upon this class's instantiation will be searched.
         '''
