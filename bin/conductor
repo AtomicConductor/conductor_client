@@ -14,7 +14,7 @@ except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import conductor
-from conductor.lib import conductor_submit, downloader, downloader2, uploader, loggeria
+from conductor.lib import conductor_submit, downloader, downloader2, uploader, uploader_v2, loggeria
 
 
 def parse_args():
@@ -407,7 +407,7 @@ def run_submit(args):
 
 
 def run_uploader(args):
-    uploader.run_uploader(args)
+    uploader_v2.run_uploader(args)
 
 
 def run_downloader(args):
