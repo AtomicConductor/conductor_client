@@ -4,6 +4,7 @@ Uploader daemon v2
 import sys
 import signal
 import time
+import datetime
 import imp
 import logging
 import multiprocessing
@@ -13,8 +14,9 @@ import string
 import requests
 
 from conductor import CONFIG
-from conductor.lib import common #, loggeria
-from conductor.lib.downloader import DecAuthorize #, DecDownloaderRetry
+from conductor.lib import common, loggeria
+from conductor.lib.downloader import DecAuthorize  # , DecDownloaderRetry
+
 
 try:
     imp.find_module('conductor')
@@ -25,8 +27,11 @@ except ImportError, error:
                 os.path.dirname(
                     os.path.abspath(__file__)))))
 
-                    # Duration that workers sleep when there's no work to perform
+# Duration that workers sleep when there's no work to perform
 WORKER_SLEEP_DURATION = 15
+
+# Time between updates to server.
+WORKER_TOUCH_INTERVAL = 30  # seconds
 
 # The amount of bytes to transfer as a chunk
 UPLOAD_CHUNK_SIZE = 1048576  # 1MB
@@ -47,6 +52,7 @@ RUN_STATE = multiprocessing.Array('c', 'stoppingorstuff')
 
 LOGGER = logging.getLogger(__name__)
 
+
 class Uploader(object):
     """
     Main Uploader process.
@@ -57,7 +63,6 @@ class Uploader(object):
     STATE_RUNNING = "running"
     STATE_STOPPING = "stopping"
 
-    # the maximum number of dl result data to maintain (for history purposes, etc)
     RESULTS_MAX = 100
 
     def __init__(self, args):
@@ -91,7 +96,10 @@ class Uploader(object):
 
         # Create and start all workers
         self._workers = self._create_workers(start=True)
-        LOGGER.debug("Started workers:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
+        LOGGER.debug(
+            "Started workers:\n\t%s",
+            "\n\t".join(sorted([w.name for w in self._workers]))
+        )
 
     def stop_daemon(self):
         """
@@ -103,7 +111,8 @@ class Uploader(object):
            out of the join that occurred in the start_daemon method).
         """
 
-        # Cycle through each worker, and change the share object's state value to "stopping
+        # Cycle through each worker, and change the share object's state
+        # value to "stopping
         for worker, run_state in self._workers.iteritems():
             LOGGER.debug(
                 "changing %s from %s to %s",
@@ -112,10 +121,11 @@ class Uploader(object):
                 self.STATE_STOPPING)
             run_state.value = self.STATE_STOPPING
 
-        # Join the workers. It's generally good practice to do this. Otherwise the
-        # parent process can exit (and return control back to shell) before
-        # the child processes exit (creating zombie processes).
-        # see here: https://docs.python.org/2/library/multiprocessing.html#all-platforms
+        # Join the workers. It's generally good practice to do this.
+        # Otherwise the parent process can exit (and return control
+        # back to shell) before the child processes exit (creating
+        # zombie processes). see here:
+        # https://docs.python.org/2/library/multiprocessing.html#all-platforms
         for wrk in self._workers:
             wrk.join()
 
@@ -128,10 +138,11 @@ class Uploader(object):
 
     def _create_workers(self, start=True):
         """
-        Create child worker processes.  For each worker, create a process/thread
-        safe object that is used to communicate between this parent process and
-        the worker.  Return a dictionary where the key is the process object,
-        and the value its corresponding run_state state object.
+        Create child worker processes.  For each worker, create a
+        process/thread safe object that is used to communicate between
+        this parent process and the worker.  Return a dictionary where
+        the key is the process object, and the value its corresponding
+        run_state state object.
 
         WORKERS:
             - DownloadWorker # Downloads files
@@ -149,7 +160,7 @@ class Uploader(object):
         thread_count = self.args.get("thread_count") or 1
         LOGGER.info("thread_count: %s", thread_count)
 
-        #### CREATE WORKER PROCESSES ####
+        # CREATE WORKER PROCESSES
         workers = {}
 
         # Create DownloadWorker processes
@@ -172,14 +183,15 @@ class Uploader(object):
 
     def sigint_handler(self, sig, frm):
         '''
-        Handles the SIGINT signal (i.e. the KeyboardInterrupt python exception).
+        Handles the SIGINT signal (i.e. the KeyboardInterrupt
+        python exception).
 
         This simply calls the Downloader's stop_daemon method.
 
-        Note that when registering this function as the signint handler, this function
-        gets called by ALL child processes as well.  Because of this, we check
-        which process is calling it, and only execute it if it's the main (parent)
-        process.
+        Note that when registering this function as the signint handler,
+        this function gets called by ALL child processes as well.  Because
+        of this, we check which process is calling it, and only execute it
+        if it's the main (parent) process.
         '''
 
         # change the global
@@ -196,7 +208,8 @@ class Uploader(object):
 
     def log_uptime(self):
         '''
-        Return the amount of time that the uploader has been running, e.g "0:01:28"
+        Return the amount of time that the uploader has been running,
+        e.g "0:01:28"
         '''
         seconds = time.time() - self._start_time
         human_duration = common.get_human_duration(seconds)
@@ -211,8 +224,8 @@ class UploaderWorker(multiprocessing.Process):
 
         {u'account': u'testaccountdomain',
          u'bytes_transferred': 0,
-         u'filepath': u'/home/tester/maya/projects/Samples/Nuke/Nuke/nuke_test/img/sword_gas-l.png',
-         u'gcs_url': u'https://storage.googleapis.com/Testing-Scott/accounts/testaccountdomain/...",
+         u'filepath': u'/home/testers/Nuke/Nuke/nuke_test/img/sword_gas-l.png',
+         u'gcs_url': u'https://storage.googleapis.com/..snip..",
          u'id': u'bd55f770c8e0566e272243d7555cf506',
          u'jid': None,
          u'location': None,
@@ -222,13 +235,14 @@ class UploaderWorker(multiprocessing.Process):
          u'total_size': 12934,
          u'ulid': u'5273391011463168'}
 
-    It will then create an FileGenerator() object from the filepath, registering
-    the self.event_handler() method as the callback to be fired for each chunk uploded
-    to GCS.
+    It will then create an FileGenerator() object from the filepath,
+    registering the self.event_handler() method as the callback to be
+    fired for each chunk uploded to GCS.
 
     It knows how to handle success and failure events from the upload stream.
 
-    On success, will will clean up any state and go back to asking for the next upload.
+    On success, will will clean up any state and go back to asking for the
+    next upload.
     """
     def __init__(self, run_state, account=None, location=None, project=None):
         super(UploaderWorker, self).__init__()
@@ -240,6 +254,7 @@ class UploaderWorker(multiprocessing.Process):
         self.current_upload = None
         self.fileobj = None
         self.upload_attempts = 0
+        self.last_touch = None
 
     def run(self):
         # Set the run_state value to "running"
@@ -249,7 +264,9 @@ class UploaderWorker(multiprocessing.Process):
             try:
                 self._run()
             except:
-                LOGGER.exception("Preventing process from exiting due to Exception:\n")
+                LOGGER.exception(
+                    "Preventing process from exiting due to Exception:\n"
+                )
                 # wait a little to allow for exception recovery .
                 # TODO:(lws) this may be totally stupid/unnecessary)
                 self.wait()
@@ -266,6 +283,8 @@ class UploaderWorker(multiprocessing.Process):
         self.current_upload = None
         self.fileobj = None
         self.upload_attempts = 0
+        self.upload_attempts = 0
+        self.last_touch = None
 
     def _run(self):
         self.reset()
@@ -284,19 +303,35 @@ class UploaderWorker(multiprocessing.Process):
         """
         filepath = self.current_upload.get("filepath")
         try:
-            self.fileobj = FileGenerator(filepath, event_handler=self.handle_upload_event)
+            self.fileobj = FileGenerator(
+                filepath,
+                event_handler=self.handle_upload_event
+            )
         except UploaderMissingFile as err:
-            print err
+            print "MISSING FILE!!", err
+            Backend.fail(
+                self.current_upload.get("id"),
+                bytes_downloaded=0,
+                account=self.account,
+                location=self.location,
+                project=self.project
+            )
             return
         else:
+            print "puts.."
             return self.put_upload()
 
     def put_upload(self):
         """
         Put the upload into GCS
         """
+        print "starting upload...", self.current_upload['destination']
+        self.touch()
         try:
-            result = Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
+            result = Backend.put_file(
+                self.fileobj,
+                self.current_upload["gcs_url"]
+            )
         except FilePutError as err:
             return self.handle_put_error(err)
         else:
@@ -314,8 +349,13 @@ class UploaderWorker(multiprocessing.Process):
         """
         Get the next upload
         """
+        print "fetching upload..."
         try:
-            uploads = Backend.next(self.account, location=self.location, project=self.project) or []
+            uploads = Backend.next(
+                self.account,
+                location=self.location,
+                project=self.project
+            ) or []
         except BackendDown as err:
             print err
             return
@@ -344,6 +384,17 @@ class UploaderWorker(multiprocessing.Process):
         """
         # TODO: periodically update (touch) server
         print "bytes so-far: ", filegen.bytes_read
+        if self.maybe_touch():
+            self.touch()
+            Backend.touch(
+                self.current_upload.get("id"),
+                bytes_downloaded=filegen.bytes_read,
+                account=self.account,
+                location=self.location,
+                project=self.project
+            )
+        else:
+            return
 
     def handle_put_success(self, filegen):
         """
@@ -364,14 +415,22 @@ class UploaderWorker(multiprocessing.Process):
             self.put_upload()
         return
 
+    def touch(self):
+        self.last_touch = datetime.datetime.now()
+        return
+
+    def maybe_touch(self):
+        touch_delta = datetime.datetime.now() - self.last_touch
+        return (not self.last_touch) \
+            or touch_delta.total_seconds > WORKER_TOUCH_INTERVAL
 
     def wait(self):
         '''
         sleep for WORKER_SLEEP_DURATION
 
-        Instead of doing one long sleep call, we make a loop of many short sleep
-        calls. This gives the opportunity to check the running state, and exit
-        the sleep process if necessary.
+        Instead of doing one long sleep call, we make a loop of many
+        short sleep calls. This gives the opportunity to check the
+        running state, and exit the sleep process if necessary.
         '''
         for _ in range(WORKER_SLEEP_DURATION):
             if self._run_state.value == Uploader.STATE_RUNNING:
@@ -387,21 +446,26 @@ class UploaderWorker(multiprocessing.Process):
 class UploaderMissingFile(Exception):
     """A file is missing"""
 
+
 class FilePutError(Exception):
     """Something happened during the put"""
+
 
 class BackendDown(Exception):
     """Backend is down"""
 
+
 class BackendError(Exception):
     """Something happened on the backend"""
 
+
 class FileGenerator(object):
     """
-    Since requests.put() can take a generator as the data param in order to allow
-    for streaming uploads, this class can be used to create a generator from a filepath.
-    Optionally, it can take a function/callable class instance as an event handler.
-    The handler will be called when each chunk of the file is read.
+    Since requests.put() can take a generator as the data param in order to
+    allow for streaming uploads, this class can be used to create a generator
+    from a filepath. Optionally, it can take a function/callable class
+    instance as an event handler. The handler will be called when each chunk
+    of the file is read.
     """
     def __init__(self, filepath, chunk_size=1024, event_handler=None):
         if not os.path.exists(filepath):
@@ -464,19 +528,19 @@ class Backend:
         """
         Return the next download (dict), or None if there isn't one.
         """
-        path = "downloader/next"
+        path = "uploader/next"
         params = {"account": account, "project": project, "location": location}
         return Backend.get(path, params, headers=cls.headers)
 
     @classmethod
-    @common.dec_timer_exit(log_level=logging.DEBUG)
-    def touch(cls, id_, bytes_transferred=0, account=None, location=None, project=None):
+    def touch(cls, id_, bytes_downloaded=0, account=None,
+              location=None, project=None):
         """
         Update backend with upload status
         """
-        path = "downloader/touch/%s" % id_
+        path = "uploader/touch/%s" % id_
         kwargs = {
-            "bytes_transferred": bytes_transferred,
+            "bytes_transferred": bytes_downloaded,
             "account": account,
             "location": location,
             "project": project
@@ -485,17 +549,20 @@ class Backend:
             return Backend.put(path, kwargs, headers=cls.headers)
         except requests.HTTPError as err:
             if err.response.status_code == 410:
-                LOGGER.warning("Cannot Touch file %s.  Already finished (not active) (410)", id_)
+                LOGGER.warning(
+                    "Cannot Touch file %s.  Already finished \
+                    (not active) (410)", id_
+                )
                 return
         raise
 
     @classmethod
-    @common.dec_timer_exit(log_level=logging.DEBUG)
-    def finish(cls, id_, bytes_downloaded=0, account=None, location=None, project=None):
+    def finish(cls, id_, bytes_downloaded=0, account=None,
+               location=None, project=None):
         """
         Tell backend about upload success
         """
-        path = "downloader/finish/%s" % id_
+        path = "uploader/finish/%s" % id_
         LOGGER.debug(path)
         payload = {
             "bytes_downloaded": bytes_downloaded,
@@ -507,17 +574,19 @@ class Backend:
             return Backend.put(path, payload, headers=cls.headers)
         except requests.HTTPError as err:
             if err.response.status_code == 410:
-                LOGGER.warning("Cannot finish file %s.  File not active (410)", id_)
+                LOGGER.warning(
+                    "Cannot finish file %s.  File not active (410)", id_
+                )
                 return
         raise
 
     @classmethod
-    @common.dec_timer_exit(log_level=logging.DEBUG)
-    def fail(cls, id_, bytes_downloaded=0, account=None, location=None, project=None):
+    def fail(cls, id_, bytes_downloaded=0, account=None,
+             location=None, project=None):
         """
         Tell backend about upload failure
         """
-        path = "downloader/fail/%s" % id_
+        path = "uploader/fail/%s" % id_
         payload = {
             "bytes_downloaded": bytes_downloaded,
             "account": account,
@@ -525,15 +594,18 @@ class Backend:
             "project": project
         }
         try:
+            print "about to fail.."
             return Backend.put(path, payload, headers=cls.headers)
         except requests.HTTPError as err:
+            print "FIAL", err
             if err.response.status_code == 410:
-                LOGGER.warning("Cannot fail file %s.  File not active (410)", id_)
+                LOGGER.warning(
+                    "Cannot fail file %s.  File not active (410)", id_
+                )
                 return
         raise
 
     @classmethod
-    @common.dec_timer_exit(log_level=logging.DEBUG)
     def bearer_token(cls, token):
         """
         Bearer
@@ -554,6 +626,7 @@ class Backend:
         Return a list of items
         '''
         url = cls.make_url(path)
+        print "backend verb=GET url=%s" % (url)
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
         return response.json()
@@ -565,10 +638,11 @@ class Backend:
         Call requests put
         """
         url = cls.make_url(path)
+        print "backend verb=PUT url=%s data=%s" % (url, data)
         response = requests.put(url, data=data, headers=headers)
+        print response
         response.raise_for_status()
         return response.json()
-
 
     @staticmethod
     def make_url(path):
@@ -592,3 +666,67 @@ class Backend:
             url_base = ip_map[project_url]
         url = "%s/api/v1/fileio/%s" % (url_base, path)
         return url
+
+
+def set_logging(level=None, log_dirpath=None):
+    log_filepath = None
+    if log_dirpath:
+        log_filepath = os.path.join(log_dirpath, "conductor_ul_log")
+    loggeria.setup_conductor_logging(logger_level=level,
+                                     console_formatter=LOG_FORMATTER,
+                                     file_formatter=LOG_FORMATTER,
+                                     log_filepath=log_filepath)
+
+
+def run_uploader(args):
+    '''
+    Start the uploader process. This process will run indefinitely, polling
+    the Conductor cloud app for files that need to be uploaded.
+    '''
+    # convert the Namespace object to a dictionary
+    args_dict = vars(args)
+
+    # Set up logging
+    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level = loggeria.LEVEL_MAP.get(log_level_name)
+    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    set_logging(log_level, log_dirpath)
+
+    LOGGER.debug('Uploader parsed_args is %s', args_dict)
+    resolved_args = resolve_args(args_dict)
+    uploader = Uploader(resolved_args)
+    uploader.start_daemon()
+
+
+def resolve_args(args):
+    '''
+    Resolve all arguments, reconsiling differences between command line args
+    and config.yml args.  See resolve_arg function.
+    '''
+    args["md5_caching"] = resolve_arg("md5_caching", args, CONFIG)
+    args["database_filepath"] = resolve_arg("database_filepath", args, CONFIG)
+    args["location"] = resolve_arg("location", args, CONFIG)
+
+    return args
+
+
+def resolve_arg(arg_name, args, config):
+    '''
+    Helper function to resolve the value of an argument.
+    The order of resolution is:
+    1. Check whether the user explicitly specified the argument when calling/
+       instantiating the class. If so, then use it, otherwise...
+    2. Attempt to read it from the config.yml. Note that the config also
+       queries environment variables to populate itself with values.
+       If the value is in the config then use it, otherwise...
+    3. return None
+
+    '''
+    # Attempt to read the value from the args
+    value = args.get(arg_name)
+    # If the arg is not None, it indicates that the arg was explicity
+    # specified by the caller/user, and it's value should be used
+    if value is not None:
+        return value
+    # Otherwise use the value in the config if it's there, otherwise default to None
+    return config.get(arg_name)
