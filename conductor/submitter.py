@@ -433,7 +433,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
         for all projects
         '''
         self.ui_project_cmbx.clear()
-        for project in CONFIG.get("projects") or api_client.request_projects():
+        projects = CONFIG.get("projects") or api_client.request_projects()
+        # sort alphabetically. may be unicode, so can't use str.lower directly
+        for project in sorted(projects, key=lambda x: x.lower()):
             self.ui_project_cmbx.addItem(project)
 
     def setFrameRange(self, start, end):
