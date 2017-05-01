@@ -529,6 +529,12 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         return self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex())
 
+    def getPreemptibleCheckbox(self):
+        '''
+        Return whether or not the "Preemptible" checkbox is checked.
+        '''
+        return self.ui_preemptible_chkbx.isChecked()
+
     def setProject(self, project_str, strict=True):
 
         '''
@@ -607,6 +613,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
+        conductor_args["preemptible"] = self.getPreemptibleCheckbox()
         conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
