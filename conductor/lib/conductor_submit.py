@@ -453,7 +453,6 @@ class Submit():
             filestat = os.stat(upload_file)
             upload_file_dict = {"md5": upload_files[upload_file],
                                 "destination": upload_file,
-                                "gcs_url": common.get_upload_gcs_path(self.project, upload_files[upload_file]),
                                 "st_mode": filestat.st_mode,
                                 "st_ino": filestat.st_ino,
                                 "st_dev": filestat.st_dev,
