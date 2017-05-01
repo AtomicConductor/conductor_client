@@ -744,14 +744,19 @@ class ConductorSubmitter(QtGui.QMainWindow):
         is also an available/appropriate methodology.  
         
         '''
-        if not self.validateJobPackages():
-            return
-        data = self.runPreSubmission()
-        response_code, response = self.runConductorSubmission(data)
-        self.runPostSubmission(response_code)
+        try:
+            if not self.validateJobPackages():
+                return
+            data = self.runPreSubmission()
+            response_code, response = self.runConductorSubmission(data)
+            self.runPostSubmission(response_code)
 
-        # Launch a dialog box what diesplays the results of the job submission
-        self.launch_result_dialog(response_code, response)
+            # Launch a dialog box what diesplays the results of the job submission
+            self.launch_result_dialog(response_code, response)
+
+        except UserCanceled:
+            logger.info("Canceled by user")
+
 
 
     def runPreSubmission(self):
@@ -980,7 +985,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
             # if the user cancelled
             if not ok:
-                raise Exception("Cancelled")  # todo:(lws) Should handle this more gracefully. Probably raise custom exception
+                raise UserCanceled()
 
             # Record the scout frames specified to the user prefs
             self.prefs.setFileScoutFrames(source_filepath, scout_frames)
@@ -1985,6 +1990,12 @@ class TaskFramesGenerator(object):
                 ranges.append(tuple(group_))
         return ranges
 
+
+
+class UserCanceled(Exception):
+    '''
+    Custom Exception to indicate that the user cancelled their action
+    '''
 
 
 
