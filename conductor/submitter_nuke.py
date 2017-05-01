@@ -95,17 +95,6 @@ class NukeWidget(QtGui.QWidget):
         return self.ui_upload_only.isChecked()
 
 
-    @QtCore.Slot(bool, name="on_ui_upload_only_toggled")
-    def on_ui_upload_only_toggled(self, toggled):
-        '''
-        when the "Upload Only" checkbox is checked on, disable the Write 
-        Nodes widget. when the "Upload Only" checkbox is checked off, enable
-        the Write Nodes widget.
-        '''
-        self.ui_write_nodes_trwgt.setDisabled(toggled)
-
-
-
 
 class NukeConductorSubmitter(submitter.ConductorSubmitter):
     '''
