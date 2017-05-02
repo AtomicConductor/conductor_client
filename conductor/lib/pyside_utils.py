@@ -1,8 +1,6 @@
-from collections import defaultdict
-from PyQt5.QtWidgets import *
 import logging
 from functools import wraps
-from Qt import QtGui, QtCore, QtUiTools
+from Qt import QtGui, QtCore, QtUiTools, QtWidgets
 
 
 logger = logging.getLogger(__name__)
@@ -57,12 +55,12 @@ def wait_cursor(func):
     @wraps(func)
     def wrapper(*args, **kwds):
         try:
-            QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
             return func(*args, **kwds)
         finally:
-            QtGui.QApplication.restoreOverrideCursor()
+            QtWidgets.QApplication.restoreOverrideCursor()
             # Not sure if this is needed
-            QtGui.QApplication.processEvents()
+            QtWidgets.QApplication.processEvents()
 
     return wrapper
 
@@ -79,9 +77,9 @@ def wait_message(title, message):
         @wraps(func)
         def wrapper(*args, **kwds):
             parent = args[0]  # The first argument will be the wrapped method's class instance (i.e. self), which will be used as the parent
-            dialog = QtGui.QDialog(parent=parent)
-            layout = QtGui.QHBoxLayout()
-            dialog.label = QtGui.QLabel()
+            dialog = QtWidgets.QDialog(parent=parent)
+            layout = QtWidgets.QHBoxLayout()
+            dialog.label = QtWidgets.QLabel()
             dialog.label.setText(message)
             dialog.label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             layout.addWidget(dialog.label)
@@ -91,7 +89,7 @@ def wait_message(title, message):
             # TODO: This stupid for-loop with a print statement is hack to force a redraw/update to the dialog. Otherwise it's blank. Tried a million things.  This is the only one that works..most of the time.
             for i in range(5):
                 print "",
-                QtGui.qApp.processEvents()
+                QtWidgets.QApplication.processEvents()
             try:
                 return func(*args, **kwds)
             finally:
@@ -111,7 +109,7 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
     """
 
     # create a QMessageBox
-    dialog = QtGui.QMessageBox(parent=parent)
+    dialog = QtWidgets.QMessageBox(parent=parent)
 
     # Set the window title to the given title string
     dialog.setWindowTitle(str(title))
@@ -120,7 +118,7 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
     dialog.setText(str(message))
 
     # Set the text to be selectable by a mouse
-    text_label = dialog.findChild(QtGui.QLabel, "qt_msgbox_label")
+    text_label = dialog.findChild(QtWidgets.QLabel, "qt_msgbox_label")
     text_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
     if is_richtext:
         text_label.setTextInteractionFlags(text_label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
@@ -136,7 +134,7 @@ def launch_error_box(title, message, parent=None):
     """
 
     # create a QErrorMessage
-    dialog = QtGui.QErrorMessage(parent=parent)
+    dialog = QtWidgets.QErrorMessage(parent=parent)
 
     # Set the window title to the given title string
     dialog.setWindowTitle(str(title))
@@ -146,11 +144,11 @@ def launch_error_box(title, message, parent=None):
     text_document.setPlainText(str(message))
 
     # find the icon (label) and hide it (it takes up too much space)
-    label = dialog.findChild(QtGui.QLabel)
+    label = dialog.findChild(QtWidgets.QLabel)
     label.hide()
 
     # find the checkbox and hide it (it serves no purpose for us)
-    checkbox = dialog.findChild(QtGui.QCheckBox)
+    checkbox = dialog.findChild(QtWidgets.QCheckBox)
     checkbox.hide()
 
     # expand the dailog box a little larger if needed
@@ -166,12 +164,12 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
     the "Don't ask again" checkbox (True/False).
     '''
 
-    dialog = QtGui.QDialog(parent=parent)
+    dialog = QtWidgets.QDialog(parent=parent)
     dialog.setWindowTitle(title)
-    dialog.verticalLayout = QtGui.QVBoxLayout(dialog)
+    dialog.verticalLayout = QtWidgets.QVBoxLayout(dialog)
 
     # Create the dialogs main message (Qlabel)
-    dialog.label = QtGui.QLabel(dialog)
+    dialog.label = QtWidgets.QLabel(dialog)
     dialog.label.setAlignment(QtCore.Qt.AlignCenter)
     dialog.label.setTextInteractionFlags(dialog.label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
     dialog.label.setTextFormat(QtCore.Qt.RichText)
@@ -180,21 +178,21 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
     dialog.verticalLayout.addWidget(dialog.label)
 
 
-    dialog.widget = QtGui.QWidget(dialog)
-    dialog.horizontalLayout = QtGui.QHBoxLayout(dialog.widget)
+    dialog.widget = QtWidgets.QWidget(dialog)
+    dialog.horizontalLayout = QtWidgets.QHBoxLayout(dialog.widget)
     dialog.horizontalLayout.setContentsMargins(-1, -1, -1, 0)
     dialog.horizontalLayout.setObjectName("horizontalLayout")
     dialog.verticalLayout.addWidget(dialog.widget)
 
     # Create the "Don\t ask again" checkbox
-    dialog.checkBox = QtGui.QCheckBox(dialog.widget)
+    dialog.checkBox = QtWidgets.QCheckBox(dialog.widget)
     dialog.checkBox.setText("Don\'t ask again")
     dialog.horizontalLayout.addWidget(dialog.checkBox)
 
     # Create the buttonbox with "yes" and "no buttons"
-    dialog.buttonBox = QtGui.QDialogButtonBox(dialog.widget)
+    dialog.buttonBox = QtWidgets.QDialogButtonBox(dialog.widget)
     dialog.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-    dialog.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.No | QtGui.QDialogButtonBox.Yes)
+    dialog.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes)
     dialog.horizontalLayout.addWidget(dialog.buttonBox)
     # Connect the buttonbox signals
     dialog.buttonBox.accepted.connect(dialog.accept)
@@ -223,7 +221,7 @@ def get_widgets_by_property(widget, property_name, match_value=False, property_v
     property_value
     '''
     widgets = []
-    for widget_ in widget.findChildren(QtGui.QWidget):
+    for widget_ in widget.findChildren(QtWidgets.QWidget):
         if property_name in widget_.dynamicPropertyNames():
             # If we're not matching against the property value, or if the property value is of the given value, then use it
             if not match_value or widget_.property(property_name) == property_value:
@@ -231,7 +229,7 @@ def get_widgets_by_property(widget, property_name, match_value=False, property_v
     return widgets
 
 
-class CheckBoxTreeWidget(QtGui.QTreeWidget):
+class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
     '''
     This is a QTreeWidget that has been modified to
     '''
@@ -264,7 +262,7 @@ class CheckBoxTreeWidget(QtGui.QTreeWidget):
 
 
     def _make_context_menu(self, selected_item):
-        menu = QtGui.QMenu()
+        menu = QtWidgets.QMenu()
 
         # "check selected" menu item
         action = menu.addAction(self.checked_icon, "check selected",
@@ -400,11 +398,11 @@ class WidgetGettrSettr(object):
         This dictionary should be expanded as needed, when other widget types
         are required for reading/loading data to/from.
         '''
-        return {QtGui.QLineEdit: cls.getLineeditValue,
-                QtGui.QComboBox: cls.getComboBoxValue,
-                QtGui.QCheckBox: cls.getCheckBoxValue,
-                QtGui.QSpinBox: cls.getSpinboxValue,
-                QtGui.QRadioButton: cls.getRadioButtonValue}
+        return {QtWidgets.QLineEdit: cls.getLineeditValue,
+                QtWidgets.QComboBox: cls.getComboBoxValue,
+                QtWidgets.QCheckBox: cls.getCheckBoxValue,
+                QtWidgets.QSpinBox: cls.getSpinboxValue,
+                QtWidgets.QRadioButton: cls.getRadioButtonValue}
 
     @classmethod
     def getSettrMap(cls):
@@ -416,11 +414,11 @@ class WidgetGettrSettr(object):
         This dictionary should be expanded as needed, when other widget types
         are required for reading/loading data to/from.
         '''
-        return {QtGui.QLineEdit: cls.setLineEditValue,
-                QtGui.QComboBox: cls.setComboBoxValue,
-                QtGui.QCheckBox: cls.setCheckBoxValue,
-                QtGui.QSpinBox: cls.setSpinboxValue,
-                QtGui.QRadioButton: cls.setRadioButtonValue}
+        return {QtWidgets.QLineEdit: cls.setLineEditValue,
+                QtWidgets.QComboBox: cls.setComboBoxValue,
+                QtWidgets.QCheckBox: cls.setCheckBoxValue,
+                QtWidgets.QSpinBox: cls.setSpinboxValue,
+                QtWidgets.QRadioButton: cls.setRadioButtonValue}
 
 
     @classmethod
