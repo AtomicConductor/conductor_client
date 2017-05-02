@@ -416,8 +416,11 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Get the core arguments from the UI via the parent's  method
         conductor_args = super(MayaConductorSubmitter, self).generateConductorArgs(data)
 
-        # Construct the maya-specific commands for each task
-        conductor_args["tasks_data"] = self.generateTasksData()
+        # check if the user has indicated that this is an upload-only job (no tasks)
+        conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
+
+        # Construct the maya-specific commands for each task. Only provide task data if the job is not an upload-only job
+        conductor_args["tasks_data"] = self.generateTasksData() if not conductor_args["upload_only"] else None
 
         # Get the maya-specific environment
         conductor_args["environment"] = self.getEnvironment()
@@ -425,7 +428,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
 
-        conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
         return conductor_args
