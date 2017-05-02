@@ -4,8 +4,15 @@ import imp
 import logging
 import sys
 import uuid
-from Qt import QtGui, QtCore
-from shiboken import wrapInstance
+import Qt
+from Qt import QtGui, QtCore, QtWidgets
+
+# For backwards compatibility
+if Qt.__binding__ in ('PySide'):
+    from shiboken import wrapInstance
+else:
+    from shiboken2 import wrapInstance
+
 from maya import OpenMayaUI
 
 try:
@@ -27,7 +34,7 @@ TODO:
 logger = logging.getLogger(__name__)
 
 
-class MayaWidget(QtGui.QWidget):
+class MayaWidget(QtWidgets.QWidget):
 
     # The .ui designer filepath
     _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'maya.ui')
@@ -59,7 +66,7 @@ class MayaWidget(QtGui.QWidget):
         self.ui_render_layers_trwgt.clear()
         assert isinstance(render_layers_info, list), "render_layers argument must be a list. Got: %s" % type(render_layers_info)
         for render_layer_info in reversed(render_layers_info):
-            tree_item = QtGui.QTreeWidgetItem([render_layer_info["layer_name"],
+            tree_item = QtWidgets.QTreeWidgetItem([render_layer_info["layer_name"],
                                                render_layer_info["camera_shortname"]])
 
             tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
@@ -488,8 +495,8 @@ class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):
     def initializeUi(self):
         super(MayaCheckBoxTreeWidget, self).initializeUi()
         self.setIndentation(0)
-        self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-        self.setHeaderItem (QtGui.QTreeWidgetItem(["Layer", "Camera"]))
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.setHeaderItem (QtWidgets.QTreeWidgetItem(["Layer", "Camera"]))
 
 
 def get_maya_window():
@@ -497,4 +504,4 @@ def get_maya_window():
     Return the Qt instance of Maya's MainWindow
     '''
     mainWindowPtr = OpenMayaUI.MQtUtil.mainWindow()
-    return wrapInstance(long(mainWindowPtr), QtGui.QMainWindow)
+    return wrapInstance(long(mainWindowPtr), QtWidgets.QMainWindow)

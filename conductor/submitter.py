@@ -1,5 +1,4 @@
 import collections
-from PyQt5.QtWidgets import *
 import functools
 import imp
 import inspect
@@ -8,7 +7,7 @@ import logging
 import os
 import operator
 from pprint import pformat
-from Qt import QtGui, QtCore
+from Qt import QtGui, QtCore, QtWidgets
 import sys
 import traceback
 
@@ -19,7 +18,7 @@ except ImportError, e:
 
 from conductor import CONFIG
 
-from conductor.lib import  conductor_submit, pyside_utils, common, api_client, loggeria, package_utils
+from conductor.lib import conductor_submit, pyside_utils, common, api_client, loggeria, package_utils
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -46,7 +45,7 @@ TODO:
 
 '''
 
-class ConductorSubmitter(QtGui.QMainWindow):
+class ConductorSubmitter(QtWidgets.QMainWindow):
     '''
     Base class for PySide front-end for submitting jobs to Conductor.
 
@@ -118,9 +117,9 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         _parent_window = cls.getParentWindow()
 
-        app = QtGui.QApplication.instance()
+        app = QtWidgets.QApplication.instance()
         if app is None:
-            app = QtGui.QApplication(sys.argv)
+            app = QtWidgets.QApplication(sys.argv)
         ui = cls()
         ui.show()
         app.exec_()
@@ -356,7 +355,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         current_level = conductor_logger.level
 
         # Create an action group (this allows for mutually exclusive checkboxes (radio buttons)
-        action_group = QtGui.QActionGroup(menu)
+        action_group = QtWidgets.QActionGroup(menu)
 
         # loop by order of log_level value
         for level_name, level_value in sorted(loggeria.LEVEL_MAP.iteritems(),
@@ -779,7 +778,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
     @QtCore.Slot(name="on_ui_choose_output_path_pbtn_clicked")
     def on_ui_choose_output_path_pbtn_clicked(self):
 
-        dirpath = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory"))
+        dirpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
         if dirpath:
             self.setOutputDir(dirpath)
 
@@ -1005,21 +1004,21 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
 
         # Create the dialog's widgets
-        dialog = QtGui.QDialog(self)
-        verticalLayout = QtGui.QVBoxLayout(dialog)
-        label = QtGui.QLabel(dialog)
+        dialog = QtWidgets.QDialog(self)
+        verticalLayout = QtWidgets.QVBoxLayout(dialog)
+        label = QtWidgets.QLabel(dialog)
         verticalLayout.addWidget(label)
-        lineedit = QtGui.QLineEdit(dialog)
+        lineedit = QtWidgets.QLineEdit(dialog)
         verticalLayout.addWidget(lineedit)
-        widget = QtGui.QWidget(dialog)
-        horizontalLayout = QtGui.QHBoxLayout(widget)
+        widget = QtWidgets.QWidget(dialog)
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
         horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        cancel_pbtn = QtGui.QPushButton(widget)
+        cancel_pbtn = QtWidgets.QPushButton(widget)
         horizontalLayout.addWidget(cancel_pbtn)
-        ok_btn = QtGui.QPushButton(widget)
+        ok_btn = QtWidgets.QPushButton(widget)
         horizontalLayout.addWidget(ok_btn)
         verticalLayout.addWidget(widget)
-        dialog.layout().setSizeConstraint(QtGui.QLayout.SetFixedSize)
+        dialog.layout().setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
 
         def _validateScoutFramesText(text):
             '''
@@ -1269,7 +1268,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 #             product_name = host_package["product"]
 #             product_group_item = top_level_product_items.get(product_name)
 #             if not product_group_item:
-#                 product_group_item = QtGui.QTreeWidgetItem([product_name, ""])
+#                 product_group_item = QtWidgets.QTreeWidgetItem([product_name, ""])
 #                 product_group_item.product = product_name
 #                 top_level_product_items[product_name] = product_group_item
 #                 self.ui_software_versions_trwgt.addTopLevelItem(product_group_item)
@@ -1291,7 +1290,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
                 plugin_product_name = plugin_package["product"]
                 plugin_parent_product_item = plugin_parent_items.get(plugin_product_name)
                 if not plugin_parent_product_item:
-                    plugin_parent_product_item = QtGui.QTreeWidgetItem([plugin_product_name, ""])
+                    plugin_parent_product_item = QtWidgets.QTreeWidgetItem([plugin_product_name, ""])
                     plugin_parent_product_item.setFlags(QtCore.Qt.ItemIsEnabled)
                     plugin_parent_product_item.product = plugin_product_name
                     plugin_parent_items[plugin_product_name] = plugin_parent_product_item
@@ -1412,7 +1411,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
                                                   "minor_version",
                                                   "release_version",
                                                   "build_version"]]))
-        tree_item = QtGui.QTreeWidgetItem([software_name, software_version])
+        tree_item = QtWidgets.QTreeWidgetItem([software_name, software_version])
         tree_item.package_id = package["package_id"]
         return tree_item
 
@@ -1443,7 +1442,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         Add selected items
         Show items in (other) tree
         '''
-        menu = QtGui.QMenu()
+        menu = QtWidgets.QMenu()
 
         # "check selected" menu item
         action = menu.addAction("Add selected packages to Job", self._availableAddSelectedItems)
@@ -1514,7 +1513,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         Add selected items
         Show items in (other) tree
         '''
-        menu = QtGui.QMenu()
+        menu = QtWidgets.QMenu()
 
         # "check selected" menu item
         action = menu.addAction("Remove selected packages", self._jobRemoveSelectedItems)
@@ -1565,7 +1564,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
 
         # This will be used for the "Software Name" column
         item_package_str = self._constructJobPackageStr(package)
-        tree_item = QtGui.QTreeWidgetItem([item_package_str])
+        tree_item = QtWidgets.QTreeWidgetItem([item_package_str])
         tree_item.package_id = package["package_id"]
         return tree_item
 
@@ -1988,7 +1987,7 @@ class TaskFramesGenerator(object):
 
 
 if __name__ == "__main__":
-    app = QtGui.QApplication.instance()
+    app = QtWidgets.QApplication.instance()
     if app is None:
-        app = QtGui.QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
     ConductorSubmitter.runUi()
