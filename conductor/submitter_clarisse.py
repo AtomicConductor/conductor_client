@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
+from Qt import QtCore, QtGui, QtWidgets, uic
 import imp
 from functools import wraps
 import traceback
