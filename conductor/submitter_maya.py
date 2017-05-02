@@ -25,7 +25,7 @@ from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, comm
 from conductor.lib.lsseq import seqLister
 
 '''
-TODO:
+TODO: 
 1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
 3. Cull out unused maya dependencies.  Should we exclude materials that aren't assigned, etc?
 5. Validate the maya file has been saved
@@ -60,7 +60,7 @@ class MayaWidget(QtWidgets.QWidget):
         '''
         Populate each render layer into the UI QTreeWidget.
         If the render layer has been set to renderable in maya, then check its
-        qtreewidgetitem's checkbox (on) the the render layer  UI.  Only render
+        qtreewidgetitem's checkbox (on) the the render layer  UI.  Only render 
         layers that are checked on will be rendered
         '''
         self.ui_render_layers_trwgt.clear()
@@ -104,7 +104,7 @@ class MayaWidget(QtWidgets.QWidget):
     @QtCore.Slot(bool, name="on_ui_upload_only_toggled")
     def on_ui_upload_only_toggled(self, toggled):
         '''
-        when the "Upload Only" checkbox is checked on, disable the Render
+        when the "Upload Only" checkbox is checked on, disable the Render 
         Layers widget. when the "Upload Only" checkbox is checked off, enable
         the Render Layers widget.
         '''
@@ -113,17 +113,17 @@ class MayaWidget(QtWidgets.QWidget):
 
 class MayaConductorSubmitter(submitter.ConductorSubmitter):
     '''
-
+    
     This class inherits from the generic conductor submitter and adds an additional
     widget for maya-specific data.
-
-    Note that the addional widget is stored (and accessible) via the
+    
+    Note that the addional widget is stored (and accessible) via the 
     self.extended_widget attribute
-
+    
     When the UI loads it will automatically populate various information:
-        1. Frame range
+        1. Frame range  
         2. Render layers (with their camera)
-
+    
     '''
 
 
@@ -167,28 +167,28 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def generateTasksData(self):
         '''
         Return a list of tasks data.  Each item in the list represents one
-        task of work that will be created.
-
+        task of work that will be created. 
+        
         Each task dictionary has the following
         keys:
             command: The command for the task to execute
 
-            frames: [optional], helps to bind/display the relationship between a
+            frames: [optional], helps to bind/display the relationship between a 
                      task and the frames that the task is operating on.  Because
                      a task can be any arbitrary command, the notion of "frames"
                      may not be relevant and can be left empty.
-
-        Eventually we may want to populate this with *everything* a task needs
-        (offloading it from the Job entity). This would allow more per-task flexiblity (such as differing environments,
+                     
+        Eventually we may want to populate this with *everything* a task needs 
+        (offloading it from the Job entity). This would allow more per-task flexiblity (such as differing environments, 
         files, etc).  Just general containment in general.
-
-
+        
+        
         Example(two tasks):
 
-            # Task 0
+            # Task 0    
             [ {"command": "Render -s 1 -e 1 -rl renderlayer1 maya_filepath.ma"
                "frames": "1"},
-            # Task 1
+            # Task 1    
             {"command": "Render -s 10 -e 20 -b 2 maya_filepath.ma"
              "frames": "10-20x2"} ]
         '''
@@ -291,10 +291,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     def runPreSubmission(self):
         '''
-        Override the base class (which is an empty stub method) so that a
+        Override the base class (which is an empty stub method) so that a 
         validation pre-process can be run.  If validation fails, then indicate
-        that the the submission process should be aborted.
-
+        that the the submission process should be aborted.   
+        
         We also collect dependencies  at this point and pass that
         data along...
         In order to validate the submission, dependencies must be collected
@@ -341,14 +341,14 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
         Generate and return the title to be given to the job.  This is the title
         that will be displayed in the webUI.
-
+                
         Construct the job title by using the software name (MAYA), followed by
         the filename of maya file (excluding directory path), followed by the
-        renderlayers being rendered.  If all of the renderlayers in the maya
-        scene are being rendered then don't list any of them.
-
-        MAYA - <maya filename> - <renderlayers>
-
+        renderlayers being rendered.  If all of the renderlayers in the maya 
+        scene are being rendered then don't list any of them. 
+        
+        MAYA - <maya filename> - <renderlayers> 
+        
         example: "MAYA - my_maya_scene.ma - beauty, shadow, spec"
         '''
         maya_filepath = self.getSourceFilepath()
@@ -383,10 +383,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         This is an added method (i.e. not a base class override), that allows
         validation to occur when a user presses the "Submit" button. If the
         validation fails, a notification dialog appears to the user, halting
-        the submission process.
-
+        the submission process. 
+        
         Validate that the data being submitted is...valid.
-
+        
         1. Dependencies
         2. Output dir
         '''
@@ -409,7 +409,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     def generateConductorArgs(self, data):
         '''
-        Override this method from the base class to provide conductor arguments that
+        Override this method from the base class to provide conductor arguments that 
         are specific for Maya.  See the base class' docstring for more details.
 
         '''
