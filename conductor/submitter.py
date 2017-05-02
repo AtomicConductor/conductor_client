@@ -433,7 +433,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         for all projects
         '''
         self.ui_project_cmbx.clear()
-        for project in CONFIG.get("projects") or api_client.request_projects():
+        projects = CONFIG.get("projects") or api_client.request_projects()
+        # sort alphabetically. may be unicode, so can't use str.lower directly
+        for project in sorted(projects, key=lambda x: x.lower()):
             self.ui_project_cmbx.addItem(project)
 
     def setFrameRange(self, start, end):
@@ -527,6 +529,12 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         return self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex())
 
+    def getPreemptibleCheckbox(self):
+        '''
+        Return whether or not the "Preemptible" checkbox is checked.
+        '''
+        return self.ui_preemptible_chkbx.isChecked()
+
     def setProject(self, project_str, strict=True):
 
         '''
@@ -605,6 +613,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
+        conductor_args["preemptible"] = self.getPreemptibleCheckbox()
         conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
@@ -742,14 +751,19 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         is also an available/appropriate methodology.
 
         '''
-        if not self.validateJobPackages():
-            return
-        data = self.runPreSubmission()
-        response_code, response = self.runConductorSubmission(data)
-        self.runPostSubmission(response_code)
+        try:
+            if not self.validateJobPackages():
+                return
+            data = self.runPreSubmission()
+            response_code, response = self.runConductorSubmission(data)
+            self.runPostSubmission(response_code)
 
-        # Launch a dialog box what diesplays the results of the job submission
-        self.launch_result_dialog(response_code, response)
+            # Launch a dialog box what diesplays the results of the job submission
+            self.launch_result_dialog(response_code, response)
+
+        except UserCanceled:
+            logger.info("Canceled by user")
+
 
 
     def runPreSubmission(self):
@@ -978,7 +992,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
             # if the user cancelled
             if not ok:
-                raise Exception("Cancelled")  # todo:(lws) Should handle this more gracefully. Probably raise custom exception
+                raise UserCanceled()
 
             # Record the scout frames specified to the user prefs
             self.prefs.setFileScoutFrames(source_filepath, scout_frames)
@@ -1983,6 +1997,12 @@ class TaskFramesGenerator(object):
                 ranges.append(tuple(group_))
         return ranges
 
+
+
+class UserCanceled(Exception):
+    '''
+    Custom Exception to indicate that the user cancelled their action
+    '''
 
 
 
