@@ -10,6 +10,8 @@ import logging
 import multiprocessing
 import os
 import string
+import hashlib
+import base64
 
 import requests
 
@@ -225,6 +227,7 @@ class UploaderWorker(multiprocessing.Process):
         {u'account': u'testaccountdomain',
          u'bytes_transferred': 0,
          u'filepath': u'/home/testers/Nuke/Nuke/nuke_test/img/sword_gas-l.png',
+         u'filesize': 1234,
          u'gcs_url': u'https://storage.googleapis.com/..snip..",
          u'id': u'bd55f770c8e0566e272243d7555cf506',
          u'jid': None,
@@ -307,8 +310,11 @@ class UploaderWorker(multiprocessing.Process):
                 filepath,
                 event_handler=self.handle_upload_event
             )
+            return self.maybe_upload()
+
         except UploaderMissingFile as err:
-            print "MISSING FILE!!", err
+            LOGGER.warning("local file missing: %s" %
+                           self.current_upload["filepath"])
             Backend.fail(
                 self.current_upload.get("id"),
                 bytes_downloaded=0,
@@ -317,15 +323,47 @@ class UploaderWorker(multiprocessing.Process):
                 project=self.project
             )
             return
-        else:
-            print "puts.."
-            return self.put_upload()
+
+        except UploaderFileModified as err:
+            LOGGER.warning("local file has changed: %s" % err)
+            Backend.fail(
+                self.current_upload.get("id"),
+                bytes_downloaded=0,
+                account=self.account,
+                location=self.location,
+                project=self.project
+            )
+            return
+
+    def maybe_upload(self):
+        filepath = self.current_upload["filepath"]
+        expected_filesize = self.current_upload.get("filesize")
+        expected_md5 = self.current_upload.get("md5")
+        local_filesize = os.path.getsize(filepath)
+        if (not expected_md5) or local_filesize != expected_filesize:
+            #error
+            raise UploaderFileModified(
+                "different filesize - local: %s expected: %s" % \
+                        (local_filesize, expected_filesize)
+            )
+            return
+
+        local_md5 = file_md5(filepath)
+        if local_md5 != expected_md5:
+            #error
+            raise UploaderFileModified(
+                "different md5 - local: %s expected: %s" % \
+                        (local_md5, expected_md5)
+            )
+            return
+
+        return self.put_upload()
 
     def put_upload(self):
         """
         Put the upload into GCS
         """
-        print "starting upload...", self.current_upload['destination']
+        print "starting upload...", self.current_upload['filepath']
         self.touch()
         try:
             result = Backend.put_file(
@@ -445,6 +483,10 @@ class UploaderWorker(multiprocessing.Process):
 
 class UploaderMissingFile(Exception):
     """A file is missing"""
+
+
+class UploaderFileModified(Exception):
+    """something wring with local file"""
 
 
 class FilePutError(Exception):
@@ -668,6 +710,19 @@ class Backend:
         return url
 
 
+def file_md5(filepath):
+    chunk_size = 2 ** 20
+    md5 = hashlib.md5()
+    with open(filepath, "rb") as fileobj:
+        while True:
+            chunk = fileobj.read(chunk_size)
+            if not chunk:
+                break
+            md5.update(chunk)
+    digest = md5.digest()
+    return base64.b64encode(digest)
+
+
 def set_logging(level=None, log_dirpath=None):
     log_filepath = None
     if log_dirpath:
@@ -728,5 +783,6 @@ def resolve_arg(arg_name, args, config):
     # specified by the caller/user, and it's value should be used
     if value is not None:
         return value
-    # Otherwise use the value in the config if it's there, otherwise default to None
+    # Otherwise use the value in the config if it's there,
+    # otherwise default to None
     return config.get(arg_name)
