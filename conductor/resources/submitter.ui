@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>360</width>
-    <height>455</height>
+    <width>511</width>
+    <height>566</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -527,6 +527,16 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="ui_preemptible_chkbx">
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Preemptible</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QWidget" name="ui_resource_wgt" native="true">
              <property name="toolTip">
               <string>[optional] Specify a resource string to associate the Conductor job with</string>
@@ -991,8 +1001,8 @@ tasks before deciding to execute the job's remaining tasks.
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>418</width>
-     <height>26</height>
+     <width>511</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="ui_options_qmenu">

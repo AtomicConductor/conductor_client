@@ -487,16 +487,25 @@ class WidgetGettrSettr(object):
     def getComboBoxValue(cls, combobox):
         '''
         Define getter function for QComobobox widgets
+        Store the text in the combobox (rather than the current index).  This
+        allows the ordering of the items to change while maintaining the correct
+        preference behavior
         '''
-        return combobox.currentIndex()
+        return combobox.currentText()
 
     @classmethod
     def setComboBoxValue(cls, combobox, value):
         '''
         Define setter function for QComobobox widgets
+        
+        Find the given text value in the combobox items.  If no items contain
+        the text, the index will be set to -1 (blank).  This makes sense, as
+        it will tell the user that their preference value is no longer valid, and
+        to select something different. 
         '''
         # Ensure that value is cast to an int first
-        combobox.setCurrentIndex(int(value))
+        entry_idx = combobox.findText(value)
+        combobox.setCurrentIndex(entry_idx)
 
     @classmethod
     def getRadioButtonValue(cls, radiobutton):

@@ -95,17 +95,6 @@ class NukeWidget(QtGui.QWidget):
         return self.ui_upload_only.isChecked()
 
 
-    @QtCore.Slot(bool, name="on_ui_upload_only_toggled")
-    def on_ui_upload_only_toggled(self, toggled):
-        '''
-        when the "Upload Only" checkbox is checked on, disable the Write 
-        Nodes widget. when the "Upload Only" checkbox is checked off, enable
-        the Write Nodes widget.
-        '''
-        self.ui_write_nodes_trwgt.setDisabled(toggled)
-
-
-
 
 class NukeConductorSubmitter(submitter.ConductorSubmitter):
     '''
@@ -378,15 +367,16 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # Get the core arguments from the UI via the parent's  method
         conductor_args = super(NukeConductorSubmitter, self).generateConductorArgs(data)
 
-        # Construct the nuke-specific commands for each task
-        conductor_args["tasks_data"] = self.generateTasksData()
+        # check if the user has indicated that this is an upload-only job (no tasks)
+        conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
+
+        # Construct the nuke-specific commands for each task. Only provide task data if the job is not an upload-only job
+        conductor_args["tasks_data"] = self.generateTasksData() if not conductor_args["upload_only"] else None
 
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
 
-        conductor_args["upload_only"] = self.extended_widget.getUploadOnlyBool()
-
-        # Grab the file dependencies from data (note that this comes from the presubmission phase
+                # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
 
         # the output path gets dynamically generated based upon which write nodes the user has selected
