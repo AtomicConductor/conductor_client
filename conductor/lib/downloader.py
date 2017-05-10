@@ -1281,10 +1281,20 @@ class Backend:
         }
         config_url = CONFIG.get("url", CONFIG["base_url"]).split("//")[-1]
         project_url = string.join(config_url.split("-")[-3:], "-")
-        if os.environ.get("LOCAL"):
+
+        url_base = ip_map.get(project_url)
+        if not url_base:
+            if "dev-" in project_url:
+                url_base = "https://dev-api.conductorio.com"
+            elif "qa-" in project_url:
+                url_base = "https://qa-api.conductorio.com"
+            elif "beta-" in project_url:
+                url_base = "https://beta-api.conductorio.com"
+            else:
+                url_base = "https://api.conductorio.com"
+
+        if os.environ.get("CONDUCTOR_LOCAL"):
             url_base = "http://localhost:8081"
-        else:
-            url_base = ip_map[project_url]
         url = "%s/api/v1/fileio/%s" % (url_base, path)
         return url
 

@@ -137,6 +137,11 @@ def parse_args():
     submit_parser.add_argument("--machine_type",
                                help='Type of machine to run on ("standard", "highmem", or "highcpu")')
 
+    submit_parser.add_argument("--preemptible",
+                               choices=[False, True],
+                               type=cast_to_bool,
+                               help='Run job in preemptible instances')
+
     submit_parser.add_argument("--md5_caching",
             help=("Use cached md5s. This can dramatically improve the uploading "
                   "times, as md5 checking can be very time consuming. Caching md5s "
@@ -423,7 +428,7 @@ def run_downloader(args):
         if all([args_dict.get(i) for i in ["job_id", "task_id"]]) or args_dict.get("job_id") or args_dict.get("alt"):
             return downloader2.run_downloader(args_dict)
         else:
-            print "ERROR: Both job_id and task_id are required."
+            raise argparse.ArgumentTypeError('Must supply a job_id with task_id.')
             return
 
     return downloader.run_downloader(args_dict)
