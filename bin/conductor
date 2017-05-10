@@ -428,7 +428,7 @@ def run_downloader(args):
         if all([args_dict.get(i) for i in ["job_id", "task_id"]]) or args_dict.get("job_id") or args_dict.get("alt"):
             return downloader2.run_downloader(args_dict)
         else:
-            print "ERROR: Both job_id and task_id are required."
+            raise argparse.ArgumentTypeError('Must supply a job_id with task_id.')
             return
 
     return downloader.run_downloader(args_dict)
