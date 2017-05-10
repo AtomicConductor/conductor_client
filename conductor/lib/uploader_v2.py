@@ -195,6 +195,7 @@ class Uploader(object):
         of this, we check which process is calling it, and only execute it
         if it's the main (parent) process.
         '''
+        print sig, frm
 
         # change the global
         global RUN_STATE
@@ -313,49 +314,44 @@ class UploaderWorker(multiprocessing.Process):
             return self.maybe_upload()
 
         except UploaderMissingFile as err:
-            LOGGER.warning("local file missing: %s" %
+            LOGGER.warning("local file missing: %s",
                            self.current_upload["filepath"])
             Backend.fail(
-                self.current_upload.get("id"),
-                bytes_downloaded=0,
-                account=self.account,
-                location=self.location,
-                project=self.project
+                self.current_upload,
+                bytes_downloaded=0
             )
             return
 
         except UploaderFileModified as err:
-            LOGGER.warning("local file has changed: %s" % err)
+            LOGGER.warning("local file has changed: %s", err)
             Backend.fail(
-                self.current_upload.get("id"),
-                bytes_downloaded=0,
-                account=self.account,
-                location=self.location,
-                project=self.project
+                self.current_upload,
+                bytes_downloaded=0
             )
             return
 
     def maybe_upload(self):
+        '''
+        Upload a file if md5 matches expectation.
+        '''
         filepath = self.current_upload["filepath"]
         expected_filesize = self.current_upload.get("filesize")
         expected_md5 = self.current_upload.get("md5")
         local_filesize = os.path.getsize(filepath)
         if (not expected_md5) or local_filesize != expected_filesize:
-            #error
+            # error
             raise UploaderFileModified(
-                "different filesize - local: %s expected: %s" % \
-                        (local_filesize, expected_filesize)
-            )
-            return
+                "different filesize - local: %s expected: %s" %
+                (local_filesize, expected_filesize)
+                )
 
         local_md5 = file_md5(filepath)
         if local_md5 != expected_md5:
-            #error
+            # error
             raise UploaderFileModified(
-                "different md5 - local: %s expected: %s" % \
-                        (local_md5, expected_md5)
-            )
-            return
+                "different md5 - local: %s expected: %s" %
+                (local_md5, expected_md5)
+                )
 
         return self.put_upload()
 
@@ -381,6 +377,7 @@ class UploaderWorker(multiprocessing.Process):
         Callback for finish/success
         """
         print "done", result
+        self.reset()
         return result
 
     def next_upload(self):
@@ -420,16 +417,12 @@ class UploaderWorker(multiprocessing.Process):
         """
         Callback for upload progress
         """
-        # TODO: periodically update (touch) server
         print "bytes so-far: ", filegen.bytes_read
         if self.maybe_touch():
             self.touch()
             Backend.touch(
-                self.current_upload.get("id"),
-                bytes_downloaded=filegen.bytes_read,
-                account=self.account,
-                location=self.location,
-                project=self.project
+                self.current_upload,
+                bytes_downloaded=filegen.bytes_read
             )
         else:
             return
@@ -438,7 +431,11 @@ class UploaderWorker(multiprocessing.Process):
         """
         Callback for finish/success
         """
-        # TODO: update server (finish)
+        self.touch()
+        Backend.finish(
+            self.current_upload,
+            bytes_downloaded=filegen.bytes_read
+        )
         print "Done!"
 
     def handle_put_error(self, err):
@@ -575,17 +572,14 @@ class Backend:
         return Backend.get(path, params, headers=cls.headers)
 
     @classmethod
-    def touch(cls, id_, bytes_downloaded=0, account=None,
-              location=None, project=None):
+    def touch(cls, upload, bytes_downloaded=0):
         """
         Update backend with upload status
         """
-        path = "uploader/touch/%s" % id_
+        path = "uploader/touch/%s" % upload["id"]
         kwargs = {
-            "bytes_transferred": bytes_downloaded,
-            "account": account,
-            "location": location,
-            "project": project
+            "upload_file": upload,
+            "bytes_transferred": bytes_downloaded
         }
         try:
             return Backend.put(path, kwargs, headers=cls.headers)
@@ -593,47 +587,42 @@ class Backend:
             if err.response.status_code == 410:
                 LOGGER.warning(
                     "Cannot Touch file %s.  Already finished \
-                    (not active) (410)", id_
+                    (not active) (410)", upload["id"]
                 )
                 return
         raise
 
     @classmethod
-    def finish(cls, id_, bytes_downloaded=0, account=None,
-               location=None, project=None):
+    def finish(cls, upload, bytes_downloaded=0):
         """
         Tell backend about upload success
         """
-        path = "uploader/finish/%s" % id_
+        path = "uploader/finish/%s" % upload["id"]
         LOGGER.debug(path)
         payload = {
-            "bytes_downloaded": bytes_downloaded,
-            "account": account,
-            "location": location,
-            "project": project
-        }
+                "upload_file": upload,
+                "bytes_downloaded": bytes_downloaded
+                }
         try:
             return Backend.put(path, payload, headers=cls.headers)
         except requests.HTTPError as err:
             if err.response.status_code == 410:
                 LOGGER.warning(
-                    "Cannot finish file %s.  File not active (410)", id_
+                    "Cannot finish file %s.  File not active (410)",
+                    upload["id"]
                 )
                 return
         raise
 
     @classmethod
-    def fail(cls, id_, bytes_downloaded=0, account=None,
-             location=None, project=None):
+    def fail(cls, upload, bytes_downloaded=0):
         """
         Tell backend about upload failure
         """
-        path = "uploader/fail/%s" % id_
+        path = "uploader/fail/%s" % upload["id"]
         payload = {
-            "bytes_downloaded": bytes_downloaded,
-            "account": account,
-            "location": location,
-            "project": project
+            "upload_file": upload,
+            "bytes_downloaded": bytes_downloaded
         }
         try:
             print "about to fail.."
@@ -642,7 +631,8 @@ class Backend:
             print "FIAL", err
             if err.response.status_code == 410:
                 LOGGER.warning(
-                    "Cannot fail file %s.  File not active (410)", id_
+                    "Cannot fail file %s.  File not active (410)",
+                    upload["id"]
                 )
                 return
         raise
@@ -696,10 +686,13 @@ class Backend:
             return "%s/api/oauth_jwt?scope=user" % config_url
 
         ip_map = {
-            "fiery-celerity-88718.appspot.com": "https://beta-api.conductorio.com",
-            "eloquent-vector-104019.appspot.com": "https://dev-api.conductorio.com",
-            "atomic-light-001.appspot.com": "https://api.conductorio.com"
-        }
+            "fiery-celerity-88718.appspot.com":
+                "https://beta-api.conductorio.com",
+            "eloquent-vector-104019.appspot.com":
+                "https://dev-api.conductorio.com",
+            "atomic-light-001.appspot.com":
+                "https://api.conductorio.com"
+            }
         config_url = CONFIG.get("url", CONFIG["base_url"]).split("//")[-1]
         project_url = string.join(config_url.split("-")[-3:], "-")
         if os.environ.get("LOCAL"):
@@ -711,6 +704,9 @@ class Backend:
 
 
 def file_md5(filepath):
+    '''
+    make an md5 sum of a file.
+    '''
     chunk_size = 2 ** 20
     md5 = hashlib.md5()
     with open(filepath, "rb") as fileobj:
@@ -724,6 +720,9 @@ def file_md5(filepath):
 
 
 def set_logging(level=None, log_dirpath=None):
+    '''
+    Set logging level and path.
+    '''
     log_filepath = None
     if log_dirpath:
         log_filepath = os.path.join(log_dirpath, "conductor_ul_log")
