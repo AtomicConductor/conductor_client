@@ -1,9 +1,18 @@
 import logging
 from functools import wraps
-from Qt import QtGui, QtCore, QtUiTools, QtWidgets
+import Qt
+from Qt import QtGui, QtCore, QtWidgets
 
+# There are inconsistencies between Maya's PySide2 and latest PySide2 causing
+# Qt.py to not be able to import correctly in Windows
+# https://github.com/mottosso/Qt.py/issues/149
+if Qt.__binding__ in ('PySide'):
+    from Qt import QtUiTools
+else:
+    from PySide2 import QtUiTools
 
 logger = logging.getLogger(__name__)
+
 
 class UiLoader(QtUiTools.QUiLoader):
     '''
