@@ -102,6 +102,9 @@ class Submit():
         self.preemptible = self.resolve_arg(args, 'preemptible', False)
         logger.debug("preemptible: %s", self.preemptible)
 
+        self.instance_type = self.resolve_arg(args, 'instance_type', "")
+        logger.debug("instance_type: %s" % self.instance_type)
+
         metadata = self.resolve_arg(args, 'metadata', {}, combine_config=True)
         self.metadata = self.cast_metadata(metadata, strict=False)
         logger.debug("metadata: %s", self.metadata)
@@ -294,12 +297,12 @@ class Submit():
         if not (self.upload_file or self.upload_paths):
             logger.warning("Submitted Job/tasks don't include any upload files")
 
-        if self.machine_flavor not in ["standard", "highmem", "highcpu"]:
-            raise BadArgumentError("Machine type %r is not one of %s" % (self.machine_flavor, ["highmem", "standard", "highcpu"]))
+        if not self.instance_type and self.machine_flavor not in ["standard", "highmem", "highcpu"]:
+            raise BadArgumentError("Machine type %s is not \"highmem\", \"standard\", or \"highcpu\"" % self.machine_flavor)
 
-        if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
+
+        if not self.instance_type and self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
-
 
 
     def send_job(self, upload_files, upload_size):
@@ -349,7 +352,8 @@ class Submit():
                                 'command':self.command,
                                 'tasks_data': self.tasks_data,
                                 'cores':self.cores,
-                                'machine_flavor':self.machine_flavor})
+                                'machine_flavor':self.machine_flavor,
+                                'instance_type':self.instance_type})
 
             if self.priority:
                 submit_dict['priority'] = self.priority
@@ -365,6 +369,7 @@ class Submit():
                 submit_dict['scout_frames'] = self.scout_frames
             if self.preemptible:
                 submit_dict['preemptible'] = self.preemptible
+
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):

@@ -516,7 +516,7 @@ class ConductorSubmitter(QtGui.QMainWindow):
         core count int.
         '''
 
-        item_idx = self.ui_instance_type_cmbx.findData({"cores": core_count, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
+        item_idx = self.ui_instance_type_cmbx.findData({"cores": 16, "flavor": "standard", "classification": "n1-standard-16", "description": "16 core, 60.0GB Mem"})
         if item_idx == -1:
             raise Exception("Could not find combobox entry for core count: %s!"
                             "This should never happen!" % core_count)
@@ -606,18 +606,18 @@ class ConductorSubmitter(QtGui.QMainWindow):
         '''
         conductor_args = {}
 
-        conductor_args["cores"] = self.getInstanceType()['cores']
+        # conductor_args["cores"] = self.getInstanceType()['cores']
         conductor_args["environment"] = self.getEnvironment()
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["chunk_size"] = self.getChunkSize()
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["preemptible"] = self.getPreemptibleCheckbox()
         conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
         conductor_args["scout_frames"] = self.getScoutFrames()
+        conductor_args["instance_type"] = self.getInstanceType()['classification']
         conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
 
         return conductor_args
