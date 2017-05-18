@@ -1,5 +1,0 @@
-#!/bin/bash
-#The purpose of this script is to force the caller to use our bundled
-#Python interpreter.
-SCRIPT_LOCATION=$( dirname "${BASH_SOURCE[0]}" )
-${SCRIPT_LOCATION}/../python/bin/python ${SCRIPT_LOCATION}/conductor_client "$@"
