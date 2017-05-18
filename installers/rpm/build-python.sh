@@ -14,4 +14,4 @@ yum install -y sqlite-devel \
 /root/src/configure --prefix=/root/python && make && make install
 curl -O "https://bootstrap.pypa.io/get-pip.py"
 /root/python/bin/python get-pip.py
-/root/python/bin/pip install pyaml requests urllib3
+/root/python/bin/pip install pyaml requests urllib3 Qt.py
