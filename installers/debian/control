@@ -1,5 +1,0 @@
-Package: conductor
-Architecture: all
-Maintainer: conductorio.com
-Priority: optional
-Description: Conductor cloud rendering client
