@@ -16,7 +16,14 @@ instance_types:
     - {cores: 64, flavor: standard, classification: n1-standard-64, description: "64 core, 240GB Mem"}
     - {cores: 64, flavor: highmem,  classification: n1-highmem-64, description: "64 core, 416GB Mem"}
     - {cores: 2, flavor: standard,  classification: Standard_D2_v2, description: "2 core, 7.0GB Mem"}
+    - {cores: 2, flavor: highmem,  classification: Standard_D11_v2, description: "2 core, 14.0GB Mem"}
+    - {cores: 4, flavor: standard,  classification: Standard_D3_v2, description: "4 core, 14.0GB Mem"}
+    - {cores: 4, flavor: highmem,  classification: Standard_D12_v2, description: "4 core, 28.0GB Mem"}
     - {cores: 8, flavor: standard,  classification: Standard_D4_v2, description: "8 core 28.0GB Mem"}
+    - {cores: 8, flavor: highmem,  classification: Standard_D13_v2, description: "8 core 56.0GB Mem"}
+    - {cores: 16, flavor: standard,  classification: Standard_D5_v2, description: "16 core 56.0GB Mem"}
+    - {cores: 16, flavor: highmem,  classification: Standard_D14_v2, description: "16 core 112.0GB Mem"}
+    - {cores: 20, flavor: highmem,  classification: Standard_D15_v2, description: "20 core 140.0GB Mem"}
 
 
  # A dictionary of maya node types and their corresponing attributes name(s) for
