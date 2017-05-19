@@ -355,7 +355,7 @@ class Submit():
 
             submit_dict.update({'frame_range':"x",
                                 'command':'upload only',
-                                'instance_type':'n1-standard-1'})
+                                'instance_type':self.instance_type})
         else:
 
             submit_dict.update({'frame_range':self.frames,
@@ -439,6 +439,12 @@ class Submit():
         upload_files = dict([(path, None) for path in upload_files])
 
         logger.debug("Upload files is %s" % upload_files)
+
+        if self.instance_type.startswith("n1"):
+            cloud_provider = "google"
+        else:
+            cloud_provider = "azure"
+
         # If opting to upload locally (i.e. from this machine) then run the uploader now
         # This will do all of the md5 hashing and uploading files to the conductor (if necesary).
         if self.local_upload:
@@ -448,7 +454,8 @@ class Submit():
                              "database_filepath":self.database_filepath,
                              "md5_caching": self.md5_caching}
             uploader_ = uploader.Uploader(uploader_args)
-            upload_error_message = uploader_.handle_upload_response(self.project, upload_files)
+            upload_error_message = uploader_.handle_upload_response(self.project, upload_files,
+                                                                    cloud_provider=cloud_provider)
             if upload_error_message:
                 raise Exception("Could not upload files:\n%s" % upload_error_message)
             # Get the resulting dictionary of the file's and their corresponding md5 hashes
