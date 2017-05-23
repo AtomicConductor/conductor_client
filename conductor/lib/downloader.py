@@ -1060,16 +1060,17 @@ class TouchWorker(threading.Thread):
 class HistoryWorker(multiprocessing.Process):
     '''
     A process that periodically print/logs the "history" of the last x files
-    that have been downloaded.
+    that have been downloaded/uploaded.
     '''
 
-    def __init__(self, run_state, results_queue, print_interval=10, history_max=100):
+    def __init__(self, run_state, results_queue,
+            print_interval=10, history_max=100, worker_type='download', column_names=None):
         '''
         run_state:    multiprocessing.Array object. Used by the parent calling
                       process to communicate when to shutdown/exit this Process.
 
         results_queue: multiprocessing.Queue object.  Contains an entry for each
-                       file that was handled by the downloader and what happened
+                       file that was handled by the worker and what happened
                        with it.
 
         print_interval: int/float. The frequency to print/log the history
@@ -1081,12 +1082,17 @@ class HistoryWorker(multiprocessing.Process):
         self._history_max = history_max
         self._print_interval = print_interval
         self._last_history = None
+        self._worker_type = worker_type
+        self._label = worker_type.upper()
+        self._column_names = column_names \
+            or ["Completed at", "Download ID", "Job", "Task",
+                "Size", "Action", "Duration", "Thread", "Filepath"]
         super(HistoryWorker, self).__init__()
 
     def run(self):
         '''
         Start and return a thread that is responsible for pinging the app for
-        Downloads to download (and populating the queue)
+        files to transfer (and populating the queue)
         '''
         self._run_state.value = Downloader.STATE_RUNNING
 
@@ -1121,7 +1127,7 @@ class HistoryWorker(multiprocessing.Process):
 
                 # Only print the history if it is different from before
                 if history_summary == self._last_history:
-                    LOGGER.info('##### DOWNLOAD HISTORY ##### [No changes]')
+                    LOGGER.info('##### %s HISTORY ##### [No changes]' % self._label)
                 else:
                     LOGGER.info("%s\n", history_summary)
                     self._last_history = history_summary
@@ -1137,10 +1143,10 @@ class HistoryWorker(multiprocessing.Process):
         for them.
 
         '''
-        title = " DOWNLOAD HISTORY %s " % (("(last %s files)" % self._history_max) if self._history_max else "")
-        column_names = ["Completed at", "Download ID", "Job", "Task", "Size", "Action", "Duration", "Thread", "Filepath"]
+        title = " %s HISTORY %s " % \
+            (self._label, ("(last %s files)" % self._history_max) if self._history_max else "")
         table = downloader2.HistoryTableStr(data=list(reversed(results_list)),
-                                            column_names=column_names,
+                                            column_names=self._column_names,
                                             title=title.center(100, "#"),
                                             footer="#"*180,
                                             upper_headers=True)
