@@ -23,7 +23,7 @@ from conductor.lib.downloader import HistoryWorker
 
 try:
     imp.find_module('conductor')
-except ImportError, error:
+except ImportError:  # , error:
     sys.path.append(
         os.path.dirname(
             os.path.dirname(
@@ -216,7 +216,6 @@ class Uploader(object):
         of this, we check which process is calling it, and only execute it
         if it's the main (parent) process.
         '''
-        print sig, frm
 
         # change the global
         global RUN_STATE
@@ -396,10 +395,10 @@ class UploaderWorker(multiprocessing.Process):
         """
         Put the upload into GCS
         """
-        print "starting upload...", self.current_upload['filepath']
+        # print "starting upload...", self.current_upload['filepath']
         self.touch()
         try:
-            result = Backend.put_file(
+            Backend.put_file(
                 self.fileobj,
                 self.current_upload["gcs_url"]
             )
@@ -421,7 +420,7 @@ class UploaderWorker(multiprocessing.Process):
         """
         Get the next upload
         """
-        print "fetching upload..."
+        # print "fetching upload..."
         try:
             uploads = Backend.next(
                 self.account,
@@ -429,10 +428,10 @@ class UploaderWorker(multiprocessing.Process):
                 project=self.project
             ) or []
         except BackendDown as err:
-            print err
+            # print err
             return
         except BackendError as err:
-            print err
+            # print err
             return
         else:
             if uploads:
@@ -443,7 +442,7 @@ class UploaderWorker(multiprocessing.Process):
         """
         Callback for uploads
         """
-        print "Upload Event: ", event
+        # print "Upload Event: ", event
         if event == "progress":
             self.handle_put_progress(filegen)
         if event == "success":
@@ -468,7 +467,9 @@ class UploaderWorker(multiprocessing.Process):
         """
         Callback for finish/success
         """
-        xferd = filegen.bytes_read if filegen else self.current_upload["bytes_transferred"]
+        xferd = filegen.bytes_read \
+            if filegen \
+            else self.current_upload["bytes_transferred"]
         self.touch()
         Backend.finish(
             self.current_upload,
@@ -478,13 +479,13 @@ class UploaderWorker(multiprocessing.Process):
         result = self._construct_result_dict(self.fileobj, "UL")
         self._results_queue.put_nowait(result)
         self.reset()
-        print "Done!"
+        # print "Done!"
 
     def handle_put_error(self, err, fileobj):
         """
         Callback for upload error
         """
-        print err
+        # print err
         # TODO: handle different errors accordingly
         if self.upload_attempts < 3:
             self.upload_attempts += 1
@@ -498,18 +499,7 @@ class UploaderWorker(multiprocessing.Process):
     def _construct_result_dict(self, filegen, action):
         '''
         Construct a "result" dictionary that contains information about how the
-        download was handled. Contains the following keys:
-            - "Id": The id of the file that was downloaded
-            - "Filepath": The filepath that the file was downloaded to.
-            - "Started at": The time that the download was started
-            - "Completed at": The time that the download finished
-            - "Duration": How long it took to download the file
-            - "Action": whether the file was downloaded or reused (bc it already existed)
-            - "Thread": The name of the thread(process) that downloaded the file
-            - "Download ID:  the id of the Download resource that the file is part of.
-            - "Job:  the job id. str. e.g. "02302"
-            - "Task: the task id. str. e.g. "002"
-            - "Size: int. The size of the file (in bytes).
+        download was handled.
         '''
         time_ended = time.time()
         result = {}
@@ -549,7 +539,7 @@ class UploaderWorker(multiprocessing.Process):
         """
         Call at the end of shutdown
         """
-        print "process shutdown complete"
+        # print "process shutdown complete"
 
 
 class UploaderMissingFile(Exception):
@@ -715,7 +705,6 @@ class Backend:
         try:
             return Backend.put(path, payload, headers=cls.headers)
         except requests.HTTPError as err:
-            print "FAIL", err
             if err.response.status_code == 410:
                 LOGGER.warning(
                     "Cannot fail file %s.  File not active (410)",
@@ -745,7 +734,7 @@ class Backend:
         Return a list of items
         '''
         url = cls.make_url(path)
-        print "backend verb=GET url=%s" % (url)
+        # print "backend verb=GET url=%s" % (url)
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
         return response.json()
@@ -757,7 +746,7 @@ class Backend:
         Call requests put
         """
         url = cls.make_url(path)
-        print "backend verb=PUT url=%s data=%s" % (url, data)
+        # print "backend verb=PUT url=%s data=%s" % (url, data)
         response = requests.put(url, data=data, headers=headers)
         response.raise_for_status()
         return response.json()
@@ -769,7 +758,7 @@ class Backend:
         Call requests put
         """
         url = cls.make_url(path)
-        print "backend verb=POST url=%s data=%s" % (url, data)
+        # print "backend verb=POST url=%s data=%s" % (url, data)
         response = requests.post(url, data=data, headers=headers)
         response.raise_for_status()
         return response.json()
