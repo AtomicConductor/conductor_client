@@ -1537,7 +1537,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def _jobRemoveSelectedItems(self):
         for item in self.ui_job_software_trwgt.selectedItems():
-            index = self.ui_job_software_trwgt.indexOfTopLevelItem(item)
+            # indexOfTopLevelItem() is not available in PySide2 2.0.0~alpha0
+            # which is the build provided by Maya 2017
+            # just mimicked functionality of function see qtreewidget.cpp
+            root = self.ui_job_software_trwgt.invisibleRootItem()
+            index = root.indexOfChild(item)
             self.ui_job_software_trwgt.takeTopLevelItem(index)
         self.saveJobPackagesToPrefs()
 
