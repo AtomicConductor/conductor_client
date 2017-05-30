@@ -359,7 +359,7 @@ class UploaderWorker(multiprocessing.Process):
         expected_filesize = self.current_upload.get("filesize")
         origingal_md5 = self.current_upload.get("md5")
         expected_md5 = self.md5_for_current_upload()
-        if not expected_md5:
+        if expected_md5 == "exists":
             return self.handle_put_success(None)
         local_filesize = os.path.getsize(filepath)
         if local_filesize != expected_filesize:
