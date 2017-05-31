@@ -1,20 +1,12 @@
 import logging
-from functools import wraps
 import Qt
+from functools import wraps
 from Qt import QtGui, QtCore, QtWidgets
-
-# There are inconsistencies between Maya's PySide2 and latest PySide2 causing
-# Qt.py to not be able to import correctly in Windows
-# https://github.com/mottosso/Qt.py/issues/149
-if Qt.__binding__ in ('PySide'):
-    from Qt import QtUiTools
-else:
-    from PySide2 import QtUiTools
 
 logger = logging.getLogger(__name__)
 
 
-class UiLoader(QtUiTools.QUiLoader):
+class UiLoader(Qt._QtUiTools.QUiLoader):
     '''
     #TODO: Re-write docs/comments for this class
 
@@ -34,7 +26,7 @@ class UiLoader(QtUiTools.QUiLoader):
             return self.baseinstance
         else:
             # create a new widget for child widgets
-            widget = QtUiTools.QUiLoader.createWidget(self, class_name, parent, name)
+            widget = Qt._QtUiTools.QUiLoader.createWidget(self, class_name, parent, name)
             if self.baseinstance:
                 # set an attribute for the new child widget on the base
                 # instance, just like uic.loadUi does.
