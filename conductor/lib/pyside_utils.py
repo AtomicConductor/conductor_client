@@ -66,7 +66,6 @@ def wait_cursor(func):
     return wrapper
 
 
-
 def wait_message(title, message):
     """
     Wraps the decorated method so that while it runs, a dialog box will
@@ -87,7 +86,8 @@ def wait_message(title, message):
             dialog.setLayout(layout)
             dialog.setWindowTitle(title)
             dialog.show()
-            # TODO: This stupid for-loop with a print statement is hack to force a redraw/update to the dialog. Otherwise it's blank. Tried a million things.  This is the only one that works..most of the time.
+            # TODO: This stupid for-loop with a print statement is hack to force a redraw/update to the dialog. Otherwise it's blank.
+            # Tried a million things.  This is the only one that works..most of the time.
             for i in range(5):
                 print "",
                 QtWidgets.QApplication.processEvents()
@@ -97,8 +97,6 @@ def wait_message(title, message):
                 dialog.done(0)
         return wrapper
     return decorator
-
-
 
 
 def launch_message_box(title, message, is_richtext=False, parent=None):
@@ -124,7 +122,7 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
     if is_richtext:
         text_label.setTextInteractionFlags(text_label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
         text_label.setTextFormat(QtCore.Qt.RichText)
-        text_label.setOpenExternalLinks(True);
+        text_label.setOpenExternalLinks(True)
 
     return dialog.exec_()
 
@@ -174,10 +172,9 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
     dialog.label.setAlignment(QtCore.Qt.AlignCenter)
     dialog.label.setTextInteractionFlags(dialog.label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
     dialog.label.setTextFormat(QtCore.Qt.RichText)
-    dialog.label.setOpenExternalLinks(True);
+    dialog.label.setOpenExternalLinks(True)
     dialog.label.setText(message)
     dialog.verticalLayout.addWidget(dialog.label)
-
 
     dialog.widget = QtWidgets.QWidget(dialog)
     dialog.horizontalLayout = QtWidgets.QHBoxLayout(dialog.widget)
@@ -211,7 +208,6 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
     yes = dialog.exec_()
     dont_notify_again = dialog.checkBox.isChecked()
     return bool(yes), dont_notify_again
-
 
 
 def get_widgets_by_property(widget, property_name, match_value=False, property_value=None):
@@ -249,18 +245,13 @@ class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
         self.unchecked_icon = QtGui.QIcon(self.icon_filepath_unchecked)
         self.initializeUi()
 
-
-
     def initializeUi(self):
         self.setCheckboxStyleSheet()
-
 
     def contextMenuEvent(self, event):
         selected_item = self.itemAt(event.pos())
         menu = self._make_context_menu(selected_item)
         menu.exec_(event.globalPos())
-
-
 
     def _make_context_menu(self, selected_item):
         menu = QtWidgets.QMenu()
@@ -289,16 +280,13 @@ class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
 
         return menu
 
-
-
     def _check_all(self, check=True):
         '''
         Check or uncheck all of the checkboxes
         '''
 
-        for item in [self.topLevelItem(idx) for idx  in range(self.topLevelItemCount())]:
+        for item in [self.topLevelItem(idx) for idx in range(self.topLevelItemCount())]:
             item.setCheckState(self.checkbox_column_idx, get_qt_check_flag(check))
-
 
     def _check_all_selected(self, check=True):
         '''
@@ -307,7 +295,6 @@ class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
 
         for item in self.selectedItems():
             item.setCheckState(self.checkbox_column_idx, get_qt_check_flag(check))
-
 
     def addTopLevelCheckboxItem(self, tree_item, is_checked=False):
         '''
@@ -324,21 +311,17 @@ class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
         tree_item.setCheckState(self.checkbox_column_idx, checked_state)
         self.addTopLevelItem(tree_item)
 
-
     def setCheckboxStyleSheet(self):
         indicator_filepaths = {"QTreeWidget:indicator:unchecked": self.icon_filepath_unchecked,
-                                "QTreeWidget:indicator:checked": self.icon_filepath_checked,
-                                "QTreeWidget:indicator:checked:disabled": self.icon_filepath_checked_disabled,
-                                "QTreeWidget:indicator:unchecked:disabled": self.icon_filepath_unchecked_disabled}
+                               "QTreeWidget:indicator:checked": self.icon_filepath_checked,
+                               "QTreeWidget:indicator:checked:disabled": self.icon_filepath_checked_disabled,
+                               "QTreeWidget:indicator:unchecked:disabled": self.icon_filepath_unchecked_disabled}
         stylesheet = ""
 
         for indicator, filepath in indicator_filepaths.iteritems():
             stylesheet += "%s { image: url(%s);}" % (indicator, filepath.replace("\\", "/"))  # The filepaths must always use forward slashes (regardless of platform)
 
         self.setStyleSheet(stylesheet)
-
-
-
 
 
 def get_qt_check_flag(is_checked):
@@ -353,6 +336,7 @@ def get_top_level_items(tree_widget):
     '''
 
     return [tree_widget.topLevelItem(idx) for idx in range(tree_widget.topLevelItemCount())]
+
 
 def get_all_tree_items(tree_widget):
     '''
@@ -421,7 +405,6 @@ class WidgetGettrSettr(object):
                 QtWidgets.QSpinBox: cls.setSpinboxValue,
                 QtWidgets.QRadioButton: cls.setRadioButtonValue}
 
-
     @classmethod
     def getWidgetValue(cls, widget):
         '''
@@ -442,7 +425,6 @@ class WidgetGettrSettr(object):
         logger.debug("Querying value from widget: %s", widget.objectName())
         # Call the the gettr function
         return getter_func(widget)
-
 
     @classmethod
     def setWidgetValue(cls, widget, widget_value):
@@ -466,7 +448,6 @@ class WidgetGettrSettr(object):
         logger.debug("Applying pref to widget %s: %s", widget.objectName(), widget_value)
         # Call the the settr function
         return setter_func(widget, widget_value)
-
 
     @classmethod
     def getLineeditValue(cls, lineedit):
@@ -497,11 +478,11 @@ class WidgetGettrSettr(object):
     def setComboBoxValue(cls, combobox, value):
         '''
         Define setter function for QComobobox widgets
-        
+
         Find the given text value in the combobox items.  If no items contain
         the text, the index will be set to -1 (blank).  This makes sense, as
         it will tell the user that their preference value is no longer valid, and
-        to select something different. 
+        to select something different.
         '''
         # Ensure that value is cast to an int first
         entry_idx = combobox.findText(value)
@@ -555,7 +536,6 @@ class WidgetGettrSettr(object):
         return spinbox.value()
 
 
-
 class UserPrefs(object):
     '''
     Base level helper-class to faciliate saving/loading user preferences to/from
@@ -580,8 +560,7 @@ class UserPrefs(object):
         self.application_name = application_name
         self.qsettings = QtCore.QSettings(company_name, application_name)
 
-
-    #### GETTERS #####
+    # GETTERS #####
 
     def getSettingsFilepath(self):
         '''
@@ -681,7 +660,6 @@ class UserPrefs(object):
         if group:
             self.qsettings.endGroup()
 
-
     @classmethod
     def castToBool(cls, value):
         '''
@@ -692,7 +670,6 @@ class UserPrefs(object):
         elif value == "true":
             value = True
         return value
-
 
     @classmethod
     def encodeGroupName(cls, group_name):
@@ -721,7 +698,6 @@ class UserPrefs(object):
         '''
         self.qsettings.clear()
 
-
     def clearGroup(self, group):
         '''
         Clear all keys/values from given group
@@ -730,7 +706,6 @@ class UserPrefs(object):
         self.qsettings.beginGroup(group)
         self.qsettings.remove("")
         self.qsettings.endGroup()
-
 
 
 class FilePrefs(UserPrefs):
@@ -744,7 +719,7 @@ class FilePrefs(UserPrefs):
     the moment.  Or a user might want preferences to be applied regardless of
     what file is opened at the moment.
     '''
-    ### PREFERENCE GROUPS (namespaces) ####
+    # PREFERENCE GROUPS (namespaces) ####
 
     # Group for storeing global preferences
     GROUP_GLOBAL_PREFS = "global/prefs"
@@ -752,13 +727,11 @@ class FilePrefs(UserPrefs):
     # Group for storeing file-specific preferences
     GROUP_FILE_PREFS = "file/prefs"
 
-
-
     ##########################
     # ALL PREFS METHODS
     ##########################
 
-    #### GETTERS #####
+    # GETTERS #####
 
     def getPref(self, pref_name, filepath=None):
         '''
@@ -774,7 +747,6 @@ class FilePrefs(UserPrefs):
             return self.getFilePref(filepath, pref_name)
         return self.getGlobalPref(pref_name)
 
-
     def getPrefs(self, filepath=None):
         '''
         High level convenence function that will return a dictionary of either
@@ -789,8 +761,7 @@ class FilePrefs(UserPrefs):
 
         return self.getGlobalPrefs()
 
-
-    #### SETTERS #####
+    # SETTERS #####
 
     def setPref(self, pref_name, value, filepath=None):
         '''
@@ -809,7 +780,6 @@ class FilePrefs(UserPrefs):
             return self.setFilePref(filepath, pref_name, value)
         return self.setGlobalPref(pref_name, value)
 
-
     def setPrefs(self, values, filepath=None):
         '''
         High level convenence function that will set the given preference values
@@ -827,14 +797,11 @@ class FilePrefs(UserPrefs):
             return self.setFilePrefs(filepath, values)
         return self.setGlobalPrefs(values)
 
-
-
-
     ##########################
     # GLOBAL PREFS METHODS
     ##########################
 
-    #### GETTERS #####
+    # GETTERS #####
 
     def getGlobalPref(self, pref_name):
         '''
@@ -850,8 +817,7 @@ class FilePrefs(UserPrefs):
         '''
         return self.getValues(self.GROUP_GLOBAL_PREFS)
 
-
-    #### SETTERS #####
+    # SETTERS #####
 
     def setGlobalPref(self, pref_name, value):
         '''
@@ -869,13 +835,11 @@ class FilePrefs(UserPrefs):
         '''
         self.setValues(values, self.GROUP_GLOBAL_PREFS)
 
-
     ##########################
     # FILE PREFS
     ##########################
 
-
-    #### GETTERS #####
+    # GETTERS #####
 
     def getFilePref(self, filepath, pref_name):
         '''
@@ -891,8 +855,7 @@ class FilePrefs(UserPrefs):
         group = self.GROUP_FILE_PREFS + "/" + self.encodeGroupName(filepath)
         return self.getValues(group)
 
-
-    #### SETTERS #####
+    # SETTERS #####
 
     def setFilePref(self, filepath, pref_name, value):
         '''
@@ -913,9 +876,7 @@ class FilePrefs(UserPrefs):
         group = self.GROUP_FILE_PREFS + "/" + self.encodeGroupName(filepath)
         self.setValues(values, group=group)
 
-
-
-    #### CLEAR PREFS ####
+    # CLEAR PREFS ####
 
     # Clear GLOBAL prefs
     def clearGlobalPrefs(self):
@@ -931,7 +892,6 @@ class FilePrefs(UserPrefs):
         '''
         group = self.GROUP_FILE_PREFS + "/" + self.encodeGroupName(filepath)
         self.clearGroup(group)
-
 
 
 class UiFilePrefs(FilePrefs):
@@ -952,8 +912,7 @@ class UiFilePrefs(FilePrefs):
 
     '''
 
-
-    ### PREFERENCE GROUPS/NAMESPACES ####
+    # PREFERENCE GROUPS/NAMESPACES ####
 
     # Group for storing global widget preferences
     GROUP_GLOBAL_WIDGETS = "global/widgets"
@@ -963,7 +922,6 @@ class UiFilePrefs(FilePrefs):
 
     # a mapping class for reading/writing to QWidget object
     widget_mapper = WidgetGettrSettr
-
 
     def __init__(self, company_name, application_name, file_widgets=(), global_widgets=()):
         '''
@@ -982,8 +940,6 @@ class UiFilePrefs(FilePrefs):
         self._file_widgets = file_widgets
         self._global_widgets = global_widgets
         super(UiFilePrefs, self).__init__(company_name, application_name)
-
-
 
     ##########################
     # HIGH LEVEL METHODS
@@ -1011,7 +967,6 @@ class UiFilePrefs(FilePrefs):
 
         return super(UiFilePrefs, self).getPref(pref_name, filepath=filepath)
 
-
     def getPrefs(self, filepath=None, is_widget=False):
         '''
         High level convenence function that will return a dictionary of either
@@ -1035,9 +990,7 @@ class UiFilePrefs(FilePrefs):
 
         return super(UiFilePrefs, self).getPrefs(filepath=filepath)
 
-
-
-    #### SETTERS #####
+    # SETTERS #####
 
     def setPref(self, pref_name, value, filepath=None, is_widget=False):
         '''
@@ -1082,8 +1035,7 @@ class UiFilePrefs(FilePrefs):
         # Otherwise save the pref normally (using the parent method)
         return super(UiFilePrefs, self).setPrefs(values, filepath=filepath)
 
-
-    #### SAVE WIDGET PREFERENCES
+    # SAVE WIDGET PREFERENCES
 
     def saveFileWidgetPrefs(self, filepath):
         '''
@@ -1116,9 +1068,7 @@ class UiFilePrefs(FilePrefs):
         else:
             self.setGlobalWidgetPrefs(widget_prefs)
 
-
-
-    ##### LOAD WIDGET PREFERENCES
+    # LOAD WIDGET PREFERENCES
 
     def loadFileWidgetPrefs(self, filepath):
         '''
@@ -1131,7 +1081,7 @@ class UiFilePrefs(FilePrefs):
 
         logger.debug("Loading User Widget prefs for file: %s", filepath)
         for widget_name, widget_value in self.getFileWidgetPrefs(filepath).iteritems():
-            if widget_value != None:
+            if widget_value is not None:
                 widget = self.getWidgetByName(widget_name)
                 self.widget_mapper.setWidgetValue(widget, widget_value)
 
@@ -1141,18 +1091,15 @@ class UiFilePrefs(FilePrefs):
         '''
         logger.debug("Loading User Global Widget prefs")
         for widget_name, widget_value in self.getGlobalWidgetPrefs().iteritems():
-            if widget_value != None:
+            if widget_value is not None:
                 widget = self.getWidgetByName(widget_name)
                 self.widget_mapper.setWidgetValue(widget, widget_value)
-
-
 
     ##########################
     # GLOBAL PREFS
     ##########################
 
-    #### GETTERS #####
-
+    # GETTERS #####
 
     def getGlobalWidgetPref(self, widget_name):
         '''
@@ -1168,8 +1115,7 @@ class UiFilePrefs(FilePrefs):
         '''
         return self.getValues(self.GROUP_GLOBAL_WIDGETS)
 
-
-    #### SETTERS #####
+    # SETTERS #####
 
     def setGlobalWidgetPref(self, widget_name, value):
         '''
@@ -1180,7 +1126,6 @@ class UiFilePrefs(FilePrefs):
         '''
         self.setValue(widget_name, value, group=self.GROUP_GLOBAL_WIDGETS)
 
-
     def setGlobalWidgetPrefs(self, widget_values):
         '''
         Record the given widget values to the global preferences
@@ -1189,14 +1134,11 @@ class UiFilePrefs(FilePrefs):
         '''
         self.setValues(widget_values, self.GROUP_GLOBAL_WIDGETS)
 
-
-
     ##########################
     # FILE PREFS
     ##########################
 
-
-    #### GETTERS #####
+    # GETTERS #####
 
     def getFileWidgetPref(self, filepath, widget_name):
         '''
@@ -1218,9 +1160,7 @@ class UiFilePrefs(FilePrefs):
         group = self.GROUP_FILE_WIDGETS + "/" + self.encodeGroupName(filepath)
         return self.getValues(group)
 
-
-
-    #### SETTERS #####
+    # SETTERS #####
 
     def setFileWidgetPref(self, filepath, widget_name, value):
         '''
@@ -1233,7 +1173,6 @@ class UiFilePrefs(FilePrefs):
         group = self.GROUP_FILE_WIDGETS + "/" + self.encodeGroupName(filepath)
         self.setValue(widget_name, value, group)
 
-
     def setFileWidgetPrefs(self, filepath, widget_values):
         '''
         Record the given widget values for the given filepath
@@ -1242,7 +1181,6 @@ class UiFilePrefs(FilePrefs):
         '''
         group = self.GROUP_FILE_WIDGETS + "/" + self.encodeGroupName(filepath)
         self.setValues(widget_values, group)
-
 
     def getWidgetByName(self, widget_name):
         '''
@@ -1256,9 +1194,7 @@ class UiFilePrefs(FilePrefs):
                 return widget
         raise Exception("Expected widget not found: %s" % widget_name)
 
-
-
-    #### CLEAR PREFS ####
+    # CLEAR PREFS ####
 
     # Clear GLOBAL prefs
     def clearGlobalPrefs(self):
