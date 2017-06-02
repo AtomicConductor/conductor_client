@@ -9,7 +9,6 @@ import imp
 import logging
 import multiprocessing
 import os
-import string
 import hashlib
 import base64
 
@@ -772,20 +771,7 @@ class Backend:
             config_url = CONFIG.get("url", CONFIG["base_url"])
             return "%s/api/oauth_jwt?scope=user" % config_url
 
-        ip_map = {
-            "fiery-celerity-88718.appspot.com":
-                "https://beta-api.conductorio.com",
-            "eloquent-vector-104019.appspot.com":
-                "https://dev-api.conductorio.com",
-            "atomic-light-001.appspot.com":
-                "https://api.conductorio.com"
-            }
-        config_url = CONFIG.get("url", CONFIG["base_url"]).split("//")[-1]
-        project_url = string.join(config_url.split("-")[-3:], "-")
-        if os.environ.get("LOCAL"):
-            url_base = "http://localhost:8081"
-        else:
-            url_base = ip_map[project_url]
+        url_base = CONFIG.get("api_url")
         url = "%s/api/v1/fileio/%s" % (url_base, path)
         return url
 
