@@ -264,6 +264,16 @@ def parse_args():
                                        "everyday, while storing the last 7 days "
                                        "of logs"))
 
+    uploader_parser.add_argument("--thread_count",
+                                   type=int,
+                                   default=conductor.CONFIG.get("thread_count"),
+                                   help=('The number of threads that should download simultaneously'))
+
+    uploader_parser.add_argument("--alt",
+                                   help=('Run an alternative version of the downloader'),
+                                   action='store_true')
+
+
     uploader_parser.set_defaults(func=run_uploader)
 
 

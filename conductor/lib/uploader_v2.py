@@ -11,6 +11,7 @@ import multiprocessing
 import os
 import hashlib
 import base64
+import json
 
 import requests
 
@@ -336,10 +337,13 @@ class UploaderWorker(multiprocessing.Process):
         except UploaderMissingFile as err:
             LOGGER.warning("local file missing: %s",
                            self.current_upload["filepath"])
-            Backend.fail(
-                self.current_upload,
-                bytes_downloaded=0
-            )
+            if not self.current_upload.get("id"):
+                Backend.fail_unsigned(self.current_upload)
+            else:
+                Backend.fail(
+                    self.current_upload,
+                    bytes_downloaded=0
+                )
             return
 
         except UploaderFileModified as err:
@@ -359,16 +363,9 @@ class UploaderWorker(multiprocessing.Process):
         origingal_md5 = self.current_upload.get("md5")
         expected_md5 = self.md5_for_current_upload()
         if expected_md5 == "exists":
-            return self.handle_put_success(None)
-        local_filesize = os.path.getsize(filepath)
-        if local_filesize != expected_filesize:
-            # error
-            raise UploaderFileModified(
-                "different filesize - local: %s expected: %s" %
-                (local_filesize, expected_filesize)
-                )
+            return
 
-        if not origingal_md5:
+        if origingal_md5:
             local_md5 = file_md5(filepath)
         else:
             local_md5 = self.current_upload["md5"]
@@ -710,6 +707,29 @@ class Backend:
                     upload["id"]
                 )
                 return
+            return
+        raise
+
+    @classmethod
+    def fail_unsigned(cls, upload):
+        """
+        Tell backend about upload failure
+        """
+        path = "uploader/fail_unsigned/%s" % upload["ulid"]
+        payload = {
+            "upload_file": json.dumps(upload),
+            "location": upload.get("location")
+        }
+        try:
+            return Backend.put(path, payload, headers=cls.headers)
+        except requests.HTTPError as err:
+            if err.response.status_code == 410:
+                LOGGER.warning(
+                    "Cannot fail file %s.  File not active (410)",
+                    upload["id"]
+                )
+                return
+            return
         raise
 
     @classmethod
