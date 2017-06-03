@@ -17,6 +17,7 @@ import string
 from pprint import pformat
 import Queue
 import requests
+from simplejson import JSONDecodeError
 
 from conductor import CONFIG
 from conductor.lib import common, loggeria, downloader2
@@ -1242,7 +1243,10 @@ class Backend:
         headers.update({"authorization": "Token %s" % token})
         result = requests.get(url, headers=headers)
         result.raise_for_status()
-        return result.json()["access_token"]
+        try:
+            return result.json()["access_token"]
+        except JSONDecodeError, e:
+            raise e
 
     @classmethod
     @DecAuthorize()
@@ -1280,27 +1284,7 @@ class Backend:
             config_url = CONFIG.get("url", CONFIG["base_url"])
             return "%s/api/oauth_jwt?scope=user" % config_url
 
-        ip_map = {
-            "fiery-celerity-88718.appspot.com": "https://beta-api.conductorio.com",
-            "eloquent-vector-104019.appspot.com": "https://dev-api.conductorio.com",
-            "atomic-light-001.appspot.com": "https://api.conductorio.com"
-        }
-        config_url = CONFIG.get("url", CONFIG["base_url"]).split("//")[-1]
-        project_url = string.join(config_url.split("-")[-3:], "-")
-
-        url_base = ip_map.get(project_url)
-        if not url_base:
-            if "dev-" in project_url:
-                url_base = "https://dev-api.conductorio.com"
-            elif "qa-" in project_url:
-                url_base = "https://qa-api.conductorio.com"
-            elif "beta-" in project_url:
-                url_base = "https://beta-api.conductorio.com"
-            else:
-                url_base = "https://api.conductorio.com"
-
-        if os.environ.get("CONDUCTOR_LOCAL"):
-            url_base = "http://localhost:8081"
+        url_base = CONFIG.get("api_url")
         url = "%s/api/v1/fileio/%s" % (url_base, path)
         return url
 
