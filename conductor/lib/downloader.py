@@ -13,11 +13,9 @@ import imp
 import logging
 import multiprocessing
 import os
-import string
 from pprint import pformat
 import Queue
 import requests
-from simplejson import JSONDecodeError
 
 from conductor import CONFIG
 from conductor.lib import common, loggeria, downloader2
@@ -1245,8 +1243,8 @@ class Backend:
         result.raise_for_status()
         try:
             return result.json()["access_token"]
-        except JSONDecodeError, e:
-            raise e
+        except:
+            raise Exception("unauthorized request to ae")
 
     @classmethod
     @DecAuthorize()
