@@ -3,10 +3,18 @@ import Qt
 from functools import wraps
 from Qt import QtGui, QtCore, QtWidgets
 
+try:
+    from Qt import QtUiTools
+except ImportError as e:
+    if Qt.__binding__ in ('Pyside'):
+        from PySide import QtUiTools
+    else:
+        from PySide2 import QtUiTools
+
 logger = logging.getLogger(__name__)
 
 
-class UiLoader(Qt._QtUiTools.QUiLoader):
+class UiLoader(QtUiTools.QUiLoader):
     '''
     #TODO: Re-write docs/comments for this class
 
@@ -26,7 +34,7 @@ class UiLoader(Qt._QtUiTools.QUiLoader):
             return self.baseinstance
         else:
             # create a new widget for child widgets
-            widget = Qt._QtUiTools.QUiLoader.createWidget(self, class_name, parent, name)
+            widget = QtUiTools.QUiLoader.createWidget(self, class_name, parent, name)
             if self.baseinstance:
                 # set an attribute for the new child widget on the base
                 # instance, just like uic.loadUi does.
