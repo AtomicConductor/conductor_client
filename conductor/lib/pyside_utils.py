@@ -6,7 +6,7 @@ from Qt import QtGui, QtCore, QtWidgets
 try:
     from Qt import QtUiTools
 except ImportError as e:
-    if Qt.__binding__ in ('Pyside'):
+    if Qt.__binding__ in ('PySide'):
         from PySide import QtUiTools
     else:
         from PySide2 import QtUiTools
