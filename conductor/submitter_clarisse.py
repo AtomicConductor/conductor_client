@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from PyQt4 import Qt, QtGui, QtCore, uic
+from Qt import QtCore, QtGui, QtWidgets, uic
 import imp
 from functools import wraps
 import traceback
@@ -56,7 +56,7 @@ class ClarisseConductorSubmitter(object):
         '''
         Launch the UI
         '''
-        self.app = QtGui.QApplication(["Clarisse"])
+        self.app = QtWidgets.QApplication(["Clarisse"])
         self.ui = uic.loadUi(os.path.join(RESOURCES_DIRPATH, 'clarisse.ui'))
 
         self.initializeUi()
@@ -106,7 +106,7 @@ class ClarisseConductorSubmitter(object):
         render_images = clarisse_utils.get_clarisse_images()
 
         for render_image in render_images:
-            tree_item = QtGui.QTreeWidgetItem([render_image.__str__()])
+            tree_item = QtWidgets.QTreeWidgetItem([render_image.__str__()])
 
             tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
             self.ui.ui_render_images_trwgt.addTopLevelItem(tree_item)
@@ -121,7 +121,7 @@ class ClarisseConductorSubmitter(object):
         The submit button has been clicked. Do the stuff
         """
         #  Display a waiting cursor and message
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         # dialog = self.wait_message("Conductor", "Submitting Conductor Job...")
 
         #  Run pre-submission steps
@@ -135,8 +135,8 @@ class ClarisseConductorSubmitter(object):
 
         #  Close waiting dialog and return cursor to normal state
         # dialog.done(0)
-        QtGui.QApplication.restoreOverrideCursor()
-        QtGui.QApplication.processEvents()
+        QtWidgets.QApplication.restoreOverrideCursor()
+        QtWidgets.QApplication.processEvents()
 
         #  Launch a little success window (hopefully)
         self.launch_result_dialog(response_code, response)
@@ -146,9 +146,9 @@ class ClarisseConductorSubmitter(object):
         """
         A dialog box will be displayed with the given message and title
         """
-        dialog = QtGui.QDialog(parent=self.ui)
-        layout = QtGui.QHBoxLayout()
-        dialog.label = QtGui.QLabel()
+        dialog = QtWidgets.QDialog(parent=self.ui)
+        layout = QtWidgets.QHBoxLayout()
+        dialog.label = QtWidgets.QLabel()
         dialog.label.setText(message)
         dialog.label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
         layout.addWidget(dialog.label)
@@ -158,7 +158,7 @@ class ClarisseConductorSubmitter(object):
         # TODO: This stupid for-loop with a print statement is hack to force a redraw/update to the dialog. Otherwise it's blank. Tried a million things.  This is the only one that works..most of the time.
         for i in range(5):
             print "",
-            QtGui.qApp.processEvents()
+            QtWidgets.QApplication.processEvents()
         return dialog
 
 
@@ -279,7 +279,7 @@ class ClarisseConductorSubmitter(object):
             upload_paths: list of str?
             usr: str
         '''
-        instance_type = self.ui.ui_instance_type_cmbx.itemData(self.ui.ui_instance_type_cmbx.currentIndex()).toPyObject()
+        instance_type = self.ui.ui_instance_type_cmbx.itemData(self.ui.ui_instance_type_cmbx.currentIndex())
         conductor_args = {}
         conductor_args["cmd"] = self.generateConductorCmd(data)
         conductor_args["cores"] = str(instance_type['cores'])
@@ -398,7 +398,7 @@ class ClarisseConductorSubmitter(object):
         """
 
         # create a QMessageBox
-        dialog = QtGui.QMessageBox()
+        dialog = QtWidgets.QMessageBox()
 
         # Set the window title to the given title string
         dialog.setWindowTitle(str(title))
@@ -407,7 +407,7 @@ class ClarisseConductorSubmitter(object):
         dialog.setText(str(message))
 
         # Set the text to be selectable by a mouse
-        text_label = dialog.findChild(QtGui.QLabel, "qt_msgbox_label")
+        text_label = dialog.findChild(QtWidgets.QLabel, "qt_msgbox_label")
         text_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
         if is_richtext:
             text_label.setTextInteractionFlags(text_label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
@@ -423,7 +423,7 @@ class ClarisseConductorSubmitter(object):
         """
 
         # create a QErrorMessage
-        dialog = QtGui.QErrorMessage(parent=parent)
+        dialog = QtWidgets.QErrorMessage(parent=parent)
 
         # Set the window title to the given title string
         dialog.setWindowTitle(str(title))
@@ -433,10 +433,10 @@ class ClarisseConductorSubmitter(object):
         text_document.setPlainText(str(message))
 
         # find the icon (label) and hide it (it takes up too much space)
-        label = dialog.findChild(QtGui.QLabel)
+        label = dialog.findChild(QtWidgets.QLabel)
         label.hide()
 
         # find the checkbox and hide it (it serves no purpose for us)
-        checkbox = dialog.findChild(QtGui.QCheckBox)
+        checkbox = dialog.findChild(QtWidgets.QCheckBox)
         checkbox.hide()
         return dialog.exec_()
