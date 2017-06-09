@@ -423,7 +423,7 @@ def run_downloader(args):
             raise argparse.ArgumentTypeError('Must supply a job_id with task_id.')
             return
 
-    return downloader2.run_downloader(args_dict)
+    return downloader.run_downloader(args_dict)
 
 
 if __name__ == '__main__':
