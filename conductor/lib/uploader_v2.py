@@ -334,14 +334,14 @@ class UploaderWorker(multiprocessing.Process):
             LOGGER.warning("local file missing: %s",
                            self.current_upload["filepath"])
             if not self.current_upload.get("id"):
-                Backend.fail_unsigned(self.current_upload)
+                Backend.fail_unsigned(self.current_upload, location=self.location)
             else:
-                Backend.fail(self.current_upload, bytes_downloaded=0)
+                Backend.fail(self.current_upload, bytes_downloaded=0, location=self.location)
             return
 
         except UploaderFileModified as err:
             LOGGER.warning("local file has changed: %s", err)
-            Backend.fail(self.current_upload, bytes_downloaded=0)
+            Backend.fail(self.current_upload, bytes_downloaded=0, location=self.location)
             return
 
     def maybe_upload(self):
@@ -372,7 +372,7 @@ class UploaderWorker(multiprocessing.Process):
         if md5:
             return md5
         self.current_upload["md5"] = file_md5(self.current_upload["filepath"])
-        self.current_upload = Backend.sign(self.current_upload)
+        self.current_upload = Backend.sign(self.current_upload, location=self.location)
         return self.current_upload["md5"]
 
     def put_upload(self):
@@ -436,7 +436,7 @@ class UploaderWorker(multiprocessing.Process):
         if self.maybe_touch():
             self.touch()
             Backend.touch(
-                self.current_upload, bytes_downloaded=filegen.bytes_read)
+                self.current_upload, bytes_downloaded=filegen.bytes_read, location=self.location)
         else:
             return
 
@@ -448,7 +448,7 @@ class UploaderWorker(multiprocessing.Process):
             if filegen \
             else self.current_upload["bytes_transferred"]
         self.touch()
-        Backend.finish(self.current_upload, bytes_downloaded=xferd)
+        Backend.finish(self.current_upload, bytes_downloaded=xferd, location=self.location)
 
         result = self._construct_result_dict(self.fileobj, "UL")
         self._results_queue.put_nowait(result)
@@ -606,12 +606,16 @@ class Backend:
             return resp
 
     @classmethod
-    def sign(cls, upload):
+    def sign(cls, upload, location=None):
         """
         Sign an upload payload
         """
         path = "uploader/sign"
-        return Backend.post(path, upload, headers=cls.headers)
+        kwargs = {
+            "upload_file": upload,
+            "location": location
+        }
+        return Backend.post(path, kwargs, headers=cls.headers)
 
     @classmethod
     def next(cls, account, project=None, location=None, number=1):
@@ -623,7 +627,7 @@ class Backend:
         return Backend.get(path, params, headers=cls.headers)
 
     @classmethod
-    def touch(cls, upload, bytes_downloaded=0):
+    def touch(cls, upload, location=None, bytes_downloaded=0):
         """
         Update backend with upload status
         """
@@ -631,7 +635,7 @@ class Backend:
         kwargs = {
             "upload_file": upload,
             "bytes_transferred": bytes_downloaded,
-            "location": upload.get("location")
+            "location": location
         }
         try:
             return Backend.put(path, kwargs, headers=cls.headers)
@@ -643,7 +647,7 @@ class Backend:
         raise
 
     @classmethod
-    def finish(cls, upload, bytes_downloaded=0):
+    def finish(cls, upload, location=None, bytes_downloaded=0):
         """
         Tell backend about upload success
         """
@@ -652,7 +656,7 @@ class Backend:
         payload = {
             "upload_file": upload,
             "bytes_transferred": bytes_downloaded,
-            "location": upload.get("location")
+            "location": location
         }
         try:
             return Backend.put(path, payload, headers=cls.headers)
@@ -664,7 +668,7 @@ class Backend:
         raise
 
     @classmethod
-    def fail(cls, upload, bytes_downloaded=0):
+    def fail(cls, upload, location=None, bytes_downloaded=0):
         """
         Tell backend about upload failure
         """
@@ -672,7 +676,7 @@ class Backend:
         payload = {
             "upload_file": upload,
             "bytes_transferred": bytes_downloaded,
-            "location": upload.get("location")
+            "location": location
         }
         try:
             return Backend.put(path, payload, headers=cls.headers)
@@ -685,14 +689,14 @@ class Backend:
         raise
 
     @classmethod
-    def fail_unsigned(cls, upload):
+    def fail_unsigned(cls, upload, location=None):
         """
         Tell backend about upload failure
         """
         path = "uploader/fail_unsigned/%s" % upload["ulid"]
         payload = {
             "upload_file": json.dumps(upload),
-            "location": upload.get("location")
+            "location": location
         }
         try:
             return Backend.put(path, payload, headers=cls.headers)
