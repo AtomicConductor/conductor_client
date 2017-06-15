@@ -610,12 +610,14 @@ class Backend:
         """
         Sign an upload payload
         """
+        headers = {"Content-Type": "application/json"}
+        headers.update(cls.headers)
         path = "uploader/sign"
         kwargs = {
             "upload_file": upload,
             "location": location
         }
-        return Backend.post(path, kwargs, headers=cls.headers)
+        return Backend.post(path, kwargs, headers=headers, json=True)
 
     @classmethod
     def next(cls, account, project=None, location=None, number=1):
@@ -694,12 +696,14 @@ class Backend:
         Tell backend about upload failure
         """
         path = "uploader/fail_unsigned/%s" % upload["ulid"]
+        headers = {"Content-Type": "application/json"}
+        headers.update(cls.headers)
         payload = {
             "upload_file": json.dumps(upload),
             "location": location
         }
         try:
-            return Backend.put(path, payload, headers=cls.headers)
+            return Backend.put(path, payload, headers=headers)
         except requests.HTTPError as err:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)",
@@ -748,13 +752,15 @@ class Backend:
 
     @classmethod
     @DecAuthorize()
-    def post(cls, path, data, headers):
+    def post(cls, path, data, headers, json=False):
         """
         Call requests put
         """
         url = cls.make_url(path)
-        # print "backend verb=POST url=%s data=%s" % (url, data)
-        response = requests.post(url, data=data, headers=headers)
+        if json:
+            response =  requests.post(url, json=data, headers=headers)
+        else:
+            response = requests.post(url, data=data, headers=headers)
         response.raise_for_status()
         return response.json()
 
