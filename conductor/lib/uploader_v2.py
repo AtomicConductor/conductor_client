@@ -293,6 +293,7 @@ class UploaderWorker(multiprocessing.Process):
                     "Preventing process from exiting due to Exception:\n")
                 # wait a little to allow for exception recovery .
                 # TODO:(lws) this may be totally stupid/unnecessary)
+                self.reset()
                 self.wait()
 
         # call stop method to properly shutdown child processes, cleanup, etc
@@ -348,13 +349,13 @@ class UploaderWorker(multiprocessing.Process):
         '''
         Upload a file if md5 matches expectation.
         '''
+        if self.current_upload.get("exists"):
+            return
+
         filepath = self.current_upload["filepath"]
         expected_filesize = self.current_upload.get("filesize")
         origingal_md5 = self.current_upload.get("md5")
         expected_md5 = self.md5_for_current_upload()
-        if expected_md5 == "exists":
-            return
-
         if origingal_md5:
             local_md5 = file_md5(filepath)
         else:
@@ -384,7 +385,8 @@ class UploaderWorker(multiprocessing.Process):
         try:
             Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
         except FilePutError as err:
-            return self.handle_put_error(err, self.fileobj)
+            self.handle_put_error(err, self.fileobj)
+            raise
         else:
             # print result
             return
@@ -408,10 +410,10 @@ class UploaderWorker(multiprocessing.Process):
                 project=self.project) or []
         except BackendDown as err:
             # print err
-            return
+            raise err
         except BackendError as err:
             # print err
-            return
+            raise err
         else:
             if uploads:
                 # Return the one download in the list
@@ -617,7 +619,14 @@ class Backend:
             "upload_file": upload,
             "location": location
         }
-        return Backend.post(path, kwargs, headers=headers, json=True)
+        try:
+            return Backend.post(path, kwargs, headers=headers, json=True)
+        except requests.HTTPError as err:
+            if err.response.status_code == 410:
+                LOGGER.warning("Cannot Touch file %s.  Already finished \
+                    (not active) (410)", upload["id"])
+            raise err
+        raise
 
     @classmethod
     def next(cls, account, project=None, location=None, number=1):
@@ -626,7 +635,14 @@ class Backend:
         """
         path = "uploader/next"
         params = {"account": account, "project": project, "location": location}
-        return Backend.get(path, params, headers=cls.headers)
+        try:
+            return Backend.get(path, params, headers=cls.headers)
+        except requests.HTTPError as err:
+            if err.response.status_code == 410:
+                LOGGER.warning("Cannot Touch file %s.  Already finished \
+                    (not active) (410)", upload["id"])
+            raise err
+        raise
 
     @classmethod
     def touch(cls, upload, location=None, bytes_downloaded=0):
@@ -645,7 +661,7 @@ class Backend:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot Touch file %s.  Already finished \
                     (not active) (410)", upload["id"])
-                return
+            raise err
         raise
 
     @classmethod
@@ -666,7 +682,7 @@ class Backend:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot finish file %s.  File not active (410)",
                                upload["id"])
-                return
+            raise err
         raise
 
     @classmethod
@@ -686,8 +702,7 @@ class Backend:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)",
                                upload["id"])
-                return
-            return
+            raise err
         raise
 
     @classmethod
@@ -708,8 +723,7 @@ class Backend:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)",
                                upload["id"])
-                return
-            return
+            raise err
         raise
 
     @classmethod
@@ -736,7 +750,10 @@ class Backend:
         # print "backend verb=GET url=%s" % (url)
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
-        return response.json()
+        resp = response.json()
+        if response.status_code == 205:
+            resp["exists"] = True
+        return resp
 
     @classmethod
     @DecAuthorize()
@@ -762,6 +779,9 @@ class Backend:
         else:
             response = requests.post(url, data=data, headers=headers)
         response.raise_for_status()
+        resp = response.json()
+        if response.status_code == 205:
+            resp["exists"] = True
         return response.json()
 
     @staticmethod
