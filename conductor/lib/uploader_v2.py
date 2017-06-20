@@ -349,13 +349,14 @@ class UploaderWorker(multiprocessing.Process):
         '''
         Upload a file if md5 matches expectation.
         '''
-        if self.current_upload.get("exists"):
-            return
-
         filepath = self.current_upload["filepath"]
         expected_filesize = self.current_upload.get("filesize")
         origingal_md5 = self.current_upload.get("md5")
         expected_md5 = self.md5_for_current_upload()
+
+        if self.current_upload.get("exists"):
+            return
+
         if origingal_md5:
             local_md5 = file_md5(filepath)
         else:
