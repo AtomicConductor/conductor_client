@@ -782,7 +782,7 @@ class Backend:
         resp = response.json()
         if response.status_code == 205:
             resp["exists"] = True
-        return response.json()
+        return resp
 
     @staticmethod
     def make_url(path):
