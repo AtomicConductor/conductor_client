@@ -425,10 +425,14 @@ class UploaderWorker(multiprocessing.Process):
         Callback for uploads
         """
         # print "Upload Event: ", event
-        if event == "progress":
-            self.handle_put_progress(filegen)
-        if event == "success":
-            self.handle_put_success(filegen)
+
+        if self._run_state.value == Uploader.STATE_RUNNING:
+            if event == "progress":
+                self.handle_put_progress(filegen)
+            if event == "success":
+                self.handle_put_success(filegen)
+        else:
+            raise StopIteration()
         return
 
     def handle_put_progress(self, filegen):
@@ -436,10 +440,14 @@ class UploaderWorker(multiprocessing.Process):
         Callback for upload progress
         """
         # print "bytes so-far: ", filegen.bytes_read
+
         if self.maybe_touch():
             self.touch()
             Backend.touch(
-                self.current_upload, bytes_downloaded=filegen.bytes_read, location=self.location)
+                self.current_upload,
+                bytes_downloaded=filegen.bytes_read,
+                location=self.location
+            )
         else:
             return
 
@@ -451,7 +459,11 @@ class UploaderWorker(multiprocessing.Process):
             if filegen \
             else self.current_upload["bytes_transferred"]
         self.touch()
-        Backend.finish(self.current_upload, bytes_downloaded=xferd, location=self.location)
+        Backend.finish(
+            self.current_upload,
+            bytes_downloaded=xferd,
+            location=self.location
+        )
 
         result = self._construct_result_dict(self.fileobj, "UL")
         self._results_queue.put_nowait(result)
@@ -497,6 +509,7 @@ class UploaderWorker(multiprocessing.Process):
 
     def maybe_touch(self):
         touch_delta = datetime.datetime.now() - self.last_touch
+        print "--=== timedelta: %s" % touch_delta
         return (not self.last_touch) \
             or touch_delta.total_seconds > WORKER_TOUCH_INTERVAL
 
