@@ -1,11 +1,13 @@
 import json
 import logging
+import os
 from pprint import pformat
 import requests
+import time
 import urlparse
 
 from conductor import CONFIG
-from conductor.lib import common
+from conductor.lib import common, auth
 
 logger = logging.getLogger(__name__)
 
@@ -32,18 +34,17 @@ class ApiClient():
                                     params=params,
                                     data=data)
 
-#         logger.debug("verb: %s", verb)
-#         logger.debug("conductor_url: %s", conductor_url)
-#         logger.debug("headers: %s", headers)
-#         logger.debug("params: %s", params)
-#         logger.debug("data: %s", data)
+        logger.debug("verb: %s", verb)
+        logger.debug("conductor_url: %s", conductor_url)
+        logger.debug("headers: %s", headers)
+        logger.debug("params: %s", params)
+        logger.debug("data: %s", data)
 
         # If we get 300s/400s debug out the response. TODO(lws): REMOVE THIS
-        if response.status_code and response.status_code >= 300 and response.status_code < 500:
+        if response.status_code and 300 <= response.status_code < 500:
             logger.debug("*****  ERROR!!  *****")
             logger.debug("Reason: %s" % response.reason)
             logger.debug("Text: %s" % response.text)
-
 
         # trigger an exception to be raised for 4XX or 5XX http responses
         if raise_on_error:
@@ -54,7 +55,8 @@ class ApiClient():
         return response
 
     def make_request(self, uri_path="/", headers=None, params=None, data=None,
-                     verb=None, conductor_url=None, raise_on_error=True, tries=5):
+                     verb=None, conductor_url=None, raise_on_error=True, tries=5,
+                     use_api_key=False):
         '''
         verb: PUT, POST, GET, DELETE, HEAD, PATCH
         '''
@@ -62,13 +64,19 @@ class ApiClient():
 
         # TODO: set Content Content-Type to json if data arg
         if not headers:
-            headers = {'Content-Type':'application/json'}
+            headers = {'Content-Type':'application/json',
+                       'Accept':'application/json'}
 #         logger.debug('headers are: %s', headers)
 #         logger.debug('data is: %s' % data)
 #         logger.debug("params is %s" % params)
 #         logger.debug("uri path is %s" % uri_path)
 
-        headers['Authorization'] = "Token %s" % CONFIG['conductor_token']
+        # headers['Authorization'] = "Token %s" % CONFIG['conductor_token']
+        bearer_token = read_conductor_credentials(use_api_key)
+        if not bearer_token:
+            raise Exception("Error: Could not get conductor credentials!")
+
+        headers['Authorization'] = "Bearer %s" % bearer_token
 
         # Construct URL
         if not conductor_url:
@@ -85,7 +93,7 @@ class ApiClient():
 
         # Create a retry wrapper function
         retry_wrapper = common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS,
-                                       tries=tries)
+                                        tries=tries)
 
         # wrap the request function with the retry wrapper
         wrapped_func = retry_wrapper(self._make_request)
@@ -94,8 +102,79 @@ class ApiClient():
         response = wrapped_func(verb, conductor_url, headers, params, data,
                                       raise_on_error=raise_on_error)
 
-
         return response.text, response.status_code
+
+
+def read_conductor_credentials(use_api_key=False):
+    '''
+    Read the conductor credentials file, if it exists. This will contain a bearer token from either the user
+    or the API key (if that's desired). If the credentials file doesn't exist, try and fetch a new one in the
+    API key scenario or prompt the user to log in.
+    Args:
+        use_api_key: Whether or not to use the API key
+
+    Returns: A Bearer token in the event of a success or None if things couldn't get figured out
+
+    '''
+
+    if use_api_key and not CONFIG['api_key']:
+        use_api_key = False
+
+    creds_file = get_creds_path(use_api_key)
+
+    if not os.path.exists(creds_file):
+        if use_api_key:
+            if not CONFIG['api_key']:
+                logger.debug("Attempted to use API key, but no api key in in config!")
+                return None
+
+            #  Exchange the API key for a bearer token
+            get_api_key_bearer_token(creds_file)
+
+        else:
+            auth.run(creds_file)
+
+    if not os.path.exists(creds_file):
+        return None
+
+    with open(creds_file) as fp:
+        file_contents = json.loads(fp.read())
+
+    expiration = file_contents.get('expiration')
+    if not expiration or expiration < int(time.time()):
+        auth.run(creds_file)
+
+    return file_contents['access_token']
+
+
+def get_api_key_bearer_token(creds_file):
+    response = requests.get("%s/api/oauth_jwt", params={"grant_type": "client_credentials",
+                                                        "scope": "owner admin user",
+                                                        "client_id": CONFIG['api_key']['client_id'],
+                                                        "client_secret": CONFIG['api_key']['client_secret']})
+    if response.status_code == 200:
+        response_dict = json.loads(response.text)
+        credentials_dict = {
+            "access_token": response_dict['access_token'],
+            "token_type": "Bearer",
+            "expiration": int(time.time()) + int(response_dict['expires_in']),
+            "scope": "user admin owner"
+        }
+
+        with open(creds_file, "w") as fp:
+            fp.write(json.dumps(credentials_dict))
+    return
+
+
+def get_creds_path(api_key=False):
+    # config = common.Config()
+    # config_path = os.path.dirname(config.get_config_file_path())
+    config_path = os.path.join(os.path.expanduser("~"), ".config", "conductor")
+    if api_key:
+        creds_file = os.path.join(config_path, "api_key_credentials")
+    else:
+        creds_file = os.path.join(config_path, "credentials")
+    return creds_file
 
 
 def request_projects(statuses=("active",)):
