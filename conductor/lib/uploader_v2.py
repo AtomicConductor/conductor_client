@@ -538,7 +538,9 @@ class UploaderWorker(multiprocessing.Process):
     def maybe_touch(self):
         if not self.last_touch:
             return True
+        self.touch()
         touch_delta = datetime.datetime.now() - self.last_touch
+        print "=========== TOUCH DELTA: %s" % touch_delta
         return touch_delta.total_seconds > WORKER_TOUCH_INTERVAL
 
     def wait(self):
