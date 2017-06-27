@@ -3,6 +3,7 @@ import binascii
 import datetime
 import functools
 import hashlib
+import json
 import logging
 import math
 import multiprocessing
@@ -386,7 +387,6 @@ class Config():
                       'md5_caching': True,
                       'log_level': "INFO"}
 
-
     def __init__(self):
         logger.debug('base dir is %s' % base_dir())
 
@@ -394,7 +394,6 @@ class Config():
         combined_config = self.default_config
         combined_config.update(self.get_user_config())
         combined_config.update(self.get_environment_config())
-
 
         # verify that we have the required params
         self.verify_required_params(combined_config)
@@ -404,7 +403,8 @@ class Config():
             combined_config['url'] = 'https://%s-dot-%s' % (combined_config['account'],
                                                             combined_config['base_url'])
 
-        self.validate_client_token(combined_config)
+        # self.validate_client_token(combined_config)
+        self.validate_api_key(combined_config)
         recombined_config = self.add_api_settings(combined_config)
         self.config = recombined_config
         logger.debug('config is:\n%s' % self.config)
@@ -446,6 +446,31 @@ class Config():
     def extract_urlbase(self, url):
         end = url.index(".", 0)
         return url[0:end]
+
+    def validate_api_key(self, config):
+        """
+        Load the API Key (if it exists)
+        Args:
+            config: client configuration object
+
+        Returns: None
+
+        """
+        if not 'api_key_path' in config:
+            config['api_key_path'] = os.path.join(base_dir(), 'auth', 'conductor_api_key')
+        api_key_path = config['api_key_path']
+
+        #  If the API key doesn't exist, then no biggie, just bail
+        if not os.path.exists(api_key_path):
+            config['api_key'] = None
+            return
+        try:
+            with open(api_key_path, 'r') as fp:
+                config['api_key'] = json.loads(fp.read())
+        except:
+            message = "An error occurred reading the API key"
+            logger.error(message)
+            raise ValueError(message)
 
     def validate_client_token(self, config):
         """
