@@ -31,7 +31,7 @@ except ImportError:  # , error:
 WORKER_SLEEP_DURATION = 15
 
 # Time between updates to server.
-WORKER_TOUCH_INTERVAL = 30  # seconds
+WORKER_TOUCH_INTERVAL = 60  # seconds
 
 # The amount of bytes to transfer as a chunk
 UPLOAD_CHUNK_SIZE = 1048576  # 1MB
@@ -41,7 +41,7 @@ MAX_UPLOAD_RETRIES = 5
 
 # The frequency (in seconds) for which the Touch thread should
 # report progress of the file (outside of start/finish)
-TOUCH_INTERVAL = 10
+TOUCH_INTERVAL = 60
 
 # Log format when not running in DEBUG mode
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(message)s')
@@ -350,15 +350,15 @@ class UploaderWorker(multiprocessing.Process):
         Upload a file if md5 matches expectation.
         '''
         filepath = self.current_upload["filepath"]
-        expected_filesize = self.current_upload.get("filesize")
+        # expected_filesize = self.current_upload.get("filesize")
         origingal_md5 = self.current_upload.get("md5")
         expected_md5 = self.md5_for_current_upload()
 
-        if self.current_upload.get("exists"):
+        if expected_md5 == "skip":
             return
 
         if origingal_md5:
-            local_md5 = file_md5(filepath)
+            local_md5 = self.file_md5(filepath)
         else:
             local_md5 = self.current_upload["md5"]
         if local_md5 != expected_md5:
@@ -373,9 +373,37 @@ class UploaderWorker(multiprocessing.Process):
         md5 = self.current_upload.get("md5")
         if md5:
             return md5
-        self.current_upload["md5"] = file_md5(self.current_upload["filepath"])
-        self.current_upload = Backend.sign(self.current_upload, location=self.location)
-        return self.current_upload["md5"]
+        self.current_upload["md5"] = self.file_md5(self.current_upload["filepath"])
+        sign_result = Backend.sign(self.current_upload, location=self.location)
+        if sign_result == "skip":
+            return sign_result
+        else:
+            self.current_upload["gcs_id"] = sign_result["gcs_id"]
+            self.current_upload["gcs_url"] = sign_result["gcs_url"]
+            return self.current_upload["md5"]
+
+    def file_md5(self, filepath):
+        '''
+        make an md5 sum of a file.
+        '''
+        chunk_size = 2**20
+        md5 = hashlib.md5()
+        with open(filepath, "rb") as fileobj:
+            while True:
+                chunk = fileobj.read(chunk_size)
+                if not chunk:
+                    break
+                md5.update(chunk)
+                if self.maybe_touch():
+                    self.touch()
+                    Backend.touch(
+                        self.current_upload,
+                        bytes_downloaded=0,
+                        location=self.location
+                    )
+        digest = md5.digest()
+        return base64.b64encode(digest)
+
 
     def put_upload(self):
         """
@@ -508,10 +536,10 @@ class UploaderWorker(multiprocessing.Process):
         return
 
     def maybe_touch(self):
+        if not self.last_touch:
+            return True
         touch_delta = datetime.datetime.now() - self.last_touch
-        print "--=== timedelta: %s" % touch_delta
-        return (not self.last_touch) \
-            or touch_delta.total_seconds > WORKER_TOUCH_INTERVAL
+        return touch_delta.total_seconds > WORKER_TOUCH_INTERVAL
 
     def wait(self):
         '''
@@ -626,15 +654,13 @@ class Backend:
         """
         Sign an upload payload
         """
-        headers = {"Content-Type": "application/json"}
-        headers.update(cls.headers)
-        path = "uploader/sign"
+        path = "uploader/sign/%s" % upload["id"]
         kwargs = {
-            "upload_file": upload,
+            "md5": upload["md5"],
             "location": location
         }
         try:
-            return Backend.post(path, kwargs, headers=headers, json=True)
+            return Backend.put(path, kwargs, headers=cls.headers)
         except requests.HTTPError as err:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot Touch file %s.  Already finished \
@@ -665,7 +691,6 @@ class Backend:
         """
         path = "uploader/touch/%s" % upload["id"]
         kwargs = {
-            "upload_file": upload,
             "bytes_transferred": bytes_downloaded,
             "location": location
         }
@@ -686,7 +711,6 @@ class Backend:
         path = "uploader/finish/%s" % upload["id"]
         LOGGER.debug(path)
         payload = {
-            "upload_file": upload,
             "bytes_transferred": bytes_downloaded,
             "location": location
         }
@@ -706,7 +730,6 @@ class Backend:
         """
         path = "uploader/fail/%s" % upload["id"]
         payload = {
-            "upload_file": upload,
             "bytes_transferred": bytes_downloaded,
             "location": location
         }
@@ -776,10 +799,12 @@ class Backend:
         Call requests put
         """
         url = cls.make_url(path)
-        # print "backend verb=PUT url=%s data=%s" % (url, data)
         response = requests.put(url, data=data, headers=headers)
         response.raise_for_status()
-        return response.json()
+        resp = response.json()
+        if response.status_code == 205:
+            resp = "skip"
+        return resp
 
     @classmethod
     @DecAuthorize()
@@ -811,21 +836,6 @@ class Backend:
         url = "%s/api/v1/fileio/%s" % (url_base, path)
         return url
 
-
-def file_md5(filepath):
-    '''
-    make an md5 sum of a file.
-    '''
-    chunk_size = 2**20
-    md5 = hashlib.md5()
-    with open(filepath, "rb") as fileobj:
-        while True:
-            chunk = fileobj.read(chunk_size)
-            if not chunk:
-                break
-            md5.update(chunk)
-    digest = md5.digest()
-    return base64.b64encode(digest)
 
 
 def set_logging(level=None, log_dirpath=None):
