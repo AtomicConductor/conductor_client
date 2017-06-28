@@ -351,6 +351,7 @@ class UploaderWorker(multiprocessing.Process):
         '''
         Upload a file if md5 matches expectation.
         '''
+        LOGGER.info("Potential upload: %s" % self.current_upload["filepath"])
         filepath = self.current_upload["filepath"]
         # expected_filesize = self.current_upload.get("filesize")
         origingal_md5 = self.current_upload.get("md5")
@@ -388,6 +389,7 @@ class UploaderWorker(multiprocessing.Process):
         '''
         make an md5 sum of a file.
         '''
+        LOGGER.info("Checking MD5 for file: %s" % self.current_upload["filepath"]) 
         chunk_size = 2**20
         md5 = hashlib.md5()
         with open(filepath, "rb") as fileobj:
@@ -397,6 +399,7 @@ class UploaderWorker(multiprocessing.Process):
                     break
                 md5.update(chunk)
                 if self.maybe_touch():
+                    LOGGER.info("MD5 progress file: %s" % self.current_upload["filepath"]) 
                     self.touch()
                     Backend.touch(
                         self.current_upload,
@@ -413,6 +416,7 @@ class UploaderWorker(multiprocessing.Process):
         """
         # print "starting upload...", self.current_upload['filepath']
         self.touch()
+        LOGGER.info("Starting upload of file: %s" % self.current_upload["filepath"]) 
         try:
             Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
         except FilePutError as err:
