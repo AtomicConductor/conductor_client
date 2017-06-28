@@ -279,6 +279,7 @@ class UploaderWorker(multiprocessing.Process):
         self.fileobj = None
         self.upload_attempts = 0
         self.last_touch = None
+        self.touch()
         self._results_queue = results_queue
 
     def run(self):
@@ -310,6 +311,7 @@ class UploaderWorker(multiprocessing.Process):
         self.upload_attempts = 0
         self.upload_attempts = 0
         self.last_touch = None
+        self.touch()
 
     def _run(self):
         self.reset()
@@ -389,7 +391,7 @@ class UploaderWorker(multiprocessing.Process):
         chunk_size = 2**20
         md5 = hashlib.md5()
         with open(filepath, "rb") as fileobj:
-            while True:
+            while self._run_state.value == Uploader.STATE_RUNNING:
                 chunk = fileobj.read(chunk_size)
                 if not chunk:
                     break
@@ -540,7 +542,7 @@ class UploaderWorker(multiprocessing.Process):
             return True
         self.touch()
         touch_delta = datetime.datetime.now() - self.last_touch
-        print "=========== TOUCH DELTA: %s" % touch_delta
+        # print "=========== TOUCH DELTA: %s" % touch_delta
         return touch_delta.total_seconds > WORKER_TOUCH_INTERVAL
 
     def wait(self):
