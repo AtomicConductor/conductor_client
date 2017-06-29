@@ -404,8 +404,8 @@ class UploaderWorker(multiprocessing.Process):
                         bytes_downloaded=0,
                         location=self.location
                     )
-        digest = md5.digest()
-        return base64.b64encode(digest)
+        digest = md5.hexdigest()
+        return digest
 
 
     def put_upload(self):
@@ -415,14 +415,14 @@ class UploaderWorker(multiprocessing.Process):
         # print "starting upload...", self.current_upload['filepath']
         self.touch()
         LOGGER.info("Starting upload of file: %s" % self.current_upload["filepath"]) 
-        try:
-            Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
-        except FilePutError as err:
-            self.handle_put_error(err, self.fileobj)
-            raise
-        else:
+        # try:
+        Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
+        # except FilePutError as err:
+        #     self.handle_put_error(err, self.fileobj)
+        #     raise
+        # else:
             # print result
-            return
+        return
 
     def handle_finish(self, result):
         """
@@ -541,8 +541,7 @@ class UploaderWorker(multiprocessing.Process):
 
     def maybe_touch(self):
         touch_delta = datetime.datetime.now() - self.last_touch
-        print "=========== TOUCH DELTA: %s" % touch_delta
-        return touch_delta.total_seconds > WORKER_TOUCH_INTERVAL
+        return touch_delta.total_seconds() > WORKER_TOUCH_INTERVAL
 
     def wait(self):
         '''
