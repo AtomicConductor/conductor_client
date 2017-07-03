@@ -187,7 +187,7 @@ def request_projects(statuses=("active",)):
 
     uri = 'api/v1/projects/'
 
-    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False)
+    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False, use_api_key=True)
     logger.debug("response: %s", response)
     logger.debug("response: %s", response_code)
     if response_code not in [200]:
@@ -219,7 +219,8 @@ def request_software_packages(sidecar_id=None):
 
     logger.debug("uri: %s", uri)
 
-    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False)
+    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False,
+                                               use_api_key=True)
 #     logger.debug("response: %s", response)
 #     logger.debug("response: %s", response_code)
     if response_code not in [200]:
@@ -242,7 +243,8 @@ def request_sidecar(sidecar_id=None):
         uri += "/%s" % sidecar_id
 
     logger.debug("uri: %s", uri)
-    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False)
+    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False,
+                                               use_api_key=True)
     logger.debug("response: %s", response)
     logger.debug("response: %s", response_code)
     if response_code not in [200]:
