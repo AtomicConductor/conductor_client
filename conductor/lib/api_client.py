@@ -117,18 +117,23 @@ def read_conductor_credentials(use_api_key=False):
 
     '''
 
-    if use_api_key and not CONFIG['api_key']:
+    logger.debug("Reading conductor credentials...")
+    if use_api_key and not CONFIG.get('api_key'):
         use_api_key = False
 
+    logger.debug("use_api_key = %s" % use_api_key)
     creds_file = get_creds_path(use_api_key)
+
+    logger.debug("Creds file is %s" % creds_file)
 
     if not os.path.exists(creds_file):
         if use_api_key:
-            if not CONFIG['api_key']:
+            if not CONFIG.get('api_key'):
                 logger.debug("Attempted to use API key, but no api key in in config!")
                 return None
 
             #  Exchange the API key for a bearer token
+            logger.debug("Attempting to get API key bearer token")
             get_api_key_bearer_token(creds_file)
 
         else:
@@ -137,21 +142,29 @@ def read_conductor_credentials(use_api_key=False):
     if not os.path.exists(creds_file):
         return None
 
+    logger.debug("Reading credentials file...")
     with open(creds_file) as fp:
         file_contents = json.loads(fp.read())
 
     expiration = file_contents.get('expiration')
     if not expiration or expiration < int(time.time()):
-        auth.run(creds_file)
+        logger.debug("Credentials expired!")
+        if use_api_key:
+            logger.debug("Refreshing API key bearer token!")
+            get_api_key_bearer_token(creds_file)
+        else:
+            logger.debug("Sending to auth page...")
+            auth.run(creds_file)
 
     return file_contents['access_token']
 
 
 def get_api_key_bearer_token(creds_file):
-    response = requests.get("%s/api/oauth_jwt", params={"grant_type": "client_credentials",
-                                                        "scope": "owner admin user",
-                                                        "client_id": CONFIG['api_key']['client_id'],
-                                                        "client_secret": CONFIG['api_key']['client_secret']})
+    response = requests.get("%s/api/oauth_jwt" % CONFIG['url'],
+                            params={"grant_type": "client_credentials",
+                                    "scope": "owner admin user",
+                                    "client_id": CONFIG['api_key']['client_id'],
+                                    "client_secret": CONFIG['api_key']['private_key']})
     if response.status_code == 200:
         response_dict = json.loads(response.text)
         credentials_dict = {
