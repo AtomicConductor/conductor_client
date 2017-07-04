@@ -400,8 +400,7 @@ class Config():
 
         # set the url based on account (unless one was already provided)
         if not 'url' in combined_config:
-            combined_config['url'] = 'https://%s-dot-%s' % (combined_config['account'],
-                                                            combined_config['base_url'])
+            combined_config['url'] = 'https://dashboard.conductortech.com'
 
         # self.validate_client_token(combined_config)
         self.validate_api_key(combined_config)
@@ -462,7 +461,7 @@ class Config():
 
         #  If the API key doesn't exist, then no biggie, just bail
         if not os.path.exists(api_key_path):
-            config['api_key'] = None
+            # config['api_key'] = None
             return
         try:
             with open(api_key_path, 'r') as fp:
