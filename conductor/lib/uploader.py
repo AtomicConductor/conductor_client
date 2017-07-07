@@ -177,7 +177,8 @@ class HttpBatchWorker(worker.ThreadWorker):
                                                                    verb='POST',
                                                                    headers=headers,
                                                                    data=json.dumps(data),
-                                                                   raise_on_error=True)
+                                                                   raise_on_error=True,
+                                                                   use_api_key=True)
 
         if response_code == 200:
             url_list = json.loads(response_str)
@@ -289,7 +290,8 @@ class UploadWorker(worker.ThreadWorker):
                                             headers=headers,
                                             data=self.chunked_reader(filename),
                                             verb='PUT',
-                                            tries=1)
+                                            tries=1,
+                                            use_api_key=True)
 
 
 
@@ -365,7 +367,7 @@ class Uploader():
                     resp_str, resp_code = self.api_client.make_request(
                         '/uploads/%s/update' % self.upload_id,
                         data=json.dumps(status_dict),
-                        verb='POST')
+                        verb='POST', use_api_key=True)
 
                 except Exception, e:
                     logger.error('could not report status:')
@@ -520,7 +522,7 @@ class Uploader():
 
         resp_str, resp_code = self.api_client.make_request('/uploads/%s/finish' % upload_id,
                                                            data=json.dumps(data),
-                                                           verb='POST')
+                                                           verb='POST', use_api_key=True)
         return True
 
     def mark_upload_failed(self, error_message, upload_id):
@@ -530,7 +532,7 @@ class Uploader():
         resp_str, resp_code = self.api_client.make_request(
             '/uploads/%s/fail' % upload_id,
             data=error_message,
-            verb='POST')
+            verb='POST', use_api_key=True)
 
         return True
 
@@ -611,7 +613,7 @@ class Uploader():
                 logger.debug("Data: %s", data)
                 resp_str, resp_code = self.api_client.make_request('/uploads/client/next',
                                                                    data=json.dumps(data),
-                                                                   verb='PUT')
+                                                                   verb='PUT', use_api_key=True)
                 if resp_code == 204:
                     logger.debug('no files to upload')
                     sys.stdout.write('.')
