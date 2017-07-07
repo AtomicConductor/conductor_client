@@ -15,7 +15,7 @@ from conductor.lib import common, loggeria, version_check, wizard
 try:
     CONFIG = common.Config().config
 except ValueError:
-    wizard.run()
+    # wizard.run()
     CONFIG = common.Config().config
 
 # IF there is log level specified in config (which by default there should be), then set it for conductor's logger
