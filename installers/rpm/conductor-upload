@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# conductor-upload    Conductor Cloud Rendering Upload Daemon
+#
+# chkconfig: 345 70 30
+# description: Conductor Cloud Rendering Upload Daemon
+# processname: conductor
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+prog="conductor-upload"
+LOCKFILE=/var/lock/subsys/$prog
+
+CONDUCTOR_USER=conductor
+CONDUCTOR_DIR=/opt/conductor
+CONDUCTOR_BIN=$CONDUCTOR_DIR/bin/conductor
+CONDUCTOR_LOG=/tmp
+CONDUCTOR_DAEMON_ROLE="uploader"
+
+export CONDUCTOR_CONFIG=/etc/conductor.yml
+
+start() {
+        echo -n "Starting $prog: "
+        pgrep -f "conductor_client $CONDUCTOR_DAEMON_ROLE" > /dev/null
+        RETVAL=$?
+        if [ $RETVAL -ne 0 ]; then
+                daemon --user $CONDUCTOR_USER $CONDUCTOR_BIN $CONDUCTOR_DAEMON_ROLE --log_dir $CONDUCTOR_LOG > /dev/null 2>&1 &
+                RETVAL=$?
+                if [ $RETVAL -eq 0 ]; then
+                        touch $LOCKFILE
+                        success
+                else
+                        failure
+                fi
+        else
+                echo "Already running!"
+                failure
+        fi
+        echo
+        return $RETVAL
+}
+
+stop() {
+        echo -n "Shutting down $prog: "
+        pkill -f "conductor_client $CONDUCTOR_DAEMON_ROLE"
+        RETVAL=$?
+        if [ $RETVAL -eq 0 ]; then
+                rm -f $LOCKFILE
+                success
+        else
+                failure
+        fi
+        echo
+        return $RETVAL
+}
+
+status() {
+        pgrep -f "conductor_client $CONDUCTOR_DAEMON_ROLE" > /dev/null
+        RETVAL=$?
+        if [ $RETVAL -eq 0 ]; then
+                echo "Conductor Uploader running."
+        else
+                echo "Conductor Uploader not running"
+        fi
+        return $RETVAL
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: $prog {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
+exit $RETVAL
