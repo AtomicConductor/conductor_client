@@ -27,6 +27,8 @@ start() {
         RETVAL=$?
         if [ $RETVAL -ne 0 ]; then
                 daemon --user $CONDUCTOR_USER $CONDUCTOR_BIN $CONDUCTOR_DAEMON_ROLE --log_dir $CONDUCTOR_LOG > /dev/null 2>&1 &
+                sleep 2
+		pgrep -f "conductor_client $CONDUCTOR_DAEMON_ROLE" > /dev/null
                 RETVAL=$?
                 if [ $RETVAL -eq 0 ]; then
                         touch $LOCKFILE
