@@ -60,9 +60,9 @@ status() {
         pgrep -f "conductor_client $CONDUCTOR_DAEMON_ROLE" > /dev/null
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
-                echo "Conductor Uploader running."
+                echo "Conductor Downloader running."
         else
-                echo "Conductor Uploader not running"
+                echo "Conductor Downloader not running"
         fi
         return $RETVAL
 }
