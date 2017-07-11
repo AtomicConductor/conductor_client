@@ -146,7 +146,9 @@ class Uploader(object):
             - DownloadWorker # Downloads files
             - HistoryWorker  # logs out history of downloaded files
         """
-        account = CONFIG.get("account") or None
+
+        bearer = get_bearer_token()
+        account = api_client.account_name_from_jwt(bearer.value)
         LOGGER.info("account: %s", account)
 
         project = self.args.get("project") or None
