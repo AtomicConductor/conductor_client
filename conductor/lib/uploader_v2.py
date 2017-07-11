@@ -16,9 +16,10 @@ import time
 import requests
 
 from conductor import CONFIG
-from conductor.lib import common, loggeria
+from conductor.lib import common, loggeria, api_client
 from conductor.lib.downloader import DecAuthorize  # , DecDownloaderRetry
 from conductor.lib.downloader import HistoryWorker
+from conductor.lib.downloader import get_bearer_token
 
 try:
     imp.find_module('conductor')
@@ -42,6 +43,9 @@ MAX_UPLOAD_RETRIES = 5
 # The frequency (in seconds) for which the Touch thread should
 # report progress of the file (outside of start/finish)
 TOUCH_INTERVAL = 60
+
+# Reusable authentication token  used across all processes/threads
+BEARER_TOKEN = multiprocessing.Array('c', 2000)
 
 # Log format when not running in DEBUG mode
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(message)s')
@@ -636,7 +640,14 @@ class Backend:
     """
     Interface to backend (FileIO service)
     """
-    headers = {"accept-version": "v1"}
+
+    @classmethod
+    def headers(cls):
+        bearer = get_bearer_token()
+        return{"accept-version": "v1",
+               "content-type": "application/json",
+               "authorization": "Bearer %s" % bearer.value}
+
 
     @classmethod
     def put_file(cls, filegen, signed_url):
@@ -662,7 +673,7 @@ class Backend:
             "location": location
         }
         try:
-            return Backend.put(path, kwargs, headers=cls.headers)
+            return Backend.put(path, kwargs, headers=Backend.headers())
         except requests.HTTPError as err:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot Touch file %s.  Already finished \
@@ -678,7 +689,7 @@ class Backend:
         path = "uploader/next"
         params = {"account": account, "project": project, "location": location}
         try:
-            return Backend.get(path, params, headers=cls.headers)
+            return Backend.get(path, params, headers=Backend.headers())
         except requests.HTTPError as err:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot Touch file %s.  Already finished \
@@ -697,7 +708,7 @@ class Backend:
             "location": location
         }
         try:
-            return Backend.put(path, kwargs, headers=cls.headers)
+            return Backend.put(path, kwargs, headers=Backend.headers())
         except requests.HTTPError as err:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot Touch file %s.  Already finished \
@@ -717,7 +728,7 @@ class Backend:
             "location": location
         }
         try:
-            return Backend.put(path, payload, headers=cls.headers)
+            return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as err:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot finish file %s.  File not active (410)",
@@ -736,7 +747,7 @@ class Backend:
             "location": location
         }
         try:
-            return Backend.put(path, payload, headers=cls.headers)
+            return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as err:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)",
@@ -750,8 +761,7 @@ class Backend:
         Tell backend about upload failure
         """
         path = "uploader/fail_unsigned/%s" % upload["ulid"]
-        headers = {"Content-Type": "application/json"}
-        headers.update(cls.headers)
+        headers = Backend.headers()
         payload = {
             "upload_file": json.dumps(upload),
             "location": location
@@ -766,18 +776,10 @@ class Backend:
         raise
 
     @classmethod
-    def bearer_token(cls, token):
-        """
-        Bearer
-
-        # FIXME: still needed?
-        """
-        url = cls.make_url("bearer")
-        headers = dict(cls.headers)
-        headers.update({"authorization": "Token %s" % token})
-        result = requests.get(url, headers=headers)
-        result.raise_for_status()
-        return result.json()["access_token"]
+    @common.dec_timer_exit(log_level=logging.DEBUG)
+    def bearer_token(cls):
+        creds_dict = api_client.get_api_key_bearer_token()
+        return creds_dict["access_token"]
 
     @classmethod
     @DecAuthorize()
@@ -828,12 +830,7 @@ class Backend:
     @staticmethod
     def make_url(path):
         '''
-        TODO: get rid of this hardcoding!!!
         '''
-        if path == "bearer":
-            config_url = CONFIG.get("url", CONFIG["base_url"])
-            return "%s/api/oauth_jwt?scope=user" % config_url
-
         url_base = CONFIG.get("api_url")
         url = "%s/api/v1/fileio/%s" % (url_base, path)
         return url
