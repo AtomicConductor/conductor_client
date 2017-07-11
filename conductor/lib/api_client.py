@@ -159,7 +159,7 @@ def read_conductor_credentials(use_api_key=False):
     return file_contents['access_token']
 
 
-def get_api_key_bearer_token(creds_file):
+def get_api_key_bearer_token(creds_file=None):
     response = requests.get("%s/api/oauth_jwt" % CONFIG['url'],
                             params={"grant_type": "client_credentials",
                                     "scope": "owner admin user",
@@ -173,6 +173,9 @@ def get_api_key_bearer_token(creds_file):
             "expiration": int(time.time()) + int(response_dict['expires_in']),
             "scope": "user admin owner"
         }
+
+        if not creds_file:
+            return credentials_dict
 
         with open(creds_file, "w") as fp:
             fp.write(json.dumps(credentials_dict))
