@@ -18,7 +18,7 @@ import Queue
 import requests
 
 from conductor import CONFIG
-from conductor.lib import common, loggeria, downloader2
+from conductor.lib import common, loggeria, downloader2, api_client
 
 try:
     imp.find_module('conductor')
@@ -1168,7 +1168,12 @@ class HistoryWorker(multiprocessing.Process):
 
 class Backend:
 
-    headers = {"accept-version": "v1"}
+    @classmethod
+    def headers(cls):
+        bearer = get_bearer_token()
+        return{"accept-version": "v1",
+               "content-type": "application/json",
+               "authorization": "Bearer %s" % bearer.value}
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
@@ -1179,7 +1184,7 @@ class Backend:
         """
         path = "downloader/next"
         params = {"account": account, "project": project, "location": location}
-        return Backend.get(path, params, headers=cls.headers)
+        return Backend.get(path, params, headers=Backend.headers())
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
@@ -1191,7 +1196,7 @@ class Backend:
                   "location": location,
                   "project": project}
         try:
-            return Backend.put(path, kwargs, headers=cls.headers)
+            return Backend.put(path, kwargs, headers=Backend.headers())
         except requests.HTTPError as e:
             if e.response.status_code == 410:
                 LOGGER.warning("Cannot Touch file %s.  Already finished (not active) (410)", id_)
@@ -1209,7 +1214,7 @@ class Backend:
                    "location": location,
                    "project": project}
         try:
-            return Backend.put(path, payload, headers=cls.headers)
+            return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as e:
             if e.response.status_code == 410:
                 LOGGER.warning("Cannot finish file %s.  File not active (410)", id_)
@@ -1226,7 +1231,7 @@ class Backend:
                    "location": location,
                    "project": project}
         try:
-            return Backend.put(path, payload, headers=cls.headers)
+            return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as e:
             if e.response.status_code == 410:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)", id_)
@@ -1235,16 +1240,9 @@ class Backend:
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
-    def bearer_token(cls, token):
-        url = cls.make_url("bearer")
-        headers = dict(cls.headers)
-        headers.update({"authorization": "Token %s" % token})
-        result = requests.get(url, headers=headers)
-        result.raise_for_status()
-        try:
-            return result.json()["access_token"]
-        except:
-            raise Exception("unauthorized request to ae")
+    def bearer_token(cls):
+        creds_dict = api_client.get_api_key_bearer_token()
+        return creds_dict["access_token"]
 
     @classmethod
     @DecAuthorize()
@@ -1278,10 +1276,6 @@ class Backend:
         '''
         TODO: get rid of this hardcoding!!!
         '''
-        if path == "bearer":
-            config_url = CONFIG.get("url", CONFIG["base_url"])
-            return "%s/api/oauth_jwt?scope=user" % config_url
-
         url_base = CONFIG.get("api_url")
         url = "%s/api/v1/fileio/%s" % (url_base, path)
         return url
@@ -1355,8 +1349,7 @@ def get_bearer_token(refresh=False):
     global BEARER_TOKEN
 
     if refresh or not BEARER_TOKEN.value:
-        token = CONFIG.get("conductor_token")
-        BEARER_TOKEN.value = Backend.bearer_token(token)
+        BEARER_TOKEN.value = Backend.bearer_token()
 
     return BEARER_TOKEN
 
