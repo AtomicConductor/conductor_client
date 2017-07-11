@@ -409,42 +409,11 @@ class Config():
         logger.debug('config is:\n%s' % self.config)
 
     def add_api_settings(self, settings_dict):
-        ip_map = {
-            "atomic":
-                "https://beta-api.conductorio.com",
-            "dev":
-                "https://dev-api.conductorio.com",
-            "qa":
-                "https://qa-api.conductorio.com",
-            "prod":
-                "https://api.conductorio.com"
-            }
+        api_url = settings_dict.get("api_url", "https://api.conductortech.com")
         if os.environ.get("LOCAL"):
             api_url = "http://localhost:8081"
-        else:
-            prebase = settings_dict.get("url", settings_dict["base_url"]).split("//")[-1]
-            base = self.extract_urlbase(prebase)
-            api_url = ip_map.get(self.env_from_url(base))
         settings_dict["api_url"] = api_url
         return settings_dict
-
-    def env_from_url(self, base):
-        env_map = {
-                'fiery': 'atomic',
-                'eloquent': 'dev',
-                'atomic': 'prod',
-                'conductor-qa': 'qa'
-                }
-        return_value = None
-        for env in env_map.keys():
-            if re.search(env, base):
-                return_value = env_map.get(env)
-                break
-        return return_value
-
-    def extract_urlbase(self, url):
-        end = url.index(".", 0)
-        return url[0:end]
 
     def validate_api_key(self, config):
         """
