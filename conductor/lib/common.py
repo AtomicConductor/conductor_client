@@ -377,7 +377,7 @@ def base_dir():
     return os.path.dirname(os.path.dirname(os.path.dirname(module_filepath)))
 
 class Config():
-    # required_keys = ['account']
+    required_keys = []
     default_config = {'base_url': 'atomic-light-001.appspot.com',
                       'thread_count': (multiprocessing.cpu_count() * 2),
                       'instance_cores': 16,
@@ -623,3 +623,4 @@ def get_human_timestamp(seconds_since_epoch):
     convert the given seconds since epoch (float)
     '''
     return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
+
