@@ -377,7 +377,7 @@ def base_dir():
     return os.path.dirname(os.path.dirname(os.path.dirname(module_filepath)))
 
 class Config():
-    required_keys = ['account']
+    # required_keys = ['account']
     default_config = {'base_url': 'atomic-light-001.appspot.com',
                       'thread_count': (multiprocessing.cpu_count() * 2),
                       'instance_cores': 16,
@@ -654,10 +654,3 @@ def get_human_timestamp(seconds_since_epoch):
     convert the given seconds since epoch (float)
     '''
     return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
-
-def get_upload_gcs_path(project, b64_md5):
-    hex_md5 = ""
-    if b64_md5:
-        hex_md5 = binascii.b2a_hex(binascii.a2b_base64(b64_md5))
-    config = Config().config
-    return "%s/accounts/%s/%s" % (project, config.get('account'), hex_md5)
