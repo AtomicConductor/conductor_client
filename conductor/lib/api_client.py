@@ -1,10 +1,10 @@
 import json
 import logging
 import os
-from pprint import pformat
 import requests
 import time
 import urlparse
+import jwt
 
 from conductor import CONFIG
 from conductor.lib import common, auth
@@ -180,6 +180,21 @@ def get_api_key_bearer_token(creds_file=None):
         with open(creds_file, "w") as fp:
             fp.write(json.dumps(credentials_dict))
     return
+
+
+def account_name_from_jwt(token):
+    """
+    Fetch the accounts name from a jwt token value.
+    """
+    payload = jwt.decode(token, verify=False)
+    account_id = payload.get("account")
+    if account_id:
+        url = "%s/api/v1/accounts/%s" % (CONFIG['api_url'], account_id)
+        response = requests.get(url, headers={"authorization": "Bearer %s" % token})
+        if response.status_code == 200:
+            response_dict = json.loads(response.text)
+            return response_dict["data"]["name"]
+    return None
 
 
 def get_creds_path(api_key=False):
