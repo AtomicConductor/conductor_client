@@ -2,3 +2,4 @@ pyaml
 requests
 urllib3
 Qt.py
+PyJWT
