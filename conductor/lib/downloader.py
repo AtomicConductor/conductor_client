@@ -13,13 +13,12 @@ import imp
 import logging
 import multiprocessing
 import os
-import string
 from pprint import pformat
 import Queue
 import requests
 
 from conductor import CONFIG
-from conductor.lib import common, loggeria, downloader2
+from conductor.lib import common, loggeria, downloader2, api_client
 
 try:
     imp.find_module('conductor')
@@ -301,7 +300,8 @@ class Downloader(object):
             - DownloadWorker # Downloads files
             - HistoryWorker  # logs out history of downloaded files
         """
-        account = CONFIG.get("account") or None
+        bearer = get_bearer_token()
+        account = api_client.account_name_from_jwt(bearer.value)
         LOGGER.info("account: %s", account)
 
         project = self.args.get("project") or None
@@ -1060,16 +1060,17 @@ class TouchWorker(threading.Thread):
 class HistoryWorker(multiprocessing.Process):
     '''
     A process that periodically print/logs the "history" of the last x files
-    that have been downloaded.
+    that have been downloaded/uploaded.
     '''
 
-    def __init__(self, run_state, results_queue, print_interval=10, history_max=100):
+    def __init__(self, run_state, results_queue,
+            print_interval=10, history_max=100, worker_type='download', column_names=None):
         '''
         run_state:    multiprocessing.Array object. Used by the parent calling
                       process to communicate when to shutdown/exit this Process.
 
         results_queue: multiprocessing.Queue object.  Contains an entry for each
-                       file that was handled by the downloader and what happened
+                       file that was handled by the worker and what happened
                        with it.
 
         print_interval: int/float. The frequency to print/log the history
@@ -1081,12 +1082,17 @@ class HistoryWorker(multiprocessing.Process):
         self._history_max = history_max
         self._print_interval = print_interval
         self._last_history = None
+        self._worker_type = worker_type
+        self._label = worker_type.upper()
+        self._column_names = column_names \
+            or ["Completed at", "Download ID", "Job", "Task",
+                "Size", "Action", "Duration", "Thread", "Filepath"]
         super(HistoryWorker, self).__init__()
 
     def run(self):
         '''
         Start and return a thread that is responsible for pinging the app for
-        Downloads to download (and populating the queue)
+        files to transfer (and populating the queue)
         '''
         self._run_state.value = Downloader.STATE_RUNNING
 
@@ -1121,7 +1127,7 @@ class HistoryWorker(multiprocessing.Process):
 
                 # Only print the history if it is different from before
                 if history_summary == self._last_history:
-                    LOGGER.info('##### DOWNLOAD HISTORY ##### [No changes]')
+                    LOGGER.info('##### %s HISTORY ##### [No changes]' % self._label)
                 else:
                     LOGGER.info("%s\n", history_summary)
                     self._last_history = history_summary
@@ -1137,10 +1143,10 @@ class HistoryWorker(multiprocessing.Process):
         for them.
 
         '''
-        title = " DOWNLOAD HISTORY %s " % (("(last %s files)" % self._history_max) if self._history_max else "")
-        column_names = ["Completed at", "Download ID", "Job", "Task", "Size", "Action", "Duration", "Thread", "Filepath"]
+        title = " %s HISTORY %s " % \
+            (self._label, ("(last %s files)" % self._history_max) if self._history_max else "")
         table = downloader2.HistoryTableStr(data=list(reversed(results_list)),
-                                            column_names=column_names,
+                                            column_names=self._column_names,
                                             title=title.center(100, "#"),
                                             footer="#"*180,
                                             upper_headers=True)
@@ -1163,7 +1169,12 @@ class HistoryWorker(multiprocessing.Process):
 
 class Backend:
 
-    headers = {"accept-version": "v1"}
+    @classmethod
+    def headers(cls):
+        bearer = get_bearer_token()
+        return{"accept-version": "v1",
+               "content-type": "application/json",
+               "authorization": "Bearer %s" % bearer.value}
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
@@ -1174,7 +1185,7 @@ class Backend:
         """
         path = "downloader/next"
         params = {"account": account, "project": project, "location": location}
-        return Backend.get(path, params, headers=cls.headers)
+        return Backend.get(path, params, headers=Backend.headers())
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
@@ -1186,7 +1197,7 @@ class Backend:
                   "location": location,
                   "project": project}
         try:
-            return Backend.put(path, kwargs, headers=cls.headers)
+            return Backend.put(path, kwargs, headers=Backend.headers())
         except requests.HTTPError as e:
             if e.response.status_code == 410:
                 LOGGER.warning("Cannot Touch file %s.  Already finished (not active) (410)", id_)
@@ -1204,7 +1215,7 @@ class Backend:
                    "location": location,
                    "project": project}
         try:
-            return Backend.put(path, payload, headers=cls.headers)
+            return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as e:
             if e.response.status_code == 410:
                 LOGGER.warning("Cannot finish file %s.  File not active (410)", id_)
@@ -1221,7 +1232,7 @@ class Backend:
                    "location": location,
                    "project": project}
         try:
-            return Backend.put(path, payload, headers=cls.headers)
+            return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as e:
             if e.response.status_code == 410:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)", id_)
@@ -1230,13 +1241,9 @@ class Backend:
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
-    def bearer_token(cls, token):
-        url = cls.make_url("bearer")
-        headers = dict(cls.headers)
-        headers.update({"authorization": "Token %s" % token})
-        result = requests.get(url, headers=headers)
-        result.raise_for_status()
-        return result.json()["access_token"]
+    def bearer_token(cls):
+        creds_dict = api_client.get_api_key_bearer_token()
+        return creds_dict["access_token"]
 
     @classmethod
     @DecAuthorize()
@@ -1270,10 +1277,7 @@ class Backend:
         '''
         TODO: get rid of this hardcoding!!!
         '''
-        if path == "bearer":
-            config_url = CONFIG.get("url", CONFIG["base_url"])
-            return "%s/api/oauth_jwt?scope=user" % config_url
-
+        url_base = CONFIG.get("api_url")
         url = "%s/api/v1/fileio/%s" % (url_base, path)
         return url
 
@@ -1346,8 +1350,7 @@ def get_bearer_token(refresh=False):
     global BEARER_TOKEN
 
     if refresh or not BEARER_TOKEN.value:
-        token = CONFIG.get("conductor_token")
-        BEARER_TOKEN.value = Backend.bearer_token(token)
+        BEARER_TOKEN.value = Backend.bearer_token()
 
     return BEARER_TOKEN
 

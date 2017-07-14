@@ -35,7 +35,7 @@ venv
 
 
 # secrets (to be factored out)
-auth
+auth/*
 
 # config
 config.yml
