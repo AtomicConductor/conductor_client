@@ -796,7 +796,7 @@ class Downloader(object):
 #         if data["status"] == "downloaded":
 #             print "********DOWNLOADED: %s ********************" % download_id
         return  self.api_client.make_request(self.endpoint_downloads_status,
-                                                                      data=json.dumps(data))
+                                             data=json.dumps(data), use_api_key=True)
 
     def print_summary(self, thread_states, interval):
         '''
@@ -1119,7 +1119,7 @@ def _get_next_downloads(location, endpoint, client, count=1):
     params = {'location': location,
               "count": count}
     # logger.debug('params: %s', params)
-    response_string, response_code = client.make_request(endpoint, params=params)
+    response_string, response_code = client.make_request(endpoint, params=params, use_api_key=True)
 #     logger.debug("response code is:\n%s" % response_code)
 #     logger.debug("response data is:\n%s" % response_string)
     if response_code != 201:
@@ -1132,7 +1132,7 @@ def _get_job_download(endpoint, client, jid, tid):
     if tid:
         params = {'tid': tid}
 #     logger.debug('params: %s', params)
-    response_string, response_code = client.make_request(endpoint, params=params)
+    response_string, response_code = client.make_request(endpoint, params=params, use_api_key=True)
 #     logger.debug("response code is:\n%s" % response_code)
 #     logger.debug("response data is:\n%s" % response_string)
     if response_code != 201:
@@ -1263,7 +1263,7 @@ def report_error(self, download_id, error_message):
         resp_str, resp_code = self.api_helper.make_request(
             '/downloads/%s/fail' % download_id,
             data=error_message,
-            verb='POST')
+            verb='POST', use_api_key=True)
     except e:
         pass
     return True

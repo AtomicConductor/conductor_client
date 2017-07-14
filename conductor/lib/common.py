@@ -3,6 +3,7 @@ import binascii
 import datetime
 import functools
 import hashlib
+import json
 import logging
 import math
 import multiprocessing
@@ -376,7 +377,7 @@ def base_dir():
     return os.path.dirname(os.path.dirname(os.path.dirname(module_filepath)))
 
 class Config():
-    required_keys = ['account']
+    required_keys = []
     default_config = {'base_url': 'atomic-light-001.appspot.com',
                       'thread_count': (multiprocessing.cpu_count() * 2),
                       'instance_cores': 16,
@@ -386,7 +387,6 @@ class Config():
                       'md5_caching': True,
                       'log_level': "INFO"}
 
-
     def __init__(self):
         logger.debug('base dir is %s' % base_dir())
 
@@ -395,57 +395,50 @@ class Config():
         combined_config.update(self.get_user_config())
         combined_config.update(self.get_environment_config())
 
-
         # verify that we have the required params
         self.verify_required_params(combined_config)
 
         # set the url based on account (unless one was already provided)
         if not 'url' in combined_config:
-            combined_config['url'] = 'https://%s-dot-%s' % (combined_config['account'],
-                                                            combined_config['base_url'])
+            combined_config['url'] = 'https://dashboard.conductortech.com'
 
-        self.validate_client_token(combined_config)
+        # self.validate_client_token(combined_config)
+        self.validate_api_key(combined_config)
         recombined_config = self.add_api_settings(combined_config)
         self.config = recombined_config
         logger.debug('config is:\n%s' % self.config)
 
     def add_api_settings(self, settings_dict):
-        ip_map = {
-            "atomic":
-                "https://beta-api.conductorio.com",
-            "dev":
-                "https://dev-api.conductorio.com",
-            "qa":
-                "https://qa-api.conductorio.com",
-            "prod":
-                "https://api.conductorio.com"
-            }
+        api_url = settings_dict.get("api_url", "https://api.conductortech.com")
         if os.environ.get("LOCAL"):
             api_url = "http://localhost:8081"
-        else:
-            prebase = settings_dict.get("url", settings_dict["base_url"]).split("//")[-1]
-            base = self.extract_urlbase(prebase)
-            api_url = ip_map.get(self.env_from_url(base))
         settings_dict["api_url"] = api_url
         return settings_dict
 
-    def env_from_url(self, base):
-        env_map = {
-                'fiery': 'atomic',
-                'eloquent': 'dev',
-                'atomic': 'prod',
-                'conductor-qa': 'qa'
-                }
-        return_value = None
-        for env in env_map.keys():
-            if re.search(env, base):
-                return_value = env_map.get(env)
-                break
-        return return_value
+    def validate_api_key(self, config):
+        """
+        Load the API Key (if it exists)
+        Args:
+            config: client configuration object
 
-    def extract_urlbase(self, url):
-        end = url.index(".", 0)
-        return url[0:end]
+        Returns: None
+
+        """
+        if not 'api_key_path' in config:
+            config['api_key_path'] = os.path.join(base_dir(), 'auth', 'conductor_api_key')
+        api_key_path = config['api_key_path']
+
+        #  If the API key doesn't exist, then no biggie, just bail
+        if not os.path.exists(api_key_path):
+            # config['api_key'] = None
+            return
+        try:
+            with open(api_key_path, 'r') as fp:
+                config['api_key'] = json.loads(fp.read())
+        except:
+            message = "An error occurred reading the API key"
+            logger.error(message)
+            raise ValueError(message)
 
     def validate_client_token(self, config):
         """
@@ -631,9 +624,3 @@ def get_human_timestamp(seconds_since_epoch):
     '''
     return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
 
-def get_upload_gcs_path(project, b64_md5):
-    hex_md5 = ""
-    if b64_md5:
-        hex_md5 = binascii.b2a_hex(binascii.a2b_base64(b64_md5))
-    config = Config().config
-    return "%s/accounts/%s/%s" % (project, config.get('account'), hex_md5)
