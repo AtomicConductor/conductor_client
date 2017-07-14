@@ -3,6 +3,7 @@ import logging
 from pprint import pformat
 import requests
 import urlparse
+import urllib2
 
 from conductor import CONFIG
 from conductor.lib import common
@@ -12,7 +13,8 @@ logger = logging.getLogger(__name__)
 # A convenience tuple of network exceptions that can/should likely be retried by the retry decorator
 CONNECTION_EXCEPTIONS = (requests.exceptions.HTTPError,
                          requests.exceptions.ConnectionError,
-                         requests.exceptions.Timeout)
+                         requests.exceptions.Timeout,
+                         urllib2.URLError)
 
 # TODO:
 # appspot_dot_com_cert = os.path.join(common.base_dir(),'auth','appspot_dot_com_cert2')

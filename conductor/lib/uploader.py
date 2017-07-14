@@ -349,7 +349,7 @@ class UploadWorker(worker.ThreadWorker):
             for header in headers:
                 request.add_header(header, headers[header])
             request.get_method = lambda: 'PUT'
-            opener.open(request)
+            opener.open(request, timeout=60)
             transferred += stream._total
             stream.close()
 
