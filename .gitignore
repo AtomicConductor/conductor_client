@@ -45,3 +45,5 @@ config.yml
 
 # vim tags
 tags
+GPATH
+GTAGS
