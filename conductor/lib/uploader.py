@@ -578,13 +578,14 @@ class Uploader():
                 self.estimated_time_remaining(elapsed_time, percent_complete)),
         )
 
+        debug_text = ''
         file_progress = self.manager.metric_store.get_dict('files')
         for filename in file_progress:
-            formatted_text += "%s: %s\n" % (filename, file_progress[filename])
+            debug_text += "%s: %s\n" % (filename, file_progress[filename])
 
         formatted_text += "################################################################################"
 
-        return formatted_text
+        return formatted_text, debug_text
 
 
     def print_status(self):
@@ -598,7 +599,9 @@ class Uploader():
             if self.working:
                 try:
                     logger.info(self.manager.worker_queue_status_text())
-                    logger.info(self.upload_status_text())
+                    info_text, debug_text = self.upload_status_text()
+                    logger.info(info_text)
+                    logger.debug(debug_text)
                 except Exception, e:
                     print e
                     print traceback.format_exc()
