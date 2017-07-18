@@ -152,8 +152,6 @@ class Submit():
         self.notify = { "emails": self.resolve_arg(args, 'notify', [], combine_config=True),
                         "slack": self.resolve_arg(args, 'slack_notify', [], combine_config=True)}
         logger.debug("notify: %s", self.notify)
-        logger.debug(self.notify)
-
         logger.debug("Consumed args")
 
     @classmethod
