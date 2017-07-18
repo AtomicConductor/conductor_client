@@ -243,7 +243,6 @@ class FileWithCallback(file):
         self._total = section_size
         self.seek(offset * -1, os.SEEK_END)
         rest = self.tell()
-        print "rest is %d" % rest
         if self._total > rest:
             self._total = rest
 
