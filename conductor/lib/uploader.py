@@ -697,10 +697,11 @@ class Uploader():
             #  Despite storing lots of data about new uploads, we will only send back the things
             #  that have changed, to keep payloads small.
             if self.upload_id:
-                finished_upload_files = {path: {"source": path,
-                                                "md5": md5}
-                                         for path, md5 in self.return_md5s().iteritems()}
+                finished_upload_files = {}
+                for path, md5 in self.return_md5s().iteritems():
+                    finished_upload_files[path] = {"source": path, "md5": md5}
 
+                logger.info('marking upload finished for %d files' % len(finished_upload_files.keys()))
                 self.mark_upload_finished(self.upload_id, finished_upload_files)
 
         except:
