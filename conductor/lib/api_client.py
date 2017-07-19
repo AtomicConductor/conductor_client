@@ -118,8 +118,8 @@ def read_conductor_credentials(use_api_key=False):
     '''
 
     logger.debug("Reading conductor credentials...")
-    if use_api_key and not CONFIG.get('api_key') or not CONFIG.get('api_key').get('client_id') \
-            or not CONFIG.get('api_key').get('private_key'):
+    if use_api_key and not CONFIG.get('api_key') or not CONFIG.get('api_key', {}).get('client_id') \
+            or not CONFIG.get('api_key', {}).get('private_key'):
         use_api_key = False
 
     logger.debug("use_api_key = %s" % use_api_key)
