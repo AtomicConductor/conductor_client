@@ -183,12 +183,19 @@ def get_api_key_bearer_token(creds_file=None):
     return
 
 
+def account_id_from_jwt(token):
+    """
+    Fetch the accounts id from a jwt token value.
+    """
+    payload = jwt.decode(token, verify=False)
+    return payload.get("account")
+
+
 def account_name_from_jwt(token):
     """
     Fetch the accounts name from a jwt token value.
     """
-    payload = jwt.decode(token, verify=False)
-    account_id = payload.get("account")
+    account_id = account_id_from_jwt(token)
     if account_id:
         url = "%s/api/v1/accounts/%s" % (CONFIG['api_url'], account_id)
         response = requests.get(url, headers={"authorization": "Bearer %s" % token})

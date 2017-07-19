@@ -148,7 +148,7 @@ class Uploader(object):
         """
 
         bearer = get_bearer_token()
-        account = api_client.account_name_from_jwt(bearer.value)
+        account = api_client.account_id_from_jwt(bearer.value)
         LOGGER.info("account: %s", account)
 
         project = self.args.get("project") or None
