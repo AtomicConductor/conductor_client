@@ -185,8 +185,10 @@ class HttpBatchWorker(worker.ThreadWorker):
 
         if response_code == 200:
             url_list = json.loads(response_str)
+            logger.info('Sending %d files to upload' % len(url_list.keys()))
             return url_list
         if response_code == 204:
+            logger.debug('All files already uploaded')
             return None
         raise Exception('%s Failed request to: %s\n%s' % (response_code, uri_path, response_str))
 
