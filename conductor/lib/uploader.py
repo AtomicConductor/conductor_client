@@ -5,6 +5,7 @@ from pprint import pformat
 import time
 import ast
 import json
+import copy
 import hashlib
 import logging
 import os
@@ -578,8 +579,9 @@ class Uploader():
                 self.estimated_time_remaining(elapsed_time, percent_complete)),
         )
 
-        debug_text = ''
-        file_progress = self.manager.metric_store.get_dict('files')
+        debug_text = '\n'
+        # try to deepcopy the dict to avoid the "dictionary changed size during iteration" error
+        file_progress = copy.deepcopy(self.manager.metric_store.get_dict('files'))
         for filename in file_progress:
             debug_text += "%s: %s\n" % (filename, file_progress[filename])
 
