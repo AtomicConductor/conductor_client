@@ -62,5 +62,5 @@ def run(server_class=HTTPServer, handler_class=Handler, port=8085, creds_file=No
     httpd = server_class(server_address, handler_class)
     httpd.timeout = REQUEST_TIMEOUT
     timeout = time.time() + SESSION_TIMEOUT
-    while time.time() < timeout:
+    while time.time() < timeout and keep_running:
         httpd.handle_request()
