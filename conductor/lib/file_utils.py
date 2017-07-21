@@ -162,7 +162,7 @@ def process_upload_filepath(path, strict=True):
             
             # Run through a list of excluded file types
             if not filter_file_by_type(filepath):
-                continue
+                return paths
 
             paths.append(filepath)
 
@@ -170,7 +170,7 @@ def process_upload_filepath(path, strict=True):
         # If the path is a directory
         elif os.path.isdir(path):
             if not filter_folders_by_name(path):
-                continue
+                return paths
 
             for filepath in get_files(path, recurse=True):
                 # when recursing a directory, don't be strict about whether
@@ -373,16 +373,16 @@ def validate_path(filepath):
 def filter_file_by_type(filepath):
     """ Filter the filepath to ecxclude certain file type that will not be required for render """
     # Filter some known files 
-    exclude_files = ['Makefile', 'requirements.txt']
+    excluded_files = ['Makefile', 'requirements.txt']
     if os.path.basename(filepath) in excluded_files:
-        logger.info('Ignoring file %s because it is part of the files exclusion list' % (path, ext))
+        logger.info('Ignoring file %s because it is part of the files exclusion list' % (filepath))
         return False
 
     # Exclude by extensions
     excluded_extensions = ['.pyc', '.log', '.md', '.txt']
     head, ext = os.path.splitext(filepath)
     if ext in excluded_extensions:
-        logger.info('Ignoring file %s because the extension %s if path of the extension exclude list' % (path, ext))
+        logger.info('Ignoring file %s because the extension %s is in the extensions exclusion list' % (filepath, ext))
         return False
     return True
 
@@ -390,7 +390,7 @@ def filter_folders_by_name(path):
     """ Filter some folder by names """
     excluded_folder_names = ['.git']
     if os.path.basename(path) in excluded_folder_names:
-        logger.info('Ignoring folder %s because it is part of the folder name exclusion list' % path)
+        logger.info('Ignoring folder %s because it is part of the folder names exclusion list' % path)
         return False
     return True
 
