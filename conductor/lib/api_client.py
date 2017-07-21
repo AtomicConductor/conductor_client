@@ -126,7 +126,7 @@ def read_conductor_credentials(use_api_key=False):
     creds_file = get_creds_path(use_api_key)
 
     logger.debug("Creds file is %s" % creds_file)
-
+    logger.debug("Auth url is %s" % CONFIG.get('auth_url'))
     if not os.path.exists(creds_file):
         if use_api_key:
             if not CONFIG.get('api_key'):

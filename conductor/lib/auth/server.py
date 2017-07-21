@@ -38,14 +38,24 @@ class Handler(BaseHTTPRequestHandler):
         if 'access_token' not in url_args:
             return
 
+        print url_args
         credentials_dict = {
             "access_token": url_args['access_token'][0],
             "token_type": "Bearer",
             "expiration": int(time.time()) + int(url_args['expires_in'][0]),
             "scope": url_args['scope']
         }
+        print "Creds dict = %s" % credentials_dict
         self._write_credentials(credentials_dict)
-        self.wfile.write("Please close your browser!")
+        path = os.path.sep.join((self.web_root, "index.html"))
+        print "path = %s" % path
+        try:
+            with open(path,'r') as src:
+                content = src.read()
+        except IOError:
+            self.send_response(404)
+            return
+        self.wfile.write(content)
         global keep_running
         keep_running = False
         return
