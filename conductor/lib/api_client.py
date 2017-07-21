@@ -138,7 +138,7 @@ def read_conductor_credentials(use_api_key=False):
             get_api_key_bearer_token(creds_file)
 
         else:
-            auth.run(creds_file)
+            auth.run(creds_file, CONFIG.get('auth_url'))
 
     if not os.path.exists(creds_file):
         return None
@@ -155,7 +155,7 @@ def read_conductor_credentials(use_api_key=False):
             get_api_key_bearer_token(creds_file)
         else:
             logger.debug("Sending to auth page...")
-            auth.run(creds_file)
+            auth.run(creds_file, CONFIG.get('auth_url'))
 
     return file_contents['access_token']
 
