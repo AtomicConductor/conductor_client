@@ -21,6 +21,7 @@ CONNECTION_EXCEPTIONS = (requests.exceptions.HTTPError,
 # load appspot.com cert into requests lib
 # verify = appspot_dot_com_cert
 
+
 class ApiClient():
 
     http_verbs = ["PUT", "POST", "GET", "DELETE", "HEAD", "PATCH"]
@@ -61,11 +62,10 @@ class ApiClient():
         verb: PUT, POST, GET, DELETE, HEAD, PATCH
         '''
 
-
         # TODO: set Content Content-Type to json if data arg
         if not headers:
-            headers = {'Content-Type':'application/json',
-                       'Accept':'application/json'}
+            headers = {'Content-Type': 'application/json',
+                       'Accept': 'application/json'}
 #         logger.debug('headers are: %s', headers)
 #         logger.debug('data is: %s' % data)
 #         logger.debug("params is %s" % params)
@@ -100,7 +100,7 @@ class ApiClient():
 
         # call the wrapped request function
         response = wrapped_func(verb, conductor_url, headers, params, data,
-                                      raise_on_error=raise_on_error)
+                                raise_on_error=raise_on_error)
 
         return response.text, response.status_code
 

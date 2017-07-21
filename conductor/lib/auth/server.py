@@ -9,6 +9,8 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 keep_running = True
 credentials_file = ""
+REQUEST_TIMEOUT = 1  # number of seconds we're waiting per request
+SESSION_TIMEOUT = 30  # number of seconds we're waiting for user to get credentials
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -58,5 +60,7 @@ def run(server_class=HTTPServer, handler_class=Handler, port=8085, creds_file=No
     credentials_file = creds_file
     server_address = ('localhost', port)
     httpd = server_class(server_address, handler_class)
-    while keep_running:
+    httpd.timeout = REQUEST_TIMEOUT
+    timeout = time.time() + SESSION_TIMEOUT
+    while time.time() < timeout:
         httpd.handle_request()
