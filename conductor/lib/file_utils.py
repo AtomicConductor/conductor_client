@@ -169,9 +169,6 @@ def process_upload_filepath(path, strict=True):
 
         # If the path is a directory
         elif os.path.isdir(path):
-            if not filter_folders_by_name(path):
-                return paths
-
             for filepath in get_files(path, recurse=True):
                 # when recursing a directory, don't be strict about whether
                 # any of it's enclosed files are "missing" (e.g. broken symlinks)
@@ -378,6 +375,13 @@ def filter_file_by_type(filepath):
         logger.info('Ignoring file %s because it is part of the files exclusion list' % (filepath))
         return False
 
+    # Exclude by folder names
+    excluded_folder_names = ['.git']
+    for f in excluded_folder_names:
+        if '/%s/' % f in filepath:
+            logger.info('Ignoring file %s because it is in a folder included in the folder exclusion list' % filepath)
+            return False            
+    
     # Exclude by extensions
     excluded_extensions = ['.pyc', '.log', '.md', '.txt']
     head, ext = os.path.splitext(filepath)
@@ -386,13 +390,6 @@ def filter_file_by_type(filepath):
         return False
     return True
 
-def filter_folders_by_name(path):
-    """ Filter some folder by names """
-    excluded_folder_names = ['.git']
-    if os.path.basename(path) in excluded_folder_names:
-        logger.info('Ignoring folder %s because it is part of the folder names exclusion list' % path)
-        return False
-    return True
 
 def reconstruct_filename(matched, file_pieces):
     full_file_string = ""
