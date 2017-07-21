@@ -1,7 +1,10 @@
+import errno
 import os
 import inspect
 import json
 import mimetypes
+import select
+import SocketServer
 import urlparse
 import time
 
@@ -65,10 +68,20 @@ class Handler(BaseHTTPRequestHandler):
         return os.path.sep.join((os.path.dirname(os.path.abspath(inspect.stack()[0][1])), 'resources'))
 
 
+def retry_loop(server):
+    while True:
+        try:
+            return SocketServer.BaseServer.handle_request(server)
+        except (OSError, select.error) as e:
+            if e.args[0] != errno.EINTR:
+                raise
+
+
 def run(server_class=HTTPServer, handler_class=Handler, port=8085, creds_file=None):
     global credentials_file
     credentials_file = creds_file
     server_address = ('localhost', port)
+    server_class.handle_request = retry_loop
     httpd = server_class(server_address, handler_class)
     httpd.timeout = REQUEST_TIMEOUT
     timeout = time.time() + SESSION_TIMEOUT
