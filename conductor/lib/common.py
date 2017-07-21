@@ -400,7 +400,10 @@ class Config():
 
         # set the url based on account (unless one was already provided)
         if not 'url' in combined_config:
-            combined_config['url'] = 'https://dashboard.conductortech.com'
+            combined_config['url'] = 'https://atomic-light-001.appspot.com'
+
+        if not 'auth_url' in combined_config:
+            combined_config['auth_url'] = 'https://dashboard.conductortech.com'
 
         # self.validate_client_token(combined_config)
         self.validate_api_key(combined_config)
