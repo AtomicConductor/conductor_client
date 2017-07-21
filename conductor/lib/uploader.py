@@ -411,8 +411,12 @@ class Uploader():
         logger.debug("Uploader.__init__")
         self.api_client = api_client.ApiClient()
         self.args = args or {}
-        self.args['thread_count'] = CONFIG['thread_count']
-        logger.debug("args: %s", self.args)
+        self.args['thread_count'] = self.args['thread_count'] or CONFIG['thread_count']
+        self.args['md5_thread_count'] = self.args['md5_thread_count'] or \
+                                        CONFIG.get('md5_thread_count', self.args['thread_count'])
+        self.args['http_batch_thread_count'] = self.args['http_batch_thread_count'] or \
+                                               CONFIG.get('http_batch_thread_count', self.args['thread_count'])
+        logger.info("args: %s", self.args)
 
         self.location = self.args.get("location")
         self.project = self.args.get("project")
@@ -433,12 +437,12 @@ class Uploader():
             ]
         else:
             job_description = [
-                (MD5Worker, [], {'thread_count': self.args['thread_count'],
+                (MD5Worker, [], {'thread_count': self.args['md5_thread_count'],
                                  "database_filepath": self.args['database_filepath'],
                                  "md5_caching": self.args['md5_caching']}),
 
                 (MD5OutputWorker, [], {'thread_count': 1}),
-                (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
+                (HttpBatchWorker, [], {'thread_count': self.args['http_batch_thread_count'],
                                        "project": project,
                                        "cloud_provider": cloud_provider}),
                 (FileStatWorker, [], {'thread_count': 1}),
