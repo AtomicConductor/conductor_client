@@ -26,7 +26,7 @@ class Handler(BaseHTTPRequestHandler):
         print ("Writing credentials to %s" % credentials_file)
         if not os.path.exists(os.path.dirname(credentials_file)):
             print("Creating creds directory %s" % os.path.dirname(credentials_file))
-            os.mkdir(os.path.dirname(credentials_file))
+            os.makedirs(os.path.dirname(credentials_file))
         with open(credentials_file, 'w') as token_file:
             token_file.write(json.dumps(credentials))
 
