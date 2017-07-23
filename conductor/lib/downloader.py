@@ -40,7 +40,7 @@ MAX_DOWNLOAD_RETRIES = 5
 
 # The frequency (in seconds) for which the Touch thread should
 # report progress of the file (outside of start/finish)
-TOUCH_INTERVAL = 10
+TOUCH_INTERVAL = 120
 
 # Log format when not running in DEBUG mode
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(message)s')

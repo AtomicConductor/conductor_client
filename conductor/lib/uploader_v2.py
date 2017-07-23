@@ -32,7 +32,7 @@ except ImportError:  # , error:
 WORKER_SLEEP_DURATION = 15
 
 # Time between updates to server.
-WORKER_TOUCH_INTERVAL = 60  # seconds
+WORKER_TOUCH_INTERVAL = 120  # seconds
 
 # The amount of bytes to transfer as a chunk
 UPLOAD_CHUNK_SIZE = 1048576  # 1MB
@@ -647,7 +647,7 @@ class Backend:
     def headers(cls):
         bearer = get_bearer_token()
         return{"accept-version": "v1",
-               "content-type": "application/json",
+               # "content-type": "application/json",
                "authorization": "Bearer %s" % bearer.value}
 
 
