@@ -284,6 +284,23 @@ def parse_args():
                                        "everyday, while storing the last 7 days "
                                        "of logs"))
 
+    uploader_parser.add_argument("--thread_count",
+                                 type=int,
+                                 default=conductor.CONFIG.get("thread_count"),
+                                 help=('The number of threads that should upload simultaneously'))
+
+    uploader_parser.add_argument("--md5_thread_count",
+                                 type=int,
+                                 default=conductor.CONFIG.get("md5_thread_count"),
+                                 help=('The number of threads that should be used to perform md5 simultaneously.'
+                                       'Use the thread-count value if this argument is not provided'))
+
+    uploader_parser.add_argument("--http_batch_thread_count",
+                                 type=int,
+                                 default=conductor.CONFIG.get("http_batch_thread_count"),
+                                 help=('The number of threads that should be used to perform HttpBatch simultaneously.'
+                                       'Use the thread-count value if this argument is not provided'))
+
     uploader_parser.set_defaults(func=run_uploader)
 
 

@@ -21,6 +21,11 @@ BYTES_1MB = BYTES_1KB ** 2
 BYTES_1GB = BYTES_1KB ** 3
 BYTES_1TB = BYTES_1KB ** 4
 
+# List of default files, folder and extensions ignored by the uploader
+UPLOADER_EXCLUDED_FILES = ['Makefile', 'requirements.txt']
+UPLOADER_EXCLUDED_FOLDERS = ['.git']
+UPLOADER_EXCLUDED_EXTENSIONS = ['.pyc', '.log', '.md', '.txt']
+
 
 logger = logging.getLogger(__name__)
 
@@ -383,7 +388,11 @@ class Config():
                       'priority': 5,
                       'local_upload': True,
                       'md5_caching': True,
-                      'log_level': "INFO"}
+                      'log_level': "INFO",
+                      'uploader_excluded_files': UPLOADER_EXCLUDED_FILES,
+                      'uploader_excluded_folders': UPLOADER_EXCLUDED_FOLDERS,
+                      'uploader_excluded_extensions': UPLOADER_EXCLUDED_EXTENSIONS,
+                      }
 
 
     def __init__(self):

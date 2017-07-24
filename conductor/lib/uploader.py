@@ -5,6 +5,7 @@ from pprint import pformat
 import time
 import ast
 import json
+import copy
 import hashlib
 import logging
 import os
@@ -184,8 +185,10 @@ class HttpBatchWorker(worker.ThreadWorker):
 
         if response_code == 200:
             url_list = json.loads(response_str)
+            logger.debug('Sending %d files to upload queue' % len(url_list.keys()))
             return url_list
         if response_code == 204:
+            logger.debug('All files already uploaded')
             return None
         raise Exception('%s Failed request to: %s\n%s' % (response_code, uri_path, response_str))
 
@@ -243,7 +246,6 @@ class FileWithCallback(file):
         self._total = section_size
         self.seek(offset * -1, os.SEEK_END)
         rest = self.tell()
-        print "rest is %d" % rest
         if self._total > rest:
             self._total = rest
 
@@ -409,8 +411,18 @@ class Uploader():
         logger.debug("Uploader.__init__")
         self.api_client = api_client.ApiClient()
         self.args = args or {}
-        self.args['thread_count'] = CONFIG['thread_count']
-        logger.debug("args: %s", self.args)
+        self.args['thread_count'] = self.args['thread_count'] or CONFIG['thread_count']
+        self.args['md5_thread_count'] = self.args['md5_thread_count'] or \
+                                        CONFIG.get('md5_thread_count', self.args['thread_count'])
+        self.args['http_batch_thread_count'] = self.args['http_batch_thread_count'] or \
+                                               CONFIG.get('http_batch_thread_count', self.args['thread_count'])
+        self.args['uploader_excluded_files'] = self.args.get('uploader_excluded_files') or \
+                                               CONFIG['uploader_excluded_files']
+        self.args['uploader_excluded_folders'] = self.args.get('uploader_excluded_folders') or \
+                                                 CONFIG['uploader_excluded_folders']
+        self.args['uploader_excluded_extensions'] = self.args.get('uploader_excluded_extensions') or \
+                                                    CONFIG['uploader_excluded_extensions']
+        logger.info("args: %s", self.args)
 
         self.location = self.args.get("location")
         self.project = self.args.get("project")
@@ -431,12 +443,12 @@ class Uploader():
             ]
         else:
             job_description = [
-                (MD5Worker, [], {'thread_count': self.args['thread_count'],
+                (MD5Worker, [], {'thread_count': self.args['md5_thread_count'],
                                  "database_filepath": self.args['database_filepath'],
                                  "md5_caching": self.args['md5_caching']}),
 
                 (MD5OutputWorker, [], {'thread_count': 1}),
-                (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
+                (HttpBatchWorker, [], {'thread_count': self.args['http_batch_thread_count'],
                                        "project": project,
                                        "cloud_provider": cloud_provider}),
                 (FileStatWorker, [], {'thread_count': 1}),
@@ -579,13 +591,15 @@ class Uploader():
                 self.estimated_time_remaining(elapsed_time, percent_complete)),
         )
 
-        file_progress = self.manager.metric_store.get_dict('files')
+        debug_text = '\n'
+        # try to deepcopy the dict to avoid the "dictionary changed size during iteration" error
+        file_progress = copy.deepcopy(self.manager.metric_store.get_dict('files'))
         for filename in file_progress:
-            formatted_text += "%s: %s\n" % (filename, file_progress[filename])
+            debug_text += "%s: %s\n" % (filename, file_progress[filename])
 
         formatted_text += "################################################################################"
 
-        return formatted_text
+        return formatted_text, debug_text
 
 
     def print_status(self):
@@ -599,7 +613,9 @@ class Uploader():
             if self.working:
                 try:
                     logger.info(self.manager.worker_queue_status_text())
-                    logger.info(self.upload_status_text())
+                    info_text, debug_text = self.upload_status_text()
+                    logger.info(info_text)
+                    logger.debug(debug_text)
                 except Exception, e:
                     print e
                     print traceback.format_exc()
@@ -695,10 +711,11 @@ class Uploader():
             #  Despite storing lots of data about new uploads, we will only send back the things
             #  that have changed, to keep payloads small.
             if self.upload_id:
-                finished_upload_files = {path: {"source": path,
-                                                "md5": md5}
-                                         for path, md5 in self.return_md5s().iteritems()}
+                finished_upload_files = {}
+                for path, md5 in self.return_md5s().iteritems():
+                    finished_upload_files[path] = {"source": path, "md5": md5}
 
+                logger.info('marking upload finished for %d files' % len(finished_upload_files.keys()))
                 self.mark_upload_finished(self.upload_id, finished_upload_files)
 
         except:

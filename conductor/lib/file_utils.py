@@ -5,7 +5,7 @@ import sys
 import glob
 import stat
 
-
+from conductor import CONFIG
 
 # Regular expressions for different path expressions that are supported
 RX_HASH = r"#+"  # image.####.exr
@@ -23,8 +23,8 @@ PATH_EXPRESSIONS = [RX_HASH, RX_PERCENT, RX_UDIM_MARI, RX_UDIM_MUDBOX_L,
                     RX_UDIM_MUDBOX_U, RX_UDIM_VRAY_L, RX_UDIM_VRAY_U, RX_HOUDINI,
                     RX_ASTERISK]
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 
 class InvalidPathException(Exception):
@@ -159,6 +159,11 @@ def process_upload_filepath(path, strict=True):
                 logger.warning(error_msg)
                 if strict:
                     raise InvalidPathException(error_msg)
+            
+            # Run through a list of excluded file types
+            if not filter_file_by_type(filepath):
+                return paths
+
             paths.append(filepath)
 
 
@@ -360,6 +365,27 @@ def validate_path(filepath):
     # Ensure filepath begins with a slash
     if not filepath.startswith("/"):
         return "Filepath does not begin with expected %r. Got %r" % ("/", filepath)
+
+
+def filter_file_by_type(filepath):
+    """ Filter the filepath to ecxclude certain file type that will not be required for render """
+    # Filter some known files 
+    if os.path.basename(filepath) in CONFIG['uploader_excluded_files']:
+        logger.info('Ignoring file %s because it is part of the files exclusion list' % (filepath))
+        return False
+
+    # Exclude by folder names
+    for f in CONFIG['uploader_excluded_folders']:
+        if '/%s/' % f in filepath:
+            logger.info('Ignoring file %s because it is in a folder included in the folder exclusion list' % filepath)
+            return False            
+    
+    # Exclude by extensions
+    head, ext = os.path.splitext(filepath)
+    if ext in CONFIG['uploader_excluded_extensions']:
+        logger.info('Ignoring file %s because the extension %s is in the extensions exclusion list' % (filepath, ext))
+        return False
+    return True
 
 
 def reconstruct_filename(matched, file_pieces):
