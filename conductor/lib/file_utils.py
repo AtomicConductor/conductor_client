@@ -371,19 +371,19 @@ def filter_file_by_type(filepath):
     """ Filter the filepath to ecxclude certain file type that will not be required for render """
     # Filter some known files 
     if os.path.basename(filepath) in CONFIG['uploader_excluded_files']:
-        logger.debug('Ignoring file %s because it is part of the files exclusion list' % (filepath))
+        logger.info('Ignoring file %s because it is part of the files exclusion list' % (filepath))
         return False
 
     # Exclude by folder names
     for f in CONFIG['uploader_excluded_folders']:
         if '/%s/' % f in filepath:
-            logger.debug('Ignoring file %s because it is in a folder included in the folder exclusion list' % filepath)
+            logger.info('Ignoring file %s because it is in a folder included in the folder exclusion list' % filepath)
             return False            
     
     # Exclude by extensions
     head, ext = os.path.splitext(filepath)
     if ext in CONFIG['uploader_excluded_extensions']:
-        logger.debug('Ignoring file %s because the extension %s is in the extensions exclusion list' % (filepath, ext))
+        logger.info('Ignoring file %s because the extension %s is in the extensions exclusion list' % (filepath, ext))
         return False
     return True
 
