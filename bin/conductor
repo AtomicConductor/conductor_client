@@ -404,7 +404,11 @@ def run_submit(args):
 
 
 def run_uploader(args):
-    uploader_v2.run_uploader(args)
+    args_dict = vars(args)
+    if args_dict.get("alt"):
+        uploader_v2.run_uploader(args)
+    else:
+        uploader.run_uploader(args)
 
 
 def run_downloader(args):
