@@ -1164,7 +1164,6 @@ class Backend:
     def headers(cls):
         bearer = get_bearer_token()
         return{"accept-version": "v1",
-               "content-type": "application/json",
                "authorization": "Bearer %s" % bearer.value}
 
     @classmethod
