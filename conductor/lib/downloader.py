@@ -20,15 +20,6 @@ import requests
 from conductor import CONFIG
 from conductor.lib import common, loggeria, downloader2, api_client
 
-try:
-    imp.find_module('conductor')
-except ImportError, error:
-    sys.path.append(
-        os.path.dirname(
-            os.path.dirname(
-                os.path.dirname(
-                    os.path.abspath(__file__)))))
-
 # Duration that workers sleep when there's no work to perform
 WORKER_SLEEP_DURATION = 15
 
