@@ -178,6 +178,9 @@ def get_api_key_bearer_token(creds_file=None):
         if not creds_file:
             return credentials_dict
 
+        if not os.path.exists(os.path.dirname(creds_file)):
+            os.makedirs(os.path.dirname(creds_file))
+        
         with open(creds_file, "w") as fp:
             fp.write(json.dumps(credentials_dict))
     return
