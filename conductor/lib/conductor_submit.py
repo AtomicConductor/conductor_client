@@ -428,7 +428,7 @@ class Submit():
         # If opting to upload locally (i.e. from this machine) then run the uploader now
         # This will do all of the md5 hashing and uploading files to the conductor (if necesary).
         if self.local_upload:
-            api_client.read_conductor_credentials()
+            api_client.read_conductor_credentials(use_api_key=True)
 
             uploader_args = {"location":self.location,
                              "database_filepath":self.database_filepath,
