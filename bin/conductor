@@ -416,14 +416,13 @@ def run_downloader(args):
     args_dict = vars(args)
 
     # Code switcher between new downloader and old downloader
-    if args_dict.get("alt") or any([args_dict.get(i) for i in ["job_id", "task_id"]]):
-        if all([args_dict.get(i) for i in ["job_id", "task_id"]]) or args_dict.get("job_id") or args_dict.get("alt"):
-            return downloader2.run_downloader(args_dict)
-        else:
-            raise argparse.ArgumentTypeError('Must supply a job_id with task_id.')
-            return
+    if args_dict.get("task_id") and not args_dict.get("job_id"):
+        raise argparse.ArgumentTypeError('Must supply a job_id with task_id.')
 
-    return downloader.run_downloader(args_dict)
+    if not args_dict.get("job_id") and args_dict.get("alt"):
+        return downloader.run_downloader(args_dict)
+    else:
+        return downloader2.run_downloader(args_dict)
 
 
 if __name__ == '__main__':
