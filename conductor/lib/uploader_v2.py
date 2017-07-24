@@ -21,13 +21,6 @@ from conductor.lib.downloader import DecAuthorize  # , DecDownloaderRetry
 from conductor.lib.downloader import HistoryWorker
 from conductor.lib.downloader import get_bearer_token
 
-try:
-    imp.find_module('conductor')
-except ImportError:  # , error:
-    sys.path.append(
-        os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
 # Duration that workers sleep when there's no work to perform
 WORKER_SLEEP_DURATION = 15
 
