@@ -416,6 +416,12 @@ class Uploader():
                                         CONFIG.get('md5_thread_count', self.args['thread_count'])
         self.args['http_batch_thread_count'] = self.args['http_batch_thread_count'] or \
                                                CONFIG.get('http_batch_thread_count', self.args['thread_count'])
+        self.args['uploader_excluded_files'] = self.args.get('uploader_excluded_files') or \
+                                               CONFIG['uploader_excluded_files']
+        self.args['uploader_excluded_folders'] = self.args.get('uploader_excluded_folders') or \
+                                                 CONFIG['uploader_excluded_folders']
+        self.args['uploader_excluded_extensions'] = self.args.get('uploader_excluded_extensions') or \
+                                                    CONFIG['uploader_excluded_extensions']
         logger.info("args: %s", self.args)
 
         self.location = self.args.get("location")
