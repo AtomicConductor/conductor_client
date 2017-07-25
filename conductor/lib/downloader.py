@@ -334,6 +334,7 @@ class Downloader(object):
         if start:
             for wrkr in workers:
                 wrkr.start()
+                time.sleep(.5)
 
         return workers
 
