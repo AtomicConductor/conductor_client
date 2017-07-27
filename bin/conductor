@@ -405,6 +405,8 @@ def run_submit(args):
 
 def run_uploader(args):
     args_dict = vars(args)
+    if sys.platform == "win32":
+        uploader.run_uploader(args)
     if args_dict.get("alt"):
         uploader_v2.run_uploader(args)
     else:
@@ -420,6 +422,9 @@ def run_downloader(args):
     args_dict = vars(args)
 
     # Code switcher between new downloader and old downloader
+    # HARD set windows users to old downloader
+    if sys.platform == "win32":
+        return downloader2.run_downloader(args_dict)
     if args_dict.get("task_id") and not args_dict.get("job_id"):
         raise argparse.ArgumentTypeError('Must supply a job_id with task_id.')
 
