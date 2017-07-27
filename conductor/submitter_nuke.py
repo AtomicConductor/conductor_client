@@ -10,7 +10,6 @@ try:
 except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-
 from conductor import CONFIG, submitter
 from conductor.lib import file_utils, nuke_utils, pyside_utils, common, package_utils
 from conductor.lib.lsseq import seqLister
