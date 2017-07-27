@@ -3,6 +3,7 @@
 """ Command Line Process to run downloads.
 """
 import sys
+import random
 import signal
 import threading
 import time
@@ -1204,7 +1205,6 @@ class Backend:
     @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, tries=3)
     def finish(cls, id_, bytes_downloaded=0, account=None, location=None, project=None):
         path = "downloader/finish/%s" % id_
-        LOGGER.debug(path)
         payload = {"bytes_downloaded": bytes_downloaded,
                    "account": account,
                    "location": location,
