@@ -21,7 +21,7 @@ from conductor import CONFIG
 from conductor.lib import common, loggeria, downloader2, api_client
 
 # Duration that workers sleep when there's no work to perform
-WORKER_SLEEP_DURATION = 15
+WORKER_SLEEP_DURATION = 30
 
 # The amount of bytes to transfer as a chunk
 DOWNLOAD_CHUNK_SIZE = 1048576  # 1MB
@@ -462,6 +462,10 @@ class DownloadWorker(multiprocessing.Process):
         method is exited properly (reaches the end of the method). i.e. don't
         allow any exceptions to be raised.
         '''
+        time.sleep(
+            random.randint(0,200) / 100.0
+        )
+
         # Set the run_state value to "running"
         self._run_state.value = Downloader.STATE_RUNNING
 
