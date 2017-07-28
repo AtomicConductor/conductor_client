@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from PySide import QtGui, QtCore
+from Qt import QtGui, QtCore, QtWidgets
 import nuke
 import imp
 
@@ -9,7 +9,6 @@ try:
     imp.find_module('conductor')
 except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 from conductor import CONFIG, submitter
 from conductor.lib import file_utils, nuke_utils, pyside_utils, common, package_utils
@@ -24,7 +23,7 @@ TODO:
 3. Test file pathing on Windows. Especially file_utils manipulations.
 '''
 
-class NukeWidget(QtGui.QWidget):
+class NukeWidget(QtWidgets.QWidget):
 
     # The .ui designer filepath
     _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'nuke.ui')
@@ -50,7 +49,7 @@ class NukeWidget(QtGui.QWidget):
         self.ui_write_nodes_trwgt.clear()
         assert isinstance(write_nodes, dict), "write_nodes argument must be a dict. Got: %s" % type(write_nodes)
         for write_node, selected in write_nodes.iteritems():
-            tree_item = QtGui.QTreeWidgetItem([write_node])
+            tree_item = QtWidgets.QTreeWidgetItem([write_node])
             self.ui_write_nodes_trwgt.addTopLevelItem(tree_item)
 
             # If the node is selected in Nuke, then select it in the UI
@@ -65,7 +64,7 @@ class NukeWidget(QtGui.QWidget):
         self.ui_views_trwgt.clear()
         assert isinstance(views, list), "views argument must be a list. Got %s" % type(views)
         for view in views:
-            tree_item = QtGui.QTreeWidgetItem([view])
+            tree_item = QtWidgets.QTreeWidgetItem([view])
             self.ui_views_trwgt.addTopLevelItem(tree_item)
             self.ui_views_trwgt.setItemSelected(tree_item, True)
 
