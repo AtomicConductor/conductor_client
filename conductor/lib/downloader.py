@@ -22,10 +22,10 @@ from conductor import CONFIG
 from conductor.lib import common, loggeria, downloader2, api_client
 
 # Duration that workers sleep when there's no work to perform
-WORKER_SLEEP_DURATION = 30
+WORKER_SLEEP_DURATION = 60
 
 # The amount of bytes to transfer as a chunk
-DOWNLOAD_CHUNK_SIZE = 1048576  # 1MB
+DOWNLOAD_CHUNK_SIZE = 1048576 * 2  # 2MB
 
 # Maximum times that a file will be retried if errors occur when downloading
 MAX_DOWNLOAD_RETRIES = 5
@@ -576,6 +576,7 @@ class DownloadWorker(multiprocessing.Process):
         # Record the start time of the download process
         time_started = time.time()
 
+        success = False
 
         # attempt to download the file. The action will either be "DL" or "Reuse"
         try:
@@ -584,31 +585,36 @@ class DownloadWorker(multiprocessing.Process):
             # Set the action to DL if the file was actually downloaded. Otherwise set it to reuse
             action = "DL" if downloaded else "Reuse"
 
-            # Report to the app that that the file finished
-            Backend.finish(id_, bytes_downloaded=file_size, account=self.account, location=self.location, project=self.project)
-
+            success = True
 
         # Catch a DownloaderExit exception, perform any cleanup, then re-raise
         # the exception
         except DownloaderExit:
+            success = False
             self._cleanup_download(id_, jid, tid, destination, local_file)
             raise
 
         # Catch all other exceptions for the file download, and report the
         # failure via http call. Set the action to "Failed"
         except:
+            success = False
             action = "Failed"
             # log out the exception
             LOGGER.exception("%s|%s  CAUGHT EXCEPTION  %s:\n", jid, tid, local_file)
             msg = "Failing id %s" % id_
             self._log_msg(jid, tid, msg, local_file, log_level=logging.ERROR)
-            Backend.fail(id_, bytes_downloaded=self._bytes_counter.value, account=self.account, location=self.location, project=self.project)
 
         # Reset the file state info.
         self._reset_progress()
 
         # Record the end time of the download process
         time_ended = time.time()
+
+        if success:
+            # Report to the app that that the file finished
+            Backend.finish(id_, bytes_downloaded=file_size, account=self.account, location=self.location, project=self.project)
+        else:
+            Backend.fail(id_, bytes_downloaded=self._bytes_counter.value, account=self.account, location=self.location, project=self.project)
 
         # construct and return a "result" dictionary of what how this file downloaded was handled
         result = self._construct_result_dict(dl_info, id_, local_file, action,
@@ -635,7 +641,7 @@ class DownloadWorker(multiprocessing.Process):
         calls. This gives the opportunity to check the running state, and exit
         the sleep process if necessary.
         '''
-        for _ in range(WORKER_SLEEP_DURATION):
+        for _ in range(random.randint(10, WORKER_SLEEP_DURATION)):
             if self._run_state.value == Downloader.STATE_RUNNING:
                 time.sleep(1)
 
