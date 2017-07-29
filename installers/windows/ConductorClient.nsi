@@ -5,11 +5,11 @@
 ############################################################################################
 
 !define APP_NAME "Conductor"
-!define COMP_NAME "ConductorIO"
-!define WEB_SITE "http://www.conductorio.com"
+!define COMP_NAME "Conductor Technologies"
+!define WEB_SITE "http://www.conductortech.com/"
 #!define VERSION "00.00.00.01"
-!define COPYRIGHT "ConductorIO"
-!define DESCRIPTION "ConductorClient"
+!define COPYRIGHT "${COMP_NAME}"
+!define DESCRIPTION "Conductor Client"
 #!define LICENSE_TXT "eula.txt"
 #!define INSTALLER_NAME "ConductorClient.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
@@ -34,7 +34,7 @@ OutFile "${INSTALLER_NAME}"
 BrandingText "${APP_NAME}"
 XPStyle on
 InstallDirRegKey "${REG_ROOT}" "${UNINSTALL_PATH}" "UninstallString"
-InstallDir "$PROGRAMFILES\ConductorIO"
+InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
 ######################################################################
 
@@ -81,7 +81,6 @@ ${EnvVarUpdate} $0 "PYTHONPATH" "A" "HKLM" "$INSTDIR\Conductor\python\Lib\site-p
 ${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "A" "HKLM" "$INSTDIR\Conductor\maya_shelf"
 ${EnvVarUpdate} $0 "XBMLANGPATH" "A" "HKLM" "$INSTDIR\Conductor\conductor\resources"
 ${EnvVarUpdate} $0 "NUKE_PATH" "A" "HKLM" "$INSTDIR\Conductor\nuke_menu"
-${EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "A" "HKCU" "$APPDATA\ConductorIO\Conductor\config.yml"
 
 SectionEnd
 
