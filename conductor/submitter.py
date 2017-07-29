@@ -516,7 +516,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         return self.ui_preemptible_chkbx.isChecked()
 
     def setProject(self, project_str, strict=True):
-
         '''
         Set the UI's Project field
         '''
@@ -1240,6 +1239,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
                 # PLUGIN PRODUCT GROUP ####
                 plugin_product_name = plugin_package["product"]
+                # HACK: hide yeti for now
+                if plugin_product_name == "yeti":
+                    continue
                 plugin_parent_product_item = plugin_parent_items.get(plugin_product_name)
                 if not plugin_parent_product_item:
                     plugin_parent_product_item = QtWidgets.QTreeWidgetItem([plugin_product_name, ""])
@@ -1539,7 +1541,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         for product_packages in packages_by_product.values():
             if len(product_packages) > 1:
                 s_ = "- %s  (%s)" % (product_packages[0]["product"], " vs ".join([self._constructJobPackageStr(p)
-                                                                                 for p in product_packages]))
+                                                                                  for p in product_packages]))
                 duplicate_product_strs.append(s_)
 
         if duplicate_product_strs:
@@ -1634,7 +1636,6 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
 
     @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
     def setFileScoutFrames(self, filepath, value):
-
         '''
         Set the user settings for:
             the frame/range to use for scout frames
@@ -1651,7 +1652,6 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
 
     @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
     def setJobPackagesIds(self, filepath, value):
-
         '''
         Set the user settings for:
             the frame/range to use for scout frames
