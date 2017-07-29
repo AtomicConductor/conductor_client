@@ -42,10 +42,10 @@ class MayaWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(MayaWidget, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
-        self.initializeUi()
-        self.refreshUi()
+        self.createUI()
 
-    def initializeUi(self):
+
+    def createUI(self):
         self.ui_render_layers_trwgt = MayaCheckBoxTreeWidget()
         treewgt_layout = self.ui_render_layers_grpbx.layout()
         treewgt_layout.insertWidget(0, self.ui_render_layers_trwgt)
