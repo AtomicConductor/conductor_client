@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>511</width>
-    <height>566</height>
+    <width>411</width>
+    <height>547</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -534,6 +534,9 @@
              <property name="text">
               <string>Preemptible</string>
              </property>
+             <property name="isFileUserPref" stdset="0">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
@@ -1001,8 +1004,8 @@ tasks before deciding to execute the job's remaining tasks.
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>511</width>
-     <height>22</height>
+     <width>411</width>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="ui_options_qmenu">
