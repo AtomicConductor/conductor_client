@@ -85,7 +85,7 @@ class DecAuthorize(object):
             except requests.HTTPError as error:
                 # If a 401 exception occurs, fetch a new token, update the auth header with it,
                 # and call the original function again
-                if  error.response.status_code == 401:
+                if  error.response.status_code in [301, 302, 401]:
                     LOGGER.debug("Bearer token expired (401). Fetching a new one: %s", error)
                     bearer_token = get_bearer_token(refresh=True)
                     kwargs["headers"].update(make_auth_header(bearer_token.value))
