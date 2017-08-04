@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from PySide import QtGui, QtCore
+from Qt import QtGui, QtCore, QtWidgets
 import nuke
 import imp
 
@@ -24,6 +24,7 @@ TODO:
 3. Test file pathing on Windows. Especially file_utils manipulations.
 '''
 
+
 class NukeWidget(QtGui.QWidget):
 
     # The .ui designer filepath
@@ -44,13 +45,13 @@ class NukeWidget(QtGui.QWidget):
         '''
         Populate each Write and Deep Write node into the UI QTreeWidget.
         Any write nodes that are currently selected in nuke by the user will be
-        also be selected in UI. Note that only write nodes that are selected in 
+        also be selected in UI. Note that only write nodes that are selected in
         the UI will be rendered when submitting to Conductor.
         '''
         self.ui_write_nodes_trwgt.clear()
         assert isinstance(write_nodes, dict), "write_nodes argument must be a dict. Got: %s" % type(write_nodes)
         for write_node, selected in write_nodes.iteritems():
-            tree_item = QtGui.QTreeWidgetItem([write_node])
+            tree_item = QtWidgets.QTreeWidgetItem([write_node])
             self.ui_write_nodes_trwgt.addTopLevelItem(tree_item)
 
             # If the node is selected in Nuke, then select it in the UI
@@ -65,7 +66,7 @@ class NukeWidget(QtGui.QWidget):
         self.ui_views_trwgt.clear()
         assert isinstance(views, list), "views argument must be a list. Got %s" % type(views)
         for view in views:
-            tree_item = QtGui.QTreeWidgetItem([view])
+            tree_item = QtWidgets.QTreeWidgetItem([view])
             self.ui_views_trwgt.addTopLevelItem(tree_item)
             self.ui_views_trwgt.setItemSelected(tree_item, True)
 
@@ -74,7 +75,6 @@ class NukeWidget(QtGui.QWidget):
             self.ui_views_trwgt.setDisabled(True)
         else:
             self.ui_views_trwgt.setEnabled(True)
-
 
     def getSelectedWriteNodes(self):
         '''
@@ -95,16 +95,15 @@ class NukeWidget(QtGui.QWidget):
         return self.ui_upload_only.isChecked()
 
 
-
 class NukeConductorSubmitter(submitter.ConductorSubmitter):
     '''
     The class is PySide front-end for submitting Nuke renders to Conductor.
     To launch the UI, simply call self.runUI method.
-    
-    This class serves as an implemenation example of how one might write a front 
+
+    This class serves as an implemenation example of how one might write a front
     end for a Conductor submitter for Nuke.  This class is designed to be ripped
-    apart of subclassed to suit the specific needs of a studio's pipeline. 
-    Have fun :) 
+    apart of subclassed to suit the specific needs of a studio's pipeline.
+    Have fun :)
     '''
 
     _window_title = "Conductor - Nuke"
@@ -128,7 +127,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
     def getExtendedWidget(self):
         return NukeWidget()
 
-
     def generateTasksData(self):
         '''
         Return a list of tasks data.  Each item in the list represents one
@@ -136,13 +134,13 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         keys:
             command: The command for the task to execute
 
-            frames: [optional], helps to bind/display the relationship between a 
+            frames: [optional], helps to bind/display the relationship between a
                      task and the frames that the task is operating on.  Because
                      a task can be any arbitrary command, the notion of "frames"
                      may not be relevant and can be left empty.
 
         Example(two tasks):
-        
+
             # Task 0
             [{"command": "nuke-render --view main -X AFWrite.write_exr -F 1-1x1 /tmp/my_nuke_file.nk
               "frames": "1"},
@@ -180,7 +178,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                                        step,
                                        nuke_filepath_nodrive)
 
-
             # generate tasks data
             # convert the list of frame ints into a single string expression
             # TODO:(lws) this is silly. We should keep this as a native int list.
@@ -189,7 +186,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                                "frames":  task_frames_str})
 
         return tasks_data
-
 
     def collectDependencies(self, write_nodes, views):
         '''
@@ -209,13 +205,12 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         dependencies.append(self.getSourceFilepath())
         return dependencies
 
-
     def getOutputPath(self):
         '''
         From the selected Write nodes (in the UI), query their output paths
         and derive common directory which they all share (somewhere in their
         directory tree).  Return a two-item tuple, containing the output path, and
-        a list of the write node's output paths 
+        a list of the write node's output paths
         '''
         write_paths = []
         write_nodes = self.extended_widget.getSelectedWriteNodes()
@@ -230,10 +225,10 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
     def runPreSubmission(self):
         '''
-        Override the base class (which is an empty stub method) so that a 
+        Override the base class (which is an empty stub method) so that a
         validation pre-process can be run.  If validation fails, then indicate
-        that the the submission process should be aborted.   
-        
+        that the the submission process should be aborted.
+
         We also collect dependencies (and asds) at this point and pass that
         data along...
         In order to validate the submission, dependencies must be collected
@@ -270,30 +265,29 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
         raw_dependencies.extend(enforced_md5s.keys())
 
-
         dependencies = file_utils.process_dependencies(raw_dependencies)
         output_path, write_paths = self.getOutputPath()
-        raw_data = {"dependencies":dependencies,
-                    "output_path":[output_path, write_paths]}
+        raw_data = {"dependencies": dependencies,
+                    "output_path": [output_path, write_paths]}
 
         is_valid = self.runValidation(raw_data)
-        return {"abort":not is_valid,
-                "dependencies":dependencies,
-                "output_path":output_path,
-                "enforced_md5s":enforced_md5s}
+        return {"abort": not is_valid,
+                "dependencies": dependencies,
+                "output_path": output_path,
+                "enforced_md5s": enforced_md5s}
 
     def getJobTitle(self):
         '''
         Generate and return the title to be given to the job.  This is the title
         that will be displayed in the webUI.
-                
+
         Construct the job title by using the software name (Nuke), followed by
         the filename of nuke file (excluding directory path), followed by the
-        write nodes being rendered.  If all of the write nodes in the nuke 
-        file are being rendered then don't list any of them. 
-        
-        Nuke - <nuke scriptname> - <writenodes> 
-        
+        write nodes being rendered.  If all of the write nodes in the nuke
+        file are being rendered then don't list any of them.
+
+        Nuke - <nuke scriptname> - <writenodes>
+
         example: "Nuke - my_nuke_script.nk - beauty, shadow, spec"
         '''
         nuke_filepath = self.getSourceFilepath()
@@ -318,16 +312,15 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         title = "NUKE - %s%s" % (nuke_filename, write_node_str)
         return title
 
-
     def runValidation(self, raw_data):
         '''
         This is an added method (i.e. not a base class override), that allows
         validation to occur when a user presses the "Submit" button. If the
         validation fails, a notification dialog appears to the user, halting
-        the submission process. 
-        
+        the submission process.
+
         Validate that the data being submitted is...valid.
-        
+
         1. Dependencies
         2. Output dir
         '''
@@ -345,7 +338,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             pyside_utils.launch_error_box("Invalid file paths!", message, parent=self)
             raise Exception(message)
 
-
         # ## Validate that there is a common root path across all of the Write
         # nodes' output paths
         output_path, write_paths = raw_data["output_path"]
@@ -356,11 +348,9 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
         return True
 
-
-
     def generateConductorArgs(self, data):
         '''
-        Override this method from the base class to provide conductor arguments that 
+        Override this method from the base class to provide conductor arguments that
         are specific for Nuke.  See the base class' docstring for more details.
         '''
 
@@ -376,14 +366,13 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # Grab the enforced md5s files from data (note that this comes from the presubmission phase
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
 
-                # Grab the file dependencies from data (note that this comes from the presubmission phase
+        # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
 
         # the output path gets dynamically generated based upon which write nodes the user has selected
         conductor_args["output_path"] = data["output_path"]
 
         return conductor_args
-
 
     def runConductorSubmission(self, data):
 
@@ -406,8 +395,6 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
     # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
 #     def getPluginsProductInfo(self):
 #         return nuke_utils.get_plugins_info()
-
-
 
     def getHostProductInfo(self):
         host_version = nuke_utils.NukeInfo.get_version()
