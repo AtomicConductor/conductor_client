@@ -25,7 +25,7 @@ TODO:
 '''
 
 
-class NukeWidget(QtGui.QWidget):
+class NukeWidget(QtWidgets.QWidget):
 
     # The .ui designer filepath
     _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'nuke.ui')
