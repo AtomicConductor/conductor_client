@@ -681,8 +681,8 @@ class DownloadWorker(multiprocessing.Process):
         # If the file doesn't already exists on disk and have the proper hash, then download the file
         if not self._file_exists_and_is_valid(id_, local_file, md5, jid, tid):
             self.download(id_, local_file, url, dl_info)
-            # return True to indicate that the file was downloaded
-            return True
+        # return True to indicate that the file was downloaded
+        return True
 
     @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, skip_exceptions=(DownloaderExit, FailDownload), tries=MAX_DOWNLOAD_RETRIES)
     def download(self, id_, local_file, url, dl_info):
