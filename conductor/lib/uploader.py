@@ -645,6 +645,9 @@ class Uploader():
                 if error_message:
                     self.mark_upload_failed(error_message, upload_id)
 
+            except KeyboardInterrupt:
+                logger.info("ctrl-c exit")
+                break
             except:
                 logger.exception('Caught exception:\n')
                 time.sleep(self.sleep_time)
