@@ -82,6 +82,11 @@ ${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "A" "HKLM" "$INSTDIR\Conductor\maya_shelf"
 ${EnvVarUpdate} $0 "XBMLANGPATH" "A" "HKLM" "$INSTDIR\Conductor\conductor\resources"
 ${EnvVarUpdate} $0 "NUKE_PATH" "A" "HKLM" "$INSTDIR\Conductor\nuke_menu"
 
+#### Remove legacy installation artifacts
+RMDir /r /REBOOTOK "$PROGRAMFILES\ConductorIO"
+${EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "R" "HKCU" "$APPDATA\ConductorIO\Conductor\config.yml"
+####
+
 SectionEnd
 
 ######################################################################
