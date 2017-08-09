@@ -110,9 +110,17 @@ Delete "$INSTDIR\uninstall.exe"
 Delete "$INSTDIR\${APP_NAME} website.url"
 !endif
 
-RmDir "$INSTDIR"
-
 DeleteRegKey ${REG_ROOT} "${UNINSTALL_PATH}"
+
+${EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\Conductor"
+${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$INSTDIR\Conductor"
+${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$INSTDIR\Conductor\python\Lib\site-packages"
+${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$INSTDIR\Conductor\maya_shelf"
+${EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$INSTDIR\Conductor\conductor\resources"
+${EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$INSTDIR\Conductor\nuke_menu"
+
+RMDir /r /REBOOTOK "$INSTDIR"
+
 SectionEnd
 
 ######################################################################
