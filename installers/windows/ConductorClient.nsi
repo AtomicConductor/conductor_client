@@ -117,12 +117,12 @@ Delete "$INSTDIR\${APP_NAME} website.url"
 
 DeleteRegKey ${REG_ROOT} "${UNINSTALL_PATH}"
 
-${EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\Conductor"
-${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$INSTDIR\Conductor"
-${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$INSTDIR\Conductor\python\Lib\site-packages"
-${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$INSTDIR\Conductor\maya_shelf"
-${EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$INSTDIR\Conductor\conductor\resources"
-${EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$INSTDIR\Conductor\nuke_menu"
+${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\Conductor"
+${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$INSTDIR\Conductor"
+${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$INSTDIR\Conductor\python\Lib\site-packages"
+${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$INSTDIR\Conductor\maya_shelf"
+${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$INSTDIR\Conductor\conductor\resources"
+${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$INSTDIR\Conductor\nuke_menu"
 
 RMDir /r /REBOOTOK "$INSTDIR"
 
