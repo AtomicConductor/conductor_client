@@ -1,4 +1,8 @@
 
+from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria, package_utils
+from conductor import CONFIG, submitter
+from conductor.lib.lsseq import seqLister
+from maya import OpenMayaUI
 import os
 import imp
 import logging
@@ -13,19 +17,15 @@ if Qt.__binding__ in ('PySide'):
 else:
     from shiboken2 import wrapInstance
 
-from maya import OpenMayaUI
 
 try:
     imp.find_module('conductor')
 except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from conductor import CONFIG, submitter
-from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria, package_utils
-from conductor.lib.lsseq import seqLister
 
 '''
-TODO: 
+TODO:
 1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
 3. Cull out unused maya dependencies.  Should we exclude materials that aren't assigned, etc?
 5. Validate the maya file has been saved
@@ -44,30 +44,27 @@ class MayaWidget(QtWidgets.QWidget):
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
         self.createUI()
 
-
     def createUI(self):
         self.ui_render_layers_trwgt = MayaCheckBoxTreeWidget()
         treewgt_layout = self.ui_render_layers_grpbx.layout()
         treewgt_layout.insertWidget(0, self.ui_render_layers_trwgt)
 
-
     def refreshUi(self):
         render_layers_info = maya_utils.get_render_layers_info()
         self.populateRenderLayers(render_layers_info)
-
 
     def populateRenderLayers(self, render_layers_info):
         '''
         Populate each render layer into the UI QTreeWidget.
         If the render layer has been set to renderable in maya, then check its
-        qtreewidgetitem's checkbox (on) the the render layer  UI.  Only render 
+        qtreewidgetitem's checkbox (on) the the render layer  UI.  Only render
         layers that are checked on will be rendered
         '''
         self.ui_render_layers_trwgt.clear()
         assert isinstance(render_layers_info, list), "render_layers argument must be a list. Got: %s" % type(render_layers_info)
         for render_layer_info in reversed(render_layers_info):
             tree_item = QtWidgets.QTreeWidgetItem([render_layer_info["layer_name"],
-                                               render_layer_info["camera_shortname"]])
+                                                  render_layer_info["camera_shortname"]])
 
             tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
             tree_item._camera_transform = render_layer_info["camera_transform"]
@@ -78,7 +75,6 @@ class MayaWidget(QtWidgets.QWidget):
                 tree_item.setCheckState(0, QtCore.Qt.Checked)
             else:
                 tree_item.setCheckState(0, QtCore.Qt.Unchecked)
-
 
         self.ui_render_layers_trwgt.resizeColumnToContents(0)
 
@@ -93,18 +89,16 @@ class MayaWidget(QtWidgets.QWidget):
                 selected_layers.append(item.text(0))
         return selected_layers
 
-
     def getUploadOnlyBool(self):
         '''
         Return whether the "Upload Only" checkbox is checked on or off.
         '''
         return self.ui_upload_only.isChecked()
 
-
     @QtCore.Slot(bool, name="on_ui_upload_only_toggled")
     def on_ui_upload_only_toggled(self, toggled):
         '''
-        when the "Upload Only" checkbox is checked on, disable the Render 
+        when the "Upload Only" checkbox is checked on, disable the Render
         Layers widget. when the "Upload Only" checkbox is checked off, enable
         the Render Layers widget.
         '''
@@ -113,19 +107,18 @@ class MayaWidget(QtWidgets.QWidget):
 
 class MayaConductorSubmitter(submitter.ConductorSubmitter):
     '''
-    
+
     This class inherits from the generic conductor submitter and adds an additional
     widget for maya-specific data.
-    
-    Note that the addional widget is stored (and accessible) via the 
-    self.extended_widget attribute
-    
-    When the UI loads it will automatically populate various information:
-        1. Frame range  
-        2. Render layers (with their camera)
-    
-    '''
 
+    Note that the addional widget is stored (and accessible) via the
+    self.extended_widget attribute
+
+    When the UI loads it will automatically populate various information:
+        1. Frame range
+        2. Render layers (with their camera)
+
+    '''
 
     _window_title = "Conductor - Maya"
 
@@ -143,7 +136,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
         return get_maya_window()
 
-
     def setMayaWindow(self):
         '''
         Set a few QT paramaters so that the ui plays nicely with Maya's.
@@ -160,42 +152,40 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         self.extended_widget.refreshUi()
         self.setOutputDir(maya_utils.get_image_dirpath())
 
-
     def getExtendedWidget(self):
         return MayaWidget()
 
     def generateTasksData(self):
         '''
         Return a list of tasks data.  Each item in the list represents one
-        task of work that will be created. 
-        
+        task of work that will be created.
+
         Each task dictionary has the following
         keys:
             command: The command for the task to execute
 
-            frames: [optional], helps to bind/display the relationship between a 
+            frames: [optional], helps to bind/display the relationship between a
                      task and the frames that the task is operating on.  Because
                      a task can be any arbitrary command, the notion of "frames"
                      may not be relevant and can be left empty.
-                     
-        Eventually we may want to populate this with *everything* a task needs 
-        (offloading it from the Job entity). This would allow more per-task flexiblity (such as differing environments, 
+
+        Eventually we may want to populate this with *everything* a task needs
+        (offloading it from the Job entity). This would allow more per-task flexiblity (such as differing environments,
         files, etc).  Just general containment in general.
-        
-        
+
+
         Example(two tasks):
 
-            # Task 0    
+            # Task 0
             [ {"command": "Render -s 1 -e 1 -rl renderlayer1 maya_filepath.ma"
                "frames": "1"},
-            # Task 1    
+            # Task 1
             {"command": "Render -s 10 -e 20 -b 2 maya_filepath.ma"
              "frames": "10-20x2"} ]
         '''
 
         # Create a template command that be be used for each task's command
         cmd_template = "Render -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
-
 
         # Retrieve the source maya file
         maya_filepath = self.getSourceFilepath()
@@ -223,7 +213,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                                        render_layer_args,
                                        maya_filepath_nodrive)
 
-
             # Generate tasks data
             # convert the list of frame ints into a single string expression
             # TODO:(lws) this is silly. We should keep this as a native int list.
@@ -231,7 +220,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             tasks_data.append({"command": task_cmd,
                                "frames":  task_frames_str})
         return tasks_data
-
 
     def collectDependencies(self):
         '''
@@ -242,8 +230,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         dependency_attrs = resources.get("maya_dependency_attrs") or {}
 
         return maya_utils.collect_dependencies(dependency_attrs)
-
-
 
     def getEnvironment(self):
         '''
@@ -273,7 +259,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 #     def getPluginsProductInfo(self):
 #         return maya_utils.get_plugins_info()
 
-
     def getPluginsProductInfo(self):
         plugins_info = []
         host_version = maya_utils.MayaInfo.get_version()
@@ -281,20 +266,19 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             package_id = package_utils.get_plugin_package_id(self.product, host_version, plugin_product, plugin_version, strict=False)
             plugin_info = {"host_product": self.product,
                            "host_version": host_version,
-                           "product":plugin_product,
-                           "version":plugin_version,
+                           "product": plugin_product,
+                           "version": plugin_version,
                            "package_id": package_id}
 
             plugins_info.append(plugin_info)
         return plugins_info
 
-
     def runPreSubmission(self):
         '''
-        Override the base class (which is an empty stub method) so that a 
+        Override the base class (which is an empty stub method) so that a
         validation pre-process can be run.  If validation fails, then indicate
-        that the the submission process should be aborted.   
-        
+        that the the submission process should be aborted.
+
         We also collect dependencies  at this point and pass that
         data along...
         In order to validate the submission, dependencies must be collected
@@ -304,7 +288,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         raw_dependencies = self.collectDependencies()
-
 
         # If uploading locally (i.e. not using  uploader daemon
         if self.getLocalUpload():
@@ -320,7 +303,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Process all of the dependendencies. This will create a dictionary of dependencies, and whether they are considred Valid or not (bool)
         dependencies = file_utils.process_dependencies(raw_dependencies)
 
-
         # If the renderer is arnold and "use .tx files is enabled", then add corresponding tx files.
         # TODO:(lws) This process shouldn't happen here. We can't keep tacking on things for random
         # software-specific behavior. We're going to need start seperating behavior via classes (perhaps
@@ -330,25 +312,25 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             processed_tx_filepaths = file_utils.process_dependencies(tx_filepaths)
             dependencies.update(processed_tx_filepaths)
 
-        raw_data = {"dependencies":dependencies}
+        raw_data = {"dependencies": dependencies}
 
         is_valid = self.runValidation(raw_data)
-        return {"abort":not is_valid,
-                "dependencies":dependencies,
-                "enforced_md5s":enforced_md5s}
+        return {"abort": not is_valid,
+                "dependencies": dependencies,
+                "enforced_md5s": enforced_md5s}
 
     def getJobTitle(self):
         '''
         Generate and return the title to be given to the job.  This is the title
         that will be displayed in the webUI.
-                
+
         Construct the job title by using the software name (MAYA), followed by
         the filename of maya file (excluding directory path), followed by the
-        renderlayers being rendered.  If all of the renderlayers in the maya 
-        scene are being rendered then don't list any of them. 
-        
-        MAYA - <maya filename> - <renderlayers> 
-        
+        renderlayers being rendered.  If all of the renderlayers in the maya
+        scene are being rendered then don't list any of them.
+
+        MAYA - <maya filename> - <renderlayers>
+
         example: "MAYA - my_maya_scene.ma - beauty, shadow, spec"
         '''
         maya_filepath = self.getSourceFilepath()
@@ -377,16 +359,15 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         title = "MAYA - %s%s" % (maya_filename, render_layer_str)
         return title
 
-
     def runValidation(self, raw_data):
         '''
         This is an added method (i.e. not a base class override), that allows
         validation to occur when a user presses the "Submit" button. If the
         validation fails, a notification dialog appears to the user, halting
-        the submission process. 
-        
+        the submission process.
+
         Validate that the data being submitted is...valid.
-        
+
         1. Dependencies
         2. Output dir
         '''
@@ -406,10 +387,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         return True
 
-
     def generateConductorArgs(self, data):
         '''
-        Override this method from the base class to provide conductor arguments that 
+        Override this method from the base class to provide conductor arguments that
         are specific for Maya.  See the base class' docstring for more details.
 
         '''
@@ -432,7 +412,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
         return conductor_args
 
-
     def runConductorSubmission(self, data):
 
         # If an "abort" key has a True value then abort submission
@@ -442,13 +421,11 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         return super(MayaConductorSubmitter, self).runConductorSubmission(data)
 
-
     def getSourceFilepath(self):
         '''
         Return the currently opened maya file
         '''
         return maya_utils.get_maya_scene_filepath()
-
 
     def validateJobPackages(self):
         '''
@@ -482,7 +459,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         return is_valid
 
 
-
 class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):
 
     icon_filepath_checked = os.path.join(submitter.RESOURCES_DIRPATH, 'checkbox_on_greenx_8x7.png')
@@ -493,12 +469,11 @@ class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):
     def __init__(self, parent=None):
         super(MayaCheckBoxTreeWidget, self).__init__(parent=parent)
 
-
     def initializeUi(self):
         super(MayaCheckBoxTreeWidget, self).initializeUi()
         self.setIndentation(0)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.setHeaderItem (QtWidgets.QTreeWidgetItem(["Layer", "Camera"]))
+        self.setHeaderItem(QtWidgets.QTreeWidgetItem(["Layer", "Camera"]))
 
 
 def get_maya_window():
