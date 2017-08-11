@@ -393,10 +393,10 @@ class Config():
     def __init__(self):
         logger.debug('base dir is %s' % base_dir())
 
-        # create config. precedence is ENV, CLI, default
+        # create config. precedence is default, ENV, CLI
         combined_config = self.default_config
-        combined_config.update(self.get_user_config())
         combined_config.update(self.get_environment_config())
+        combined_config.update(self.get_user_config())
 
         # verify that we have the required params
         self.verify_required_params(combined_config)
@@ -457,7 +457,7 @@ class Config():
         try:
             with open(token_path, 'r') as f:
                 conductor_token = f.read().rstrip()
-        except IOError, e:
+        except IOError:
             message = 'could not open client token file in %s\n' % token_path
             message += 'either insert one there, set token_path to a valid token,\n'
             message += 'or set the CONDUCTOR_TOKEN_PATH env variable to point to a valid token\n'
@@ -502,44 +502,43 @@ class Config():
 
         return bool_values.get(env_var.lower(), env_var)
 
-    def get_config_file_path(self, config_file=None):
-        default_config_file = os.path.join(base_dir(), 'config.yml')
+    def get_config_file_paths(self, config_file=None):
+        config_files = []
         if 'CONDUCTOR_CONFIG' in os.environ:
-            config_file = os.environ['CONDUCTOR_CONFIG']
-        else:
-            config_file = default_config_file
-
-        return config_file
+            path_separator = ';' if platform.system() == 'Windows' else ':'  # We need to use the correct OS path separator
+            # We need to take into account multiple paths
+            possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(path_separator) if len(x) > 0]
+            if len(possible_paths) > 0:
+                config_files = possible_paths
+        return config_files + [os.path.join(base_dir(), 'config.yml')]  # Appending default config file
 
     def get_user_config(self):
-        config_file = self.get_config_file_path()
-        logger.debug('using config: %s' % config_file)
+        config_files = self.get_config_file_paths()
+        for config_file in config_files:
+            logger.debug('Attempting to load config located at: %s' % config_file)
 
-        if os.path.isfile(config_file):
-            logger.debug('loading config: %s', config_file)
-            try:
-                with open(config_file, 'r') as file:
-                    config = yaml.load(file)
-            except IOError, e:
-                message = "could't open config file: %s\n" % config_file
-                message += 'please either create one or set the CONDUCTOR_CONFIG\n'
-                message += 'environment variable to a valid config file\n'
-                message += 'see %s for an example' % os.path.join(base_dir(), 'config.example.yml')
-                logger.error(message)
+            if os.path.isfile(config_file):
+                logger.debug('Loading config: %s', config_file)
+                try:
+                    with open(config_file, 'r') as file:
+                        config = yaml.load(file)
+                    if config.__class__.__name__ != 'dict':
+                        message = 'config found at %s is not in proper yaml syntax' % config_file
+                        logger.error(message)
 
-                raise ValueError(message)
-        else:
-            logger.warn('config file %s does not exist', config_file)
-            return {}
-
-        if config.__class__.__name__ != 'dict':
-            message = 'config found at %s is not in proper yaml syntax' % config_file
-            logger.error(message)
-            raise ValueError(message)
-
-        logger.debug('config is %s' % config)
-        logger.debug('config.__class__ is %s' % config.__class__)
-        return config
+                    logger.debug('config is %s' % config)
+                    logger.debug('config.__class__ is %s' % config.__class__)
+                    return config
+                except IOError:
+                    message = "could't open config file: %s\n" % config_file
+                    message += 'please either create one or set the CONDUCTOR_CONFIG\n'
+                    message += 'environment variable to a valid config file\n'
+                    message += 'see %s for an example' % os.path.join(base_dir(), 'config.example.yml')
+                    logger.error(message)
+            else:
+                logger.warn('Config filepath: %s does not point to a file', config_file)
+        logger.warn('No valid config files found')
+        return {}
 
     def verify_required_params(self, config):
         logger.debug('config is %s' % config)
