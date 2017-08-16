@@ -157,6 +157,10 @@ def read_conductor_credentials(use_api_key=False):
             logger.debug("Sending to auth page...")
             auth.run(creds_file, CONFIG.get('auth_url'))
 
+        #  Re-read the creds file, since it has been re-upped
+        with open(creds_file) as fp:
+            file_contents = json.loads(fp.read())
+
     return file_contents['access_token']
 
 
