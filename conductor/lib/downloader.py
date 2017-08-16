@@ -217,7 +217,7 @@ class Downloader(object):
 
     def __init__(self, args):
         self._start_time = None
-        self._workers = []
+        self._workers = {}
 
         # Contains the user-provided arguments
         self.args = args
@@ -441,7 +441,7 @@ class DownloadWorker(multiprocessing.Process):
         # (hashed or downloaded) for the current file download.
         self._bytes_counter = Counter(0)
 
-        self._workers = []
+        self._workers = {}
 
     def run(self):
         '''
