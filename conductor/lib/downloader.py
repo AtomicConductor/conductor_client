@@ -552,7 +552,7 @@ class DownloadWorker(multiprocessing.Process):
             return
 
         # Otherwise handle the dl
-        LOGGER.debug("next_dl:\n%s", pformat(next_dl))
+        # LOGGER.debug("next_dl:\n%s", pformat(next_dl))
 
         # do some data mangling before allowing the data to continue any further
         # TODO:(lws) validate payload values
