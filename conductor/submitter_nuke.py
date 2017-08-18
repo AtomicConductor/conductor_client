@@ -176,7 +176,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                                        start_frame,
                                        end_frame,
                                        step,
-                                       nuke_filepath_nodrive)
+                                       nuke_filepath_nodrive.replace('"', '\\"'))  # Escape double quotes in paths.
 
             # generate tasks data
             # convert the list of frame ints into a single string expression
