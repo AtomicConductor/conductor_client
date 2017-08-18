@@ -351,6 +351,11 @@ def validate_path(filepath):
     if not filepath.startswith("/"):
         return "Filepath does not begin with expected %r. Got %r" % ("/", filepath)
 
+def quote_path(filepath):
+    '''
+    Wrap the given filepath in double quotes and escape its content.
+    '''
+    return '"%s"' % filepath.replace('"', '\\"')
 
 def reconstruct_filename(matched, file_pieces):
     full_file_string = ""

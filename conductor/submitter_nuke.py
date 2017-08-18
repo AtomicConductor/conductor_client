@@ -149,7 +149,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
               "frames": "10-20x2"}]
         '''
 
-        cmd_template = 'nuke-render %s %s -F %s-%sx%s "%s"'
+        cmd_template = 'nuke-render %s %s -F %s-%sx%s %s'
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = " ".join(["-X %s" % write_node for write_node in write_nodes])
@@ -176,7 +176,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                                        start_frame,
                                        end_frame,
                                        step,
-                                       nuke_filepath_nodrive.replace('"', '\\"'))  # Escape double quotes in paths.
+                                       file_utils.quote_path(nuke_filepath_nodrive))
 
             # generate tasks data
             # convert the list of frame ints into a single string expression
