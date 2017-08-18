@@ -217,7 +217,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                                        end_frame,
                                        step,
                                        render_layer_args,
-                                       maya_filepath_nodrive)
+                                       maya_filepath_nodrive.replace('"', '\\"'))  # Escape double quotes in paths.
 
             # Generate tasks data
             # convert the list of frame ints into a single string expression
