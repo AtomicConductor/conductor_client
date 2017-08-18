@@ -142,14 +142,14 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         Example(two tasks):
 
             # Task 0
-            [{"command": "nuke-render --view main -X AFWrite.write_exr -F 1-1x1 /tmp/my_nuke_file.nk
+            [{"command": "nuke-render --view main -X AFWrite.write_exr -F 1-1x1 \"/tmp/my_nuke_file.nk\""
               "frames": "1"},
             # Task 1
-             {"command": "nuke-render --view main -X AFWrite.write_exr -F 10-20x2 /tmp/my_nuke_file.nk""
+             {"command": "nuke-render --view main -X AFWrite.write_exr -F 10-20x2 \"/tmp/my_nuke_file.nk\""
               "frames": "10-20x2"}]
         '''
 
-        cmd_template = "nuke-render %s %s -F %s-%sx%s %s"
+        cmd_template = 'nuke-render %s %s -F %s-%sx%s "%s"'
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = " ".join(["-X %s" % write_node for write_node in write_nodes])

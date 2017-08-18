@@ -176,15 +176,15 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         Example(two tasks):
 
             # Task 0
-            [ {"command": "Render -s 1 -e 1 -rl renderlayer1 maya_filepath.ma"
+            [ {"command": "Render -s 1 -e 1 -rl renderlayer1 \"maya_filepath.ma\""
                "frames": "1"},
             # Task 1
-            {"command": "Render -s 10 -e 20 -b 2 maya_filepath.ma"
+            {"command": "Render -s 10 -e 20 -b 2 \"maya_filepath.ma\""
              "frames": "10-20x2"} ]
         '''
 
         # Create a template command that be be used for each task's command
-        cmd_template = "Render %s -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
+        cmd_template = 'Render %s -s %s -e %s -b %s %s -rd /tmp/render_output/ "%s"'
 
         # Retrieve the source maya file
         maya_filepath = self.getSourceFilepath()
