@@ -512,6 +512,12 @@ class Config():
                 config_files = possible_paths
         return config_files
 
+    def create_default_config(self, path):
+        default_config = {'local_upload': True, '#api_key_path': '<path to conducto_api_key.json'}
+        with open(path, 'w') as config:
+            yaml.dump(default_config, config)
+        return {}
+
     def get_user_config(self):
         config_files = self.get_config_file_paths()
         for config_file in config_files:
@@ -537,8 +543,8 @@ class Config():
                     logger.error(message)
             else:
                 logger.warn('Config filepath: %s does not point to a file', config_file)
-        logger.warn('No valid config files found')
-        return {}
+        logger.warn('No valid config files found, creating default config.yml at {}'.format(config_files[-1]))
+        return self.create_default_config(config_files[-1])
 
     def verify_required_params(self, config):
         logger.debug('config is %s' % config)
