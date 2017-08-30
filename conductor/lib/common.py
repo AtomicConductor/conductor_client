@@ -1,11 +1,9 @@
 import base64
-import binascii
 import datetime
 import functools
 import hashlib
 import json
 import logging
-import math
 import multiprocessing
 import os
 import platform
@@ -16,7 +14,6 @@ import sys
 import time
 import traceback
 import yaml
-import re
 
 BYTES_1KB = 1024
 BYTES_1MB = BYTES_1KB ** 2
@@ -28,10 +25,13 @@ logger = logging.getLogger(__name__)
 
 # Use this global variable across all modules to query whether the the SIGINT signal has been triggered
 SIGINT_EXIT = False
+
+
 def signal_handler(sig_number, stack_frame):
     logger.debug('in signal_handler. setting common.SIGINT_EXIT to True')
     global SIGINT_EXIT
     SIGINT_EXIT = True
+
 
 def register_sigint_signal_handler(signal_handler=signal_handler):
     logger.debug("REGISTERING SIGNAL HANDLER")
@@ -53,7 +53,7 @@ class ExceptionAction(object):
     the exception is raised, and then (optionally) raise the exception.
     Optionally specify particular exceptions (classes) to be omiited from taking
     action on (though still raise the exception)
-    
+
     disable_var: str. An environment variable name, which if found in the runtime
                       environement will disable the action from being taken. This
                       can be useful when a developer is activeky developing and
@@ -70,15 +70,15 @@ class ExceptionAction(object):
         This gets called during python compile time (as all decorators do).
         It will always have only a single argument: the function this is being
         decorated.  It's responsbility is to return a callable, e.g. the actual
-        decorator function 
+        decorator function
         '''
         @functools.wraps(function)
         def decorater_function(*args, **kwargs):
             '''
             The decorator function
-            
+
             Tries to execute the decorated function. If an exception occurs,
-            it is caught, takes the action, and then raises the exception. 
+            it is caught, takes the action, and then raises the exception.
             '''
 
             try:
@@ -98,32 +98,31 @@ class ExceptionAction(object):
                     failed_method_name = "%s.%s.%s" % (__name__, self.__class__.__name__, self.take_action.__name__)
                     logger.error("%s failed:\n%s", failed_method_name, traceback.format_exc())
 
-
                 # Raise the original exception if indicated to do so
                 if self.raise_:
                     raise e
 
         return decorater_function
 
-
     def take_action(self, e):
         '''
         Overide this method to do something useful before raising the exception.
-        
-        e.g.: 
+
+        e.g.:
             print "sending error message to mom: %s" % traceback.format_exc()
         '''
         raise NotImplementedError
+
 
 class ExceptionLogger(ExceptionAction):
     '''
     DECORATOR
     If the decorated function raises an exception, this decorator can log
-    the exception and continue (suppressing the actual exception.  A message 
+    the exception and continue (suppressing the actual exception.  A message
     may be prepended to the exception message.
-        
+
     example output:
-    
+
         >> broken_function()
         # Warning: conductor.lib.common : My prependend message
         Traceback (most recent call last):
@@ -131,8 +130,8 @@ class ExceptionLogger(ExceptionAction):
             return function(*args, **kwargs)
           File "<maya console>", line 4, in broken_function
         ZeroDivisionError: integer division or modulo by zero
-     
-    
+
+
     '''
     def __init__(self, message="", log_traceback=True, log_level=logging.WARNING,
                  raise_=False, omitted_exceptions=(), disable_var=""):
@@ -181,6 +180,7 @@ def dec_timer_exit(log_level=logging.INFO):
 
     return timer_decorator
 
+
 def dec_catch_exception(raise_=False):
 
     '''
@@ -221,10 +221,10 @@ class DecRetry(object):
     skip_exceptions:  An Exception class (or a tuple of Exception classes) that
                      this decorator will NOT catch/retry.  This will take precedence
                      over the retry_exceptions.
-    
+
     tries: int. number of times to try (not retry) before raising
-    static_sleep: The amount of seconds to sleep before retrying. When set to 
-                  None, the sleep time will use exponential backoff. See below.  
+    static_sleep: The amount of seconds to sleep before retrying. When set to
+                  None, the sleep time will use exponential backoff. See below.
 
     This retry function not only incorporates exponential backoff, but also
     "jitter".  see http://www.awsarchitectureblog.com/2015/03/backoff.html.
@@ -251,9 +251,9 @@ class DecRetry(object):
                     return orig_function(*args, **kwargs)
                 except Exception as e:
                     if not isinstance(e, self.retry_exceptions) or isinstance(e, self.skip_exceptions):
-                        logger.debug("Skipping retry because mismatched exception type: %s" , type(e))
+                        logger.debug("Skipping retry because mismatched exception type: %s", type(e))
                         raise
-                    if self.static_sleep != None:
+                    if self.static_sleep is not None:
                         sleep_time = self.static_sleep
                     else:
                         # use random for jitter.
@@ -271,7 +271,6 @@ class DecRetry(object):
         time.sleep(seconds)
 
 
-
 def run(cmd):
     logger.debug("about to run command: " + cmd)
     command = subprocess.Popen(
@@ -284,6 +283,7 @@ def run(cmd):
     status = command.returncode
     return status, stdout, stderr
 
+
 def get_md5(file_path, blocksize=65536):
     hasher = hashlib.md5()
     afile = open(file_path, 'rb')
@@ -293,6 +293,7 @@ def get_md5(file_path, blocksize=65536):
         buf = afile.read(blocksize)
     return hasher.digest()
 
+
 def get_base64_md5(*args, **kwargs):
     if not os.path.isfile(args[0]):
         return None
@@ -300,33 +301,34 @@ def get_base64_md5(*args, **kwargs):
     b64 = base64.b64encode(md5)
     return b64
 
+
 def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
                  callback=None, log_level=logging.INFO):
     '''
     Generate and return md5 hash (base64) for the given filepath
-    
+
     filepath: str. The file path to generate an md5 hash for.
-    
+
     base_64: bool. whether or not to return a base64 string.
-    
-    poll_seconds: int, the number of seconds to wait between logging out to the 
+
+    poll_seconds: int, the number of seconds to wait between logging out to the
                    console when md5 hashing (particularly a large file which
                    may take a while)
     log_level: logging.level. The log level that should be used
                 when logging messages.
-                     
+
    callback: A callable that is called during the md5 hashing process. It's called
              every time a block of data has been hashed (see blocksize arg).The
              callable receives the following arguments:
-             
+
              filepath: see above
-             
+
              file_size: the total size of the file (in bytes)
-             
+
              bytes_processed: the amount of bytes that has currently been hashed
-             
+
              log_level: see above
-               
+
     '''
     file_size = os.path.getsize(filepath)
     hash_obj = hashlib.md5()
@@ -343,7 +345,7 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
 
         if poll_seconds and curtime - last_time >= poll_seconds:
             logger.log(log_level, "MD5 hashing %s%% (size %s bytes): %s ",
-                        percentage_processed, file_size, filepath)
+                       percentage_processed, file_size, filepath)
             last_time = curtime
 
         if callback:
@@ -376,6 +378,7 @@ def base_dir():
 
     return os.path.dirname(os.path.dirname(os.path.dirname(module_filepath)))
 
+
 class Config():
     required_keys = []
     default_config = {'base_url': 'atomic-light-001.appspot.com',
@@ -390,19 +393,19 @@ class Config():
     def __init__(self):
         logger.debug('base dir is %s' % base_dir())
 
-        # create config. precedence is ENV, CLI, default
+        # create config. precedence is default, ENV, CLI
         combined_config = self.default_config
-        combined_config.update(self.get_user_config())
         combined_config.update(self.get_environment_config())
+        combined_config.update(self.get_user_config())
 
         # verify that we have the required params
         self.verify_required_params(combined_config)
 
         # set the url based on account (unless one was already provided)
-        if not 'url' in combined_config:
+        if 'url' not in combined_config:
             combined_config['url'] = 'https://atomic-light-001.appspot.com'
 
-        if not 'auth_url' in combined_config:
+        if 'auth_url' not in combined_config:
             combined_config['auth_url'] = 'https://dashboard.conductortech.com'
 
         # self.validate_client_token(combined_config)
@@ -427,7 +430,7 @@ class Config():
         Returns: None
 
         """
-        if not 'api_key_path' in config:
+        if 'api_key_path' not in config:
             config['api_key_path'] = os.path.join(base_dir(), 'auth', 'conductor_api_key')
         api_key_path = config['api_key_path']
 
@@ -448,13 +451,13 @@ class Config():
         load conductor config. default to base_dir/auth/CONDUCTOR_TOKEN
         if token_path is not specified in config
         """
-        if not 'token_path' in config:
+        if 'token_path' not in config:
             config['token_path'] = os.path.join(base_dir(), 'auth/CONDUCTOR_TOKEN')
         token_path = config['token_path']
         try:
             with open(token_path, 'r') as f:
                 conductor_token = f.read().rstrip()
-        except IOError, e:
+        except IOError:
             message = 'could not open client token file in %s\n' % token_path
             message += 'either insert one there, set token_path to a valid token,\n'
             message += 'or set the CONDUCTOR_TOKEN_PATH env variable to point to a valid token\n'
@@ -462,10 +465,6 @@ class Config():
             logger.error(message)
             raise ValueError(message)
         config['conductor_token'] = conductor_token
-
-
-
-
 
     def get_environment_config(self):
         '''
@@ -491,7 +490,7 @@ class Config():
         process it onto an appropriate value for the config.yml file.
         1. cast integers strings to python ints
         2. cast bool strings into actual python bools
-        3. anything else? 
+        3. anything else?
         '''
         # Cast integers
         if env_var.isdigit():
@@ -503,52 +502,48 @@ class Config():
 
         return bool_values.get(env_var.lower(), env_var)
 
-
-    def get_config_file_path(self, config_file=None):
-        default_config_file = os.path.join(base_dir(), 'config.yml')
-        if os.environ.has_key('CONDUCTOR_CONFIG'):
-            config_file = os.environ['CONDUCTOR_CONFIG']
-        else:
-            config_file = default_config_file
-
-        return config_file
+    def get_config_file_paths(self, config_file=None):
+        config_files = []
+        if 'CONDUCTOR_CONFIG' in os.environ:
+            path_separator = ';' if platform.system() == 'Windows' else ':'  # We need to use the correct OS path separator
+            # We need to take into account multiple paths
+            possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(path_separator) if len(x) > 0]
+            if len(possible_paths) > 0:
+                config_files = possible_paths
+        return config_files + [os.path.join(base_dir(), 'config.yml')]  # Appending default config file
 
     def get_user_config(self):
-        config_file = self.get_config_file_path()
-        logger.debug('using config: %s' % config_file)
+        config_files = self.get_config_file_paths()
+        for config_file in config_files:
+            logger.debug('Attempting to load config located at: %s' % config_file)
 
+            if os.path.isfile(config_file):
+                logger.debug('Loading config: %s', config_file)
+                try:
+                    with open(config_file, 'r') as file:
+                        config = yaml.load(file)
+                    if config.__class__.__name__ != 'dict':
+                        message = 'config found at %s is not in proper yaml syntax' % config_file
+                        logger.error(message)
 
-        if os.path.isfile(config_file):
-            logger.debug('loading config: %s', config_file)
-            try:
-                with open(config_file, 'r') as file:
-                    config = yaml.load(file)
-            except IOError, e:
-                message = "could't open config file: %s\n" % config_file
-                message += 'please either create one or set the CONDUCTOR_CONFIG\n'
-                message += 'environment variable to a valid config file\n'
-                message += 'see %s for an example' % os.path.join(base_dir(), 'config.example.yml')
-                logger.error(message)
-
-                raise ValueError(message)
-        else:
-            logger.warn('config file %s does not exist', config_file)
-            return {}
-
-
-        if config.__class__.__name__ != 'dict':
-            message = 'config found at %s is not in proper yaml syntax' % config_file
-            logger.error(message)
-            raise ValueError(message)
-
-        logger.debug('config is %s' % config)
-        logger.debug('config.__class__ is %s' % config.__class__)
-        return config
+                    logger.debug('config is %s' % config)
+                    logger.debug('config.__class__ is %s' % config.__class__)
+                    return config
+                except IOError:
+                    message = "could't open config file: %s\n" % config_file
+                    message += 'please either create one or set the CONDUCTOR_CONFIG\n'
+                    message += 'environment variable to a valid config file\n'
+                    message += 'see %s for an example' % os.path.join(base_dir(), 'config.example.yml')
+                    logger.error(message)
+            else:
+                logger.warn('Config filepath: %s does not point to a file', config_file)
+        logger.warn('No valid config files found')
+        return {}
 
     def verify_required_params(self, config):
         logger.debug('config is %s' % config)
         for required_key in self.required_keys:
-            if not required_key in config:
+            if required_key not in config:
                 message = "required param '%s' is not set in the config\n" % required_key
                 message += "please either set it or export CONDUCTOR_%s to the proper value" % required_key.upper()
                 logger.error(message)
@@ -558,15 +553,15 @@ class Config():
 def load_resources_file():
     '''
     Return the resource yaml file as a dict.
-    
+
     If the $CONDUCTOR_RESOURCES_PATH environment variable is set, then use it
-    to find load the resource file from. Otherwise look for it in the default 
+    to find load the resource file from. Otherwise look for it in the default
     location.
 
     TODO:(lws) the resource filepath should also be able to be dictated in the config
     But can't check that here because this module (common.py) should not
     have any imports from the conductor package, i.e. this module creates the
-    config, and therefore cannot be reliant on the config.  
+    config, and therefore cannot be reliant on the config.
     '''
 
     resources_filepath = os.environ.get("CONDUCTOR_RESOURCES_PATH")
@@ -577,12 +572,14 @@ def load_resources_file():
     with open(resources_filepath, 'r') as file_:
         return yaml.load(file_)
 
+
 def get_conductor_instance_types():
     '''
     Get the list of available instances types from the resources.yml file
     '''
     resources = load_resources_file()
     return resources.get("instance_types") or []
+
 
 def get_package_ids():
     '''
@@ -591,18 +588,20 @@ def get_package_ids():
     resources = load_resources_file()
     return resources.get("package_ids") or {}
 
+
 def get_human_bytes(bytes_):
     '''
     For the given bytes (integer), convert and return a "human friendly:
-    representation of that data size. 
+    representation of that data size.
     '''
     if bytes_ > BYTES_1TB:
-        return  "%.2fTB" % (bytes_ / float(BYTES_1TB))
+        return "%.2fTB" % (bytes_ / float(BYTES_1TB))
     elif bytes_ > BYTES_1GB:
-        return  "%.2fGB" % (bytes_ / float(BYTES_1GB))
+        return "%.2fGB" % (bytes_ / float(BYTES_1GB))
     elif bytes_ > BYTES_1MB:
-        return  "%.2fMB" % (bytes_ / float(BYTES_1MB))
-    return  "%.2fKB" % (bytes_ / float(BYTES_1KB))
+        return "%.2fMB" % (bytes_ / float(BYTES_1MB))
+    return "%.2fKB" % (bytes_ / float(BYTES_1KB))
+
 
 def get_progress_percentage(current, total):
     '''
@@ -615,15 +614,16 @@ def get_progress_percentage(current, total):
         progress_int = int(current / float(total) * 100)
     return "%s%%" % progress_int
 
+
 def get_human_duration(seconds):
     '''
     convert the given seconds (float) into a human friendly unit
     '''
     return str(datetime.timedelta(seconds=round(seconds)))
 
+
 def get_human_timestamp(seconds_since_epoch):
     '''
     convert the given seconds since epoch (float)
     '''
     return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
-
