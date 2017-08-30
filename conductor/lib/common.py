@@ -513,9 +513,9 @@ class Config():
         return config_files
 
     def create_default_config(self, path):
-        default_config = {'local_upload': True, '#api_key_path': '<path to conducto_api_key.json'}
         with open(path, 'w') as config:
-            yaml.dump(default_config, config)
+            config.write('local_upload: True\n')
+            config.write('# api_key_path: <path to conductor_api_key.json>\n')
         return {}
 
     def get_user_config(self):
