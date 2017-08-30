@@ -510,7 +510,7 @@ class Config():
             possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(path_separator) if len(x) > 0]
             if len(possible_paths) > 0:
                 config_files = possible_paths
-        return config_files + [os.path.join(base_dir(), 'config.yml')]  # Appending default config file
+        return config_files
 
     def get_user_config(self):
         config_files = self.get_config_file_paths()
