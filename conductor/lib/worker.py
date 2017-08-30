@@ -81,10 +81,7 @@ class ThreadWorker(object):
         # create a list to hold the threads that we create
         self.threads = []
 
-
-
-
-    def do_work(self, job):
+    def do_work(self, job, thread_int):
         '''
         This ineeds to be implmented for each worker type. The work task from
         the in_queue is passed as the job argument.

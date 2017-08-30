@@ -278,6 +278,7 @@ class UploadWorker(worker.ThreadWorker):
         self.chunk_size = 1048576  # 1M
         self.report_size = 10485760  # 10M
         self.api_client = api_client.ApiClient()
+        self.cloud_provider = kwargs.get("cloud_provider")
 
     def chunked_reader(self, filename):
         with open(filename, 'rb') as file:
@@ -306,7 +307,6 @@ class UploadWorker(worker.ThreadWorker):
             logger.error(error_message)
             raise
 
-
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def do_upload(self, upload_url, filename, md5):
         '''
@@ -315,101 +315,102 @@ class UploadWorker(worker.ThreadWorker):
         Instead, we wrap this method in a retry decorator.
         '''
 
-        # headers = {'Content-MD5': md5,
-        #            'Content-Type': 'application/octet-stream'}
-        #
-        # return self.api_client.make_request(conductor_url=upload_url,
-        #                                     headers=headers,
-        #                                     data=self.chunked_reader(filename),
-        #                                     verb='PUT',
-        #                                     tries=1,
-        #                                     use_api_key=True)
+        if self.cloud_provider == "google":
+            headers = {'Content-MD5': md5,
+                       'Content-Type': 'application/octet-stream'}
 
-        headers = {
-            # 'Content-MD5': md5,
-            'x-ms-blob-type': "BlockBlob",
-            'Content-Type': 'application/octet-stream'
-        }
+            return self.api_client.make_request(conductor_url=upload_url,
+                                                headers=headers,
+                                                data=self.chunked_reader(filename),
+                                                verb='PUT',
+                                                tries=1,
+                                                use_api_key=True)
+        elif self.cloud_provider == "azure":
+            headers = {
+                # 'Content-MD5': md5,
+                'x-ms-blob-type': "BlockBlob",
+                'Content-Type': 'application/octet-stream'
+            }
 
-        file_size = os.stat(filename).st_size
-        transferred = 0
-        opener = urllib2.build_opener(urllib2.HTTPHandler)
-        block_ids = []
-        signature_params = {}
+            file_size = os.stat(filename).st_size
+            transferred = 0
+            opener = urllib2.build_opener(urllib2.HTTPHandler)
+            block_ids = []
+            signature_params = {}
 
-        parsed_url = list(urlparse.urlparse(upload_url))
-        params = dict(urlparse.parse_qsl(parsed_url[4]))
-        is_azure = "blockid" in params
-
-        #  Some required headers for the signatures to work
-        if is_azure:
-            headers['x-ms-blob-type'] = "BlockBlob"
-            section_size = 100000000
-        else:
-            #  For GCS, we'll just transfer the whole file in one go
-            section_size = file_size
-            headers['Content-MD5'] = md5
-
-        #  Azure only allows you to transfer in < 100MB blocks. Sorta required a bit of a refactor
-        #  The requests library has some EPIPE issues, so we use urllib2 instead
-        while transferred < file_size:
-            if file_size - transferred <= section_size and is_azure:
-                headers['Content-Length'] = str(file_size - transferred)
-            stream = FileWithCallback(filename, 'rb', transferred, self.metric_store, section_size, filename)
-            request = urllib2.Request(upload_url, data=stream)
-            for header in headers:
-                request.add_header(header, headers[header])
-            request.get_method = lambda: 'PUT'
-            opener.open(request, timeout=60)
-            transferred += stream._total
-            stream.close()
-
-            #  Parse the URL so that in the event of uploading in blocks a new URL can be created
-            #  with a new, unique block ID.
             parsed_url = list(urlparse.urlparse(upload_url))
             params = dict(urlparse.parse_qsl(parsed_url[4]))
-            if not signature_params:
-                signature_params = params
-            if 'blockid' in params:
+            is_azure = "blockid" in params
 
-                #  Save this block ID for later
-                block_ids.append(params['blockid'])
+            #  Some required headers for the signatures to work
+            if is_azure:
+                headers['x-ms-blob-type'] = "BlockBlob"
+                section_size = 100000000
+            else:
+                #  For GCS, we'll just transfer the whole file in one go
+                section_size = file_size
+                headers['Content-MD5'] = md5
 
-                #  Create a new, unique block ID
-                params['blockid'] = urllib.quote(base64.b64encode(datetime.datetime.now().isoformat()))
-                params['sig'] = urllib.quote(params['sig'])
-                parsed_url[4] = "&".join("%s=%s" % (key, params[key]) for key in params)
+            #  Azure only allows you to transfer in < 100MB blocks. Sorta required a bit of a refactor
+            #  The requests library has some EPIPE issues, so we use urllib2 instead
+            while transferred < file_size:
+                if file_size - transferred <= section_size and is_azure:
+                    headers['Content-Length'] = str(file_size - transferred)
+                stream = FileWithCallback(filename, 'rb', transferred, self.metric_store, section_size, filename)
+                request = urllib2.Request(upload_url, data=stream)
+                for header in headers:
+                    request.add_header(header, headers[header])
+                request.get_method = lambda: 'PUT'
+                opener.open(request, timeout=60)
+                transferred += stream._total
+                stream.close()
 
-            #  Cobble together a new upload URL
-            upload_url = urlparse.urlunparse(parsed_url)
+                #  Parse the URL so that in the event of uploading in blocks a new URL can be created
+                #  with a new, unique block ID.
+                parsed_url = list(urlparse.urlparse(upload_url))
+                params = dict(urlparse.parse_qsl(parsed_url[4]))
+                if not signature_params:
+                    signature_params = params
+                if 'blockid' in params:
 
-        #  If we have one or more block IDs, we need to make one more call to convert the uploaded
-        #  blocks into a pinnochio-style real file.
-        if block_ids:
-            parsed_url = list(urlparse.urlparse(upload_url))
+                    #  Save this block ID for later
+                    block_ids.append(params['blockid'])
 
-            #  Reuse the signature parameters
-            signature_params = dict(urlparse.parse_qsl(parsed_url[4]))
-            del signature_params['blockid']
-            signature_params['comp'] = "blocklist"
-            parsed_url[4] = urllib.urlencode(signature_params)
+                    #  Create a new, unique block ID
+                    params['blockid'] = urllib.quote(base64.b64encode(datetime.datetime.now().isoformat()))
+                    params['sig'] = urllib.quote(params['sig'])
+                    parsed_url[4] = "&".join("%s=%s" % (key, params[key]) for key in params)
 
-            #  Construct a new url
-            block_url = urlparse.urlunparse(parsed_url)
+                #  Cobble together a new upload URL
+                upload_url = urlparse.urlunparse(parsed_url)
 
-            #  Make the xml payload
-            payload = '<?xml version="1.0" encoding="utf-8"?><BlockList>'
-            for block_id in block_ids:
-                payload += "<Latest>%s</Latest>\n" % block_id
-            payload += "</BlockList>"
+            #  If we have one or more block IDs, we need to make one more call to convert the uploaded
+            #  blocks into a pinnochio-style real file.
+            if block_ids:
+                parsed_url = list(urlparse.urlparse(upload_url))
 
-            #  Set appropriate headers
-            headers = {"Content-Type": "application/xml",
-                       "Content-Length": str(len(block_ids))}
-            logger.debug("Block url = %s" % block_url)
-            logger.debug("Final upload payload is %s" % payload)
-            response = requests.request('PUT', block_url, headers=headers, data=payload)
-            logger.debug("Final upload response: %s" % response.content)
+                #  Reuse the signature parameters
+                signature_params = dict(urlparse.parse_qsl(parsed_url[4]))
+                del signature_params['blockid']
+                signature_params['comp'] = "blocklist"
+                parsed_url[4] = urllib.urlencode(signature_params)
+
+                #  Construct a new url
+                block_url = urlparse.urlunparse(parsed_url)
+
+                #  Make the xml payload
+                payload = '<?xml version="1.0" encoding="utf-8"?><BlockList>'
+                for block_id in block_ids:
+                    payload += "<Latest>%s</Latest>\n" % block_id
+                payload += "</BlockList>"
+
+                #  Set appropriate headers
+                headers = {"Content-Type": "application/xml",
+                           "Content-Length": str(len(block_ids))}
+                logger.debug("Block url = %s" % block_url)
+                logger.debug("Final upload payload is %s" % payload)
+                response = requests.request('PUT', block_url, headers=headers, data=payload)
+                logger.debug("Final upload response: %s" % response.content)
 
 
 class Uploader():
@@ -433,7 +434,7 @@ class Uploader():
         self.job_start_time = 0
         self.manager = None
 
-    def create_manager(self, project, cloud_provider, md5_only=False):
+    def create_manager(self, project, cloud_provider="google", md5_only=False):
         if md5_only:
             job_description = [
                 (MD5Worker, [], {'thread_count': self.args['thread_count'],
@@ -448,10 +449,11 @@ class Uploader():
 
                 (MD5OutputWorker, [], {'thread_count': 1}),
                 (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
-                                       "project": project,
-                                       "cloud_provider": cloud_provider}),
+                                       'cloud_provider': cloud_provider,
+                                       "project": project}),
                 (FileStatWorker, [], {'thread_count': 1}),
-                (UploadWorker, [], {'thread_count': self.args['thread_count']}),
+                (UploadWorker, [], {'thread_count': self.args['thread_count'],
+                                    'cloud_provider': cloud_provider}),
             ]
 
         manager = worker.JobManager(job_description)
@@ -667,6 +669,7 @@ class Uploader():
             logger.info('upload_id is %s', upload_id)
             logger.info('upload_files %s:(truncated)\n\t%s',
                         len(upload_files), "\n\t".join(upload_files.keys()[:5]))
+            logger.info('cloud provider: %s' % cloud_provider)
 
             # reset counters
             self.num_files_to_process = len(upload_files)
