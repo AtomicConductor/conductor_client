@@ -1243,7 +1243,7 @@ class Backend:
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
     def bearer_token(cls):
-        creds_dict = api_client.get_api_key_bearer_token()
+        creds_dict = api_client.read_conductor_credentials(True)
         return creds_dict["access_token"]
 
     @classmethod
