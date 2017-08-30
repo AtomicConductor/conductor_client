@@ -81,6 +81,7 @@ ${EnvVarUpdate} $0 "PYTHONPATH" "A" "HKLM" "$INSTDIR\Conductor\python\Lib\site-p
 ${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "A" "HKLM" "$INSTDIR\Conductor\maya_shelf"
 ${EnvVarUpdate} $0 "XBMLANGPATH" "A" "HKLM" "$INSTDIR\Conductor\conductor\resources"
 ${EnvVarUpdate} $0 "NUKE_PATH" "A" "HKLM" "$INSTDIR\Conductor\nuke_menu"
+${EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "A" "HKLM" "$APPDATA\conductor\config.yml"
 
 SectionEnd
 
@@ -116,4 +117,3 @@ DeleteRegKey ${REG_ROOT} "${UNINSTALL_PATH}"
 SectionEnd
 
 ######################################################################
-
