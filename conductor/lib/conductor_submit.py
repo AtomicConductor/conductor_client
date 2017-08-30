@@ -8,7 +8,6 @@ import imp
 import json
 import logging
 import os
-import re
 import sys
 import time
 import types
@@ -35,35 +34,33 @@ class Submit():
     """
     metadata_types = types.StringTypes
 
-
     def __init__(self, args):
         self.timeid = int(time.time())
         self.consume_args(args)
         self.validate_args()
         self.api_client = api_client.ApiClient()
 
-
     def consume_args(self, args):
         '''
         "Consume" the give arguments (which have been parsed by argparse).
         For arguments that have not been specified by the user via the command
-        line, default to reasonable values.  
+        line, default to reasonable values.
         If inherit_config is True, then default unspecified arguments to those
         values found in the config.yml file.
-        
+
         1. Use the argument provided by the user via the command line.  Note that
            this may be a non-True value, such as False or 0.  So the only way
            to know whether the argument was provided by the user is to check
            whether is value is not None (which implies that argparse arguments
            should not be configured to give a default value when the user has
            not specified them).
-           
+
        2. If the user has not provided the argument, and if inherit_config is
-          True, then use the value found in the config.  
-          
-       3. If inherit_config is False or the the value in the config doesn't 
+          True, then use the value found in the config.
+
+       3. If inherit_config is False or the the value in the config doesn't
           exist, then default to an empty or non-True value.
-        
+
         '''
 
         self.command = self.resolve_arg(args, 'cmd', "")
@@ -142,12 +139,11 @@ class Submit():
         self.upload_paths = self.resolve_arg(args, 'upload_paths', [], combine_config=True)
         logger.debug("upload_paths: %s", self.upload_paths)
 
-
         self.user = self.resolve_arg(args, 'user', getpass.getuser())
         logger.debug("user: %s", self.user)
 
-        self.notify = { "emails": self.resolve_arg(args, 'notify', [], combine_config=True),
-                        "slack": self.resolve_arg(args, 'slack_notify', [], combine_config=True)}
+        self.notify = {"emails": self.resolve_arg(args, 'notify', [], combine_config=True),
+                       "slack": self.resolve_arg(args, 'slack_notify', [], combine_config=True)}
         logger.debug("notify: %s", self.notify)
         logger.debug(self.notify)
 
@@ -166,25 +162,25 @@ class Submit():
         if the config declared a dictionary value, and the argument also provided
         a dictionary value, they would both be combined, however, the argument
         value will replace any keys that clash with keys from the config value.
-        
+
         If the argument nor the config have a value, then use the provided default value
-        
-        
+
+
         combine_config: bool. Indicates whether to combine the argument value
                         with the config value. This will only ever occur if
-                        both values are present. 
-        
-        
-        
+                        both values are present.
+
+
+
         The order of resolution is:
         1. Check whether the user explicitly specified the argument when calling/
-           instantiating the class.  This is indicated by whether the argument's 
+           instantiating the class.  This is indicated by whether the argument's
            value is set to None or not. If the value is not None, then use it (
            combining it with the config value if appropriate)
-           
+
         2. If the specified argument does not have value (i.e. it's None), then
-           use the value found in the config. 
-        
+           use the value found in the config.
+
         3. If the config does not define the expected argument then use the default
            argument
 
@@ -206,7 +202,7 @@ class Submit():
             # If the arg value is  None, it indicates that the arg was not
             # explicity set. And if the config lists a value,then use it.
             # Note that it's valid that the config may state a non-True value (i.e. 0, False, etc)
-            if arg_value == None:
+            if arg_value is None:
                 return config_value
 
             # IF we're here, then it means that the arg_Value is not None, so
@@ -232,22 +228,19 @@ class Submit():
         # If the the config doesn't have a value
         else:
             # if the argument value is not None the simply return it
-            if arg_value != None:
+            if arg_value is not None:
                 return arg_value
 
             # if the arg_value is None then return the default argument
             return default
 
-
-
     def validate_args(self):
         '''
         Ensure that the combination of arguments don't result in an invalid job/request
-      
-        
+
+
         # TODO: (lws)  Clean this shit up. Too complex. indicates poor design IMO.
         '''
-
 
         # If a command was provided, make sure that it provies a frames argument.
         # Also make sure that it doesn't also provide a tasks_data arg.
@@ -289,7 +282,6 @@ class Submit():
         else:
             raise BadArgumentError('Job must either provide a "command" or "tasks_data" or indicate that it\'s "upload_only"')
 
-
         # Warn if no upload files are provided. Not an error, but unusual
         if not (self.upload_file or self.upload_paths):
             logger.warning("Submitted Job/tasks don't include any upload files")
@@ -299,8 +291,6 @@ class Submit():
 
         if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
-
-
 
     def send_job(self, upload_files, upload_size):
         '''
@@ -317,7 +307,7 @@ class Submit():
         assert isinstance(upload_files, list), "Expected list. Got: %s" % upload_files
         logger.debug("upload files: %s" % upload_files)
 
-        submit_dict = {'owner':self.user}
+        submit_dict = {'owner': self.user}
         submit_dict['location'] = self.location
         submit_dict['docker_image'] = self.docker_image
         submit_dict['local_upload'] = self.local_upload
@@ -328,7 +318,6 @@ class Submit():
         submit_dict['upload_size'] = upload_size
         submit_dict['chunk_size'] = self.chunk_size
 
-
         if upload_files:
             submit_dict['upload_files'] = upload_files
 
@@ -336,20 +325,20 @@ class Submit():
             # If there are not files to upload, then simulate a response string
             # and return a "no work to do" message
             if not upload_files:
-                response = json.dumps({"message": "No files to upload", "jobid":None})
+                response = json.dumps({"message": "No files to upload", "jobid": None})
                 response_code = 204
                 return response, response_code
 
-            submit_dict.update({'frame_range':"x",
-                                'command':'upload only',
-                                'instance_type':'n1-standard-1'})
+            submit_dict.update({'frame_range': "x",
+                                'command': 'upload only',
+                                'instance_type': 'n1-standard-1'})
         else:
 
-            submit_dict.update({'frame_range':self.frames,
-                                'command':self.command,
+            submit_dict.update({'frame_range': self.frames,
+                                'command': self.command,
                                 'tasks_data': self.tasks_data,
-                                'cores':self.cores,
-                                'machine_flavor':self.machine_flavor})
+                                'cores': self.cores,
+                                'machine_flavor': self.machine_flavor})
 
             if self.priority:
                 submit_dict['priority'] = self.priority
@@ -379,37 +368,36 @@ class Submit():
             raise Exception("Job Submission failed: Error %s ...\n%s" % (response_code, response))
         return response, response_code
 
-
     def main(self):
         '''
         Submitting a job happens in a few stages:
             1. Gather depedencies and parameters for the job
             2. Upload dependencies to cloud storage (requires md5s of dependencies)
             3. Submit job to conductor (listing the dependencies and their corresponding md5s)
-            
+
         In order to give flexibility to customers (because a customer may consist
         of a single user or a large team of users), there are two options avaiable
         that can dicate how these job submission stages are executed.
         In a simple single-user case, a user's machine can doe all three
         of the job submission stages.  Simple.  We call this local_upload=True.
-        
+
         However, when there are multiple users, there may be a desire to funnel
-        the "heavier" job submission duties (such as md5 checking and dependency 
+        the "heavier" job submission duties (such as md5 checking and dependency
         uploading) onto one dedicated machine (so as not to bog down
-        the artist's machine). This is called local_upload=False. This results 
-        in stage 1 being performed on the artist's machine (dependency gathering), while 
+        the artist's machine). This is called local_upload=False. This results
+        in stage 1 being performed on the artist's machine (dependency gathering), while
         handing over stage 2 and 3 to an uploader daemon.  This is achieved by
         the artist submitting a "partial" job, which only lists the dependencies
         that it requires (omitting the md5 hashes). In turn, the uploader daemon
         listens for these partial jobs, and acts upon them, by reading each job's
-        listed dependencies (the filepaths that were recorded during the "partial" 
+        listed dependencies (the filepaths that were recorded during the "partial"
         job submission).  The uploader then  md5 checks each dependency file from it's local
         disk, then uploads the file to cloud storage (if necesseary), and finally "completes"
         the partial job submission by providing the full mapping dictionary of
         each dependency filepath and it's corresponing md5 hash. Once the job
         submission is completed, conductor can start acting on the job (executing
         tasks, etc).
-        
+
         '''
 
         # Get the list of file dependencies
@@ -430,8 +418,8 @@ class Submit():
         if self.local_upload:
             api_client.read_conductor_credentials(use_api_key=True)
 
-            uploader_args = {"location":self.location,
-                             "database_filepath":self.database_filepath,
+            uploader_args = {"location": self.location,
+                             "database_filepath": self.database_filepath,
                              "md5_caching": self.md5_caching}
             uploader_ = uploader.Uploader(uploader_args)
             upload_error_message = uploader_.handle_upload_response(self.project, upload_files)
@@ -470,7 +458,6 @@ class Submit():
             upload_file_info.append(upload_file_dict)
             upload_size += filestat.st_size
 
-
         # Submit the job to conductor. upload_files may have md5s included in dictionary or may not.
         # Any md5s that are incuded, are expected to be checked against if/when the uploader
         # daemon goes to upload them. If they do not match what is on disk, the uploader will fail the job
@@ -494,7 +481,6 @@ class Submit():
         # Process the raw filepaths (to account for directories, image sequences, formatting, etc)
         return file_utils.process_upload_filepaths(raw_filepaths)
 
-
     def parse_upload_file(self, upload_filepath):
         '''
         Parse the given filepath for paths that are separated by commas, returning
@@ -510,7 +496,7 @@ class Submit():
         Ensure that the data types in the given metadata are of the proper type
         (str or unicode). If strict is False, automatically cast (and warn)
         any values which do not conform.  If strict is True, do not cast values,
-        simply raise an exception.  
+        simply raise an exception.
         '''
 
         # Create a new metadata dictionary to return
@@ -545,7 +531,6 @@ class Submit():
 
         return casted_metadata
 
-
     @classmethod
     def cast_metadata_value(cls, value):
         '''
@@ -554,7 +539,6 @@ class Submit():
 
         # All the types that are supported for casting to metadata type
         cast_types = (bool, int, long, float, str, unicode)
-
 
         value_type = type(value)
 
@@ -571,8 +555,6 @@ class Submit():
             cast_error = "Casting failure. " + cast_error
             logger.error(cast_error)
             raise
-
-
 
 
 class BadArgumentError(ValueError):
@@ -609,4 +591,3 @@ def set_logging(level=None, log_dirpath=None):
                                      console_formatter=loggeria.FORMATTER_VERBOSE,
                                      file_formatter=loggeria.FORMATTER_VERBOSE,
                                      log_filepath=log_filepath)
-

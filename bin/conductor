@@ -19,14 +19,12 @@ from conductor.lib import conductor_submit, downloader, downloader2, uploader, u
 
 def parse_args():
 
-
     # Create a parent parser. Arguments that are common across all subparsers can be added to this parser
     parent_parser = argparse.ArgumentParser(add_help=False)
 
     # create the main parser. Not sure why this parser is required, but got parsing tracebacks when excluding it (it gets confused about the arguments provided)
     parser = argparse.ArgumentParser(description="description")
     subparsers = parser.add_subparsers(title="actions")
-
 
     #############################
     # SUBMIT PARSER
@@ -40,54 +38,53 @@ def parse_args():
                                           formatter_class=argparse.RawTextHelpFormatter)
 
     submit_parser.add_argument("--cmd",
-           help=('[DEPRECATED. Use --tasks_data instead]\n'
-                 'The command to execute. This works in tandem with the --frames '
-                 'argument to construct a command per task\n'
-                 'Example: --cmd "Render <frame args> /tmp/mayafile.ma"'))
+                               help=('[DEPRECATED. Use --tasks_data instead]\n'
+                                     'The command to execute. This works in tandem with the --frames '
+                                     'argument to construct a command per task\n'
+                                     'Example: --cmd "Render <frame args> /tmp/mayafile.ma"'))
 
     submit_parser.add_argument("--cores",
                                help="Number of cores that this job should run on (highmem and highcpu machines have a minimum of 2 cores)",
                                type=int)
 
     submit_parser.add_argument("--database_filepath",
-             help=("The filepath to the local md5 caching database. If no filepath "
-                   "is specified, the database will be created in a temp directory. "
-                   "Note that this flag is only active when --local_upload is True."))
-
+                               help=("The filepath to the local md5 caching database. If no filepath "
+                                     "is specified, the database will be created in a temp directory. "
+                                     "Note that this flag is only active when --local_upload is True."))
 
     submit_parser.add_argument("--docker_image",
                                help="docker image to run render in")
 
     submit_parser.add_argument("--environment",
-        help=(r"Specify environment variable statements to be executed on Conductor's "
-             "render instance.\n\n"
-             "Example:\n"
-             "\t--environment PYTHONPATH=/home/user/steve/python:/home/user/marry/python\n\n"
+                               help=(r"Specify environment variable statements to be executed on Conductor's "
+                                     "render instance.\n\n"
+                                     "Example:\n"
+                                     "\t--environment PYTHONPATH=/home/user/steve/python:/home/user/marry/python\n\n"
 
-             "Multipe environment variable statements can be made by separating them with a space:\n"
-             "\t--environment PYTHONPATH=/home/user/marry PATH=/home/usr/bin\n\n"
+                                     "Multipe environment variable statements can be made by separating them with a space:\n"
+                                     "\t--environment PYTHONPATH=/home/user/marry PATH=/home/usr/bin\n\n"
 
-             "Appending to Conductor's existing environment variables is also possible.  "
-             "Note that the referenced environment variable is encapsulated by single quotes "
-             "so that it does not get evaluated until it is executed on Conductor's render instance:\n"
-             "\t--environment PYTHONPATH=/tmp:/home/user:'$PYTHONPATH'\n\n"
-             "However, it may be desirable to both evaluate your local environment variable "
-             "AND also append it to Conductor's own. Note that one PYTHONPATH is"
-             " contained with single quotes while the other is not:\n"
-             "\t--environment PYTHONPATH=/tmp:/home/user:$PYTHONPATH:'$PYTHONPATH'\n\n"
-             "Note that the syntax for Windows clients will look different in some "
-             "places, but it's important to remember that ultimately these environment "
-             "variable statements will be executed on a linux platform on Conductor, "
-             "which means that when referencing Conductor\'s environment variable, "
-             "A dollar sign syntax must be used:\n"
-             "\t--environment PYTHONPATH=\"c:\\My Documents\";%%PYTHONPATH%%;$PYTHONPATH"),
-        nargs="*",
-        action=ValidateArgEnv)
+                                     "Appending to Conductor's existing environment variables is also possible.  "
+                                     "Note that the referenced environment variable is encapsulated by single quotes "
+                                     "so that it does not get evaluated until it is executed on Conductor's render instance:\n"
+                                     "\t--environment PYTHONPATH=/tmp:/home/user:'$PYTHONPATH'\n\n"
+                                     "However, it may be desirable to both evaluate your local environment variable "
+                                     "AND also append it to Conductor's own. Note that one PYTHONPATH is"
+                                     " contained with single quotes while the other is not:\n"
+                                     "\t--environment PYTHONPATH=/tmp:/home/user:$PYTHONPATH:'$PYTHONPATH'\n\n"
+                                     "Note that the syntax for Windows clients will look different in some "
+                                     "places, but it's important to remember that ultimately these environment "
+                                     "variable statements will be executed on a linux platform on Conductor, "
+                                     "which means that when referencing Conductor\'s environment variable, "
+                                     "A dollar sign syntax must be used:\n"
+                                     "\t--environment PYTHONPATH=\"c:\\My Documents\";%%PYTHONPATH%%;$PYTHONPATH"),
+                               nargs="*",
+                               action=ValidateArgEnv)
 
     submit_parser.add_argument("--metadata",
-        help=("Specify metadata dictionary. Note that it's best to wrap this dictionary"
-              " in single quotes,\n e.g. --metadata '{\"project\":\"Scrooge\"}'"),
-        type=json.loads)  # use the json loads function to parse dict
+                               help=("Specify metadata dictionary. Note that it's best to wrap this dictionary"
+                                     " in single quotes,\n e.g. --metadata '{\"project\":\"Scrooge\"}'"),
+                               type=json.loads)  # use the json loads function to parse dict
 
     submit_parser.add_argument("--force",
                                help="Do not check for existing uploads, force a new upload",
@@ -98,10 +95,10 @@ def parse_args():
                                default=1)
 
     submit_parser.add_argument("--frames",
-        help=('[DEPRECATED. Use --tasks_data instead]\n'
-              'The frame range to render. This works in tandem with the --command '
-              'argument to construct a command per task.\n'
-              'Example: --frames "10-20" or "100-200x2", or "1, 10-20, 100-200x2"'))
+                               help=('[DEPRECATED. Use --tasks_data instead]\n'
+                                     'The frame range to render. This works in tandem with the --command '
+                                     'argument to construct a command per task.\n'
+                                     'Example: --frames "10-20" or "100-200x2", or "1, 10-20, 100-200x2"'))
 
     submit_parser.add_argument("--scout_frames",
                                help="If specified, these frames will run first and the rest of the"
@@ -114,24 +111,24 @@ def parse_args():
                                default=None)
 
     submit_parser.add_argument("--location",
-            help=('An optional string to indicate which location this submitted '
-                  'job should be registered as. This option is only relevant '
-                  'for conductor accounts which submits jobs from different '
-                  'locations (e.g. differing geographic locations or office '
-                  'locations that have differing file systems). Typically each '
-                  'location would have its own conductor downloader running (for '
-                  'downloading completed renders). This location string allows '
-                  'each conductor downloader to target only files that match the '
-                  'appropriate location. This is potentially useful when you have '
-                  'multiple downloaders running but each have differing file '
-                  'systems available to them (e.g. downloader1 has /filesystem1 '
-                  'available to it, but downloader2 only has /filesystem2 '
-                  'available to it).  In this case downloader1 should only '
-                  'download files that exist on /filesystem1 and downloader2 '
-                  'should only download files that exist on /filesystem2.  '
-                  'This is achieved by including a location string (such as '
-                  '"location1" or "location2") when submitting jobs (and when '
-                  'running a downloader or uploader command).'))
+                               help=('An optional string to indicate which location this submitted '
+                                     'job should be registered as. This option is only relevant '
+                                     'for conductor accounts which submits jobs from different '
+                                     'locations (e.g. differing geographic locations or office '
+                                     'locations that have differing file systems). Typically each '
+                                     'location would have its own conductor downloader running (for '
+                                     'downloading completed renders). This location string allows '
+                                     'each conductor downloader to target only files that match the '
+                                     'appropriate location. This is potentially useful when you have '
+                                     'multiple downloaders running but each have differing file '
+                                     'systems available to them (e.g. downloader1 has /filesystem1 '
+                                     'available to it, but downloader2 only has /filesystem2 '
+                                     'available to it).  In this case downloader1 should only '
+                                     'download files that exist on /filesystem1 and downloader2 '
+                                     'should only download files that exist on /filesystem2.  '
+                                     'This is achieved by including a location string (such as '
+                                     '"location1" or "location2") when submitting jobs (and when '
+                                     'running a downloader or uploader command).'))
 
     #  TODO: We should remove this arg
     submit_parser.add_argument("--machine_type",
@@ -143,20 +140,19 @@ def parse_args():
                                help='Run job in preemptible instances')
 
     submit_parser.add_argument("--md5_caching",
-            help=("Use cached md5s. This can dramatically improve the uploading "
-                  "times, as md5 checking can be very time consuming. Caching md5s "
-                  "allows subsequent uploads (of the same files) to skip the "
-                  "md5 generation process (if the files appear to not have been "
-                  "modified since the last time they were submitted). The cache is "
-                  "stored locally and uses a file's modification time and file size "
-                  "to intelligently guess whether the file has changed. Set this "
-                  "flag to False if there is concern that files may not be getting "
-                  "re-uploaded properly.  "
-                  "Note that this flag is only active when --local_upload is True."),
-            choices=[False, True],
-            type=cast_to_bool,
-            default=None)
-
+                               help=("Use cached md5s. This can dramatically improve the uploading "
+                                     "times, as md5 checking can be very time consuming. Caching md5s "
+                                     "allows subsequent uploads (of the same files) to skip the "
+                                     "md5 generation process (if the files appear to not have been "
+                                     "modified since the last time they were submitted). The cache is "
+                                     "stored locally and uses a file's modification time and file size "
+                                     "to intelligently guess whether the file has changed. Set this "
+                                     "flag to False if there is concern that files may not be getting "
+                                     "re-uploaded properly.  "
+                                     "Note that this flag is only active when --local_upload is True."),
+                               choices=[False, True],
+                               type=cast_to_bool,
+                               default=None)
 
     submit_parser.add_argument("--output_path",
                                help="path to copy renders to")
@@ -178,29 +174,29 @@ def parse_args():
                                nargs="*")
 
     submit_parser.add_argument("--tasks_data",
-           help=('Specify a task\'s command to execute and it\'s corresponding frames '
-                 '(if applicable) in a json dictionary format. e.g.\n'
-                 '--tasks_data \"{\\"command\\": \\"Render -s 1 -e 1 /tmp/file.ma\\", '
-                 '\\"frames\\": \\"1\\"}" \n'
-                 '\nSpecify multiple tasks via multiple json dictionaries, separated by spaces, e.g.\n'
-                 '--tasks_data "{\\"command\\": \\"Render -s 10 -e 12 /tmp/file.ma\\", \\"frames\\": \\"10-12\\"}" '
-                 '"{\\"command\\": \\"Render -s 10 -e 12 /tmp/file.ma\\", \\"frames\\": \\"10-12\\"}"\n'
-                 '\nNote that that format of this argument must be valid json. This makes for '
-                 'piping in more verbose/complex arguments more bearable,\n'
-                 'Example of reading two task\'s data from an array within a json file:\n'
-                 'conductor submit --tasks_data "$(cat /tmp/task_cmds.json | jq -c \'.[1]\')"'),
-           type=json.loads,
-           nargs="*")
+                               help=('Specify a task\'s command to execute and it\'s corresponding frames '
+                                     '(if applicable) in a json dictionary format. e.g.\n'
+                                     '--tasks_data \"{\\"command\\": \\"Render -s 1 -e 1 /tmp/file.ma\\", '
+                                     '\\"frames\\": \\"1\\"}" \n'
+                                     '\nSpecify multiple tasks via multiple json dictionaries, separated by spaces, e.g.\n'
+                                     '--tasks_data "{\\"command\\": \\"Render -s 10 -e 12 /tmp/file.ma\\", \\"frames\\": \\"10-12\\"}" '
+                                     '"{\\"command\\": \\"Render -s 10 -e 12 /tmp/file.ma\\", \\"frames\\": \\"10-12\\"}"\n'
+                                     '\nNote that that format of this argument must be valid json. This makes for '
+                                     'piping in more verbose/complex arguments more bearable,\n'
+                                     'Example of reading two task\'s data from an array within a json file:\n'
+                                     'conductor submit --tasks_data "$(cat /tmp/task_cmds.json | jq -c \'.[1]\')"'),
+                               type=json.loads,
+                               nargs="*")
 
     submit_parser.add_argument("--job_title",
                                help=("The title to name the job.  This is the title "
                                      "that will be displayed in the web ui"))
 
     submit_parser.add_argument("--upload_file",
-            help=("A path to a text file whose contents list paths to upload to "
-                  "conductor. There should be one path per line in the text file. "
-                  "Valid paths are to files, directories (symlinked or not), as "
-                  "well as glob expressions. e.g * wildcards accepted"))
+                               help=("A path to a text file whose contents list paths to upload to "
+                                     "conductor. There should be one path per line in the text file. "
+                                     "Valid paths are to files, directories (symlinked or not), as "
+                                     "well as glob expressions. e.g * wildcards accepted"))
 
     submit_parser.add_argument("--upload_only",
                                help="Only upload the files, don't start the render",
@@ -237,7 +233,6 @@ def parse_args():
 
     submit_parser.set_defaults(func=run_submit)
 
-
     #############################
     # UPLOADER PARSER
     #############################
@@ -245,13 +240,23 @@ def parse_args():
     uploader_parser_help = ""
 
     uploader_parser = subparsers.add_parser("uploader", parents=[parent_parser],
-                                      help=uploader_parser_help,
-                                      description=uploader_parser_desciption,
-                                      formatter_class=argparse.RawTextHelpFormatter)
+                                            help=uploader_parser_help,
+                                            description=uploader_parser_desciption,
+                                            formatter_class=argparse.RawTextHelpFormatter)
 
     uploader_parser.add_argument("--location",
-                                 help=('An optional string to indicate which location this uploader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor uploader process running. This location string allows each uploader to target specific upload jobs (files to upload) that are appropriate for it. This is potentially useful as each location may have differing file systems available to it (e.g. uploader1 has /filesystem1 available to it, but uploader2 only has /filesystem2 available to it).  In this case uploader1 should only upload files that exist on /filesystem1 and uploader2 should only upload files that exist on /filesystem2.  This is achieved by including a location argument (such as "location1" or "location2") when submitting jobs, as well as when launching this uploader command.'))
-
+                                 help=('An optional string to indicate which location this uploader '
+                                       'executable should register as. This option is only relevant '
+                                       'for conductor accounts which submits jobs from different locations '
+                                       '(e.g. differing geographic locations or office locations that have differing file systems).'
+                                       ' Typically each location would have its own conductor uploader process running. This location '
+                                       'string allows each uploader to target specific upload jobs (files to upload) that are appropriate '
+                                       'for it. This is potentially useful as each location may have differing file systems '
+                                       'available to it (e.g. uploader1 has /filesystem1 available to it, but uploader2 only '
+                                       'has /filesystem2 available to it).  In this case uploader1 should only upload files '
+                                       'that exist on /filesystem1 and uploader2 should only upload files that exist on /filesystem2. '
+                                       'This is achieved by including a location argument (such as "location1" or "location2") '
+                                       'when submitting jobs, as well as when launching this uploader command.'))
 
     uploader_parser.add_argument("--log_level",
                                  choices=loggeria.LEVELS,
@@ -265,18 +270,15 @@ def parse_args():
                                        "of logs"))
 
     uploader_parser.add_argument("--thread_count",
-                                   type=int,
-                                   default=conductor.CONFIG.get("thread_count"),
-                                   help=('The number of threads that should download simultaneously'))
+                                 type=int,
+                                 default=conductor.CONFIG.get("thread_count"),
+                                 help=('The number of threads that should download simultaneously'))
 
     uploader_parser.add_argument("--alt",
-                                   help=('Run an alternative version of the downloader'),
-                                   action='store_true')
-
+                                 help=('Run an alternative version of the downloader'),
+                                 action='store_true')
 
     uploader_parser.set_defaults(func=run_uploader)
-
-
 
     #############################
     # DOWNLOADER PARSER
@@ -286,25 +288,35 @@ def parse_args():
     downloader_parser_help = ""
 
     downloader_parser = subparsers.add_parser("downloader", parents=[parent_parser],
-                                  help=downloader_parser_help,
-                                  description=downloader_parser_desciption,
-                                  formatter_class=argparse.RawTextHelpFormatter)
+                                              help=downloader_parser_help,
+                                              description=downloader_parser_desciption,
+                                              formatter_class=argparse.RawTextHelpFormatter)
 
     downloader_parser.add_argument("--job_id",
-                                  help=("The job id(s) to download. When specified "
-                                        "will only download those jobs and terminate "
-                                        "afterwards"),
-                                  action='append')
+                                   help=("The job id(s) to download. When specified "
+                                         "will only download those jobs and terminate "
+                                         "afterwards"),
+                                   action='append')
 
     downloader_parser.add_argument("--task_id",
-                                  help="Manually download output for this task")
+                                   help="Manually download output for this task")
 
     downloader_parser.add_argument("--output",
                                    help="Override for the output directory")
 
     downloader_parser.add_argument("--location",
                                    default=conductor.CONFIG.get("location"),
-                                   help=('An optional string to indicate which location this downloader executable should register as. This option is only relevant for conductor accounts which submits jobs from different locations (e.g. differing geographic locations or office locations that have differing file systems). Typically each location would have its own conductor downloader process running. This location argument allows each downloader to target specific jobs (to download upon job-completion) that match its appropriate location.  Essentially this allows the location of which a job was submitted from to also be the destination in which to deliver completed renders to (which would typically be the desired behavior).'))
+                                   help=('An optional string to indicate which location this downloader '
+                                         'executable should register as. This option is only relevant for '
+                                         'conductor accounts which submits jobs from different locations '
+                                         '(e.g. differing geographic locations or office locations that '
+                                         'have differing file systems). Typically each location would '
+                                         'have its own conductor downloader process running. This location '
+                                         'argument allows each downloader to target specific jobs (to '
+                                         'download upon job-completion) that match its appropriate location. '
+                                         'Essentially this allows the location of which a job was submitted '
+                                         'from to also be the destination in which to deliver completed '
+                                         'renders to (which would typically be the desired behavior).'))
 
     downloader_parser.add_argument("--project",
                                    default=conductor.CONFIG.get("project"),
@@ -318,11 +330,10 @@ def parse_args():
     downloader_parser.add_argument("--log_dir",
                                    default=conductor.CONFIG.get("log_dir"),
                                    help=("When provided, will write a log file to "
-                                        "the provided directory. This will be a "
-                                        "rotating log, creating a new log file "
-                                        "everyday, while storing the last 7 days "
-                                        "of logs"))
-
+                                         "the provided directory. This will be a "
+                                         "rotating log, creating a new log file "
+                                         "everyday, while storing the last 7 days "
+                                         "of logs"))
 
     downloader_parser.add_argument("--thread_count",
                                    type=int,
@@ -349,6 +360,7 @@ def cast_to_bool(string):
     elif string_lower == "false":
         return False
     raise argparse.ArgumentTypeError('Argument must be True or False')
+
 
 class ValidateArgEnv(argparse.Action):
     '''
@@ -396,7 +408,6 @@ class CastLogLevelName(argparse.Action):
     '''
     def __call__(self, parser, namespace, values, option_string):
         setattr(namespace, self.dest, loggeria.LEVEL_MAP[values])
-
 
 
 def run_submit(args):
