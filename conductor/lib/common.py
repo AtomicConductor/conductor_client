@@ -510,7 +510,13 @@ class Config():
             possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(path_separator) if len(x) > 0]
             if len(possible_paths) > 0:
                 config_files = possible_paths
-        return config_files + [os.path.join(base_dir(), 'config.yml')]  # Appending default config file
+        return config_files
+
+    def create_default_config(self, path):
+        with open(path, 'w') as config:
+            config.write('local_upload: True\n')
+            config.write('# api_key_path: <path to conductor_api_key.json>\n')
+        return {}
 
     def get_user_config(self):
         config_files = self.get_config_file_paths()
@@ -537,8 +543,8 @@ class Config():
                     logger.error(message)
             else:
                 logger.warn('Config filepath: %s does not point to a file', config_file)
-        logger.warn('No valid config files found')
-        return {}
+        logger.warn('No valid config files found, creating default config.yml at {}'.format(config_files[-1]))
+        return self.create_default_config(config_files[-1])
 
     def verify_required_params(self, config):
         logger.debug('config is %s' % config)
