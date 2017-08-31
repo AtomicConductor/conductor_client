@@ -362,7 +362,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
 
         # RESET ALL PREFERENCES
-        action_name = "Gloal Preferences"
+        action_name = "Global Preferences"
         title = "Reset Global Preferences"
         message = "Reset Global Conductor preferences"
         global_func = functools.partial(self._resetPreferences, title, message)
