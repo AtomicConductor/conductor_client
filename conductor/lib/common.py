@@ -514,7 +514,7 @@ class Config():
 
     def create_default_config(self, path):
         if not os.path.exists(os.path.dirname(path)):
-            os.mkdir(os.path.dirname(path))
+            os.mkdirs(os.path.dirname(path))
         with open(path, 'w') as config:
             config.write('local_upload: True\n')
             config.write('# api_key_path: <path to conductor_api_key.json>\n')
