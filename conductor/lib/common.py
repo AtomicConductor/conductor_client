@@ -503,14 +503,13 @@ class Config():
         return bool_values.get(env_var.lower(), env_var)
 
     def get_config_file_paths(self, config_file=None):
-        config_files = []
         if 'CONDUCTOR_CONFIG' in os.environ:
             path_separator = ';' if platform.system() == 'Windows' else ':'  # We need to use the correct OS path separator
             # We need to take into account multiple paths
             possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(path_separator) if len(x) > 0]
             if len(possible_paths) > 0:
-                config_files = possible_paths
-        return config_files
+                return possible_paths
+        return [os.path.join(base_dir(), 'config.yml')]  # This is for when CONDUCTOR_CONFIG variable is empty.
 
     def create_default_config(self, path):
         if not os.path.exists(os.path.dirname(path)):
