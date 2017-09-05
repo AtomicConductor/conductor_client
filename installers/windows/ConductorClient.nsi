@@ -83,8 +83,15 @@ ${EnvVarUpdate} $0 "XBMLANGPATH" "A" "HKLM" "$INSTDIR\Conductor\conductor\resour
 ${EnvVarUpdate} $0 "NUKE_PATH" "A" "HKLM" "$INSTDIR\Conductor\nuke_menu"
 
 #### Remove legacy installation artifacts
-RMDir /r /REBOOTOK "$PROGRAMFILES\ConductorIO"
+${EnvVarUpdate} $0 "PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
+${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
+${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\python\Lib\site-packages"
+${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\maya_shelf"
+${EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\conductor\resources"
+${EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\nuke_menu"
 ${EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "R" "HKCU" "$APPDATA\ConductorIO\Conductor\config.yml"
+
+RMDir /r /REBOOTOK "$PROGRAMFILES\ConductorIO"
 ####
 
 SectionEnd
