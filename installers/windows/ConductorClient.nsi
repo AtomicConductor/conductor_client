@@ -43,7 +43,7 @@ InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
 !define MUI_ABORTWARNING
 !define MUI_UNABORTWARNING
-!define MUI_FINISHPAGE_NOAUTOCLOSE
+!define MUI_UNFINISHPAGE_NOAUTOCLOSE
 
 !insertmacro MUI_PAGE_WELCOME
 
@@ -72,22 +72,7 @@ InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
 Section -MainProgram
 ${INSTALL_TYPE}
-SetOverwrite ifnewer
-
-#### Remove legacy installation artifacts
-${EnvVarUpdate} $0 "PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
-${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
-${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\python\Lib\site-packages"
-${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\maya_shelf"
-${EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\conductor\resources"
-${EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\nuke_menu"
-${EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "R" "HKCU" "$APPDATA\ConductorIO\Conductor\config.yml"
-
-RMDir /r /REBOOTOK "$PROGRAMFILES\ConductorIO"
-####
-
-
-SetOutPath "$INSTDIR"
+SetOverwrite ifnewerSetOutPath "$INSTDIR"
 File /r /x ".git" "Conductor"
 
 ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\Conductor"
@@ -125,16 +110,33 @@ Delete "$INSTDIR\uninstall.exe"
 Delete "$INSTDIR\${APP_NAME} website.url"
 !endif
 
+SetOutPath $PROGRAMFILES
+
 DeleteRegKey ${REG_ROOT} "${UNINSTALL_PATH}"
 
-${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\Conductor"
-${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$INSTDIR\Conductor"
-${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$INSTDIR\Conductor\python\Lib\site-packages"
-${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$INSTDIR\Conductor\maya_shelf"
-${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$INSTDIR\Conductor\conductor\resources"
-${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$INSTDIR\Conductor\nuke_menu"
+${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
+${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
+${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\python\Lib\site-packages"
+${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\maya_shelf"
+${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\conductor\resources"
+${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\nuke_menu"
 
-RMDir /r /REBOOTOK "$INSTDIR"
+RMDir /r /REBOOTOK "$PROGRAMFILES\Conductor Technologies"
+
+#### Remove legacy installation artifacts
+${EnvVarUpdate} $0 "PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
+${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
+${EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\python\Lib\site-packages"
+${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\maya_shelf"
+${EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\conductor\resources"
+${EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\nuke_menu"
+${EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "R" "HKCU" "$APPDATA\ConductorIO\Conductor\config.yml"
+
+RMDir /r /REBOOTOK "$PROGRAMFILES\ConductorIO"
+####
+
+
+
 
 SectionEnd
 
