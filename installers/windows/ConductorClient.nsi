@@ -72,7 +72,8 @@ InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
 Section -MainProgram
 ${INSTALL_TYPE}
-SetOverwrite ifnewerSetOutPath "$INSTDIR"
+SetOverwrite ifnewer
+SetOutPath "$INSTDIR"
 File /r /x ".git" "Conductor"
 
 ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\Conductor"
