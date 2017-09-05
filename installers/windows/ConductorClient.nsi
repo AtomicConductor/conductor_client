@@ -43,6 +43,7 @@ InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
 !define MUI_ABORTWARNING
 !define MUI_UNABORTWARNING
+!define MUI_FINISHPAGE_NOAUTOCLOSE
 
 !insertmacro MUI_PAGE_WELCOME
 
@@ -72,15 +73,6 @@ InstallDir "$PROGRAMFILES\${COMP_NAME}"
 Section -MainProgram
 ${INSTALL_TYPE}
 SetOverwrite ifnewer
-SetOutPath "$INSTDIR"
-File /r /x ".git" "Conductor"
-
-${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\Conductor"
-${EnvVarUpdate} $0 "PYTHONPATH" "A" "HKLM" "$INSTDIR\Conductor"
-${EnvVarUpdate} $0 "PYTHONPATH" "A" "HKLM" "$INSTDIR\Conductor\python\Lib\site-packages"
-${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "A" "HKLM" "$INSTDIR\Conductor\maya_shelf"
-${EnvVarUpdate} $0 "XBMLANGPATH" "A" "HKLM" "$INSTDIR\Conductor\conductor\resources"
-${EnvVarUpdate} $0 "NUKE_PATH" "A" "HKLM" "$INSTDIR\Conductor\nuke_menu"
 
 #### Remove legacy installation artifacts
 ${EnvVarUpdate} $0 "PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
@@ -93,6 +85,17 @@ ${EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "R" "HKCU" "$APPDATA\ConductorIO\Conductor
 
 RMDir /r /REBOOTOK "$PROGRAMFILES\ConductorIO"
 ####
+
+
+SetOutPath "$INSTDIR"
+File /r /x ".git" "Conductor"
+
+${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\Conductor"
+${EnvVarUpdate} $0 "PYTHONPATH" "A" "HKLM" "$INSTDIR\Conductor"
+${EnvVarUpdate} $0 "PYTHONPATH" "A" "HKLM" "$INSTDIR\Conductor\python\Lib\site-packages"
+${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "A" "HKLM" "$INSTDIR\Conductor\maya_shelf"
+${EnvVarUpdate} $0 "XBMLANGPATH" "A" "HKLM" "$INSTDIR\Conductor\conductor\resources"
+${EnvVarUpdate} $0 "NUKE_PATH" "A" "HKLM" "$INSTDIR\Conductor\nuke_menu"
 
 SectionEnd
 
