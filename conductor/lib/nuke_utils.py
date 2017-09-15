@@ -4,8 +4,10 @@ import nuke
 
 from conductor.lib import package_utils
 
+
 def get_image_dirpath():
     pass
+
 
 def get_nuke_version():
     '''
@@ -18,10 +20,10 @@ def get_nuke_version():
 def get_plugins():
     '''
     TODO:(lws) WIP - there has to be better way of doing this.  
-    
+
     Return the plugins from the current Nuke session. This is a list of filepaths
     to each nuke plugin. ugly
-    
+
         ['/home/nuke/tools/customCG_Neutralize.gizmo',
         '/home/nuke/tools/customCG_deNeutralize.gizmo',
         '/home/nuke/tools/customCameraShake.gizmo',
@@ -46,7 +48,7 @@ def get_plugins():
         '/home/nuke/.nuke/uistate.ini',
         '/home/nuke/.nuke/user.9-0.hrox',
         '/home/neatvideo/neat_video_ofx/NeatVideo.ofx.bundle/Contents/Linux-x86-64/NeatVideo.ofx']
-        
+
     '''
 
     # If you don't specify the nuke.ALL flag, you end up with paths to icon files
@@ -84,10 +86,10 @@ def collect_dependencies(write_nodes, views, dependency_knobs={}):
     '''
     For the given Write nodes, traverse up their heirarchy to query any nodes
     for dependency filepaths and return them.  
-    
+
     write_nodes: a list of Write nodes (their node names) for which to collect 
                  dependencies for.
-    
+
     dependency_knobs: A dictioary of nuke node types (and their knob names) for 
                       which to query for dependency paths, e.g. 
                             {'Read':['file'],
@@ -117,33 +119,45 @@ def collect_dependencies(write_nodes, views, dependency_knobs={}):
     return sorted(deps)
 
 
-def get_node_dependencies(node, types=(), _dependencies=()):
+def get_node_dependencies(node, types=(), collected_deps=()):
     '''
-    Recursively traverse (upwards) the given node's node graph, aggregating a list
+    Recursively traverse (upwards) the given node's node-graph, aggregating a list
     of all of its contributing nodes. 
-    
+
     node: any nuke node object
     types: tuple of nuke node types (strings) to restrict the returned nodes to.  
-    
+    collected_deps: tuple. This should not be used by the caller.  A running-record
+         of the dependencies that have been collected thus  far (at any given 
+         point in the recursion process).
+
+     return: tuple of Nuke node objects
+
     '''
 
+    # Handle "Group" nodes as special case because (because it's a collection of of nodes.
     group_deps = ()
     if node.Class() == "Group":
         sub_nodes = node.nodes()
         for sub_node in sub_nodes:
             group_deps = group_deps + get_node_dependencies(sub_node, types=types,
-                                                             _dependencies=_dependencies)
+                                                            collected_deps=collected_deps)
 
-
+    # Get the parent\dependency nodes of the given node
     parent_deps = tuple(node.dependencies())
-    dependencies = ()
+    new_deps = ()
+    # Traverse each of these dependency nodes and find _their_ dependencies
     for parent_dep in parent_deps:
-        dependencies = dependencies + get_node_dependencies(parent_dep, types=types,
-                                                        _dependencies=_dependencies)
-    _dependencies = _dependencies + dependencies + tuple(parent_deps) + group_deps
-    return tuple(set([d for d in _dependencies if not types or d.Class() in types]))  # TODO, if this was written properly there is probably no reason we should be getting redundant info (so no nead for a set() )
-
-
+        # Do not traverse dependencies for a node that's already been traversed.
+        # otherwise an infinite loop may occur.  Generally this isn't allowed
+        # in Nuke's dag structure, but it can be achieved by other means (such
+        # as using an expression that targets another node.
+        if parent_dep not in collected_deps:
+            # Add the dep to collected_deps BEFORE seeking its dependencies (prevents infinite loop).
+            collected_deps = collected_deps + (parent_dep, )
+            new_deps = new_deps + get_node_dependencies(parent_dep, types=types,
+                                                        collected_deps=collected_deps)
+    collected_deps = collected_deps + new_deps + tuple(parent_deps) + group_deps
+    return tuple(set([d for d in collected_deps if not types or d.Class() in types]))  # TODO, if this was written properly there is probably no reason we should be getting redundant info (so no nead for a set() )
 
 
 def get_nuke_script_filepath():
@@ -218,7 +232,7 @@ class NukeInfo(package_utils.ProductInfo):
     def get_product(cls):
         '''
         Return the name of the product, e.g. 
-        
+
             "nuke"
         '''
         return cls.product
@@ -231,7 +245,7 @@ class NukeInfo(package_utils.ProductInfo):
     def get_version(cls):
         '''
         Return the product verion, e.g. 
-        
+
             "9.0v7"
         '''
         return nuke.env["NukeVersionString"]
@@ -240,7 +254,7 @@ class NukeInfo(package_utils.ProductInfo):
     def get_major_version(cls):
         '''
         Return the major version of the product, e.g. 
-            
+
             "9"
         '''
         return str(nuke.NUKE_VERSION_MAJOR)
@@ -249,7 +263,7 @@ class NukeInfo(package_utils.ProductInfo):
     def get_minor_version(cls):
         '''
         Return the minor version of the product, e.g. 
-        
+
             ""
         '''
         return str(nuke.NUKE_VERSION_MINOR or 0)
@@ -258,7 +272,7 @@ class NukeInfo(package_utils.ProductInfo):
     def get_release_version(cls):
         '''
         Return the minor version of the product, e.g. 
-        
+
             "SP4"
         '''
         return str(nuke.NUKE_VERSION_RELEASE or 0)
@@ -267,13 +281,10 @@ class NukeInfo(package_utils.ProductInfo):
     def get_build_version(cls):
         '''
         Return the minor version of the product, e.g. 
-        
+
             "SP4"
         '''
         return ""
-
-
-
 
 
 PLUGIN_CLASSES = []
