@@ -110,9 +110,31 @@ Delete "$INSTDIR\uninstall.exe"
 Delete "$INSTDIR\${APP_NAME} website.url"
 !endif
 
-RmDir "$INSTDIR"
+SetOutPath $PROGRAMFILES
 
 DeleteRegKey ${REG_ROOT} "${UNINSTALL_PATH}"
+
+${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
+${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
+${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\python\Lib\site-packages"
+${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\maya_shelf"
+${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\conductor\resources"
+${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\nuke_menu"
+
+RMDir /r /REBOOTOK "$PROGRAMFILES\Conductor Technologies"
+
+#### Remove legacy installation artifacts
+${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
+${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
+${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\python\Lib\site-packages"
+${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\maya_shelf"
+${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\conductor\resources"
+${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\nuke_menu"
+${un.EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "R" "HKCU" "$APPDATA\ConductorIO\Conductor\config.yml"
+
+RMDir /r /REBOOTOK "$PROGRAMFILES\ConductorIO"
+####
+
 SectionEnd
 
 ######################################################################
