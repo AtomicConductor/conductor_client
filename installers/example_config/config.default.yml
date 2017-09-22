@@ -1,0 +1,2 @@
+local_upload: true
+#api_key_path: <path to conductor_api_key.json>

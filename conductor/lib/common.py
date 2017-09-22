@@ -509,7 +509,7 @@ class Config():
             possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(path_separator) if len(x) > 0]
             if len(possible_paths) > 0:
                 return possible_paths
-        return [os.path.join(base_dir(), 'example_config', 'config.yml')]  # This is for when CONDUCTOR_CONFIG variable is empty.
+        return [os.path.join(base_dir(), 'example_config', 'config.default.yml')]  # This is for when CONDUCTOR_CONFIG variable is empty.
 
     def get_user_config(self):
         config_files = self.get_config_file_paths()
