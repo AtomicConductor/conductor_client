@@ -12,6 +12,7 @@ cp -r ../../bin \
       ../../maya_shelf \
       ../../nuke_menu \
       ../../clarisse_shelf \
+      ../example_config \
        build/BUILDROOT/${VERSION}/opt/conductor
 
 cp conductor.spec build/SPECS
