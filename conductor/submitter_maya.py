@@ -438,11 +438,18 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         is_valid = super(MayaConductorSubmitter, self).validateJobPackages()
         active_renderer = maya_utils.get_active_renderer()
 
-        # If the renderer is other than mayasoftware, ensure that there is a job package for it
+        # If the renderer is other than mayaSoftware, ensure that there is a job package for it
         if active_renderer != "mayaSoftware":
             #  get info for the active renderer
             renderer_info = maya_utils.get_renderer_info(renderer_name=active_renderer)
             PluginInfoClass = maya_utils.get_plugin_info_class(renderer_info["plugin_name"])
+            if not PluginInfoClass:
+                title = "Currently active renderer '%s' not supported."  % active_renderer
+                msg = ("The renderer %s is currently active in Maya.\n\n"
+                       "Please switch to a supported renderer in \"Render Settings\".") % active_renderer
+                pyside_utils.launch_error_box(title, msg, parent=self)
+                self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
+                return False
             plugin_product = PluginInfoClass.get_product()
             for package in self.getJobPackages():
                 if package["product"] == plugin_product:
