@@ -448,7 +448,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                 msg = ("The renderer %s is currently active in Maya.\n\n"
                        "Please switch to a supported renderer in \"Render Settings\".") % active_renderer
                 pyside_utils.launch_error_box(title, msg, parent=self)
-                self.ui_tabwgt.setCurrentIndex(self._job_software_tab_idx)
                 return False
             plugin_product = PluginInfoClass.get_product()
             for package in self.getJobPackages():
