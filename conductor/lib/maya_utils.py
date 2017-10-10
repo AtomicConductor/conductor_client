@@ -1,9 +1,13 @@
-import logging, os, re, yaml
+import logging
+import os
+import re
+import yaml
 import functools
-from maya import cmds
+from maya import cmds, mel
 
-from conductor.lib import common, package_utils
+from conductor.lib import package_utils
 logger = logging.getLogger(__name__)
+
 
 def dec_undo(func):
     '''
@@ -52,11 +56,10 @@ def get_maya_version():
     return cmds.about(installedVersion=True)
 
 
-
 def get_plugin_versions():
     '''
     Query maya for all of it's plugins and their  versions. 
-    
+
     return a dictionary such as:
         {'AbcExport': '1.0',
          'AbcImport': '1.0',
@@ -92,13 +95,12 @@ def get_plugin_versions():
          'vrayformaya': '3.00.01',
          'xgenMR': '1.0',
          'xgenToolkit': '1.0'}
-    
+
     '''
     plugin_versions = {}
     for plugin in cmds.pluginInfo(q=True, listPlugins=True):
         plugin_versions[str(plugin)] = str(cmds.pluginInfo(plugin, version=True, q=True))
     return plugin_versions
-
 
 
 def get_maya_scene_filepath():
@@ -108,24 +110,25 @@ def get_maya_scene_filepath():
     return str(filepath)
 
 
-
 def get_image_dirpath():
     '''
+    TODO: (lws)  Need to break up the logic on a per-plugin/renderer basis.
+
     This is high level function that "figures out"  the proper "output directory"
     for the conductor job being submitted.  As of now, the output directory is 
     used for two separate purposes (which desperately need to be separated at some point).
-    
+
     1. Dictates the directory to search for rendered images on ther render node
        when the render task completes.  If the rendered images cannot be found
        recursively within the given output path then the images will not get
        transferred to gcs, and therefore the task will have no frames to download.
-       
+
     2. Dictates the default directory that the client downloader will download
        the task's frames to.  Note that the client downloader can manually override
        the download directory when evoking the downloader command manually 
        (as opposed to running it in daemon mode).     
-    
-    
+
+
     On a simple level, the output directory should be the directory in which
     maya renders its images to. However, this is directory is not straight forward process to derive.
     For starters, the "output directory" is not necessarily flat; it may contain
@@ -139,22 +142,26 @@ def get_image_dirpath():
     The other part of the complexity, is that there are multiple places in maya 
     to dictate where the "output directory" is (and I can't pretend to know every
     possible way of achieving this). As of now, these are the known factors:
-    
+
     1. The Workspace's "image" directory is the default location for renders.
        (I'm not sure if this is even true).
-    
+
     2. However, this can be essentially overridden within the global render
        settings if one were to populate "File Name Prefix" field with an
        absolute path. (perhaps there's another way to override the output directory
        but this is what I've observed thus far).
-       
+
     3. Each renderer (such as vray or maya software) has a different node/attribute
        to set the File Name Prefix field.  So it's important to know which
        renderer is active in order to query the proper node for its data.  
        As other renderersare added/supported by conductor, those nodes will need 
        to be considered when querying for data.
-              
+
      '''
+
+    # Renderman is pretty straight forward. We'll simply provide the Renderman's image directory
+    if is_renderman_renderer:
+        return mel.eval('rmanGetImageDir')
 
     output_dirpath = get_workspace_image_dirpath()
     file_prefix = get_render_file_prefix()
@@ -165,6 +172,7 @@ def get_image_dirpath():
 
     return output_dirpath
 
+
 def get_active_renderer():
     '''
     Return the name of the active renderer, e.g "vray" or "arnold
@@ -174,15 +182,14 @@ def get_active_renderer():
 def get_renderer_info(renderer_name=None):
     '''
     renderer_name: str. e.g. "vray" or "arnold"
-    
+
     {"renderer_name": "vray",
      "plugin_name": "vrayformaya",
      "plugin_version": 3.00.01'}
-     
+
     '''
     if not renderer_name:
         renderer_name = get_active_renderer()
-
 
     renderer_info = {"renderer_name": renderer_name}
 
@@ -201,12 +208,12 @@ def get_renderer_info(renderer_name=None):
 def get_renderer_plugin(renderer_name):
     '''
     For the given renderer name, return the renderer's plugin name
-    
+
     Attempt to find the corellation between the renderer name and the plugin name
     by asking maya for it's active renderer's global render settings node, 
     and then asking what node type that is, and then asking which plugin provides
     the node type.
-    
+
     # THIS DOESN'T ALWAYS WORK! For some reason the "vraysettings" node isn't 
     # always listed as one of the global render settings nodes.  So we resort
     # to a hard mapping of needed
@@ -214,7 +221,6 @@ def get_renderer_plugin(renderer_name):
     # Mapping of render name to plugin name
     renderer_plugin_map = {"vray": "vrayformaya",
                            "arnold": "mtoa"}
-
 
     # register the rendeder if not's not already registered
     if not cmds.renderer(renderer_name, exists=True):
@@ -228,7 +234,7 @@ def get_renderer_plugin(renderer_name):
 
     # Cycle through all  all of the global render settings nodes
     for node in cmds.renderer(renderer_name, q=True, globalsNodes=True) or []:
-        for plugin_name, node_types in  plugin_node_types.iteritems():
+        for plugin_name, node_types in plugin_node_types.iteritems():
             if cmds.nodeType(node) in node_types:
                 return plugin_name
 
@@ -238,17 +244,16 @@ def get_renderer_plugin(renderer_name):
     return renderer_plugin_map.get(renderer_name)
 
 
-
 def get_renderer_globals_node(renderer_name):
     '''
     For the given renderer name, return the name of its renderer globals node.
-    
+
     #TODO:(lws)
     Note that if more than one node is found, raise an exception.  This is to 
     simplify things for now, but may need to support multiple nodes later.
-    
+
     renderer_name: str. e.g. "vray" or "arnold" 
-    
+
     return: str. e.g. "defaultRenderGlobals"
     '''
     if not renderer_exists(renderer_name):
@@ -268,7 +273,7 @@ def get_renderer_globals_node(renderer_name):
 def renderer_exists(renderer_name):
     '''
     Return True if the given renderer (name) can be found in the maya session
-    
+
     renderer_name: str. e.g. "vray" or "arnold" 
     '''
     return renderer_name in (cmds.renderer(q=True, namesOfAvailableRenderers=True) or [])
@@ -279,13 +284,10 @@ def get_render_file_prefix():
     Return the "File Name Prefix" from the global render settings. Note that this
     is a read from different node/attribute depending on which renderer is 
     currently active.
-    
-    Note that as more renderes are supported by Conductor, this function may 
+
+    Note that as more renderers are supported by Conductor, this function may 
     need to be updated to properly query those renderers' information. 
     '''
-
-    # Get the active renderer name
-    renderer = get_active_renderer()
 
     # Use the render globals node/attr by default
     prefix_node_attr = "defaultRenderGlobals.imageFilePrefix"
@@ -302,6 +304,7 @@ def get_render_file_prefix():
 
     return cmds.getAttr(prefix_node_attr) or ""
 
+
 def derive_prefix_directory(file_prefix):
     '''
     This is a super hack that makes many assumptions.  It's purpose is to determine
@@ -312,19 +315,19 @@ def derive_prefix_directory(file_prefix):
     prefix path can contain variables, such as <Scene> or <RenderLayer>, which
     could be specific to whichever render layer is currently being rendered. So
     we need to navigate to highest common directory across all render layers.   
-    
+
     So if this is the prefix:
         "/shot_105/v076/<Layer>/105_light_<RenderLayer>_v076"
     ...then this is directory we want to return:
         "/shot_105/v076"
-        
+
     However, there may not be *any* variables used. So if this is the prefix:
         "/shot_105/v076/105_light_v076"
     ...then this is directory we want to return (same as before):
         "/shot_105/v076"  
-        
+
     Note that the provided file_prefix is expected to be absolute path 
-    
+
     variables are such as:
         <Scene> 
         <RenderLayer> 
@@ -335,7 +338,7 @@ def derive_prefix_directory(file_prefix):
         <Extension>
         <Version>
         <Layer>
-        
+
     '''
     assert file_prefix.startswith(os.sep), 'File Prefix expected to begin with "%s". file_prefix: %s' % (os.sep, file_prefix)
     rx = r"<\w+>"
@@ -372,9 +375,9 @@ def get_frame_range():
     '''
     Return the current frame range for the current maya scene.  This consists
     of both the "playback" start/end frames, as well as the "range" start/end frames.
-    
+
     Note that only integers are currently support for frames
-    
+
     return: list of two tuples, where the first tuple is the "playback" start/end 
             frames and the second is the "range" start/end frames,
             e.g. [(1.0, 24.0), (5.0, 10.0)]
@@ -399,11 +402,11 @@ def get_render_layers_info():
         - render layer name
         - whether the render layer is set to renderable 
         - the camera that the render layer uses
-    
+
     Note that only one camera is allowed per render layer.  This is somewhat
     of an arbitraty limitation, but implemented to reduce complexity.  This 
     restriction may need to be removed.
-    
+
     Note that this function is wrapped in an undo block because it actually changes
     the state of the maya session (unfortuantely). There doesn't appear to be
     an available api call to query maya for this information, without changing
@@ -494,7 +497,6 @@ def collect_dependencies(node_attrs):
         logger.debug("OCIO config dependencies: %s", ocio_config_dependencies)
         dependencies.append(ocio_config_dependencies)
 
-
     # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
 
@@ -506,15 +508,17 @@ def get_ocio_config():
 
 #  Parse the yeti scene graph for texture nodes
 #  TODO: Expand to also try and find relative textures in IMAGE_SEARCH_PATH
+
+
 def parse_yeti_graph(node):
     textureNodes = cmds.pgYetiGraph(node, listNodes=True, type='texture')
     files = []
     if textureNodes:
         for n in textureNodes:
             filePath = cmds.pgYetiGraph(node,
-                                      node=n,
-                                      getParamValue=True,
-                                      param='file_name')
+                                        node=n,
+                                        getParamValue=True,
+                                        param='file_name')
 
             filePath = cmds.file(filePath, expandName=True, query=True, withoutCopyNumber=True)
 
@@ -523,6 +527,8 @@ def parse_yeti_graph(node):
     return files
 
 #  Parse the vrscene file paths...
+
+
 def parse_vrscene_file(path):
     files = []
     with open(path) as infile:
@@ -586,6 +592,8 @@ def parse_xgen_file(path, node):
     return file_paths
 
 #  Parse the OCIO config file to get the location of the associated LUT files
+
+
 def parse_ocio_config(config_file):
 
     def bunk_constructor(loader, node):
@@ -626,6 +634,14 @@ def is_vray_renderer():
     return get_current_renderer() in ["vray"]
 
 
+def is_renderman_renderer():
+    '''
+    Return boolean to indicat whether vray is the current renderer for the maya
+    scene
+    '''
+    return get_current_renderer() in ["renderManRIS"]
+
+
 def get_mayasoftware_settings_node(strict=True):
     '''
     Return the renderGlobals node in the maya scene.  If strict is True, and 
@@ -635,6 +651,7 @@ def get_mayasoftware_settings_node(strict=True):
     default_name = "defaultRenderGlobals"
     mayasoftware_nodes = get_node_by_type(node_type, must_exist=strict, many=True)
     return _get_one_render_node(node_type, mayasoftware_nodes, default_name)
+
 
 def get_vray_settings_node(strict=True):
     '''
@@ -661,7 +678,7 @@ def get_arnold_settings_node(strict=True):
 def _get_one_render_node(node_type, render_settings_nodes, default_name):
     '''
     helper function to return one node of the given render_settings_nodes.
-    
+
     If more than on node exists, use the one that has the default name. Otherwise
     throw an exception. This is really just a temporary hack until we can figure
     out (decisively via an api call) as to which node is the active render node
@@ -694,7 +711,6 @@ def get_render_settings_node(renderer_name, strict=True):
     return renderer_settings_gettr[renderer_name](strict=strict)
 
 
-
 def is_arnold_tx_enabled():
     '''
     Return True if the "Use Existing .tx Textures" option is enabled in Arnolds
@@ -703,7 +719,6 @@ def is_arnold_tx_enabled():
     arnold_node = get_arnold_settings_node(strict=False)
     if arnold_node:
         return cmds.getAttr("%s.use_existing_tiled_textures" % arnold_node)
-
 
 
 def get_node_by_type(node_type, must_exist=True, many=False):
@@ -717,7 +732,6 @@ def get_node_by_type(node_type, must_exist=True, many=False):
     nodes = cmds.ls(type=node_type) or []
     if not nodes and must_exist:
         raise Exception("No %s nodes found in maya scene." % node_type)
-
 
     if (len(nodes) > 1) and not many:
         raise Exception("More than one %s node found in maya scene: %s" % (node_type, nodes))
@@ -747,7 +761,7 @@ def get_plugin_info():
     '''
     Return the conductor package information for any supported plugins 
     that are loaded.
-    
+
      e.g. 
         {'arnold-maya': u'1.4.2.1', 
          'miarmy': u'5.2.25', 
@@ -764,6 +778,7 @@ def get_plugin_info_class(plugin_name):
     for PluginClass in PLUGIN_CLASSES:
         if plugin_name == PluginClass.plugin_name:
             return PluginClass
+
 
 class MayaInfo(package_utils.ProductInfo):
     '''
@@ -783,7 +798,7 @@ class MayaInfo(package_utils.ProductInfo):
     def get_product(cls):
         '''
         Return the name of the product, e.g. 
-        
+
             "Maya"
         '''
         return cls.product
@@ -792,7 +807,7 @@ class MayaInfo(package_utils.ProductInfo):
     def get_version(cls):
         '''
         Return the product verion, e.g. 
-        
+
             "Autodesk Maya 2015 SP4"
         '''
         return cmds.about(installedVersion=True)
@@ -801,7 +816,7 @@ class MayaInfo(package_utils.ProductInfo):
     def get_major_version(cls):
         '''
         Return the major version of the product, e.g. 
-            
+
             "2015"
         '''
         return cls.regex_version().get("major_version", "")
@@ -810,7 +825,7 @@ class MayaInfo(package_utils.ProductInfo):
     def get_minor_version(cls):
         '''
         Return the minor version of the product, e.g. 
-        
+
             "SP4"
         '''
         return cls.regex_version().get("minor_version", "")
@@ -839,7 +854,6 @@ class MayaInfo(package_utils.ProductInfo):
         return rx
 
 
-
 class MayaPluginInfo(package_utils.ProductInfo):
     '''
     A class for retrieving version information about a plugin in maya
@@ -861,7 +875,6 @@ class MayaPluginInfo(package_utils.ProductInfo):
     def get_product(cls):
         raise NotImplementedError
 
-
     @classmethod
     def get_plugin_host_product(cls):
         '''
@@ -880,11 +893,9 @@ class MayaPluginInfo(package_utils.ProductInfo):
     def get_version(cls):
         return cmds.pluginInfo(cls.plugin_name, version=True, q=True) or ""
 
-
     @classmethod
     def exists(cls):
         return cmds.pluginInfo(cls.plugin_name, loaded=True, q=True)
-
 
     @classmethod
     def get_regex(cls):
@@ -956,6 +967,39 @@ class ArnoldInfo(MayaPluginInfo):
         rx = r'{}\.{}\.{}\.{}'.format(rx_major, rx_minor, rx_release, rx_build)
         return rx
 
+
+class RendermanInfo(MayaPluginInfo):
+    '''
+    A class for retrieving version information about the renderman plugin in maya
+
+    Will ultimately produce something like this
+
+     {'product': 'mtoa',
+      'major_version': u'1',
+      'minor_version': u'2',
+      'release_version': u'6',
+      'build_version': u'1',
+      'plugin_host_product': 'maya',
+      'plugin_host_version': u'2015'}
+
+    '''
+    plugin_name = "RenderMan_for_Maya"
+
+    @classmethod
+    def get_product(cls):
+        return "renderman-maya"
+
+    @classmethod
+    def get_regex(cls):
+        '''
+        '21.5'
+        '''
+        rx_major = r'(?P<major_version>\d+)'
+        rx_minor = r'(?P<minor_version>\d+)'
+        rx = r'{}\.{}'.format(rx_major, rx_minor)
+        return rx
+
+
 class MiarmyBaseInfo(MayaPluginInfo):
     '''
     Base class for all Miarmy plugins.  This base class DOES NOT 
@@ -990,23 +1034,30 @@ class MiarmyBaseInfo(MayaPluginInfo):
         rx = r'{}\.{}\.{}'.format(rx_major, rx_minor, rx_release)
         return rx
 
+
 class MiarmyExpressForMaya2016Info(MiarmyBaseInfo):
-        plugin_name = "MiarmyExpressForMaya2016"
+    plugin_name = "MiarmyExpressForMaya2016"
+
 
 class MiarmyExpressForMaya20165Info(MiarmyBaseInfo):
-        plugin_name = "MiarmyExpressForMaya20165"
+    plugin_name = "MiarmyExpressForMaya20165"
+
 
 class MiarmyExpressForMaya2017Info(MiarmyBaseInfo):
-        plugin_name = "MiarmyExpressForMaya2017"
+    plugin_name = "MiarmyExpressForMaya2017"
+
 
 class MiarmyProForMaya2016Info(MiarmyBaseInfo):
-        plugin_name = "MiarmyProForMaya2016"
+    plugin_name = "MiarmyProForMaya2016"
+
 
 class MiarmyProForMaya20165Info(MiarmyBaseInfo):
-        plugin_name = "MiarmyProForMaya20165"
+    plugin_name = "MiarmyProForMaya20165"
+
 
 class MiarmyProForMaya2017Info(MiarmyBaseInfo):
-        plugin_name = "MiarmyProForMaya2017"
+    plugin_name = "MiarmyProForMaya2017"
+
 
 class YetiInfo(MayaPluginInfo):
     '''
@@ -1039,13 +1090,15 @@ class YetiInfo(MayaPluginInfo):
         rx = r'{}\.{}\.{}'.format(rx_major, rx_minor, rx_release)
         return rx
 
-PLUGIN_CLASSES = [VrayInfo,
-                  ArnoldInfo,
-                  MiarmyExpressForMaya2016Info,
-                  MiarmyExpressForMaya20165Info,
-                  MiarmyExpressForMaya2017Info,
-                  MiarmyProForMaya2016Info,
-                  MiarmyProForMaya20165Info,
-                  MiarmyProForMaya2017Info,
-                  YetiInfo,
-                  ]
+PLUGIN_CLASSES = [
+    ArnoldInfo,
+    MiarmyExpressForMaya2016Info,
+    MiarmyExpressForMaya20165Info,
+    MiarmyExpressForMaya2017Info,
+    MiarmyProForMaya2016Info,
+    MiarmyProForMaya20165Info,
+    MiarmyProForMaya2017Info,
+    RendermanInfo,
+    VrayInfo,
+    YetiInfo,
+]

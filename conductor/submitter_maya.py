@@ -64,7 +64,7 @@ class MayaWidget(QtWidgets.QWidget):
         assert isinstance(render_layers_info, list), "render_layers argument must be a list. Got: %s" % type(render_layers_info)
         for render_layer_info in reversed(render_layers_info):
             tree_item = QtWidgets.QTreeWidgetItem([render_layer_info["layer_name"],
-                                                  render_layer_info["camera_shortname"]])
+                                                   render_layer_info["camera_shortname"]])
 
             tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
             tree_item._camera_transform = render_layer_info["camera_transform"]
@@ -185,7 +185,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         # Create a template command that be be used for each task's command
-        cmd_template = "Render -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
+        cmd_template = "Render %s -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
 
         # Retrieve the source maya file
         maya_filepath = self.getSourceFilepath()
@@ -193,6 +193,12 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # This is a hack to allow a Windows filepath to be properly used
         # as an argument in a linux shell on the backend. Not pretty.
         maya_filepath_nodrive = os.path.splitdrive(maya_filepath)[-1]
+
+        # If the active renderer is renderman, then we must explictly declare it
+        # as the renderer in the command.  Otherwise the output path is not respected.
+        # I assume this is a renderman bug.
+        # TODO:(lws). This is a super ugly exception case that we need to better manage/abstract
+        renderer_arg = "-r rman" if maya_utils.get_active_renderer() in ["renderManRIS"] else ""
 
         # Get the user-selected render layers
         render_layers = self.extended_widget.getSelectedRenderLayers()
@@ -207,7 +213,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         tasks_data = []
         frames_generator = submitter.TaskFramesGenerator(frames, chunk_size=chunk_size, uniform_chunk_step=True)
         for start_frame, end_frame, step, task_frames in frames_generator:
-            task_cmd = cmd_template % (start_frame,
+            task_cmd = cmd_template % (renderer_arg,
+                                       start_frame,
                                        end_frame,
                                        step,
                                        render_layer_args,
@@ -218,7 +225,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             # TODO:(lws) this is silly. We should keep this as a native int list.
             task_frames_str = ", ".join(seqLister.condenseSeq(task_frames))
             tasks_data.append({"command": task_cmd,
-                               "frames":  task_frames_str})
+                               "frames": task_frames_str})
         return tasks_data
 
     def collectDependencies(self):
@@ -240,6 +247,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         ocio_config = maya_utils.get_ocio_config()
         if ocio_config:
             environment.update({"OCIO": ocio_config})
+
         return environment
 
     # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP
@@ -444,7 +452,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             renderer_info = maya_utils.get_renderer_info(renderer_name=active_renderer)
             PluginInfoClass = maya_utils.get_plugin_info_class(renderer_info["plugin_name"])
             if not PluginInfoClass:
-                title = "Currently active renderer '%s' not supported."  % active_renderer
+                title = "Currently active renderer '%s' not supported." % active_renderer
                 msg = ("The renderer %s is currently active in Maya.\n\n"
                        "Please switch to a supported renderer in \"Render Settings\".") % active_renderer
                 pyside_utils.launch_error_box(title, msg, parent=self)
