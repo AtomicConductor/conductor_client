@@ -46,6 +46,178 @@ maya_dependency_attrs:
         - fileTextureName
     McdGlobal: # Miarmy
         - outMD2Folder
+    PxrAovLight: # Renderman
+        - iconName
+        - templatePath
+    PxrBarnLightFilter: # Renderman
+        - iconName
+        - templatePath
+    PxrBlocker: # Renderman
+        - iconName
+        - templatePath
+    PxrBlockerLightFilter: # Renderman
+        - iconName
+        - templatePath
+    PxrBump: # Renderman
+        - filename
+    PxrCookieLightFilter: # Renderman
+        - map
+        - iconName
+        - templatePath
+    PxrDiskLight: # Renderman
+        - iesProfile
+        - iconName
+        - templatePath
+    PxrDistantLight: # Renderman
+        - iconName
+        - templatePath
+    PxrDomeLight: # Renderman
+        - lightColorMap
+        - iconName
+        - templatePath
+    PxrEnvDayLight: # Renderman
+        - iconName
+        - templatePath
+    PxrGobo: # Renderman
+        - map
+        - iconName
+        - templatePath
+    PxrGoboLightFilter: # Renderman
+        - map
+        - iconName
+        - templatePath
+    PxrIntMultLightFilter: # Renderman
+        - iconName
+        - templatePath
+    PxrLayeredTexture: # Renderman
+        - maskTexture
+        - filename
+    PxrMeshLight: # Renderman
+        - iconName
+        - templatePath
+    PxrMultiTexture: # Renderman
+        - filename8
+        - filename9
+        - filename4
+        - filename5
+        - filename6
+        - filename7
+        - filename0
+        - filename1
+        - filename2
+        - filename3
+    PxrNormalMap: # Renderman
+         - filename
+    PxrOSL: # Renderman
+        - shadername
+    PxrPortalLight: # Renderman
+        - iconName
+        - templatePath
+    PxrProjectionLayer: # Renderman
+        - channelsFilenames
+        - filename
+    PxrPtexture: # Renderman
+        - filename
+    PxrRampLightFilter: # Renderman
+        - iconName
+        - templatePath
+    PxrRectLight: # Renderman
+        - lightColorMap
+        - iesProfile
+        - iconName
+        - templatePath
+    PxrRodLightFilter: # Renderman
+        - iconName
+        - templatePath
+    PxrSphereLight: # Renderman
+        - iesProfile
+        - iconName
+        - templatePath
+    PxrStdAreaLight: # Renderman
+        - profileMap
+        - rman__EmissionMap
+        - iconName
+        - iesProfile
+        - barnDoorMap
+        - templatePath
+    PxrStdEnvDayLight: # Renderman
+        - iconName
+        - templatePath
+    PxrStdEnvMapLight: # Renderman
+        - rman__EnvMap
+        - iconName
+        - templatePath
+    PxrTexture: # Renderman
+        - filename
+    PxrVisualizer: # Renderman
+        - matCap
+    RenderManArchive: # Renderman
+        - iconName
+        - templatePath
+    rmanImageFile: # Renderman
+        - File
+    rmanTexture3d: # Renderman
+        - File
+    RMSAreaLight: # Renderman
+        - mapname
+        - iconName
+        - templatePath
+    RMSCausticLight: # Renderman
+        - causticPhotonMap
+        - iconName
+        - templatePath
+    RMSEnvLight: # Renderman
+        - rman__EnvMap
+        - iconName
+        - templatePath
+    RMSGILight: # Renderman
+        - iconName
+        - templatePath
+    RMSGIPtcLight: # Renderman
+        - iconName
+        - templatePath
+    RMSGPSurface: # Renderman
+        - SpecularMapB
+        - SpecularMap
+        - RoughnessMap
+        - MaskMap
+        - SurfaceMap
+        - DisplacementMap
+    RMSGeoAreaLight: # Renderman
+        - profilemap
+        - iconName
+        - iesprofile
+        - lightcolormap
+        - barnDoorMap
+        - templatePath
+    RMSGeoLightBlocker: # Renderman
+        - Map
+        - iconName
+        - templatePath
+    RMSGlass: # Renderman
+        - roughnessMap
+        - surfaceMap
+        - specularMap
+        - displacementMap
+    RMSLightBlocker: # Renderman
+        - Map
+        - iconName
+        - templatePath
+    RMSMatte: # Renderman
+        - SurfaceMap
+        - MaskMap
+        - DisplacementMap
+    RMSMeshLight: # Renderman
+        - iconName
+        - templatePath
+    RMSOcean: # Renderman
+        - roughnessMap
+        - surfaceMap
+        - specularMap
+        - displacementMap
+    RMSPointLight: # Renderman
+        - iconName
+        - templatePath
     xgmPalette: # XGen (now maya builtin?)
         - xfn
     xgmDescription:
@@ -60,7 +232,8 @@ maya_dependency_attrs:
     VRayScene: #Vray Scene
         - FilePath
     pgYetiMaya:
-        - cacheFileName
+        - cacheFileName        
+
         
         
 # A dictionary of node types and their corresponing knobs(s) for
@@ -95,8 +268,8 @@ maya_supported_plugins:
     
     
 package_ids:
-    maya-io: 
-                       
+    maya-io:  
+    
         "Autodesk Maya 2016": 
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya: 
@@ -140,6 +313,10 @@ package_ids:
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+            renderman-maya:
+                "21.3": 84af004297b442860ab1341a68361c8c
+                "21.4": a25f164826949ceab173c47b01c85217
+                "21.5": 47ef9c62ec986b35516094cbf321d77f
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -202,6 +379,10 @@ package_ids:
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+            renderman-maya:
+                "21.3": 84af004297b442860ab1341a68361c8c
+                "21.4": a25f164826949ceab173c47b01c85217
+                "21.5": 47ef9c62ec986b35516094cbf321d77f
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -262,7 +443,11 @@ package_ids:
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
             miarmy:
-                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2    
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+            renderman-maya:
+                "21.3": 84af004297b442860ab1341a68361c8c
+                "21.4": a25f164826949ceab173c47b01c85217
+                "21.5": 47ef9c62ec986b35516094cbf321d77f    
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -324,7 +509,11 @@ package_ids:
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
             miarmy:
-                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2               
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+            renderman-maya:
+                "21.3": 84af004297b442860ab1341a68361c8c
+                "21.4": a25f164826949ceab173c47b01c85217
+                "21.5": 47ef9c62ec986b35516094cbf321d77f               
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -387,6 +576,10 @@ package_ids:
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
+            renderman-maya:
+                "21.3": 84af004297b442860ab1341a68361c8c
+                "21.4": a25f164826949ceab173c47b01c85217
+                "21.5": 47ef9c62ec986b35516094cbf321d77f
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -448,7 +641,11 @@ package_ids:
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
             miarmy:
-                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+            renderman-maya:
+                "21.3": 84af004297b442860ab1341a68361c8c
+                "21.4": a25f164826949ceab173c47b01c85217
+                "21.5": 47ef9c62ec986b35516094cbf321d77f 
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -510,7 +707,11 @@ package_ids:
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
             miarmy:
-                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+            renderman-maya:
+                "21.3": 84af004297b442860ab1341a68361c8c
+                "21.4": a25f164826949ceab173c47b01c85217
+                "21.5": 47ef9c62ec986b35516094cbf321d77f 
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -572,7 +773,11 @@ package_ids:
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
             miarmy:
-                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
+                "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+            renderman-maya:
+                "21.3": 84af004297b442860ab1341a68361c8c
+                "21.4": a25f164826949ceab173c47b01c85217
+                "21.5": 47ef9c62ec986b35516094cbf321d77f 
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -635,6 +840,10 @@ package_ids:
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
+            renderman-maya:
+                "21.3": 84af004297b442860ab1341a68361c8c
+                "21.4": a25f164826949ceab173c47b01c85217
+                "21.5": 47ef9c62ec986b35516094cbf321d77f
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -678,6 +887,10 @@ package_ids:
                 "1.4.2.2": 7cab2249b2964c31fcbbb29bf7c1c451
                 "2.0.0.0": e4e9283b3e7dd83e2e96e1b4a5344c2c
                 "2.0.0.1": 69a42a9410001b8a1535a27bcd1b9ded
+            renderman-maya:
+                "21.3": c691fab2d2770adc01d614e16b8d6e64
+                "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
+                "21.5": 8357f93b33879389aa12dcd89f70f3ea
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -722,6 +935,10 @@ package_ids:
                 "2.0.0.1": 69a42a9410001b8a1535a27bcd1b9ded
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
+            renderman-maya:
+                "21.3": c691fab2d2770adc01d614e16b8d6e64
+                "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
+                "21.5": 8357f93b33879389aa12dcd89f70f3ea
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -766,6 +983,10 @@ package_ids:
                 "2.0.0.1": 69a42a9410001b8a1535a27bcd1b9ded
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2 
+            renderman-maya:
+                "21.3": c691fab2d2770adc01d614e16b8d6e64
+                "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
+                "21.5": 8357f93b33879389aa12dcd89f70f3ea
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -806,6 +1027,10 @@ package_ids:
                 "2.0.0.0": cf181526f12c2c1ac6f3c353bdc96a0c
                 "2.0.0.1": 1c60ad43131871cb775dba8d65e9f06b
                 "2.0.1.0": c893fb431fb65cc529faa90631800fc4
+            renderman-maya:
+                "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
+                "21.4": 128a1a2126250f5413db08ab19c1de25
+                "21.5": cb14ddba549aefa42f8f047e6682f470
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -846,6 +1071,10 @@ package_ids:
                 "2.0.0.0": cf181526f12c2c1ac6f3c353bdc96a0c
                 "2.0.0.1": 1c60ad43131871cb775dba8d65e9f06b
                 "2.0.1.0": c893fb431fb65cc529faa90631800fc4
+            renderman-maya:
+                "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
+                "21.4": 128a1a2126250f5413db08ab19c1de25
+                "21.5": cb14ddba549aefa42f8f047e6682f470
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -887,6 +1116,10 @@ package_ids:
                 "2.0.0.0": cf181526f12c2c1ac6f3c353bdc96a0c
                 "2.0.0.1": 1c60ad43131871cb775dba8d65e9f06b
                 "2.0.1.0": c893fb431fb65cc529faa90631800fc4
+            renderman-maya:
+                "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
+                "21.4": 128a1a2126250f5413db08ab19c1de25
+                "21.5": cb14ddba549aefa42f8f047e6682f470
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
