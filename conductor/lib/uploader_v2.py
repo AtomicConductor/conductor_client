@@ -332,19 +332,21 @@ class UploaderWorker(multiprocessing.Process):
             LOGGER.warning("local file missing: %s",
                            self.current_upload["filepath"])
             if not self.current_upload.get("id"):
-                Backend.fail_unsigned(self.current_upload,
-                                      location=self.location)
+                Backend.fail_unsigned(
+                    self.current_upload, location=self.location)
             else:
-                Backend.fail(self.current_upload,
-                             bytes_downloaded=0,
-                             location=self.location)
+                Backend.fail(
+                    self.current_upload,
+                    bytes_downloaded=0,
+                    location=self.location)
             return
 
         except UploaderFileModified as err:
             LOGGER.warning("local file has changed: %s", err)
-            Backend.fail(self.current_upload,
-                         bytes_downloaded=0,
-                         location=self.location)
+            Backend.fail(
+                self.current_upload,
+                bytes_downloaded=0,
+                location=self.location)
             return
 
     def maybe_upload(self):
@@ -376,8 +378,8 @@ class UploaderWorker(multiprocessing.Process):
         md5 = self.current_upload.get("md5")
         if md5:
             return md5
-        self.current_upload["md5"] = self.file_md5(
-            self.current_upload["filepath"])
+        self.current_upload["md5"] = self.file_md5(self.current_upload[
+            "filepath"])
         sign_result = Backend.sign(self.current_upload, location=self.location)
         if sign_result == "skip":
             return sign_result
@@ -390,26 +392,29 @@ class UploaderWorker(multiprocessing.Process):
         '''
         make an md5 sum of a file.
         '''
-        LOGGER.info(
-            "Checking MD5 for file: %s" % self.current_upload["filepath"])
+        LOGGER.info("Checking MD5 for file: %s" %
+                    self.current_upload["filepath"])
         chunk_size = 2**20
         md5 = hashlib.md5()
+        chunk_count = 0
         with open(filepath, "rb") as fileobj:
             while self._run_state.value == Uploader.STATE_RUNNING:
                 chunk = fileobj.read(chunk_size)
                 if not chunk:
                     break
                 md5.update(chunk)
+                if not chunk_count % 10:
+                    LOGGER.info("MD5 progress: id=%s file=%s" % (
+                        self.current_upload["upload_id"],
+                        self.current_upload["filepath"]
+                    ))
                 if self.maybe_touch():
-                    LOGGER.info(
-                        "MD5 progress file: %s" %
-                        self.current_upload["filepath"])
                     self.touch()
                     Backend.touch(
                         self.current_upload,
                         bytes_downloaded=0,
-                        location=self.location
-                    )
+                        location=self.location)
+                chunk_count += 1
         digest = md5.hexdigest()
         return digest
 
@@ -419,8 +424,9 @@ class UploaderWorker(multiprocessing.Process):
         """
         # print "starting upload...", self.current_upload['filepath']
         self.touch()
-        LOGGER.info(
-            "Starting upload of file: %s" % self.current_upload["filepath"])
+        LOGGER.info("Starting upload of file: id=%s path=%s" %
+                    (self.current_upload["upload_id"],
+                     self.current_upload["filepath"]))
         try:
             Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
         except FilePutError as err:
@@ -478,12 +484,15 @@ class UploaderWorker(multiprocessing.Process):
         # print "bytes so-far: ", filegen.bytes_read
 
         if self.maybe_touch():
+            LOGGER.info("upload progress file: id=%s bytes_xferred=%s path=%s" %
+                        (self.current_upload["upload_id"],
+                         filegen.bytes_read,
+                         self.current_upload["filepath"]))
             self.touch()
             Backend.touch(
                 self.current_upload,
                 bytes_downloaded=filegen.bytes_read,
-                location=self.location
-            )
+                location=self.location)
         else:
             return
 
@@ -494,12 +503,16 @@ class UploaderWorker(multiprocessing.Process):
         xferd = filegen.bytes_read \
             if filegen \
             else self.current_upload["bytes_transferred"]
+
+        LOGGER.info("upload complete: id=%s bytes_xferred=%s path=%s" %
+                    (self.current_upload["upload_id"],
+                     xferd,
+                     self.current_upload["filepath"]))
         self.touch()
         Backend.finish(
             self.current_upload,
             bytes_downloaded=xferd,
-            location=self.location
-        )
+            location=self.location)
 
         result = self._construct_result_dict(self.fileobj, "UL")
         self._results_queue.put_nowait(result)
@@ -544,7 +557,6 @@ class UploaderWorker(multiprocessing.Process):
         return
 
     def maybe_touch(self):
-        LOGGER.info("TOUCH!!!")
         touch_delta = datetime.datetime.now() - self.last_touch
         return touch_delta.total_seconds() > WORKER_TOUCH_INTERVAL
 
@@ -645,9 +657,11 @@ class Backend:
     @classmethod
     def headers(cls):
         bearer = get_bearer_token()
-        return{"accept-version": "v1",
-               # "content-type": "application/json",
-               "authorization": "Bearer %s" % bearer.value}
+        return {
+            "accept-version": "v1",
+            # "content-type": "application/json",
+            "authorization": "Bearer %s" % bearer.value
+        }
 
     @classmethod
     def put_file(cls, filegen, signed_url):
@@ -668,10 +682,7 @@ class Backend:
         Sign an upload payload
         """
         path = "uploader/sign/%s" % upload["id"]
-        kwargs = {
-            "md5": upload["md5"],
-            "location": location
-        }
+        kwargs = {"md5": upload["md5"], "location": location}
         try:
             return Backend.put(path, kwargs, headers=Backend.headers())
         except requests.HTTPError as err:
@@ -702,10 +713,7 @@ class Backend:
         Update backend with upload status
         """
         path = "uploader/touch/%s" % upload["id"]
-        kwargs = {
-            "bytes_transferred": bytes_downloaded,
-            "location": location
-        }
+        kwargs = {"bytes_transferred": bytes_downloaded, "location": location}
         try:
             return Backend.put(path, kwargs, headers=Backend.headers())
         except requests.HTTPError as err:
@@ -722,10 +730,7 @@ class Backend:
         """
         path = "uploader/finish/%s" % upload["id"]
         LOGGER.debug(path)
-        payload = {
-            "bytes_transferred": bytes_downloaded,
-            "location": location
-        }
+        payload = {"bytes_transferred": bytes_downloaded, "location": location}
         try:
             return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as err:
@@ -741,10 +746,7 @@ class Backend:
         Tell backend about upload failure
         """
         path = "uploader/fail/%s" % upload["id"]
-        payload = {
-            "bytes_transferred": bytes_downloaded,
-            "location": location
-        }
+        payload = {"bytes_transferred": bytes_downloaded, "location": location}
         try:
             return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as err:
@@ -761,10 +763,7 @@ class Backend:
         """
         path = "uploader/fail_unsigned/%s" % upload["ulid"]
         headers = Backend.headers()
-        payload = {
-            "upload_file": json.dumps(upload),
-            "location": location
-        }
+        payload = {"upload_file": json.dumps(upload), "location": location}
         try:
             return Backend.put(path, payload, headers=headers)
         except requests.HTTPError as err:
