@@ -160,7 +160,7 @@ def get_image_dirpath():
      '''
 
     # Renderman is pretty straight forward. We'll simply provide the Renderman's image directory
-    if is_renderman_renderer:
+    if is_renderman_renderer():
         return mel.eval('rmanGetImageDir')
 
     output_dirpath = get_workspace_image_dirpath()
@@ -178,6 +178,7 @@ def get_active_renderer():
     Return the name of the active renderer, e.g "vray" or "arnold
     '''
     return cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
+
 
 def get_renderer_info(renderer_name=None):
     '''
