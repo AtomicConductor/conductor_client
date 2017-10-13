@@ -295,7 +295,7 @@ class UploaderWorker(multiprocessing.Process):
             fields["upload_id"] = self.current_upload.get("upload_id")
             fields["md5"] = self.current_upload.get("md5")
         log_fields = ["%s=%s" % (key, val) for key, val in fields.iteritems()]
-        log_msg = "%s %s" % (message,  "".join(log_fields))
+        log_msg = "%s %s" % (message,  " ".join(log_fields))
         if level == EXCEPTION:
             LOGGER.exception(log_msg)
         else:
