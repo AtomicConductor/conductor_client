@@ -839,15 +839,6 @@ class Backend:
         return url
 
 
-def item_formatter(root_str, keyval):
-    """
-    Joins a root string to a formatted keyval pair.
-
-    ex. "rootstr key=val"
-    """
-    return "%s %s=%s" % (root_str, keyval[0], keyval[1])
-
-
 def set_logging(level=None, log_dirpath=None):
     '''
     Set logging level and path.
