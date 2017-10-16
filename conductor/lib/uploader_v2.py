@@ -1,25 +1,25 @@
 """
 Uploader daemon v2
 """
-import base64
 import datetime
 import hashlib
-import imp
 import json
 import logging
 import multiprocessing
 import os
 import signal
-import sys
 import time
-
 import requests
+from logging import INFO, DEBUG, WARNING
 
 from conductor import CONFIG
 from conductor.lib import common, loggeria, api_client
 from conductor.lib.downloader import DecAuthorize  # , DecDownloaderRetry
 from conductor.lib.downloader import HistoryWorker
 from conductor.lib.downloader import get_bearer_token
+
+# define constant for logging
+EXCEPTION = "exception"
 
 # Duration that workers sleep when there's no work to perform
 WORKER_SLEEP_DURATION = 15
@@ -270,6 +270,7 @@ class UploaderWorker(multiprocessing.Process):
                  location=None,
                  project=None):
         super(UploaderWorker, self).__init__()
+        self._id = os.getpid()
         self._run_state = run_state
         self.account = account
         self.location = location
@@ -281,16 +282,38 @@ class UploaderWorker(multiprocessing.Process):
         self.last_touch = datetime.datetime.now()
         self._results_queue = results_queue
 
+    def log(self, message, level=DEBUG, fields=None):
+        """
+        Create a formatted log message from passed in data, automatically
+        add process info, and call LOGGER with result.
+        """
+        fields = {} if fields is None else fields
+        fields["process_id"] = self._id
+        fields["process_state"] = self._run_state.value
+        if self.current_upload:
+            fields["filepath"] = self.current_upload.get("filepath")
+            fields["upload_id"] = self.current_upload.get("upload_id")
+            fields["md5"] = self.current_upload.get("md5")
+        log_fields = ["%s=%s" % (key, val) for key, val in fields.iteritems()]
+        log_msg = "%s %s" % (message,  " ".join(log_fields))
+        if level == EXCEPTION:
+            LOGGER.exception(log_msg)
+        else:
+            LOGGER.log(level, log_msg)
+
     def run(self):
         # Set the run_state value to "running"
         self._run_state.value = Uploader.STATE_RUNNING
+
+        self.log("STARTING_UPLOAD_PROCESS", level=INFO)
 
         while self._run_state.value == Uploader.STATE_RUNNING:
             try:
                 self._run()
             except:
-                LOGGER.exception(
-                    "Preventing process from exiting due to Exception:\n")
+                self.log(
+                    "Preventing process from exiting due to Exception:\n",
+                    level=EXCEPTION)
                 # wait a little to allow for exception recovery .
                 # TODO:(lws) this may be totally stupid/unnecessary)
                 self.reset()
@@ -299,7 +322,7 @@ class UploaderWorker(multiprocessing.Process):
         # call stop method to properly shutdown child processes, cleanup, etc
         self.stop()
 
-        LOGGER.debug("Exiting process")
+        self.log("EXITING_PROCESS", level=INFO)
 
     def reset(self):
         """
@@ -317,12 +340,13 @@ class UploaderWorker(multiprocessing.Process):
         self.current_upload = self.next_upload()
 
         if not self.current_upload:
+            self.log("NO_PENDING_UPLOADS")
             self.wait()
             return
 
-        return self.handle_upload()
+        return self.handle_potential_upload()
 
-    def handle_upload(self):
+    def handle_potential_upload(self):
         """
         Process an upload json object
         """
@@ -332,31 +356,34 @@ class UploaderWorker(multiprocessing.Process):
             return self.maybe_upload()
 
         except UploaderMissingFile as err:
-            LOGGER.warning("local file missing: %s",
-                           self.current_upload["filepath"])
+            self.log("LOCAL_FILE_MISSING", level=WARNING)
             if not self.current_upload.get("id"):
-                Backend.fail_unsigned(self.current_upload, location=self.location)
+                Backend.fail_unsigned(
+                    self.current_upload, location=self.location)
             else:
-                Backend.fail(self.current_upload, bytes_downloaded=0, location=self.location)
-            return
+                Backend.fail(
+                    self.current_upload,
+                    bytes_downloaded=0,
+                    location=self.location)
 
         except UploaderFileModified as err:
-            LOGGER.warning("local file has changed: %s", err)
-            Backend.fail(self.current_upload, bytes_downloaded=0, location=self.location)
-            return
+            self.log("LOCAL_FILE_CHANGED msg=%s" % err, level=WARNING)
+            Backend.fail(
+                self.current_upload,
+                bytes_downloaded=0,
+                location=self.location)
 
     def maybe_upload(self):
         '''
         Upload a file if md5 matches expectation.
         '''
-        LOGGER.info("Potential upload: %s" % self.current_upload["filepath"])
         filepath = self.current_upload["filepath"]
         # expected_filesize = self.current_upload.get("filesize")
         origingal_md5 = self.current_upload.get("md5")
         expected_md5 = self.md5_for_current_upload()
 
         if expected_md5 == "skip":
-            return
+            self.log("UPLOADED_FILE_EXISTS", level=INFO)
 
         if origingal_md5:
             local_md5 = self.file_md5(filepath)
@@ -374,7 +401,8 @@ class UploaderWorker(multiprocessing.Process):
         md5 = self.current_upload.get("md5")
         if md5:
             return md5
-        self.current_upload["md5"] = self.file_md5(self.current_upload["filepath"])
+        self.current_upload["md5"] = self.file_md5(self.current_upload[
+            "filepath"])
         sign_result = Backend.sign(self.current_upload, location=self.location)
         if sign_result == "skip":
             return sign_result
@@ -387,26 +415,27 @@ class UploaderWorker(multiprocessing.Process):
         '''
         make an md5 sum of a file.
         '''
-        LOGGER.info("Checking MD5 for file: %s" % self.current_upload["filepath"]) 
+        self.log("CHECKING_MD5", level=INFO)
         chunk_size = 2**20
         md5 = hashlib.md5()
+        chunk_count = 0
         with open(filepath, "rb") as fileobj:
             while self._run_state.value == Uploader.STATE_RUNNING:
                 chunk = fileobj.read(chunk_size)
                 if not chunk:
                     break
                 md5.update(chunk)
+                if not chunk_count % 20:
+                    self.log("md5_PROGRESS")
                 if self.maybe_touch():
-                    LOGGER.info("MD5 progress file: %s" % self.current_upload["filepath"]) 
                     self.touch()
                     Backend.touch(
                         self.current_upload,
                         bytes_downloaded=0,
-                        location=self.location
-                    )
+                        location=self.location)
+                chunk_count += 1
         digest = md5.hexdigest()
         return digest
-
 
     def put_upload(self):
         """
@@ -414,15 +443,12 @@ class UploaderWorker(multiprocessing.Process):
         """
         # print "starting upload...", self.current_upload['filepath']
         self.touch()
-        LOGGER.info("Starting upload of file: %s" % self.current_upload["filepath"]) 
-        # try:
-        Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
-        # except FilePutError as err:
-        #     self.handle_put_error(err, self.fileobj)
-        #     raise
-        # else:
-            # print result
-        return
+        self.log("STARTING_UPLOAD", level=INFO)
+        try:
+            Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
+        except FilePutError as err:
+            self.handle_put_error(err, self.fileobj)
+            raise
 
     def handle_finish(self, result):
         """
@@ -465,7 +491,6 @@ class UploaderWorker(multiprocessing.Process):
                 self.handle_put_success(filegen)
         else:
             raise StopIteration()
-        return
 
     def handle_put_progress(self, filegen):
         """
@@ -474,14 +499,12 @@ class UploaderWorker(multiprocessing.Process):
         # print "bytes so-far: ", filegen.bytes_read
 
         if self.maybe_touch():
+            self.log("UPLOAD_PROGRESS", level=INFO)
             self.touch()
             Backend.touch(
                 self.current_upload,
                 bytes_downloaded=filegen.bytes_read,
-                location=self.location
-            )
-        else:
-            return
+                location=self.location)
 
     def handle_put_success(self, filegen):
         """
@@ -490,12 +513,13 @@ class UploaderWorker(multiprocessing.Process):
         xferd = filegen.bytes_read \
             if filegen \
             else self.current_upload["bytes_transferred"]
+
+        self.log("UPLOAD_COMPLETE", level=INFO)
         self.touch()
         Backend.finish(
             self.current_upload,
             bytes_downloaded=xferd,
-            location=self.location
-        )
+            location=self.location)
 
         result = self._construct_result_dict(self.fileobj, "UL")
         self._results_queue.put_nowait(result)
@@ -515,7 +539,6 @@ class UploaderWorker(multiprocessing.Process):
 
         result = self._construct_result_dict(fileobj, "Failed")
         self._results_queue.put_nowait(result)
-        return
 
     def _construct_result_dict(self, filegen, action):
         '''
@@ -525,7 +548,7 @@ class UploaderWorker(multiprocessing.Process):
         time_ended = time.time()
         result = {}
         result["ID"] = filegen.upload_file.get("id")
-        result["Upload ID"] = filegen.upload_file.get("id")
+        result["Upload ID"] = filegen.upload_file.get("upload_id")
         result["Size"] = filegen.upload_file.get("filesize")
         result["Filepath"] = filegen.upload_file.get("filepath")
         result["Action"] = action
@@ -537,7 +560,6 @@ class UploaderWorker(multiprocessing.Process):
 
     def touch(self):
         self.last_touch = datetime.datetime.now()
-        return
 
     def maybe_touch(self):
         touch_delta = datetime.datetime.now() - self.last_touch
@@ -640,10 +662,11 @@ class Backend:
     @classmethod
     def headers(cls):
         bearer = get_bearer_token()
-        return{"accept-version": "v1",
-               # "content-type": "application/json",
-               "authorization": "Bearer %s" % bearer.value}
-
+        return {
+            "accept-version": "v1",
+            # "content-type": "application/json",
+            "authorization": "Bearer %s" % bearer.value
+        }
 
     @classmethod
     def put_file(cls, filegen, signed_url):
@@ -664,10 +687,7 @@ class Backend:
         Sign an upload payload
         """
         path = "uploader/sign/%s" % upload["id"]
-        kwargs = {
-            "md5": upload["md5"],
-            "location": location
-        }
+        kwargs = {"md5": upload["md5"], "location": location}
         try:
             return Backend.put(path, kwargs, headers=Backend.headers())
         except requests.HTTPError as err:
@@ -688,8 +708,7 @@ class Backend:
             return Backend.get(path, params, headers=Backend.headers())
         except requests.HTTPError as err:
             if err.response.status_code == 410:
-                LOGGER.warning("Cannot Touch file %s.  Already finished \
-                    (not active) (410)", upload["id"])
+                LOGGER.warning("Cannot fetch next upload: %s", err)
             raise err
         raise
 
@@ -699,10 +718,7 @@ class Backend:
         Update backend with upload status
         """
         path = "uploader/touch/%s" % upload["id"]
-        kwargs = {
-            "bytes_transferred": bytes_downloaded,
-            "location": location
-        }
+        kwargs = {"bytes_transferred": bytes_downloaded, "location": location}
         try:
             return Backend.put(path, kwargs, headers=Backend.headers())
         except requests.HTTPError as err:
@@ -719,10 +735,7 @@ class Backend:
         """
         path = "uploader/finish/%s" % upload["id"]
         LOGGER.debug(path)
-        payload = {
-            "bytes_transferred": bytes_downloaded,
-            "location": location
-        }
+        payload = {"bytes_transferred": bytes_downloaded, "location": location}
         try:
             return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as err:
@@ -738,10 +751,7 @@ class Backend:
         Tell backend about upload failure
         """
         path = "uploader/fail/%s" % upload["id"]
-        payload = {
-            "bytes_transferred": bytes_downloaded,
-            "location": location
-        }
+        payload = {"bytes_transferred": bytes_downloaded, "location": location}
         try:
             return Backend.put(path, payload, headers=Backend.headers())
         except requests.HTTPError as err:
@@ -758,10 +768,7 @@ class Backend:
         """
         path = "uploader/fail_unsigned/%s" % upload["ulid"]
         headers = Backend.headers()
-        payload = {
-            "upload_file": json.dumps(upload),
-            "location": location
-        }
+        payload = {"upload_file": json.dumps(upload), "location": location}
         try:
             return Backend.put(path, payload, headers=headers)
         except requests.HTTPError as err:
@@ -814,7 +821,7 @@ class Backend:
         """
         url = cls.make_url(path)
         if json:
-            response =  requests.post(url, json=data, headers=headers)
+            response = requests.post(url, json=data, headers=headers)
         else:
             response = requests.post(url, data=data, headers=headers)
         response.raise_for_status()
@@ -830,7 +837,6 @@ class Backend:
         url_base = CONFIG.get("api_url")
         url = "%s/api/v1/fileio/%s" % (url_base, path)
         return url
-
 
 
 def set_logging(level=None, log_dirpath=None):
