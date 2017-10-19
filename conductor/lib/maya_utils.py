@@ -479,12 +479,11 @@ def collect_dependencies(node_attrs):
                         dependencies += vrscene_dependencies
 
                     if node_type == "pgYetiMaya":
-                        input_mode_attr = '%s.fileMode' % node
-                        yeti_dependencies = parse_yeti_graph(node)
-                        logger.debug("yeti graph dependencies: %s" % yeti_dependencies)
-                        dependencies += yeti_dependencies
-                        if cmds.getAttr(input_mode_attr) == 0:
-                            continue
+                        # If the node is reading from a cache directory
+                        if cmds.getAttr('%s.fileMode' % node):
+                            yeti_dependencies = parse_yeti_graph(node)
+                            logger.debug("yeti graph dependencies: %s" % yeti_dependencies)
+                            dependencies += yeti_dependencies
 
                     dependencies.append(path)
 
@@ -507,30 +506,38 @@ def get_ocio_config():
     if cmds.objExists(plug_name):
         return cmds.getAttr(plug_name)
 
-#  Parse the yeti scene graph for texture nodes
-#  TODO: Expand to also try and find relative textures in IMAGE_SEARCH_PATH
 
+def parse_yeti_graph(yeti_node):
+    '''
+    Query the yeti nodegraph for any file dependencies
 
-def parse_yeti_graph(node):
-    textureNodes = cmds.pgYetiGraph(node, listNodes=True, type='texture')
-    files = []
-    if textureNodes:
-        for n in textureNodes:
-            filePath = cmds.pgYetiGraph(node,
-                                        node=n,
+    TODO: Expand to also try and find relative textures in IMAGE_SEARCH_PATH
+    '''
+    filepaths = []
+
+    yeti_input_nodes = ["texture", "reference"]
+    attr_name = "file_name"
+
+    for node_type in yeti_input_nodes:
+        for node in cmds.pgYetiGraph(yeti_node, listNodes=True, type=node_type) or []:
+            filepath = cmds.pgYetiGraph(yeti_node,
+                                        node=node,
                                         getParamValue=True,
-                                        param='file_name')
+                                        param=attr_name)
 
-            filePath = cmds.file(filePath, expandName=True, query=True, withoutCopyNumber=True)
+            filepath = cmds.file(filepath, expandName=True, query=True, withoutCopyNumber=True)
+            logger.debug("Yeti graph node: %s.%s: %s", node, attr_name, filepath)
+            continue
+            filepaths.append(filepath)
 
-            files.append(filePath)
+    return filepaths
 
-    return files
-
-#  Parse the vrscene file paths...
 
 
 def parse_vrscene_file(path):
+    '''
+    Parse the vrscene file paths...
+    '''
     files = []
     with open(path) as infile:
         for line in infile:
