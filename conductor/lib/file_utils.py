@@ -370,7 +370,7 @@ def reconstruct_filename(matched, file_pieces):
     return full_file_string
 
 
-def get_files_from_path_expression(path_expression, no_extension=False, dev=False):
+def get_files_from_path_expression(path_expression, no_extension=False):
     '''
     Given a path expression (such as an image sequence path), seek out all files 
     that are part of that path expression (e.g all of the files that are part
@@ -391,26 +391,23 @@ def get_files_from_path_expression(path_expression, no_extension=False, dev=Fals
     rx = get_rx_match(basename, PATH_EXPRESSIONS)
     if rx:
         logger.debug("Matched path regular expression: %s", rx)
-        glob_basename = re.sub(rx, "*", basename)
+        glob_basename = re.sub(rx, "*", basename, flags=re.I)
         glob_filepath = os.path.join(dirpath, glob_basename + extension)
         file_pieces = glob_filepath.split("*")
-        files_that_match = get_matching_files(glob_filepath, dev)
-        return [reconstruct_filename(matched, file_pieces) for matched in files_that_match]
+        logger.debug("glob_filepath: %r", glob_filepath)
+        return [reconstruct_filename(matched, file_pieces) for matched in glob.glob(glob_filepath)]
     logger.debug("Path expression not recognized: %s", path_expression)
     return []
 
 
 def get_rx_match(path_expression, expressions):
+    '''
+    Loop through the given list expressions (regexes), and return the first
+    one that is found within the given path (path_expression) 
+    '''
     for rx in expressions:
-        if re.findall(rx, path_expression):
+        if re.findall(rx, path_expression, flags=re.I):
             return rx
-
-
-def get_matching_files(glob_str, dev=False):
-    if dev:
-        return ['/TMP/foo.bar.0101.testa.101.exr', '/tmp/FOO.bar.0102.testa.102.exr']
-    else:
-        return glob.glob(glob_str)
 
 
 def create_file(filepath, mode=0660):
