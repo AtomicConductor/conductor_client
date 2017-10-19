@@ -192,7 +192,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Strip the lettered drive from the filepath (if one exists).
         # This is a hack to allow a Windows filepath to be properly used
         # as an argument in a linux shell on the backend. Not pretty.
-        maya_filepath_nodrive = os.path.splitdrive(maya_filepath)[-1]
+        maya_filepath_nodrive = file_utils.strip_drive_letter(maya_filepath)
 
         # If the active renderer is renderman, then we must explictly declare it
         # as the renderer in the command.  Otherwise the output path is not respected.
