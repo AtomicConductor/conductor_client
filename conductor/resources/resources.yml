@@ -1138,6 +1138,51 @@ package_ids:
                 "2.1.14": fb325fe5b3a3db1b17b77165366b38c4
                 "2.1.15": bd0be834be4e6894bfb31e0de5548d16
 
+        "Autodesk Maya 2017 Update 4":
+            package: 830958e28d6e02263af4f0971f036473
+            v-ray-maya:
+                "3.40.04": d0a2b65e5b9f3f952e4129b64ac58a6d
+                "3.52.01": 68e5a3d6974edf2893fdd52b30530f4f
+                "3.52.02": 9560e1ec0f4416791dfaeedec70d1fa8
+                "3.60.01": 61942f7f892f575a6fc84a020f88e731
+            arnold-maya:
+                "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
+                "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
+                "1.3.1.1": 135e3a9c0a89e3c24007069d539b3327
+                "1.3.1.2": 287f2b09e5412f274ae6dd2a180abd27
+                "1.4.0.0": b3b5e583bc939e17b026622e73991158
+                "1.4.1.0": 0d916d11f14a314eab583a8adf5f17f4
+                "1.4.1.1": 7cb3946f3f6fee9a78eb79a355f8419d
+                "1.4.1.2": 83a296e6a7d352c8cbad4b7c704f144e
+                "1.4.2.0": f26a4613400954906cd2b86413f9d578
+                "1.4.2.1": 129863491e3fb8ab4de29d70d591fe9a
+                "1.4.2.2": da7ec279059a5df2476761446aa88386
+                "2.0.0.0": cf181526f12c2c1ac6f3c353bdc96a0c
+                "2.0.0.1": 1c60ad43131871cb775dba8d65e9f06b
+                "2.0.1.0": c893fb431fb65cc529faa90631800fc4
+            renderman-maya:
+                "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
+                "21.4": 128a1a2126250f5413db08ab19c1de25
+                "21.5": cb14ddba549aefa42f8f047e6682f470
+            yeti:
+                "2.1.0": 56ee9e6997ccb7152793b341f068bb38
+                "2.1.1": daa939be7dc3308540fa058bdd8683bc
+                "2.1.2": ba3a84510fe36f64fe677411b315c18e
+                "2.1.3": f67453b3df8efcb69660dd6e0c70ca7a
+                "2.1.4": 497c905a1f476b705de5696f235bd8d8
+                "2.1.5": 7b534c730adec20c0be57006743223ce
+                "2.1.6": 63baaed728ec00f08fbeaaca7629578a
+                "2.1.7": 0aaa7b0a08eba7692de43ae7652b1220
+                "2.1.8": 48244255c789e3e8e00c6ce9633ffaf0
+                "2.1.9": d19dd8512a4c57a8f19020bf9d5c3a6c
+                "2.1.10": 317f4a70e9bf6f2be020f6e02b5edc52
+                "2.1.11": dbfaad664b9be011da2394ea36060d26
+                "2.1.12": 93fa5a7994683d488d1652990bd9ce4b
+                "2.1.13": 44095881037579ba2de3926a4416a6f0
+                "2.1.14": fb325fe5b3a3db1b17b77165366b38c4
+                "2.1.15": bd0be834be4e6894bfb31e0de5548d16
+                "2.2.1": 77e9e1dbfbf273dc1a3f6d676c310d0a
+
 
     "nuke":
         "8.0v1": 
