@@ -445,3 +445,25 @@ def get_tx_path(filepath, existing_only=False):
     if existing_only and not os.path.isfile(tx_filepath):
         return ""
     return tx_filepath
+
+
+def strip_drive_letter(filepath):
+    '''
+    If the given filepath has a drive letter, remove it and return the rest of
+    the path
+
+        C:\cat.txt         -->    \cat.txt
+        Z:\cat.txt         -->    \cat.txt
+        c:/cat.txt         -->    /cat.txt
+        z:/cat.txt         -->    /cat.txt
+        //cat.txt          -->    //cat.txt
+        \cat.txt           -->    \cat.txt
+        \\cat\c:\dog.txt   -->    \\cat\c:\dog.txt
+        /cat/c:/dog.txt    -->    /cat/c:/dog.txt
+        c:\cat\z:\dog.txt  -->    \cat\z:\dog.txt
+
+    Note that os.path.splitdrive should not be used (anymore), due to a change
+    in behavior that was implemented somewhere between python 2.7.6 vs 2.7.11
+    '''
+    rx_drive = r'^[a-z]:'
+    return re.sub(rx_drive, "", filepath, flags=re.I)
