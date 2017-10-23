@@ -509,6 +509,8 @@ class Config():
             possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(path_separator) if len(x) > 0]
             if len(possible_paths) > 0:
                 return possible_paths
+        if platform.system() == 'Windows':
+            return [os.path.join(os.environ['APPDATA'], 'Conductor Technologies', 'Conductor', 'config.yml')]
         return [os.path.join(base_dir(), 'config.yml')]  # This is for when CONDUCTOR_CONFIG variable is empty.
 
     def create_default_config(self, path):
