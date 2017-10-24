@@ -102,6 +102,12 @@ SectionEnd
 
 ######################################################################
 
+Function .onInstSuccess
+    MessageBox MB_OK "Conductor now checks C:\Users\<username>\AppData\Roaming\Conductor Technologies\Conductor\config.yml. If you already use a config.yml please move it to this location to avoid any conflicts"
+FunctionEnd
+
+######################################################################
+
 Section Uninstall
 ${INSTALL_TYPE}
 
