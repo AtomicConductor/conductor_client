@@ -24,7 +24,7 @@ from conductor.lib import file_utils, api_client, uploader, loggeria, common
 logger = logging.getLogger(__name__)
 
 
-class Submit():
+class Submit(object):
     """ Conductor Submission
     Command Line Usage:
         $ python conductor_submit.py --upload_file /path/to/upload_file.txt --frames 1001-1100 --cmd
