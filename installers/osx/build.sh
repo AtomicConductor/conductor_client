@@ -19,6 +19,7 @@ cp -r ../../bin \
       ../../nuke_menu \
       ../../clarisse_shelf \
       ./python \
+      ../example_config \
       build/root/Applications/Conductor.app/Contents/MacOS
 cp setenv build/root/Applications/Conductor.app/Contents/MacOS
 cp Conductor.icns build/root/Applications/Conductor.app/Contents/Resources
