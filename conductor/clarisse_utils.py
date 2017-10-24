@@ -29,7 +29,7 @@
 # It must be extended to support error handling (file not found etc...)
 
 
-import os.path, tempfile, shutil, zipfile, ix, platform
+import os.path, tempfile, shutil, ix, platform
 
 def get_clarisse_version():
     return ix.application.get_version()
