@@ -530,7 +530,7 @@ class Config():
                 logger.debug('Loading config: %s', config_file)
                 try:
                     with open(config_file, 'r') as file:
-                        config = yaml.load(file)
+                        config = yaml.safe_load(file)
                     if config.__class__.__name__ != 'dict':
                         message = 'config found at %s is not in proper yaml syntax' % config_file
                         logger.error(message)
@@ -579,7 +579,7 @@ def load_resources_file():
         resources_filepath = os.path.join(base_dir(), "conductor", "resources", "resources.yml")
 
     with open(resources_filepath, 'r') as file_:
-        return yaml.load(file_)
+        return yaml.safe_load(file_)
 
 
 def get_conductor_instance_types():
