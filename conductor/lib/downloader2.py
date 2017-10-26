@@ -3,11 +3,7 @@
 """ Command Line Process to run downloads.
 """
 
-import argparse
 import base64
-import collections
-import datetime
-import errno
 import functools
 import imp
 import json
@@ -15,8 +11,6 @@ import os
 import Queue
 import logging
 import logging.handlers
-import multiprocessing
-import ntpath
 import re
 import requests
 import random
@@ -25,7 +19,6 @@ import sys
 import tempfile
 import time
 import threading
-import traceback
 import urllib2
 import hashlib
 

@@ -1,7 +1,4 @@
-import collections
-import os
 import Queue
-import thread
 import traceback
 import threading
 import logging

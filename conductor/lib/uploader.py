@@ -1,22 +1,13 @@
-import base64
-import binascii
 import datetime
-from pprint import pformat
 import time
-import ast
 import json
-import hashlib
 import logging
 import os
 import Queue
 import sys
 import thread
 from threading import Thread
-import time
 import traceback
-import requests
-import urllib
-import collections
 
 from conductor import CONFIG
 from conductor.lib import api_client, common, worker, client_db, loggeria
