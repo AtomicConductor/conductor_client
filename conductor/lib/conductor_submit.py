@@ -19,7 +19,7 @@ except ImportError, e:
 
 
 from conductor import CONFIG
-from conductor.lib import file_utils, api_client, uploader, loggeria, common
+from conductor.lib import file_utils, api_client, uploader, loggeria
 
 logger = logging.getLogger(__name__)
 

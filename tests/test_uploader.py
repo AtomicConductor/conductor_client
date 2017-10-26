@@ -1,6 +1,5 @@
 import os
 import random
-import uuid
 
 # import upload_node
 
