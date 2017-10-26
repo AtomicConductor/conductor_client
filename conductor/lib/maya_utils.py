@@ -611,7 +611,7 @@ def parse_ocio_config(config_file):
     yaml.add_constructor(u"View", bunk_constructor)
 
     with open(config_file, 'r') as f:
-        contents = yaml.load(f)
+        contents = yaml.safe_load(f)
 
     config_path = os.path.dirname(config_file)
     print("Adding LUT config path %s" % config_path + "/" + contents['search_path'])
