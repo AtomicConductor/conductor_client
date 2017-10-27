@@ -7,7 +7,7 @@ Requirments:
 1. Need a volume of data to download
     - multiple jobs with multiple tasks
     - large files and small files
-    
+
     
 
 
@@ -129,11 +129,11 @@ def generate_local_task_files(task_id, file_count, file_size, dirpath, render_pa
 
 def setup_job(project, account, task_count, task_files_count, file_size, output_path, location, job_id=None):
     '''
-    Create a Job entity, and 
-    Create n Tasks entities(task_count), and 
+    Create a Job entity, and
+    Create n Tasks entities(task_count), and
     Create n Download entities (task_count), which
     record  x files (task_files_count) in gcs, which
-    Are each of x bytes large (file_size) 
+    Are each of x bytes large (file_size)
     '''
     # Generate files and upload them to gcs
 

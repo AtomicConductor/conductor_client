@@ -11,12 +11,12 @@ logger = logging.getLogger(__name__)
 
 def dec_undo(func):
     '''
-    DECORATOR - Wrap the decorated function in a Maya undo block.  
+    DECORATOR - Wrap the decorated function in a Maya undo block.
     This is useful when wrapping functions which execute multiple maya commands,
-    thereby altering maya's state and undo stack with multiple operations.  
-    This allows the artis to simply execute one undo call to undo all of the 
+    thereby altering maya's state and undo stack with multiple operations.
+    This allows the artist to simply execute one undo call to undo all of the
     calls that this wrapped function executed (as opposed to having the artist
-    press undo undo undo undo..etc) 
+    press undo undo undo undo..etc)
     '''
     @functools.wraps(func)
     def wrapper(*a, **kw):
@@ -50,7 +50,7 @@ def get_short_name(node):
 
 def get_maya_version():
     '''
-    Return the version string of the currently running maya session. 
+    Return the version string of the currently running maya session.
     e.g. "Autodesk Maya 2015 SP4"
     '''
     return cmds.about(installedVersion=True)
@@ -58,7 +58,7 @@ def get_maya_version():
 
 def get_plugin_versions():
     '''
-    Query maya for all of it's plugins and their  versions. 
+    Query maya for all of it's plugins and their  versions.
 
     return a dictionary such as:
         {'AbcExport': '1.0',
@@ -115,7 +115,7 @@ def get_image_dirpath():
     TODO: (lws)  Need to break up the logic on a per-plugin/renderer basis.
 
     This is high level function that "figures out"  the proper "output directory"
-    for the conductor job being submitted.  As of now, the output directory is 
+    for the conductor job being submitted.  As of now, the output directory is
     used for two separate purposes (which desperately need to be separated at some point).
 
     1. Dictates the directory to search for rendered images on ther render node
@@ -125,8 +125,8 @@ def get_image_dirpath():
 
     2. Dictates the default directory that the client downloader will download
        the task's frames to.  Note that the client downloader can manually override
-       the download directory when evoking the downloader command manually 
-       (as opposed to running it in daemon mode).     
+       the download directory when evoking the downloader command manually
+       (as opposed to running it in daemon mode).
 
 
     On a simple level, the output directory should be the directory in which
@@ -134,12 +134,12 @@ def get_image_dirpath():
     For starters, the "output directory" is not necessarily flat; it may contain
     nested directories (such as for render layers, etc) that were created by the
     rendering process. This is not actually a problem, but something to consider.
-    Those nested directories will be represented/recreated when the resulting 
+    Those nested directories will be represented/recreated when the resulting
     images are downloaded by the client.  But the important piece to note is that
-    the output directory should be the "lowest" (longest) directory possible, 
-    while encompassing all rendered images from that task. 
+    the output directory should be the "lowest" (longest) directory possible,
+    while encompassing all rendered images from that task.
 
-    The other part of the complexity, is that there are multiple places in maya 
+    The other part of the complexity, is that there are multiple places in maya
     to dictate where the "output directory" is (and I can't pretend to know every
     possible way of achieving this). As of now, these are the known factors:
 
@@ -153,8 +153,8 @@ def get_image_dirpath():
 
     3. Each renderer (such as vray or maya software) has a different node/attribute
        to set the File Name Prefix field.  So it's important to know which
-       renderer is active in order to query the proper node for its data.  
-       As other renderersare added/supported by conductor, those nodes will need 
+       renderer is active in order to query the proper node for its data.
+       As other renderersare added/supported by conductor, those nodes will need
        to be considered when querying for data.
 
      '''
@@ -211,11 +211,11 @@ def get_renderer_plugin(renderer_name):
     For the given renderer name, return the renderer's plugin name
 
     Attempt to find the corellation between the renderer name and the plugin name
-    by asking maya for it's active renderer's global render settings node, 
+    by asking maya for it's active renderer's global render settings node,
     and then asking what node type that is, and then asking which plugin provides
     the node type.
 
-    # THIS DOESN'T ALWAYS WORK! For some reason the "vraysettings" node isn't 
+    # THIS DOESN'T ALWAYS WORK! For some reason the "vraysettings" node isn't
     # always listed as one of the global render settings nodes.  So we resort
     # to a hard mapping of needed
     '''
@@ -250,10 +250,10 @@ def get_renderer_globals_node(renderer_name):
     For the given renderer name, return the name of its renderer globals node.
 
     #TODO:(lws)
-    Note that if more than one node is found, raise an exception.  This is to 
+    Note that if more than one node is found, raise an exception.  This is to
     simplify things for now, but may need to support multiple nodes later.
 
-    renderer_name: str. e.g. "vray" or "arnold" 
+    renderer_name: str. e.g. "vray" or "arnold"
 
     return: str. e.g. "defaultRenderGlobals"
     '''
@@ -283,11 +283,11 @@ def renderer_exists(renderer_name):
 def get_render_file_prefix():
     '''
     Return the "File Name Prefix" from the global render settings. Note that this
-    is a read from different node/attribute depending on which renderer is 
+    is a read from different node/attribute depending on which renderer is
     currently active.
 
-    Note that as more renderers are supported by Conductor, this function may 
-    need to be updated to properly query those renderers' information. 
+    Note that as more renderers are supported by Conductor, this function may
+    need to be updated to properly query those renderers' information.
     '''
 
     # Use the render globals node/attr by default
@@ -310,12 +310,12 @@ def derive_prefix_directory(file_prefix):
     '''
     This is a super hack that makes many assumptions.  It's purpose is to determine
     the top level render output directory.  Normally one could query the workspace's
-    "images" directory to get this information, but in cases where the render 
+    "images" directory to get this information, but in cases where the render
     file prefix specifies an absolute path(thereby overriding the workspace's
     specified directory), we must honor that prefix path.  The problem is that
     prefix path can contain variables, such as <Scene> or <RenderLayer>, which
     could be specific to whichever render layer is currently being rendered. So
-    we need to navigate to highest common directory across all render layers.   
+    we need to navigate to highest common directory across all render layers.
 
     So if this is the prefix:
         "/shot_105/v076/<Layer>/105_light_<RenderLayer>_v076"
@@ -325,14 +325,14 @@ def derive_prefix_directory(file_prefix):
     However, there may not be *any* variables used. So if this is the prefix:
         "/shot_105/v076/105_light_v076"
     ...then this is directory we want to return (same as before):
-        "/shot_105/v076"  
+        "/shot_105/v076"
 
-    Note that the provided file_prefix is expected to be absolute path 
+    Note that the provided file_prefix is expected to be absolute path
 
     variables are such as:
-        <Scene> 
-        <RenderLayer> 
-        <Camera> 
+        <Scene>
+        <RenderLayer>
+        <Camera>
         <RenderPassFileGroup>
         <RenderPass>
         <RenderPassType>
@@ -359,7 +359,7 @@ def derive_prefix_directory(file_prefix):
 
 def get_maya_image_dirpath():
     '''
-    Return the "images" directory for the active maya workspace 
+    Return the "images" directory for the active maya workspace
     '''
     image_filepath = cmds.renderSettings(fullPath=True, genericFrameImageName=True)
     assert len(image_filepath) == 1, image_filepath
@@ -379,7 +379,7 @@ def get_frame_range():
 
     Note that only integers are currently support for frames
 
-    return: list of two tuples, where the first tuple is the "playback" start/end 
+    return: list of two tuples, where the first tuple is the "playback" start/end
             frames and the second is the "range" start/end frames,
             e.g. [(1.0, 24.0), (5.0, 10.0)]
     '''
@@ -398,18 +398,18 @@ def get_render_layers_info():
     '''
     TODO: Does the default render layer name need to be augmented when passed to maya's rendering command?
     TODO: Should the default render layer be included at all?  And should it be unselected by default?
-    Return a list of dictionaries where each dictionary represents data for 
-    a a render layer.  Each dictionar provides the following information:
+    Return a list of dictionaries where each dictionary represents data for
+    a a render layer.  Each dictionary provides the following information:
         - render layer name
-        - whether the render layer is set to renderable 
+        - whether the render layer is set to renderable
         - the camera that the render layer uses
 
     Note that only one camera is allowed per render layer.  This is somewhat
-    of an arbitraty limitation, but implemented to reduce complexity.  This 
+    of an arbitrary limitation, but implemented to reduce complexity.  This
     restriction may need to be removed.
 
     Note that this function is wrapped in an undo block because it actually changes
-    the state of the maya session (unfortuantely). There doesn't appear to be
+    the state of the maya session (unfortunately). There doesn't appear to be
     an available api call to query maya for this information, without changing
     it's state (switching the active render layer)
     '''
@@ -442,7 +442,7 @@ def collect_dependencies(node_attrs):
     '''
     Return a list of filepaths that the current maya scene has dependencies on.
     This is achieved by inspecting maya's nodes.  Use the node_attrs argument
-    to pass in a dictionary 
+    to pass in a dictionary
     '''
     assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
 
