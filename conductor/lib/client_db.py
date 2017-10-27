@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 def get_default_db_filepath():
     '''
-    Return a default filepath to use for storing the sqlite.  
+    Return a default filepath to use for storing the sqlite.
     Depending on the platform, this will be located in some sort of temporary
     directory, such as:
         - /usr/temp  (linux)
         - c:\users\<username>\appdata\local\temp  (windows)
-    
+
     '''
     return os.path.join(tempfile.gettempdir(), DB_FILENAME)
 
@@ -29,7 +29,7 @@ class TableDB(object):
     '''
     Represents a single sql table to query/operate upon.
     This has admittedly limited functionality (as there can only be as single
-    table to interact with). 
+    table to interact with).
     '''
     table_name = None
     columns = []
@@ -60,7 +60,7 @@ class TableDB(object):
         return the connection object
         
         timeout: float.  The amount of seconds that a connection will wait to
-                 establish itself before it times out and raises an 
+                 establish itself before it times out and raises an
                  "OperationalError: database is locked" exception.  This is important
                  when threading bc sqlite can't handle that many concurrent
                  connections and will quickly throw that exception unless the timeout
@@ -88,10 +88,10 @@ class TableDB(object):
         Execute the given sql command
         
         new_connection: bool.  If True, will instantiate a new sql connection
-                        object.  This is necessary when running this method 
+                        object.  This is necessary when running this method
                         across multiple threads.
                         
-        many: bool. If True, will execute the given sql command in batch, useing
+        many: bool. If True, will execute the given sql command in batch, using
                     the given params as a list of variables for each call.
                         
         '''
@@ -127,7 +127,7 @@ class TableDB(object):
     def get_table_sql(cls):
 
         '''
-        create a table with the columns defined in self.columns 
+        create a table with the columns defined in self.columns
         '''
         sql = 'CREATE TABLE IF NOT EXISTS %s (' % cls.table_name
         for column in cls.columns:
@@ -141,7 +141,7 @@ class TableDB(object):
 
     def create_table(self):
         '''
-        create the table (if it does not already exist in the db), with the 
+        create the table (if it does not already exist in the db), with the
         self.columns
         '''
         sql = self.get_table_sql()
@@ -164,8 +164,8 @@ class TableDB(object):
     @classmethod
     def dict_to_row_tuple(cls, input_dict):
         '''
-        Convert the the given dictionary of data into a tuple of data that is 
-        suitable to use for a db row insert.  
+        Convert the the given dictionary of data into a tuple of data that is
+        suitable to use for a db row insert.
         '''
         row_data = []
         for column in cls.columns:
@@ -184,7 +184,7 @@ class TableDB(object):
         
         row_data: dict, where the keys are the columns names
         replace: bool. When True, will replace the the existing row in the db
-                 (if there is one) that matches the row's Primary Key. 
+                 (if there is one) that matches the row's Primary Key.
         
         '''
         return self.insert_rows([row_dict], replace=replace)
@@ -257,7 +257,7 @@ class FilesDB(TableDB):
         Add the given file to the files table
         
         file_info: a dictionaries with the following keys:
-                "filepath", 
+                "filepath",
                 "modtime"
                 "filesize"
         
@@ -293,7 +293,7 @@ class FilesDB(TableDB):
         '''
         Query the db for all files which match the given filepaths.
         
-        Note that this achieved through chunked queries so not to breach sqlite's 
+        Note that this achieved through chunked queries so not to breach sqlite's
         maximum of 999 arguments
         
         one: bool.  If True, treat th
@@ -334,7 +334,7 @@ class FilesDB(TableDB):
         Query the db for all files which match the given filepaths.
         
         Note that this achieved through chunked queries so not to breach sqlite's 
-        maximum of 999 arguments      
+        maximum of 999 arguments
         
         '''
         filepaths = [filepath]
@@ -387,7 +387,7 @@ class FilesDB(TableDB):
 
 def chunker(list_, chunk_size):
     '''
-    For the given list, return a tuple which breaks creates smaller lists of the 
+    For the given list, return a tuple which breaks creates smaller lists of the
     given size (length), containing the contents of the the orginal list
 
     '''

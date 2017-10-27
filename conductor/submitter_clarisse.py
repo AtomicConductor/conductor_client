@@ -37,11 +37,11 @@ class ClarisseConductorSubmitter(object):
     '''
     The class is PyQt front-end for submitting Clarisse renders to Conductor.
     To launch the UI, simply call self.runUI method.
-    
-    This class serves as an implemenation example of how one might write a front 
+
+    This class serves as an implementation example of how one might write a front
     end for a Conductor submitter for Clarisse.  This class is designed to be ripped
-    apart of subclassed to suit the specific needs of a studio's pipeline. 
-    Have fun :) 
+    apart of subclassed to suit the specific needs of a studio's pipeline.
+    Have fun :)
     '''
 
     _window_title = "Conductor - Clarisse"
@@ -164,9 +164,9 @@ class ClarisseConductorSubmitter(object):
 
     def runPreSubmission(self):
         '''
-        Override the base class (which is an empty stub method) so that a 
+        Override the base class (which is an empty stub method) so that a
         validation pre-process can be run.  If validation fails, then indicate
-        that the the submission process should be aborted.   
+        that the the submission process should be aborted.
         
         We also collect dependencies (and asds) at this point and pass that
         data along...
@@ -203,7 +203,7 @@ class ClarisseConductorSubmitter(object):
         This is an added method (i.e. not a base class override), that allows
         validation to occur when a user presses the "Submit" button. If the
         validation fails, a notification dialog appears to the user, halting
-        the submission process. 
+        the submission process.
         
         Validate that the data being submitted is...valid.
         
@@ -253,8 +253,8 @@ class ClarisseConductorSubmitter(object):
             response, response_code = submission.main()
 
         except:
-            title = "Job submission failure"
-            message = "".join(traceback.format_exception(*sys.exc_info()))
+            #title = "Job submission failure"
+            #message = "".join(traceback.format_exception(*sys.exc_info()))
             raise
 
         return response_code, response
@@ -262,19 +262,19 @@ class ClarisseConductorSubmitter(object):
 
     def generateConductorArgs(self, data):
         '''
-        Override this method from the base class to provide conductor arguments that 
+        Override this method from the base class to provide conductor arguments that
         are specific for Maya.  See the base class' docstring for more details.
         
             cmd: str
             force: bool
             frames: str
-            output_path: str # The directory path that the render images are set to output to  
+            output_path: str # The directory path that the render images are set to output to
             postcmd: str?
             priority: int?
             project: str
             skip_time_check: bool?
             upload_dependent: int? jobid?
-            upload_file: str , the filepath to the dependency text file 
+            upload_file: str , the filepath to the dependency text file
             upload_only: bool
             upload_paths: list of str?
             usr: str
