@@ -253,8 +253,8 @@ class ClarisseConductorSubmitter(object):
             response, response_code = submission.main()
 
         except:
-            title = "Job submission failure"
-            message = "".join(traceback.format_exception(*sys.exc_info()))
+            #title = "Job submission failure"
+            #message = "".join(traceback.format_exception(*sys.exc_info()))
             raise
 
         return response_code, response
@@ -262,19 +262,19 @@ class ClarisseConductorSubmitter(object):
 
     def generateConductorArgs(self, data):
         '''
-        Override this method from the base class to provide conductor arguments that 
+        Override this method from the base class to provide conductor arguments that
         are specific for Maya.  See the base class' docstring for more details.
         
             cmd: str
             force: bool
             frames: str
-            output_path: str # The directory path that the render images are set to output to  
+            output_path: str # The directory path that the render images are set to output to
             postcmd: str?
             priority: int?
             project: str
             skip_time_check: bool?
             upload_dependent: int? jobid?
-            upload_file: str , the filepath to the dependency text file 
+            upload_file: str , the filepath to the dependency text file
             upload_only: bool
             upload_paths: list of str?
             usr: str
