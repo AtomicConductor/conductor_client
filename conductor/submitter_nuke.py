@@ -159,8 +159,8 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
         # Strip the lettered drive from the filepath (if one exists).
         # This is a hack to allow a Windows filepath to be properly used
-        # as an argument in a linux shell command on the backend. Not pretty.
-        nuke_filepath_nodrive = os.path.splitdrive(nuke_scriptpath)[-1]
+        # as an argument in a linux shell on the backend. Not pretty.
+        nuke_filepath_nodrive = file_utils.strip_drive_letter(nuke_scriptpath)
 
         chunk_size = self.getChunkSize()
         frames_str = self.getFrameRangeString()
