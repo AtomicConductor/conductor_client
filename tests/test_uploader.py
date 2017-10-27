@@ -11,11 +11,11 @@ GIGABYTE = KILOBYTE ** 3
 
 def generate_random_files(file_count, dest_dirpath, min_size=BYTE, max_size=MEGABYTE):
     '''
-    Generate n files, which are sized between the given min and max_size. 
-    
+    Generate n files, which are sized between the given min and max_size.
+
     file_count: int. the number of files to generate
     dest_dirpath: str. The directory to save the files to
-    min_size: int. The minumum size that a file can be (bytes) 
+    min_size: int. The minumum size that a file can be (bytes)
     max_size: int. The maximum size that a file can be (bytes)
     '''
     if not os.path.isdir(dest_dirpath):

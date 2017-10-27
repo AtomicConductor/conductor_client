@@ -52,7 +52,7 @@ class Reporter():
 class ThreadWorker(object):
     '''
     Abstract worker class.
-    
+
     The class defines the basic function and data structures that all workers need.
     
     TODO: move this into it's own lib

@@ -163,7 +163,7 @@ def do_export():
             os.symlink(file, new_path)
 
     #  The stuff that is commented out packages the dependencies into an archive
-    #  this is something we do not support at the moment, but I'm leaving around 
+    #  this is something we do not support at the moment, but I'm leaving around
     #  for future reference...
 
     # ix.log_info("building archive...")
