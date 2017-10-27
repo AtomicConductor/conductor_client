@@ -3,7 +3,7 @@ import json
 import requests
 
 class VersionCheck(object):
-    
+
     def __init__(self):
         self._installed_release_info = self._get_installed_release_info()
         

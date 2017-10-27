@@ -530,11 +530,11 @@ class Uploader():
     def handle_upload_response(self, project, upload_files, upload_id=None, md5_only=False):
         '''
         This is a reallly confusing method and should probably be split into
-        to clear logic branches: one that is called when in daemon mode, and 
-        one that is not.  
-        If not called in daemon mode (local_upload=True), then md5_only is True 
-        and project is not None.Otherwise we're in daemon mode, where the project 
-        information is not required because the daemon will only be fed uploads 
+        to clear logic branches: one that is called when in daemon mode, and
+        one that is not.
+        If not called in daemon mode (local_upload=True), then md5_only is True
+        and project is not None.Otherwise we're in daemon mode, where the project
+        information is not required because the daemon will only be fed uploads
         by the app which have valid projects attached to them.
         '''
         try:

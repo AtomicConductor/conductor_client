@@ -198,10 +198,10 @@ class TaskDownloadState(ThreadState):
 
 class Downloader(object):
     '''
-    A Downloader daemon which downloads completed frames from finished tasks. 
+    A Downloader daemon which downloads completed frames from finished tasks.
+
     
-    
-    Each task has an associated Download entitity that represents
+    Each task has an associated Download entity that represents
     all images/files that were produced from that task. A task may have more than
     file to download.
     
@@ -213,7 +213,7 @@ class Downloader(object):
        that are in state of Downloading but have not "dialed home" after x amount
        of time.
        
-   2. Place this Download in the queue to be downloaded. 
+   2. Place this Download in the queue to be downloaded.
    
    3. Spawn threads to actively take "work" (Downloads) from the queue.
    
@@ -226,12 +226,12 @@ class Downloader(object):
   6. Each thread is responsible for catching their own exceptions and placing the
      Download back into the queue
      
-  7. 
+  7.
     
     Because the downloader is threaded, it makes communication/tracking of data
-    more difficult.  In order to faciliate this, ThreadState objects are shared
+    more difficult.  In order to facilitate this, ThreadState objects are shared
     across threads to read/write data to. This allows download progress to
-    be communicated from multiple threads into a single object, which can tehn 
+    be communicated from multiple threads into a single object, which can then
     be read from a single process and "summarized".
  
     A TaskDownloadState
@@ -240,7 +240,7 @@ class Downloader(object):
     
     To complicate matters further, if the downloader is killed (via keyboard, etc),
     the it should clean up after itself.  So we need to catch the
-    SIGINT EXIT signal at any point in the code and handle it gracefully.  
+    SIGINT EXIT signal at any point in the code and handle it gracefully.
     
     '''
 
@@ -413,7 +413,7 @@ class Downloader(object):
 
     def queue_target(self, pending_queue, downloading_queue):
         '''
-        Fill the download queue by quering the app for the "next" Download. 
+        Fill the download queue by quering the app for the "next" Download.
         Only fill the queue to have as many items as there are threads. 
         
         Perpetually run this this function until the daemon has been terminated

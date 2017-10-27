@@ -46,12 +46,12 @@ def merge_package_environments(packages, base_env=None):
 
 def merge_package_environment(package_environment, base_env=None):
     '''
-    For the given conductor software packages, resolve and merge their environements
+    For the given conductor software packages, resolve and merge their environments
     int one single dictionary.
-    
+
     Merge policies:
-        append: appends values, separated by colons 
-        exclusive: indicates that 
+        append: appends values, separated by colons
+        exclusive: indicates that
     '''
     env = dict(base_env or {})  # Make a copy of the dict. Don't want to alter original
 

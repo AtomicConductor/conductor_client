@@ -44,18 +44,18 @@ def separate_path(path, no_extension=False):
     The path argument may be a full filepath (including the directory) or just
     the name of the file.
 
-    Note that there is no way to know with 100% certainty that if a file name has 
-    a period in it that the characters that follow that period are the file 
-    extension. By default, this function will assume that all files 
-    that are passed into it have a file extension, and the extension is 
+    Note that there is no way to know with 100% certainty that if a file name has
+    a period in it that the characters that follow that period are the file
+    extension. By default, this function will assume that all files
+    that are passed into it have a file extension, and the extension is
     identified by the last period in the file.  In cases where a file does not
     have a file extension,  this must be indicated to this function by setting
-    the no_extension argument to be True. 
+    the no_extension argument to be True.
 
-    An example that illustrates the issue: A file named "2942_image.10312". 
-    The "10312" could either represent a frame number or an extension. There 
-    is no way to know for sure. By default, the function will assume that the 
-    "10312" is an extension.  Override this behavior by setting the no_extension
+    An example that illustrates the issue: A file named "2942_image.10312".
+    The "10312" could either represent a frame number or an extension. There
+    is no way to know for sure. By default, the function will assume that the
+    "10312" is an extension.  Override this behavior by setting the no_extensio
     arg to True.
     '''
     dirpath, filename = os.path.split(path)
@@ -70,8 +70,8 @@ def separate_path(path, no_extension=False):
 
 def process_dependencies(paths):
     '''
-    For the given lists of dependency paths, return a dictionary where the keys 
-    are the depenency filepaths and the values are paths, and the values are a 
+    For the given lists of dependency paths, return a dictionary where the keys
+    are the depenency filepaths and the values are paths, and the values are a
     a string, describing what is wrong with the path (if anything). If the path
     is valid, the value will be None
 
@@ -103,14 +103,14 @@ def process_upload_filepaths(paths):
 
 def process_upload_filepath(path, strict=True):
     '''
-    Process the given path to ensure that the path is valid (exists on disk), 
-    and return any/all files which the path may represent.  
-    For example, if the path is a directory or an image sequence, then explicitly 
+    Process the given path to ensure that the path is valid (exists on disk),
+    and return any/all files which the path may represent.
+    For example, if the path is a directory or an image sequence, then explicitly
     list and return all files that that path represents/contains.
 
 
-    strict: bool. When True and the give path does not exist on disk, raise an 
-                  exception.  
+    strict: bool. When True and the give path does not exist on disk, raise an
+                  exception.
                   Note that when this function is given a directory path, and
                   and it finds any broken symlinks within the directory, the
 
@@ -123,12 +123,12 @@ def process_upload_filepath(path, strict=True):
 
     Process the path by doing the following:
 
-    1. If the path is  an image sequence notation, "explode" it and return  
-        each frame's filepath.  This relies on the file 
+    1. If the path is  an image sequence notation, "explode" it and return
+        each frame's filepath.  This relies on the file
         actually being on disk, as the underlying call is to glob.glob(regex).
         Validate that there is at least one frame on disk for the image sequence.
         There is no 100% reliable way to know how many frames should actually be
-        part of the image sequence, but we can at least validate that there is 
+        part of the image sequence, but we can at least validate that there is
         a single frame.
 
     2. If the path is a directory then recursively add all file/dir paths
@@ -249,13 +249,13 @@ def get_common_dirpath(paths):
 
 def _is_valid_path(path_str):
     '''
-    This is dirty/inaccurate helper function to determine whether the given "path" 
+    This is dirty/inaccurate helper function to determine whether the given "path"
     is considered valid. If so, return True.
 
     If the given path_str is any of the following characters, then it's to be
     considered invalid:
 
-        On linux\mac:   
+        On linux\mac:
                 /
                 //
                 lettered drive (e.g. x:\)
@@ -306,8 +306,8 @@ def get_files(dirpath, recurse=True):
 def conform_platform_filepath(filepath):
     '''
     For the given path, ensure that the path conforms to the standards that
-    Conductor expects. Each platform  may potententially have different rules 
-    that it follows in order to achive this.
+    Conductor expects. Each platform  may potentially have different rules
+    that it follows in order to achieve this.
     '''
     platform = sys.platform
 
@@ -321,7 +321,7 @@ def conform_platform_filepath(filepath):
 def conform_win_path(filepath):
     '''
     For the given filepath, resolve any environment variables in the path
-    and convert all backlashes to forward slashes 
+    and convert all backlashes to forward slashes
     '''
     exp_file = os.path.abspath(os.path.expandvars(filepath))
     return os.path.normpath(exp_file).replace('\\', "/")
@@ -371,10 +371,10 @@ def reconstruct_filename(matched, file_pieces):
 
 def get_files_from_path_expression(path_expression, no_extension=False):
     '''
-    Given a path expression (such as an image sequence path), seek out all files 
+    Given a path expression (such as an image sequence path), seek out all files
     that are part of that path expression (e.g all of the files that are part
-    of that image sequence) and return a list of their explicit paths.  
-    This function relies on what is actually on disk, so only files that are 
+    of that image sequence) and return a list of their explicit paths.
+    This function relies on what is actually on disk, so only files that are
     found on disk will be returned. If no files are found, return an empty list.
 
     Supports a variaty of path expressions. Here are a few examples:
@@ -382,7 +382,7 @@ def get_files_from_path_expression(path_expression, no_extension=False):
         "image.####"       # no extension  - if there is no extension for the file then that must be specified by the no_extension argument
         "image.%04d.exr"   # printf format
         "image<UDIM>.exr   # Udim
-        "image.$F.exr      # Houdini  
+        "image.$F.exr      # Houdini
     '''
     dirpath, basename, extension = separate_path(path_expression, no_extension=no_extension)
     logger.debug("Evaluating path expression: %s", path_expression)
@@ -402,7 +402,7 @@ def get_files_from_path_expression(path_expression, no_extension=False):
 def get_rx_match(path_expression, expressions):
     '''
     Loop through the given list expressions (regexes), and return the first
-    one that is found within the given path (path_expression) 
+    one that is found within the given path (path_expression)
     '''
     for rx in expressions:
         if re.findall(rx, path_expression, flags=re.I):
@@ -424,14 +424,14 @@ def create_file(filepath, mode=0660):
 
 def get_tx_paths(filepaths, existing_only=False):
     '''
-    Return the tx filepaths for the given filepaths 
+    Return the tx filepaths for the given filepaths
     '''
     return [get_tx_path(path, existing_only=existing_only) for path in filepaths]
 
 
 def get_tx_path(filepath, existing_only=False):
     '''
-    For the given filepath, consruct a parallel *.tx filepath residing in the same 
+    For the given filepath, consruct a parallel *.tx filepath residing in the same
     directory (same name, different extension).
     If existing_only is True, only return the tx filepath if it exists on disk,
     otherwise return an empty string.
