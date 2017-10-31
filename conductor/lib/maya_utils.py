@@ -527,11 +527,9 @@ def parse_yeti_graph(yeti_node):
 
             filepath = cmds.file(filepath, expandName=True, query=True, withoutCopyNumber=True)
             logger.debug("Yeti graph node: %s.%s: %s", node, attr_name, filepath)
-            continue
             filepaths.append(filepath)
 
     return filepaths
-
 
 
 def parse_vrscene_file(path):
