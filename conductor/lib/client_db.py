@@ -56,9 +56,9 @@ class TableDB(object):
     @classmethod
     def connnect_to_db(cls, db_filepath, timeout=300, db_perms=0666):
         '''
-        Creat a connection to the database with the specifed database filepath and
+        Create a connection to the database with the specified database filepath and
         return the connection object
-        
+
         timeout: float.  The amount of seconds that a connection will wait to
                  establish itself before it times out and raises an
                  "OperationalError: database is locked" exception.  This is important
@@ -196,7 +196,7 @@ class TableDB(object):
         
         row_data: dict, where the keys are the columns names
         replace: bool. When True, will replace the the existing row in the db
-                 (if there is one) that matches the row's Primary Key. 
+                 (if there is one) that matches the row's Primary Key.
         
         '''
 
@@ -272,7 +272,7 @@ class FilesDB(TableDB):
         Add the given list of files to the files db table.
         
         files_info: a list of dictionaries, each with the following keys:
-                    "filepath", 
+                    "filepath",
                     "modtime"
                     "filesize"
         
@@ -333,7 +333,7 @@ class FilesDB(TableDB):
         '''
         Query the db for all files which match the given filepaths.
         
-        Note that this achieved through chunked queries so not to breach sqlite's 
+        Note that this achieved through chunked queries so not to breach sqlite's
         maximum of 999 arguments
         
         '''

@@ -275,7 +275,7 @@ def renderer_exists(renderer_name):
     '''
     Return True if the given renderer (name) can be found in the maya session
 
-    renderer_name: str. e.g. "vray" or "arnold" 
+    renderer_name: str. e.g. "vray" or "arnold"
     '''
     return renderer_name in (cmds.renderer(q=True, namesOfAvailableRenderers=True) or [])
 
@@ -652,7 +652,7 @@ def is_renderman_renderer():
 
 def get_mayasoftware_settings_node(strict=True):
     '''
-    Return the renderGlobals node in the maya scene.  If strict is True, and 
+    Return the renderGlobals node in the maya scene.  If strict is True, and
     no node is found, raise an exception.
     '''
     node_type = "renderGlobals"
@@ -663,7 +663,7 @@ def get_mayasoftware_settings_node(strict=True):
 
 def get_vray_settings_node(strict=True):
     '''
-    Return the VRaySettingsNode node in the maya scene.  If strict is True, and 
+    Return the VRaySettingsNode node in the maya scene.  If strict is True, and
     no node is found, raise an exception.
     '''
     node_type = "VRaySettingsNode"
@@ -674,7 +674,7 @@ def get_vray_settings_node(strict=True):
 
 def get_arnold_settings_node(strict=True):
     '''
-    Return the aiOptions node in the maya scene.  If strict is True, and 
+    Return the aiOptions node in the maya scene.  If strict is True, and
     no node is found, raise an exception.
     '''
     node_type = "aiOptions"
@@ -734,7 +734,7 @@ def get_node_by_type(node_type, must_exist=True, many=False):
     For the given node type, return the one node found in the maya scene of that
     type. If many is True, allow more than one to be returned, otherwise raise
     an exception if more than one is found. If must_exist is True, raise an
-    exception if no nodes are found in the maya scene. 
+    exception if no nodes are found in the maya scene.
     '''
 
     nodes = cmds.ls(type=node_type) or []
@@ -767,12 +767,12 @@ def get_node_by_type(node_type, must_exist=True, many=False):
 
 def get_plugin_info():
     '''
-    Return the conductor package information for any supported plugins 
+    Return the conductor package information for any supported plugins
     that are loaded.
 
-     e.g. 
-        {'arnold-maya': u'1.4.2.1', 
-         'miarmy': u'5.2.25', 
+     e.g.
+        {'arnold-maya': u'1.4.2.1',
+         'miarmy': u'5.2.25',
          'v-ray-maya': u'3.40.02'}
     '''
     plugins_info = {}
@@ -795,7 +795,7 @@ class MayaInfo(package_utils.ProductInfo):
     Will ultimately produce something like this
      # This is package for Maya
       {'product': 'Maya'
-       'version': "Autodesk Maya 2015 SP4"         
+       'version': "Autodesk Maya 2015 SP4"
        'host_product': '',
        'host_version': ''},
 
@@ -805,7 +805,7 @@ class MayaInfo(package_utils.ProductInfo):
     @classmethod
     def get_product(cls):
         '''
-        Return the name of the product, e.g. 
+        Return the name of the product, e.g.
 
             "Maya"
         '''
@@ -814,7 +814,7 @@ class MayaInfo(package_utils.ProductInfo):
     @classmethod
     def get_version(cls):
         '''
-        Return the product verion, e.g. 
+        Return the product verion, e.g.
 
             "Autodesk Maya 2015 SP4"
         '''
@@ -823,7 +823,7 @@ class MayaInfo(package_utils.ProductInfo):
     @classmethod
     def get_major_version(cls):
         '''
-        Return the major version of the product, e.g. 
+        Return the major version of the product, e.g.
 
             "2015"
         '''
@@ -832,7 +832,7 @@ class MayaInfo(package_utils.ProductInfo):
     @classmethod
     def get_minor_version(cls):
         '''
-        Return the minor version of the product, e.g. 
+        Return the minor version of the product, e.g.
 
             "SP4"
         '''
@@ -845,7 +845,7 @@ class MayaInfo(package_utils.ProductInfo):
     @classmethod
     def get_regex(cls):
         '''
-        Regex the 
+        Regex the Maya product version string
 
         Autodesk Maya 2014 x64 Service Pack 1
         Autodesk Maya 2014 Service Pack 2
@@ -1010,7 +1010,7 @@ class RendermanInfo(MayaPluginInfo):
 
 class MiarmyBaseInfo(MayaPluginInfo):
     '''
-    Base class for all Miarmy plugins.  This base class DOES NOT 
+    Base class for all Miarmy plugins.  This base class DOES NOT
     represent any one miarmy plugin. It must be subclassed.
 
     A class for retrieving version information about the Miarmy plugin in maya

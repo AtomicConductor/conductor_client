@@ -11,7 +11,7 @@ def get_image_dirpath():
 
 def get_nuke_version():
     '''
-    Return the full version string of the currently running nuke session. 
+    Return the full version string of the currently running nuke session.
     e.g. "9.0v5"
     '''
     return nuke.env["NukeVersionString"]
@@ -19,7 +19,7 @@ def get_nuke_version():
 
 def get_plugins():
     '''
-    TODO:(lws) WIP - there has to be better way of doing this.  
+    TODO:(lws) WIP - there has to be better way of doing this.
 
     Return the plugins from the current Nuke session. This is a list of filepaths
     to each nuke plugin. ugly
@@ -84,14 +84,14 @@ def get_plugins_info():
 
 def collect_dependencies(write_nodes, views, dependency_knobs={}):
     '''
-    For the given Write nodes, traverse up their heirarchy to query any nodes
-    for dependency filepaths and return them.  
+    For the given Write nodes, traverse up their hierarchy to query any nodes
+    for dependency filepaths and return them.
 
-    write_nodes: a list of Write nodes (their node names) for which to collect 
+    write_nodes: a list of Write nodes (their node names) for which to collect
                  dependencies for.
 
-    dependency_knobs: A dictioary of nuke node types (and their knob names) for 
-                      which to query for dependency paths, e.g. 
+    dependency_knobs: A dictionary of nuke node types (and their knob names) for
+                      which to query for dependency paths, e.g.
                             {'Read':['file'],
                              'DeepRead':['file']}
 
@@ -122,12 +122,12 @@ def collect_dependencies(write_nodes, views, dependency_knobs={}):
 def get_node_dependencies(node, types=(), collected_deps=()):
     '''
     Recursively traverse (upwards) the given node's node-graph, aggregating a list
-    of all of its contributing nodes. 
+    of all of its contributing nodes.
 
     node: any nuke node object
-    types: tuple of nuke node types (strings) to restrict the returned nodes to.  
+    types: tuple of nuke node types (strings) to restrict the returned nodes to.
     collected_deps: tuple. This should not be used by the caller.  A running-record
-         of the dependencies that have been collected thus  far (at any given 
+         of the dependencies that have been collected thus  far (at any given
          point in the recursion process).
 
      return: tuple of Nuke node objects
@@ -231,7 +231,7 @@ class NukeInfo(package_utils.ProductInfo):
     @classmethod
     def get_product(cls):
         '''
-        Return the name of the product, e.g. 
+        Return the name of the product, e.g.
 
             "nuke"
         '''
@@ -244,7 +244,7 @@ class NukeInfo(package_utils.ProductInfo):
     @classmethod
     def get_version(cls):
         '''
-        Return the product verion, e.g. 
+        Return the product version, e.g.
 
             "9.0v7"
         '''
@@ -253,7 +253,7 @@ class NukeInfo(package_utils.ProductInfo):
     @classmethod
     def get_major_version(cls):
         '''
-        Return the major version of the product, e.g. 
+        Return the major version of the product, e.g.
 
             "9"
         '''
@@ -262,7 +262,7 @@ class NukeInfo(package_utils.ProductInfo):
     @classmethod
     def get_minor_version(cls):
         '''
-        Return the minor version of the product, e.g. 
+        Return the minor version of the product, e.g.
 
             ""
         '''
