@@ -111,11 +111,7 @@ def get_host_from_packages(cls, package, source_packages):
 
     plugin_host_version = package["plugin_host_version"]
 
-
-    '''
-    If the given package has a host package, retrieve the host package from
-    the app.
-    '''
+    #If the given package has a host package, retrieve the host package from the app.
     print "source_packages", source_packages
     plugin_host_version = cls._cast_host_version(plugin_host_version)
     for package in source_packages:
@@ -214,7 +210,7 @@ class ProductInfo(object):
         '''
         Return the name of the software package, e.g. "Autodesk Maya 2015 SP4"
         '''
-        NotImplementedError
+        raise NotImplementedError
 
     @classmethod
     def get_major_version(cls):
