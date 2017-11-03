@@ -82,7 +82,7 @@ def get_plugins_info():
     return plugins_info
 
 
-def collect_dependencies(write_nodes, views, dependency_knobs={}):
+def collect_dependencies(write_nodes, views, dependency_knobs=None):
     '''
     For the given Write nodes, traverse up their hierarchy to query any nodes
     for dependency filepaths and return them.
@@ -96,7 +96,7 @@ def collect_dependencies(write_nodes, views, dependency_knobs={}):
                              'DeepRead':['file']}
 
     '''
-
+    dependency_knobs = dependency_knobs or {}
     deps = set()
 
     for node_name in write_nodes:

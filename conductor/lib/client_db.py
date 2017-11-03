@@ -83,7 +83,7 @@ class TableDB(object):
         return connection
 
 
-    def sql_execute(self, sql, params=[], many=False):
+    def sql_execute(self, sql, params=None, many=False):
         '''
         Execute the given sql command
         
@@ -95,6 +95,8 @@ class TableDB(object):
                     the given params as a list of variables for each call.
                         
         '''
+        params = params or []
+        
         if self.thread_safe:
             self.connection = self.connnect_to_db(self.db_filepath)
 
@@ -109,10 +111,11 @@ class TableDB(object):
         cursor.close()
 
 
-    def sql_fetch(self, sql, params=[]):
+    def sql_fetch(self, sql, params=None):
         '''
         Fetch data from the db via the given sql string and paramaters
         '''
+        params = params or []
         if self.thread_safe:
             self.connection = self.connnect_to_db(self.db_filepath)
 
