@@ -688,9 +688,9 @@ def get_file_info(filepath):
     '''
     For the given filepath return the following information in a dictionary:
         "filepath": filepath (str)
-        "modtime": modification time (datetime.datetime) 
+        "modtime": modification time (datetime.datetime)
         "size": filesize in bytes (int)
-        
+
     '''
     assert os.path.isfile(filepath), "Filepath does not exist: %s" % filepath
     stat = os.stat(filepath)
@@ -720,7 +720,7 @@ def resolve_arg(arg_name, args, config):
     1. Check whether the user explicitly specified the argument when calling/
        instantiating the class. If so, then use it, otherwise...
     2. Attempt to read it from the config.yml. Note that the config also queries
-       environment variables to populate itself with values. 
+       environment variables to populate itself with values.
        If the value is in the config then use it, otherwise...
     3. return None
 

@@ -200,7 +200,7 @@ class Downloader(object):
     '''
     A Downloader daemon which downloads completed frames from finished tasks.
 
-    
+
     Each task has an associated Download entity that represents
     all images/files that were produced from that task. A task may have more than
     file to download.
@@ -414,7 +414,7 @@ class Downloader(object):
     def queue_target(self, pending_queue, downloading_queue):
         '''
         Fill the download queue by quering the app for the "next" Download.
-        Only fill the queue to have as many items as there are threads. 
+        Only fill the queue to have as many items as there are threads.
         
         Perpetually run this this function until the daemon has been terminated
         '''
@@ -494,14 +494,14 @@ class Downloader(object):
     @common.dec_catch_exception(raise_=True)
     def download_target(self, pending_queue, downloading_queue, task_download_state):
         '''
-        This function is called in a new thread (and many threads may be 
+        This function is called in a new thread (and many threads may be
         executing this at a single time). This function is responsible for
         downloading a single Download (essentially an entity in Datastore which
         represents the output data from a single Task).  This may consist of many
-        files.  
+        files.
         
         This function pulls one Download from the pending queue and attempts
-        to download it.  If it fails, it places it back on the queue. 
+        to download it.  If it fails, it places it back on the queue.
         
         The function also spawns a child thread that is responsible for constantly
         updating the app with the status of the Download, such as:
@@ -509,14 +509,14 @@ class Downloader(object):
             - bytes transferred (the total amout of bytes that have been transferred
               for the Download. Note that these bytes encompass all of the bytes
               that have been transferred for ALL of the files that are part
-              of the Download (as opposed to only a single file) 
+              of the Download (as opposed to only a single file)
         
         
         task_download_state: a class, serving as global mutable object, which allows
                         this thread to report data about its Download state,
                         so that other threads can read and output that data.
                         This object is persistant for each thread, and is used
-                        over and over again, everytime thime this  function is called, 
+                        over and over again, everytime thime this  function is called,
                         for each Task that a thread downloads
                         It's important that the state information is wiped clean (reset) every time a new task begins.
                         This is the resposnbility of this function
@@ -757,7 +757,7 @@ class Downloader(object):
     def _update_file_state_callback(self, file_state, filepath, file_size, bytes_processed, log_level):
         '''
         Callback that updates the hash progress (while the hashing is occuring
-        chunk-by-chunk 
+        chunk-by-chunk
         '''
         file_state.hash_progress = int((bytes_processed / float(file_size)) * 100)
 
@@ -831,7 +831,7 @@ class Downloader(object):
         #### ACTIVE DOWNLOADS #####
         
          Job 08285 Task 004 - 80% (200/234MB)  - Thread-1
-             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/beauty/deep_lidar.deep.0005.exr  HASHING EXISTING FILE     80%    
+             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/beauty/deep_lidar.deep.0005.exr  HASHING EXISTING FILE     80%
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/data/deep_lidar.deep.0005.exr    DOWLOADING 20%
             
           
@@ -877,7 +877,7 @@ class Downloader(object):
         Last 20 tasks downloaded
             Job 08285 Task 004 (Download 3492394234)
             Job 08285 Task 002 (Download 3492394234)
-            Job 08285 Task 003 (Download 3492394234) 
+            Job 08285 Task 003 (Download 3492394234)
             Job 08285 Task 001 (Download 3492394234)
             Job 08285 Task 000 (Download 3492394234)
             Job 08284 Task 065 (Download 3492394234)
@@ -1014,7 +1014,7 @@ class Downloader(object):
         '''
          Job 08285 Task 004 - 80% (200/234MB)  - Thread-1
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/beauty/deep_lidar.deep.0005.exr  20MB    DOWNLOADING 20%
-             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/data/deep_lidar.deep.0005.exr    30MB    HASHING EXISTING FILE 77%        
+             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/data/deep_lidar.deep.0005.exr    30MB    HASHING EXISTING FILE 77%
         '''
         thread_name = task_download_state.thread_name
         jid = task_download_state.task_download.get("job_id")
@@ -1144,7 +1144,7 @@ def download_file(download_url, filepath, poll_rate=2, state=None):
                       been downloaded. This can be used by other threads to report
                       "progress".  Note that this must be a mutable object (hence
                       a class), so that this function, as well as other threads
-                      will read/write to the same object. 
+                      will read/write to the same object.
     '''
     logger.info('Downloading: %s', filepath)
     response = requests.get(download_url, stream=True)
