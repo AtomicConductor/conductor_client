@@ -46,6 +46,21 @@ maya_dependency_attrs:
         - fileTextureName
     McdGlobal: # Miarmy
         - outMD2Folder
+    pgYetiEmitter: # yeti
+        - iconName
+        - templatePath
+    pgYetiGroom: # yeti
+        - iconName
+        - templatePath
+    pgYetiMaya: # yeti
+        - cacheFileName
+        - imageSearchPath
+        - outputCacheFileName
+        - iconName
+        - templatePath
+    pgYetiMayaFeather: # yeti
+        - iconName
+        - templatePath
     PxrAovLight: # Renderman
         - iconName
         - templatePath
@@ -231,8 +246,8 @@ maya_dependency_attrs:
         - if
     VRayScene: #Vray Scene
         - FilePath
-    pgYetiMaya:
-        - cacheFileName        
+
+    
 
         
         
