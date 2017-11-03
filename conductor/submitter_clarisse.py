@@ -3,8 +3,6 @@ import os
 import sys
 from Qt import QtCore, QtGui, QtWidgets, uic
 import imp
-from functools import wraps
-import traceback
 
 try:
     imp.find_module('conductor')
@@ -12,7 +10,7 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG
-from conductor.lib import file_utils, common, api_client, conductor_submit
+from conductor.lib import file_utils, conductor_submit
 from conductor import clarisse_utils, clarisse_resources
 
 import pyqt_clarisse
