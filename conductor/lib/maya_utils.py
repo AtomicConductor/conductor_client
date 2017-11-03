@@ -5,7 +5,7 @@ import yaml
 import functools
 from maya import cmds, mel
 
-from conductor.lib import package_utils
+from conductor.lib import package_utils, file_utils
 logger = logging.getLogger(__name__)
 
 
@@ -481,6 +481,8 @@ def collect_dependencies(node_attrs):
                     if node_type == "pgYetiMaya":
                         # If the node is reading from a cache directory
                         if cmds.getAttr('%s.fileMode' % node):
+                            if not os.path.exists(path): # this could be a file or directory
+                                raise Exception("Cannot scrape yeti dependencies! Cache path does not exist: %s" %  path)
                             yeti_dependencies = parse_yeti_graph(node)
                             logger.debug("yeti graph dependencies: %s" % yeti_dependencies)
                             dependencies += yeti_dependencies
@@ -517,17 +519,37 @@ def parse_yeti_graph(yeti_node):
 
     yeti_input_nodes = ["texture", "reference"]
     attr_name = "file_name"
+    
+    
+    search_paths = [p.strip() for p in (cmds.getAttr("%s.imageSearchPath" % yeti_node) or "").split(os.pathsep)]
+    logger.debug("Yeti image search paths: %s", search_paths)
 
     for node_type in yeti_input_nodes:
+        print "yeti_node", yeti_node
+        print "node_type", node_type
         for node in cmds.pgYetiGraph(yeti_node, listNodes=True, type=node_type) or []:
             filepath = cmds.pgYetiGraph(yeti_node,
                                         node=node,
                                         getParamValue=True,
                                         param=attr_name)
-
-            filepath = cmds.file(filepath, expandName=True, query=True, withoutCopyNumber=True)
             logger.debug("Yeti graph node: %s.%s: %s", node, attr_name, filepath)
-            filepaths.append(filepath)
+            if filepath:
+                if os.path.isabs(filepath):
+                    filepaths.append(filepath)
+                    continue
+                
+                logging.debug("Resolving relative path: %s", filepath)
+                for search_path in search_paths:
+                    full_path = os.path.join(search_path, filepath) 
+                    logging.debug("Checking for potential filepath: %s", full_path)
+                    if file_utils.process_upload_filepath(full_path, strict=False):
+                        logging.debug("Resolved filepath: %s", full_path)
+                        filepaths.append(full_path)
+                        break
+                else:
+                    raise Exception("Couldn't resolve relative path: %s" % filepath)
+                            
+                
 
     return filepaths
 
