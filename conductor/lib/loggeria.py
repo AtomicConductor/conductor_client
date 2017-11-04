@@ -49,7 +49,7 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
     THIS SHOULD ONLY BE CALLED ONCE within an execution environment.
 
     This function does the following:
-    
+
     1. Creates/retrieves the logger object for the "conductor" package
     2. Sets that logger's  log level to the given logger_level (optional)
     3. Creates a console handler and attaches it to the logger object.
