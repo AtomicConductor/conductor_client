@@ -233,9 +233,9 @@ class UploadWorker(worker.ThreadWorker):
         self.api_client = api_client.ApiClient()
 
     def chunked_reader(self, filename):
-        with open(filename, 'rb') as _file:
+        with open(filename, 'rb') as fp:
             while worker.WORKING and not common.SIGINT_EXIT:
-                data = _file.read(self.chunk_size)
+                data = fp.read(self.chunk_size)
                 if not data:
                     # we are done reading the file
                     break
