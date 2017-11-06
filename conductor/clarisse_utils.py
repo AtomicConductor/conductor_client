@@ -103,24 +103,24 @@ def do_export():
     scene_info = {"output_path": ""}
     for i in range(attrs.get_count()):
         # deduplicating
-        _file = attrs[i].get_string()
-        if not os.path.isfile(_file):
+        file_path = attrs[i].get_string()
+        if not os.path.isfile(file_path):
             #  Find the output path...
             if attrs[i].get_name() == "save_as":
-                scene_info['output_path'] = os.path.dirname(_file)
+                scene_info['output_path'] = os.path.dirname(file_path)
 
-            print("Skipping file %s" % _file)
+            print("Skipping file %s" % file_path)
             continue
         attr_list.append(attrs[i].get_full_name())
-        if not _file in unique_files:
+        if not file_path in unique_files:
             # de-windoify path
-            new_filename = os.path.abspath(_file).replace("\\", '/').replace(':', '').replace('\\\\', '/')
+            new_file_path = os.path.abspath(file_path).replace("\\", '/').replace(':', '').replace('\\\\', '/')
             # getting the absolute path of the file
-            new_filename = "$PDIR/" + new_filename
-            unique_files[_file] = new_filename
-            new_file_list.append(new_filename)
+            new_file_path = "$PDIR/" + new_file_path
+            unique_files[file_path] = new_file_path
+            new_file_list.append(new_file_path)
         else:
-            new_file_list.append(unique_files[_file])
+            new_file_list.append(unique_files[file_path])
 
     # updating attribute path with new filename
     ix.enable_command_history()
@@ -148,19 +148,19 @@ def do_export():
     # return_files = [gen_tempdir + '/' + name]
     scene_info["scene_file"] = "%s/%s" % (gen_tempdir, name)
     scene_info["dependencies"] = [gen_tempdir + '/' + name]
-    for _file in unique_files:
-        target = unique_files[_file][5:]
+    for file_path in unique_files:
+        target = unique_files[file_path][5:]
         target_dir = gen_tempdir + os.path.dirname(target)
         if not os.path.isdir(target_dir):
             os.makedirs(target_dir)
-        ix.log_info("copying file '" + _file + "'..." )
+        ix.log_info("copying file '" + file_path + "'..." )
         ix.application.check_for_events()
         new_path = gen_tempdir + target
         scene_info["dependencies"].append(new_path)
         if platform.system == "Windows":
-            shutil.copyfile(_file, new_path)
+            shutil.copyfile(file_path, new_path)
         else:
-            os.symlink(_file, new_path)
+            os.symlink(file_path, new_path)
 
     #  The stuff that is commented out packages the dependencies into an archive
     #  this is something we do not support at the moment, but I'm leaving around
