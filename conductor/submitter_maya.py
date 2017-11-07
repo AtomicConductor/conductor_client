@@ -7,6 +7,7 @@ import os
 import imp
 import logging
 import sys
+import traceback
 import uuid
 import Qt
 from Qt import QtGui, QtCore, QtWidgets
@@ -295,7 +296,16 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         in the returned dictionary (so that we don't need to collect them again).
         '''
 
-        raw_dependencies = self.collectDependencies()
+        # TODO(lws): This try/except should be moved up to the parent-class so
+        # that there's a clear control flow.  This work has actually been done in
+        # another branch...that will hopefully go out one day.
+        try:
+            raw_dependencies = self.collectDependencies()
+        except:
+            title = "Failed to collect dependencies"
+            message = "".join(traceback.format_exception(*sys.exc_info()))
+            pyside_utils.launch_error_box(title, message, self)
+            raise
 
         # If uploading locally (i.e. not using  uploader daemon
         if self.getLocalUpload():
