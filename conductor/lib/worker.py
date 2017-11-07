@@ -483,9 +483,6 @@ class JobManager():
         self.kill_reporters()
         return None
 
-    def get_metric_store(self):
-        return self.metric_store
-
     def worker_queue_status_text(self):
         msg = '\n' + '#' * 80 + '\n'
         for index, worker_info in enumerate(self.job_description):
