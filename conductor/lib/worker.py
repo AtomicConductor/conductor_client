@@ -465,7 +465,7 @@ class JobManager():
         return True
 
     def join(self):
-        ''' Block untill all work is complete '''
+        ''' Block until all work is complete '''
         # for index, queue in enumerate(self.work_queues):
         #     worker_class_name = self.workers[index].__class__.__name__
         #     logger.debug('waiting for %s workers to finish', worker_class_name)
@@ -482,9 +482,6 @@ class JobManager():
         self.kill_workers()
         self.kill_reporters()
         return None
-
-    def metric_store(self):
-        return self.metric_store
 
     def worker_queue_status_text(self):
         msg = '\n' + '#' * 80 + '\n'
