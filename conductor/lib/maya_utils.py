@@ -5,7 +5,7 @@ import yaml
 import functools
 from maya import cmds, mel
 
-from conductor.lib import package_utils
+from conductor.lib import package_utils, file_utils
 logger = logging.getLogger(__name__)
 
 
@@ -465,6 +465,8 @@ def collect_dependencies(node_attrs):
                     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
                     logger.debug("%s: %s", plug_name, path)
+
+                    # ---- XGEN SCRAPING -----
                     #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
                     if node_type == "xgmPalette":
                         sceneFile = cmds.file(query=True, sceneName=True)
@@ -473,17 +475,24 @@ def collect_dependencies(node_attrs):
                         logger.debug("xgen_dependencies: %s", xgen_dependencies)
                         dependencies += xgen_dependencies
 
+                    # ---- VRAY SCRAPING -----
                     if node_type == "VRayScene":
                         vrscene_dependencies = parse_vrscene_file(path)
                         logger.debug("vrscene dependencies: %s" % vrscene_dependencies)
                         dependencies += vrscene_dependencies
 
+                    # ---- YETI SCRAPING -----
                     if node_type == "pgYetiMaya":
-                        # If the node is reading from a cache directory
-                        if cmds.getAttr('%s.fileMode' % node):
-                            yeti_dependencies = parse_yeti_graph(node)
-                            logger.debug("yeti graph dependencies: %s" % yeti_dependencies)
-                            dependencies += yeti_dependencies
+                        yeti_dependencies = scrape_yeti_graph(node)
+                        logger.debug("yeti dependencies: %s" % yeti_dependencies)
+                        dependencies += yeti_dependencies
+
+                        # Check whether the node is reading from disk or not.
+                        # If it's not, then we shouldn't include the path as
+                        # a dependency
+                        if not cmds.getAttr('%s.fileMode' % node):
+                            logger.debug("Skipping path because fileMode is disabled")
+                            continue
 
                     dependencies.append(path)
 
@@ -507,31 +516,73 @@ def get_ocio_config():
         return cmds.getAttr(plug_name)
 
 
-def parse_yeti_graph(yeti_node):
+def scrape_yeti_graph(yeti_node):
     '''
-    Query the yeti nodegraph for any file dependencies
+    For the given pgYetiMaya node, scrape all of it's external file dependencies.
 
-    TODO: Expand to also try and find relative textures in IMAGE_SEARCH_PATH
+    Note that this node not only contains typical string attributes which may
+    contain filepaths, but it also is a "gateway" into yeti's own internal dependency 
+    node system.... which must be queried for file dependencies as well.
+
+    To further complicate things, these nodes allow paths to be defined relatively
+    (rather than absolute), so we'll need to resolve them by reading the imageSearchPath
+    attribute on the yeti node. TODO(lws): we may need to also include the
+    PG_IMAGE_PATH environment variable as another search location.
+
     '''
+    # If the node is reading from a cache file/directory, then ensure that it
+    # exists on disk before attempting to read/traverse it's data
+    if cmds.getAttr('%s.fileMode' % yeti_node):
+        path = cmds.getAttr("%s.cacheFileName" % yeti_node)
+        # if no path is specified, or the path doesn't resolves to any files, raise an exception
+        if not path or not file_utils.process_upload_filepath(path):
+            raise Exception("Cannot scrape yeti dependencies! Cache path does not exist: %s" % path)
+
     filepaths = []
 
     yeti_input_nodes = ["texture", "reference"]
     attr_name = "file_name"
 
+    # Query the the yeti search paths from imageSearchPath attr.  This attr
+    # will be a single string value that may contain multiple paths (just
+    # like a typical environment variable might).
+    search_paths = [p.strip() for p in (cmds.getAttr("%s.imageSearchPath" % yeti_node) or "").split(os.pathsep)]
+    logger.debug("Yeti image search paths: %s", search_paths)
+
     for node_type in yeti_input_nodes:
+        logger.debug("Traversing yeti %s nodes", node_type)
         for node in cmds.pgYetiGraph(yeti_node, listNodes=True, type=node_type) or []:
+
             filepath = cmds.pgYetiGraph(yeti_node,
                                         node=node,
                                         getParamValue=True,
                                         param=attr_name)
-
-            filepath = cmds.file(filepath, expandName=True, query=True, withoutCopyNumber=True)
             logger.debug("Yeti graph node: %s.%s: %s", node, attr_name, filepath)
-            continue
-            filepaths.append(filepath)
+            if filepath:
+                # if the filepath is absolute, then great; record it.
+                if os.path.isabs(filepath):
+                    filepaths.append(filepath)
+                    continue
+
+                # If the path is relative then we must construct a potential path
+                # from each of our search paths, and check whether the path existst.
+                logging.debug("Resolving relative path: %s", filepath)
+                for search_path in search_paths:
+                    full_path = os.path.join(search_path, filepath)
+                    logging.debug("Checking for potential filepath: %s", full_path)
+                    # We must account for cases where the path could actually
+                    # be an expression (e.g. <udim>, etc), so we can't just check
+                    # for the path's literal existence. Instead, we check whether
+                    # the expression resolves in at least one path.  If it does
+                    # then great; we've resolved our relative path.
+                    if file_utils.process_upload_filepath(full_path, strict=False):
+                        logging.debug("Resolved filepath: %s", full_path)
+                        filepaths.append(full_path)
+                        break
+                else:
+                    raise Exception("Couldn't resolve relative path: %s" % filepath)
 
     return filepaths
-
 
 
 def parse_vrscene_file(path):

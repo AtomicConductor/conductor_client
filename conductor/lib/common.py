@@ -504,9 +504,8 @@ class Config():
 
     def get_config_file_paths(self, config_file=None):
         if 'CONDUCTOR_CONFIG' in os.environ:
-            path_separator = ';' if platform.system() == 'Windows' else ':'  # We need to use the correct OS path separator
             # We need to take into account multiple paths
-            possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(path_separator) if len(x) > 0]
+            possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(os.pathsep) if len(x) > 0]
             if len(possible_paths) > 0:
                 return possible_paths
         if platform.system() == 'Windows':
