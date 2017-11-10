@@ -2,7 +2,6 @@
 
 """ Command Line Process to run downloads.
 """
-import sys
 import random
 import signal
 import threading
@@ -10,11 +9,9 @@ import time
 import base64
 import hashlib
 import functools
-import imp
 import logging
 import multiprocessing
 import os
-from pprint import pformat
 import Queue
 import requests
 
@@ -948,7 +945,10 @@ class DownloadWorker(multiprocessing.Process):
             state.value = Downloader.STATE_STOPPING
 
         LOGGER.debug("waiting for procs to exit:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
-        [wrk.join() for wrk in self._workers]
+
+        for wrk in self._workers:
+            wrk.join()
+
         LOGGER.debug("All procs exited:\n\t%s", "\n\t".join(sorted([w.name for w in self._workers])))
 
 

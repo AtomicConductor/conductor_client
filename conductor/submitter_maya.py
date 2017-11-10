@@ -25,12 +25,11 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-'''
-TODO:
-1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
-3. Cull out unused maya dependencies.  Should we exclude materials that aren't assigned, etc?
-5. Validate the maya file has been saved
-'''
+# TODO:
+# 1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the
+#    filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
+# 2. Cull out unused maya dependencies.  Should we exclude materials that aren't assigned, etc?
+# 3. Validate the maya file has been saved
 
 logger = logging.getLogger(__name__)
 
