@@ -743,7 +743,7 @@ class FilePrefs(UserPrefs):
 
     def getPref(self, pref_name, filepath=None):
         '''
-        High level convenence function that will return the preference value
+        High level convenience function that will return the preference value
         for either a global or file-specific preference.
 
         pref_name: str. the name of the preference to return a value for, e.g. "frame_range"
@@ -757,7 +757,7 @@ class FilePrefs(UserPrefs):
 
     def getPrefs(self, filepath=None):
         '''
-        High level convenence function that will return a dictionary of either
+        High level convenience function that will return a dictionary of either
         file-specific preferences
 
         filepath: str. The name of the file to return the preference values for.
@@ -765,7 +765,7 @@ class FilePrefs(UserPrefs):
                   be returned.
         '''
         if filepath:
-            return self.getFilePrefs(self, filepath)
+            return self.getFilePrefs(filepath)
 
         return self.getGlobalPrefs()
 
@@ -773,7 +773,7 @@ class FilePrefs(UserPrefs):
 
     def setPref(self, pref_name, value, filepath=None):
         '''
-        High level convenence function that will set the preference value
+        High level convenience function that will set the preference value
         for either a global or file-specific preference.
 
         pref_name: str. the name of the preference to set a value for, e.g. "frame_range"
@@ -790,7 +790,7 @@ class FilePrefs(UserPrefs):
 
     def setPrefs(self, values, filepath=None):
         '''
-        High level convenence function that will set the given preference values
+        High level convenience function that will set the given preference values
         for either global or file-specific scope.
 
         pref_name: str. the name of the preference to return a value for, e.g. "frame_range"
@@ -889,14 +889,14 @@ class FilePrefs(UserPrefs):
     # Clear GLOBAL prefs
     def clearGlobalPrefs(self):
         '''
-        Clear all of the preferencs found in the global group/namespace
+        Clear all of the preferences found in the global group/namespace
         '''
         self.clearGroup(self.GROUP_GLOBAL_PREFS)
 
     # Clear GLOBAL prefs
     def clearFilePrefs(self, filepath):
         '''
-        Clear all of the preferencs found in the given filepath's group/namespace
+        Clear all of the preferences found in the given filepath's group/namespace
         '''
         group = self.GROUP_FILE_PREFS + "/" + self.encodeGroupName(filepath)
         self.clearGroup(group)
@@ -955,7 +955,7 @@ class UiFilePrefs(FilePrefs):
 
     def getPref(self, pref_name, filepath=None, is_widget=False):
         '''
-        High level convenence function that returns the value for the given
+        High level convenience function that returns the value for the given
         preference name. If a filepath is given, return  the preference stored
         for that specific file, otherwise return the global value.
 
@@ -977,7 +977,7 @@ class UiFilePrefs(FilePrefs):
 
     def getPrefs(self, filepath=None, is_widget=False):
         '''
-        High level convenence function that will return a dictionary of either
+        High level convenience function that will return a dictionary of either
         file-specific preferences or global preferences.
 
         filepath: str. The name of the file to return the preference values for.
@@ -1002,7 +1002,7 @@ class UiFilePrefs(FilePrefs):
 
     def setPref(self, pref_name, value, filepath=None, is_widget=False):
         '''
-        High level convenence function that will set the preference value
+        High level convenience function that will set the preference value
         for either a global preference or  file-specific preference.
 
         pref_name: str. the name of the preference to set a value for, e.g. "frame_range"
@@ -1022,7 +1022,7 @@ class UiFilePrefs(FilePrefs):
 
     def setPrefs(self, values, filepath=None, is_widget=False):
         '''
-        High level convenence function that will set the given preference values
+        High level convenience function that will set the given preference values
         for either the global scope or a file-specific scope.
 
         values: dict. key=preference name, value=preference value
@@ -1035,7 +1035,7 @@ class UiFilePrefs(FilePrefs):
 
         # If the preference is for a widget, save it to the widget pref scrope
         if is_widget:
-            # If a filepath is provided, set the preference as a file-specfic pref.
+            # If a filepath is provided, set the preference as a file-specific pref.
             if filepath:
                 return self.setFileWidgetPrefs(filepath, values)
             return self.setGlobalWidgetPrefs(values)
@@ -1054,7 +1054,7 @@ class UiFilePrefs(FilePrefs):
 
     def saveGlobalWidgetPrefs(self):
         '''
-        Save user widgt settings to the global prefs
+        Save user widget settings to the global prefs
         '''
         logger.debug("Saving global widget prefs")
         self._saveWidgetPrefs(self._global_widgets)
@@ -1062,7 +1062,7 @@ class UiFilePrefs(FilePrefs):
     def _saveWidgetPrefs(self, widgets, filepath=None):
         '''
         Save all user widget prefs.  If a filepath is provided, save the prefs
-        as file-specfic
+        as file-specific
         '''
         widget_prefs = {}
 
@@ -1207,7 +1207,7 @@ class UiFilePrefs(FilePrefs):
     # Clear GLOBAL prefs
     def clearGlobalPrefs(self):
         '''
-        Clear all of the preferencs found in the global group/namespace
+        Clear all of the preferences found in the global group/namespace
         '''
         # Clear the global widget prefs
         self.clearGroup(self.GROUP_GLOBAL_WIDGETS)
@@ -1218,7 +1218,7 @@ class UiFilePrefs(FilePrefs):
     # Clear GLOBAL prefs
     def clearFilePrefs(self, filepath):
         '''
-        Clear all of the preferencs found in the given filepath's group/namespace
+        Clear all of the preferences found in the given filepath's group/namespace
         '''
         # Clear the file widget prefs
         group = self.GROUP_FILE_WIDGETS + "/" + self.encodeGroupName(filepath)

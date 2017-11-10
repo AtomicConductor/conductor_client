@@ -3,8 +3,6 @@ import os
 import sys
 from Qt import QtCore, QtGui, QtWidgets, uic
 import imp
-from functools import wraps
-import traceback
 
 try:
     imp.find_module('conductor')
@@ -12,7 +10,7 @@ except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conductor import CONFIG
-from conductor.lib import file_utils, common, api_client, conductor_submit
+from conductor.lib import file_utils, conductor_submit
 from conductor import clarisse_utils, clarisse_resources
 
 import pyqt_clarisse
@@ -167,12 +165,12 @@ class ClarisseConductorSubmitter(object):
         Override the base class (which is an empty stub method) so that a
         validation pre-process can be run.  If validation fails, then indicate
         that the the submission process should be aborted.
-        
+
         We also collect dependencies (and asds) at this point and pass that
         data along...
         In order to validate the submission, dependencies must be collected
-        and inspected. Because we don't want to unnessarily collect dependencies
-        again (after validation succeeds), we also pass the depenencies along
+        and inspected. Because we don't want to unnecessarily collect dependencies
+        again (after validation succeeds), we also pass the dependencies along
         in the returned dictionary (so that we don't need to collect them again).
         '''
 
@@ -391,7 +389,7 @@ class ClarisseConductorSubmitter(object):
 
     def launch_message_box(self, title, message, is_richtext=False, parent=None):
         """
-        Launches a very basic message dialog box with the given title and message. 
+        Launches a very basic message dialog box with the given title and message.
         
         is_richtext: bool. If True, willl set the given as RichText.  This will also
                      allow the text to support hyperlink behavior.
@@ -419,7 +417,7 @@ class ClarisseConductorSubmitter(object):
 
     def launch_error_box(self, title, message, parent=None):
         """
-        Launches a QErrorMessage dialog box with the given title and message. 
+        Launches a QErrorMessage dialog box with the given title and message.
         """
 
         # create a QErrorMessage
