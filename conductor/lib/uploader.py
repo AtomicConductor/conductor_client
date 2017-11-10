@@ -85,13 +85,11 @@ class MD5Worker(worker.ThreadWorker):
 
 
 
-
-
-'''
-This worker will batch the computed md5's into self.batch_size chunks.
-It will send a partial batch after waiting self.wait_time seconds
-'''
 class MD5OutputWorker(worker.ThreadWorker):
+    '''
+    This worker will batch the computed md5's into self.batch_size chunks.
+    It will send a partial batch after waiting self.wait_time seconds
+    '''
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.batch_size = 20  # the controlls the batch size for http get_signed_urls
@@ -187,11 +185,11 @@ class HttpBatchWorker(worker.ThreadWorker):
 This worker subscribes to a queue of (path,signed_upload_url) pairs.
 
 For each item on the queue, it determines the size (in bytes) of the files to be
-uploaded, and aggregrates the total size for all uploads.
+uploaded, and aggregates the total size for all uploads.
 
 It then places the triplet (filepath, upload_url, byte_size) onto the out_queue
 
-The bytes_to_upload arg is used to hold the aggregrated size of all files that need
+The bytes_to_upload arg is used to hold the aggregated size of all files that need
 to be uploaded. Note: This is stored as an [int] in order to pass it by
 reference, as it needs to be accessed and reset by the caller.
 '''
@@ -203,11 +201,11 @@ class FileStatWorker(worker.ThreadWorker):
         '''
         Job is a dict of filepath: signed_upload_url pairs.
         The FileStatWorker iterates through the dict.
-        For each item, it aggregrates the filesize in bytes, and passes each
+        For each item, it aggregates the filesize in bytes, and passes each
         pair as a tuple to the UploadWorker queue.
         '''
 
-        ''' iterate through a dict of (filepath: upload_url) pairs '''
+        # iterate through a dict of (filepath: upload_url) pairs
         for path, upload_url in job.iteritems():
             if not os.path.isfile(path):
                 return None
@@ -219,17 +217,15 @@ class FileStatWorker(worker.ThreadWorker):
 
             self.put_job((path, upload_url))
 
-        ''' make sure we return None, so no message is automatically added to the
-        out_queue '''
+        # make sure we return None, so no message is automatically added to the out_queue
         return None
 
 
-
-'''
-This woker recieves a (filepath: signed_upload_url) pair and performs an upload
-of the specified file to the provided url.
-'''
 class UploadWorker(worker.ThreadWorker):
+    '''
+    This worker receives a (filepath: signed_upload_url) pair and performs an upload
+    of the specified file to the provided url.
+    '''
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.chunk_size = 1048576  # 1M
@@ -237,9 +233,9 @@ class UploadWorker(worker.ThreadWorker):
         self.api_client = api_client.ApiClient()
 
     def chunked_reader(self, filename):
-        with open(filename, 'rb') as file:
+        with open(filename, 'rb') as fp:
             while worker.WORKING and not common.SIGINT_EXIT:
-                data = file.read(self.chunk_size)
+                data = fp.read(self.chunk_size)
                 if not data:
                     # we are done reading the file
                     break
@@ -688,9 +684,9 @@ def get_file_info(filepath):
     '''
     For the given filepath return the following information in a dictionary:
         "filepath": filepath (str)
-        "modtime": modification time (datetime.datetime) 
+        "modtime": modification time (datetime.datetime)
         "size": filesize in bytes (int)
-        
+
     '''
     assert os.path.isfile(filepath), "Filepath does not exist: %s" % filepath
     stat = os.stat(filepath)
@@ -720,7 +716,7 @@ def resolve_arg(arg_name, args, config):
     1. Check whether the user explicitly specified the argument when calling/
        instantiating the class. If so, then use it, otherwise...
     2. Attempt to read it from the config.yml. Note that the config also queries
-       environment variables to populate itself with values. 
+       environment variables to populate itself with values.
        If the value is in the config then use it, otherwise...
     3. return None
 

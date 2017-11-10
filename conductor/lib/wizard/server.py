@@ -14,7 +14,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', mimetypes.guess_type(path)[0])
         self.end_headers()
-        
+
     def _write_config_files(self,config):
         try:
             os.makedirs(self.config_dir)

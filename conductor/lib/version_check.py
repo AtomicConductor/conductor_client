@@ -6,7 +6,7 @@ class VersionCheck(object):
 
     def __init__(self):
         self._installed_release_info = self._get_installed_release_info()
-        
+
     def _get_latest_release_info(self):
         """
         Return dictionary describing the latest release of the package.

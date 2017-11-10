@@ -49,7 +49,7 @@ def generate_file(filepath, size):
 def generate_small_text_files():
     '''
     3000 text files
-    
+
     0.5KB-200KB
     
     TOTAL SIZE: 294.43359 MB

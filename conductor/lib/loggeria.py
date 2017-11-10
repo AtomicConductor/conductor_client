@@ -44,23 +44,23 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
                             file_formatter=FORMATTER_VERBOSE,
                             multiproc=False):
     '''
-    The is convenience function to help set up logging. 
-    
+    The is convenience function to help set up logging.
+
     THIS SHOULD ONLY BE CALLED ONCE within an execution environment.
 
     This function does the following:
-    
+
     1. Creates/retrieves the logger object for the "conductor" package
     2. Sets that logger's  log level to the given logger_level (optional)
-    3. Creates a console handler and attaches it to the logger object. 
+    3. Creates a console handler and attaches it to the logger object.
     3a. Optionally sets that console handler's log level to the given console_level
     3b. Optionally sets that console handler's formatter to the the given console_formatter
-    4.  Optionally creates a file handler (if a log filepath is given) 
+    4.  Optionally creates a file handler (if a log filepath is given)
     4a. Optionally sets that file handler's log level to the given file_level
     4b. Optionally sets that file handler's formatter to the the given file_formatter
 
     console_formatter & file_formatter:
-    Formatters are the formatter objects. Not just a string such as "DEBUG".  
+    Formatters are the formatter objects. Not just a string such as "DEBUG".
     This is because you may need more than just a string to define a formatter object.
 
     multiproc: bool. If True, a custom file handler will be used that handles multiprocess
@@ -100,8 +100,8 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
 def create_file_handler(filepath, level=None, formatter=None, multiproc=False):
     '''
     Create a file handler object for the given filepath.
-    This is a ROTATING file handler, which rotates every day (24 hours) and 
-    stores up to 7 days of logs at a time (equaling up to as many as 7 log files 
+    This is a ROTATING file handler, which rotates every day (24 hours) and
+    stores up to 7 days of logs at a time (equaling up to as many as 7 log files
     at a given time.
     '''
     when = 'h'  # rotate unit is "h" (hours)
@@ -254,10 +254,10 @@ class TableStr(object):
     def __init__(self, data, column_names, title="", footer="", upper_headers=True):
         '''
         args:
-            data: list of dicts. Each dict represents a row, where the key is the 
-                  column name, and the value is the...value 
+            data: list of dicts. Each dict represents a row, where the key is the
+                  column name, and the value is the...value
             
-            column_names: list of str. The columns of data to show (and the order 
+            column_names: list of str. The columns of data to show (and the order
                           in which they are shown)
             
             title: str. if provided, will be printed above the table
@@ -280,9 +280,9 @@ class TableStr(object):
         
         This is achieved by creating a list of items for each column in the table.
         Once all column lists have been created, they are then joined via a constant
-        column space character(s) - self.column_spacer. The rows that are created 
+        column space character(s) - self.column_spacer. The rows that are created
         from the columns are then prefixed with given title (self.title) and suffixed
-        with the given footer (self.footer) 
+        with the given footer (self.footer)
 
           
         '''
@@ -306,7 +306,7 @@ class TableStr(object):
         '''
         
         Return a two dimensial list (list of lists), where the inner lists
-        repersent a column of data. 
+        repersent a column of data.
         '''
         column_header = self.modify_header(column_name)
 
@@ -339,7 +339,7 @@ class TableStr(object):
 
     def modify_cell(self, column_name, cell_data):
         '''
-        Modify and return the given cell data of the given column name.  
+        Modify and return the given cell data of the given column name.
         This provides an opportunity to adjust what the header should consist of.
         '''
         cell_modifier = self.cell_modifiers.get(column_name)
