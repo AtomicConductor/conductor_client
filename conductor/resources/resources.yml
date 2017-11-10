@@ -1223,25 +1223,35 @@ package_ids:
 
         "Autodesk Maya 2018":
             package: 460411ee5c24661ed354863bcb3d7c21
+            v-ray-maya:
+                "3.60.01":
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
+                "2.0.2.3": 0172d14d1aa2abbd56ba4b579c4c0577
+                "2.0.2.4": ed3839551e44709a7820cec9307a23fe
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
                 "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
                 "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
+                "2.2.4": 64950eaef0d9ae5a6b72da9a8deab4bd
 
         "Autodesk Maya 2018 Update 1":
             package: 38015a170f892bf61e5275deac8dd421
+            v-ray-maya:
+                "3.60.01":
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
+                "2.0.2.3": 0172d14d1aa2abbd56ba4b579c4c0577
+                "2.0.2.4": ed3839551e44709a7820cec9307a23fe
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
                 "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
                 "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
+                "2.2.4": 64950eaef0d9ae5a6b72da9a8deab4bd
 
     "nuke":
         "8.0v1":
