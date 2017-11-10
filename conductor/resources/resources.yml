@@ -247,10 +247,6 @@ maya_dependency_attrs:
     VRayScene: #Vray Scene
         - FilePath
 
-
-
-
-
 # A dictionary of node types and their corresponing knobs(s) for
 # seeking out file dependencies (external filepaths)
 nuke_dependency_knobs:
@@ -1041,7 +1037,7 @@ package_ids:
                 "1.4.2.2": da7ec279059a5df2476761446aa88386
                 "2.0.0.0": cf181526f12c2c1ac6f3c353bdc96a0c
                 "2.0.0.1": 1c60ad43131871cb775dba8d65e9f06b
-                "2.0.1.0": c893fb431fb65cc529faa90631800fc4
+                "2.0.1": c893fb431fb65cc529faa90631800fc4
                 "2.0.2.2": a15ab7d63cfc10a02e7184b53b2c7b46
                 "2.0.2.3": 26044e372ad3ca98348a7b8c8df64e17
                 "2.0.2.4": 262c88142f1cea62fc2556b0dd5dcc0a
@@ -1092,7 +1088,7 @@ package_ids:
                 "1.4.2.2": da7ec279059a5df2476761446aa88386
                 "2.0.0.0": cf181526f12c2c1ac6f3c353bdc96a0c
                 "2.0.0.1": 1c60ad43131871cb775dba8d65e9f06b
-                "2.0.1.0": c893fb431fb65cc529faa90631800fc4
+                "2.0.1": c893fb431fb65cc529faa90631800fc4
                 "2.0.2.2": a15ab7d63cfc10a02e7184b53b2c7b46
                 "2.0.2.3": 26044e372ad3ca98348a7b8c8df64e17
                 "2.0.2.4": 262c88142f1cea62fc2556b0dd5dcc0a
@@ -1144,7 +1140,7 @@ package_ids:
                 "1.4.2.2": da7ec279059a5df2476761446aa88386
                 "2.0.0.0": cf181526f12c2c1ac6f3c353bdc96a0c
                 "2.0.0.1": 1c60ad43131871cb775dba8d65e9f06b
-                "2.0.1.0": c893fb431fb65cc529faa90631800fc4
+                "2.0.1": c893fb431fb65cc529faa90631800fc4
                 "2.0.2.2": a15ab7d63cfc10a02e7184b53b2c7b46
                 "2.0.2.3": 26044e372ad3ca98348a7b8c8df64e17
                 "2.0.2.4": 262c88142f1cea62fc2556b0dd5dcc0a
@@ -1195,7 +1191,7 @@ package_ids:
                 "1.4.2.2": da7ec279059a5df2476761446aa88386
                 "2.0.0.0": cf181526f12c2c1ac6f3c353bdc96a0c
                 "2.0.0.1": 1c60ad43131871cb775dba8d65e9f06b
-                "2.0.1.0": c893fb431fb65cc529faa90631800fc4
+                "2.0.1": c893fb431fb65cc529faa90631800fc4
                 "2.0.2.2": a15ab7d63cfc10a02e7184b53b2c7b46
                 "2.0.2.3": 26044e372ad3ca98348a7b8c8df64e17
                 "2.0.2.4": 262c88142f1cea62fc2556b0dd5dcc0a
@@ -1225,6 +1221,27 @@ package_ids:
                 "2.2.3": 1972bd11022fb2507b7e9875fb9baaf0
                 "2.2.4": ed769e61551e416ea205f7d4b232db9b
 
+        "Autodesk Maya 2018":
+            package: 460411ee5c24661ed354863bcb3d7c21
+            arnold-maya:
+                "2.0.1": 75267da8444add2de1a9ce615834e81a
+                "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
+            yeti:
+                "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
+                "2.2.1": 94e2209873200b6f9513aa5430c94699
+                "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
+                "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
+
+        "Autodesk Maya 2018 Update 1":
+            package: 38015a170f892bf61e5275deac8dd421
+            arnold-maya:
+                "2.0.1": 75267da8444add2de1a9ce615834e81a
+                "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
+            yeti:
+                "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
+                "2.2.1": 94e2209873200b6f9513aa5430c94699
+                "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
+                "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
 
     "nuke":
         "8.0v1":
