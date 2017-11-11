@@ -146,7 +146,7 @@ class HttpBatchWorker(worker.ThreadWorker):
     This worker receives a batched dict of (filename: md5) pairs and makes a
     batched http api call which returns a list of (filename: signed_upload_url)
     of files that need to be uploaded.
-    
+
     Each item in the return list is added to the out_queue.
     '''
     def __init__(self, *args, **kwargs):
