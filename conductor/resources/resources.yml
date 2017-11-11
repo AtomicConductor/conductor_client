@@ -1224,7 +1224,7 @@ package_ids:
         "Autodesk Maya 2018":
             package: 460411ee5c24661ed354863bcb3d7c21
             v-ray-maya:
-                "3.60.01":
+                "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1240,7 +1240,7 @@ package_ids:
         "Autodesk Maya 2018 Update 1":
             package: 38015a170f892bf61e5275deac8dd421
             v-ray-maya:
-                "3.60.01":
+                "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
