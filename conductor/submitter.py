@@ -333,7 +333,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Connect the "reset preferences" action
         self.addResetPreferencesMenu(self.ui_reset_preferences_menu)
 
-    def addLoggingMenu(self, menu):
+    @staticmethod
+    def addLoggingMenu(menu):
         '''
         For the given menu object, dynamically generate a action item for
         each log level (from the loggeria module).
@@ -667,7 +668,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             raise
         return response_code, response
 
-    def getLocalUpload(self):
+    @staticmethod
+    def getLocalUpload():
         '''
         Return a bool indicating whether the uploading process should occur on
         this machine or whether it should get offloaded to the uploader daemon.
@@ -1094,8 +1096,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             - others
         '''
 
-        tree_packages = self.getTreeItemPackages().values()
-
         softwares_info = self.introspectSoftwareInfo()
 
         matched_packages = []
@@ -1205,28 +1205,15 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Create a dictioary of the software packages so that they can be retried by ID
         self.software_packages = dict([(package["package_id"], package) for package in software_packages])
 
-        # Get packages that are host packages (i.e. not plugins). This is the "top" of the heirarchy
+        # Get packages that are host packages (i.e. not plugins). This is the "top" of the hierarchy
         host_packages = [package for package in self.software_packages.values() if not package["plugin_host_product"]]
-
-        # These are the names of the top leve product groups .e.g. "maya", "nuke", "katana"
-        top_level_product_items = {}
 
         # Create a tree item for every package (we'll group/parent them later)
         # TODO:(LWS) This really ought to be a more clever recursive function. This is currently hard coded for only two depth levels.
         for host_package in host_packages:
 
-            # # # TOP LEVEL PRODUCT GROUP ##
-            # product_name = host_package["product"]
-            # product_group_item = top_level_product_items.get(product_name)
-            # if not product_group_item:
-            #     product_group_item = QtWidgets.QTreeWidgetItem([product_name, ""])
-            #     product_group_item.product = product_name
-            #     top_level_product_items[product_name] = product_group_item
-            #     self.ui_software_versions_trwgt.addTopLevelItem(product_group_item)
-
             # HOST PRODUCT PACKAGE ###
             host_package_item = self.createPackageTreeWidgetItem(host_package)
-#             product_group_item.addChild(host_package_item)
             self.ui_software_versions_trwgt.addTopLevelItem(host_package_item)
 
             # # PLUGINS FOR PRODUCT ##
@@ -1305,7 +1292,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def getBestPackage(self, software_info, packages):
         return self.getMatchingPackage(software_info, packages, strict=False)
-#         maching_packages = self.getMatchingPackages(software_info, packages)
+#         maching_packages = package_utils.get_matching_packages(software_info, packages)
 #
 #         logger.debug("maching_packages (%s): %s", len(maching_packages), maching_packages)
 #
@@ -1320,7 +1307,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 #         return maching_packages[0]
 
     def getMatchingPackage(self, software_info, packages, strict=False):
-        matching_packages = self.getMatchingPackages(software_info, packages)
+        matching_packages = package_utils.get_matching_packages(software_info, packages)
         if not matching_packages:
             msg = "Could not find matching package of:\n%s" % pformat(software_info)
             logger.debug(msg)
@@ -1334,10 +1321,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         return matching_packages[0]
 
-    def getMatchingPackages(self, software_info, packages):
-        return package_utils.get_matching_packages(software_info, packages)
-
-    def createPackageTreeWidgetItem(self, package):
+    @staticmethod
+    def createPackageTreeWidgetItem(package):
         '''
         For the given software package, create a QTreeWidgetItem for it.
         with
@@ -1384,9 +1369,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         menu = QtWidgets.QMenu()
 
         # "check selected" menu item
-        action = menu.addAction("Add selected packages to Job", self._availableAddSelectedItems)
-#         action = menu.addAction("remove selected",
-#                                 lambda check=True: self._check_all_selected(check))
+        menu.addAction("Add selected packages to Job", self._availableAddSelectedItems)
         return menu
 
     def _availableAddSelectedItems(self):
@@ -1449,9 +1432,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         menu = QtWidgets.QMenu()
 
         # "check selected" menu item
-        action = menu.addAction("Remove selected packages", self._jobRemoveSelectedItems)
-#         action = menu.addAction("remove selected",
-#                                 lambda check=True: self._check_all_selected(check))
+        menu.addAction("Remove selected packages", self._jobRemoveSelectedItems)
         return menu
 
     def _jobRemoveSelectedItems(self):
@@ -1500,7 +1481,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         tree_item.package_id = package["package_id"]
         return tree_item
 
-    def _constructJobPackageStr(self, package):
+    @staticmethod
+    def _constructJobPackageStr(package):
         software_name = package["product"]
 
         # Construct the text to give the "Version" column. concatenate all version tiers together

@@ -271,7 +271,7 @@ class NukeInfo(package_utils.ProductInfo):
     @classmethod
     def get_release_version(cls):
         '''
-        Return the minor version of the product, e.g. 
+        Return the minor version of the product, e.g.
 
             "SP4"
         '''

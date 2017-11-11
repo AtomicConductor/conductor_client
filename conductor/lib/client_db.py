@@ -4,7 +4,7 @@ import logging
 import sqlite3
 import tempfile
 
-from conductor.lib import file_utils, common
+from conductor.lib import file_utils
 
 DB_FILENAME = "conductor_db"
 
@@ -86,7 +86,7 @@ class TableDB(object):
     def sql_execute(self, sql, params=None, many=False):
         '''
         Execute the given sql command
-        
+
         new_connection: bool.  If True, will instantiate a new sql connection
                         object.  This is necessary when running this method
                         across multiple threads.

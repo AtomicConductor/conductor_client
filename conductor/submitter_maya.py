@@ -1,5 +1,5 @@
 
-from conductor.lib import maya_utils, pyside_utils, file_utils, api_client, common, loggeria, package_utils
+from conductor.lib import maya_utils, pyside_utils, file_utils, common, package_utils
 from conductor import CONFIG, submitter
 from conductor.lib.lsseq import seqLister
 from maya import OpenMayaUI
