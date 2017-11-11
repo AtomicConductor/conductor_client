@@ -153,7 +153,7 @@ def get_conductor_logger():
 class MPFileHandler(logging.Handler):
     '''
     Multiprocess-safe Rotating File Handler
-    
+
     Copied from: http://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python
     '''
 

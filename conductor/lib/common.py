@@ -408,20 +408,21 @@ class Config():
         if 'auth_url' not in combined_config:
             combined_config['auth_url'] = 'https://dashboard.conductortech.com'
 
-        # self.validate_client_token(combined_config)
         self.validate_api_key(combined_config)
         recombined_config = self.add_api_settings(combined_config)
         self.config = recombined_config
         logger.debug('config is:\n%s' % self.config)
 
-    def add_api_settings(self, settings_dict):
+    @staticmethod
+    def add_api_settings(settings_dict):
         api_url = settings_dict.get("api_url", "https://api.conductortech.com")
         if os.environ.get("LOCAL"):
             api_url = "http://localhost:8081"
         settings_dict["api_url"] = api_url
         return settings_dict
 
-    def validate_api_key(self, config):
+    @staticmethod
+    def validate_api_key(config):
         """
         Load the API Key (if it exists)
         Args:
@@ -445,26 +446,6 @@ class Config():
             message = "An error occurred reading the API key"
             logger.error(message)
             raise ValueError(message)
-
-    def validate_client_token(self, config):
-        """
-        load conductor config. default to base_dir/auth/CONDUCTOR_TOKEN
-        if token_path is not specified in config
-        """
-        if 'token_path' not in config:
-            config['token_path'] = os.path.join(base_dir(), 'auth/CONDUCTOR_TOKEN')
-        token_path = config['token_path']
-        try:
-            with open(token_path, 'r') as f:
-                conductor_token = f.read().rstrip()
-        except IOError:
-            message = 'could not open client token file in %s\n' % token_path
-            message += 'either insert one there, set token_path to a valid token,\n'
-            message += 'or set the CONDUCTOR_TOKEN_PATH env variable to point to a valid token\n'
-            message += 'refusing to continue'
-            logger.error(message)
-            raise ValueError(message)
-        config['conductor_token'] = conductor_token
 
     def get_environment_config(self):
         '''
@@ -502,7 +483,8 @@ class Config():
 
         return bool_values.get(env_var.lower(), env_var)
 
-    def get_config_file_paths(self, config_file=None):
+    @staticmethod
+    def get_config_file_paths(config_file=None):
         if 'CONDUCTOR_CONFIG' in os.environ:
             # We need to take into account multiple paths
             possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(os.pathsep) if len(x) > 0]
@@ -512,7 +494,8 @@ class Config():
             return [os.path.join(os.environ['APPDATA'], 'Conductor Technologies', 'Conductor', 'config.yml')]
         return [os.path.join(base_dir(), 'config.yml')]  # This is for when CONDUCTOR_CONFIG variable is empty.
 
-    def create_default_config(self, path):
+    @staticmethod
+    def create_default_config(path):
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         with open(path, 'w') as config:
@@ -528,8 +511,8 @@ class Config():
             if os.path.isfile(config_file):
                 logger.debug('Loading config: %s', config_file)
                 try:
-                    with open(config_file, 'r') as file:
-                        config = yaml.safe_load(file)
+                    with open(config_file, 'r') as fp:
+                        config = yaml.safe_load(fp)
                     if config.__class__.__name__ != 'dict':
                         message = 'config found at %s is not in proper yaml syntax' % config_file
                         logger.error(message)

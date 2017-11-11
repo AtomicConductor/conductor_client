@@ -132,7 +132,7 @@ class MD5OutputWorker(worker.ThreadWorker):
             except Queue.Empty:
                 self.ship_batch()
                 continue
-            except Exception, e:
+            except Exception:
                 error_message = traceback.format_exc()
                 self.error_queue.put(error_message)
                 self.mark_done()
@@ -141,16 +141,14 @@ class MD5OutputWorker(worker.ThreadWorker):
             self.mark_done()
 
 
-
-
-'''
-This worker recieves a batched dict of (filename: md5) pairs and makes a
-batched http api call which returns a list of (filename: signed_upload_url)
-of files that need to be uploaded.
-
-Each item in the return list is added to the out_queue.
-'''
 class HttpBatchWorker(worker.ThreadWorker):
+    '''
+    This worker receives a batched dict of (filename: md5) pairs and makes a
+    batched http api call which returns a list of (filename: signed_upload_url)
+    of files that need to be uploaded.
+    
+    Each item in the return list is added to the out_queue.
+    '''
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.api_client = api_client.ApiClient()
@@ -281,12 +279,7 @@ class UploadWorker(worker.ThreadWorker):
                                             use_api_key=True)
 
 
-
-
-
-
-
-class Uploader():
+class Uploader(object):
 
     sleep_time = 10
 
@@ -351,12 +344,12 @@ class Uploader():
                         'bytes_transfered': bytes_uploaded,
                     }
                     logger.debug('reporting status as: %s', status_dict)
-                    resp_str, resp_code = self.api_client.make_request(
+                    self.api_client.make_request(
                         '/uploads/%s/update' % self.upload_id,
                         data=json.dumps(status_dict),
                         verb='POST', use_api_key=True)
 
-                except Exception, e:
+                except Exception:
                     logger.error('could not report status:')
                     logger.error(traceback.print_exc())
                     logger.error(traceback.format_exc())
@@ -369,7 +362,8 @@ class Uploader():
         thd.daemon = True
         thd.start()
 
-    def estimated_time_remaining(self, elapsed_time, percent_complete):
+    @staticmethod
+    def estimated_time_remaining(elapsed_time, percent_complete):
         '''
         This method estimates the time that is remaining, given the elapsed time
         and percent complete.
@@ -390,9 +384,11 @@ class Uploader():
         estimated_time = (elapsed_time - elapsed_time * percent_complete) / percent_complete
         return estimated_time
 
-    def convert_byte_count_to_string(self, byte_count, transfer_rate=False):
-        apend_string = ' '
-
+    @staticmethod
+    def convert_byte_count_to_string(byte_count, transfer_rate=False):
+        '''
+        Converts a byte count to a string denoting its size in GB/MB/KB
+        '''
         if byte_count > 2 ** 30:
             return str(round(byte_count / float(2 ** 30), 1)) + ' GB'
         elif byte_count > 2 ** 20:
@@ -402,8 +398,8 @@ class Uploader():
         else:
             return str(byte_count) + ' B'
 
-
-    def convert_time_to_string(self, time_remaining):
+    @staticmethod
+    def convert_time_to_string(time_remaining):
         if time_remaining > 3600:
             return str(round(time_remaining / float(3600) , 1)) + ' hours'
         elif time_remaining > 60:
@@ -507,7 +503,7 @@ class Uploader():
                 'status': 'server_pending',
                 'upload_files': upload_files}
 
-        resp_str, resp_code = self.api_client.make_request('/uploads/%s/finish' % upload_id,
+        self.api_client.make_request('/uploads/%s/finish' % upload_id,
                                                            data=json.dumps(data),
                                                            verb='POST', use_api_key=True)
         return True
@@ -516,10 +512,9 @@ class Uploader():
         logger.error('failing upload due to: \n%s' % error_message)
 
         # report error_message to the app
-        resp_str, resp_code = self.api_client.make_request(
-            '/uploads/%s/fail' % upload_id,
-            data=error_message,
-            verb='POST', use_api_key=True)
+        self.api_client.make_request('/uploads/%s/fail' % upload_id,
+                                                        data=error_message,
+                                                        verb='POST', use_api_key=True)
 
         return True
 
@@ -619,7 +614,7 @@ class Uploader():
                 try:
                     json_data = json.loads(resp_str)
                     upload = json_data.get("data", {})
-                except ValueError, e:
+                except ValueError:
                     logger.error('response was not valid json: %s', resp_str)
                     time.sleep(self.sleep_time)
                     continue

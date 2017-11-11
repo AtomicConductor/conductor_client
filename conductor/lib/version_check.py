@@ -15,8 +15,9 @@ class VersionCheck(object):
         url = self._installed_release_info['repository']['url']
         r = requests.get(url+'/releases/latest')
         return r.json()
-    
-    def _get_installed_release_info(self):
+
+    @staticmethod
+    def _get_installed_release_info():
         """
         Return dictionary describing the installed release of the package.
         """

@@ -96,7 +96,7 @@ def wait_message(title, message):
             dialog.show()
             # TODO: This stupid for-loop with a print statement is hack to force a redraw/update to the dialog. Otherwise it's blank.
             # Tried a million things.  This is the only one that works..most of the time.
-            for i in range(5):
+            for _ in range(5):
                 print "",
                 QtWidgets.QApplication.processEvents()
             try:
