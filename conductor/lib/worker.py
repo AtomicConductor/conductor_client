@@ -28,11 +28,12 @@ class Reporter():
             self.thread.join()
             logger.debug('reporter_thread exited')
 
-    def working(self):
+    @staticmethod
+    def working():
         return WORKING
 
     def target(self):
-        raise 'not implmented'
+        raise NotImplementedError
 
     def start(self):
         if self.thread:
@@ -83,15 +84,16 @@ class ThreadWorker(object):
 
     def do_work(self, job):
         '''
-        This ineeds to be implmented for each worker type. The work task from
+        This needs to be implemented for each worker type. The work task from
         the in_queue is passed as the job argument.
-    
+
         Returns the result to be passed to the out_queue
         '''
 
         raise NotImplementedError
 
-    def PoisonPill(self):
+    @staticmethod
+    def PoisonPill():
         return 'PoisonPill'
 
     def check_for_poison_pill(self, job):
@@ -450,7 +452,7 @@ class JobManager():
             worker = worker_class(*args, **kwargs)
 
             logger.debug('starting worker %s', worker_class.__name__)
-            worker_threads = worker.start()
+            worker.start()
             self.workers.append(worker)
             last_queue = next_queue
 
@@ -470,7 +472,7 @@ class JobManager():
         #     worker_class_name = self.workers[index].__class__.__name__
         #     logger.debug('waiting for %s workers to finish', worker_class_name)
         #     queue.join()
-        for index, worker in enumerate(self.workers):
+        for _, worker in enumerate(self.workers):
             worker_class_name = worker.__class__.__name__
             logger.debug('waiting for %s workers to finish', worker_class_name)
             worker.join()

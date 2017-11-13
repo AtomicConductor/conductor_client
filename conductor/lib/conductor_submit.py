@@ -481,7 +481,8 @@ class Submit(object):
         # Process the raw filepaths (to account for directories, image sequences, formatting, etc)
         return file_utils.process_upload_filepaths(raw_filepaths)
 
-    def parse_upload_file(self, upload_filepath):
+    @staticmethod
+    def parse_upload_file(upload_filepath):
         '''
         Parse the given filepath for paths that are separated by commas, returning
         a list of these paths
