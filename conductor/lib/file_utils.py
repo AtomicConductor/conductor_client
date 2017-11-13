@@ -431,12 +431,12 @@ def get_tx_paths(filepaths, existing_only=False):
 
 def get_tx_path(filepath, existing_only=False):
     '''
-    For the given filepath, consruct a parallel *.tx filepath residing in the same
+    For the given filepath, construct a parallel *.tx filepath residing in the same
     directory (same name, different extension).
     If existing_only is True, only return the tx filepath if it exists on disk,
     otherwise return an empty string.
     '''
-    filepath_base, ext = os.path.splitext(filepath)
+    filepath_base, _ = os.path.splitext(filepath)
     tx_filepath = filepath_base + ".tx"
     if existing_only and not os.path.isfile(tx_filepath):
         return ""

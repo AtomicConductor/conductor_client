@@ -23,7 +23,7 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             else:
                 raise
-            
+    
         with open(os.path.join(self.config_dir,"CONDUCTOR_TOKEN"),'w') as token_file:
             token_file.write(config['token'])
         

@@ -42,8 +42,8 @@ class Updater(object):
         self.update_tools(upstream_revision)
         logging.info('successfully updated client tools to ' + upstream_revision)
 
-
-    def enter_tools_dir(self):
+    @staticmethod
+    def enter_tools_dir():
         base_dir = os.path.dirname(os.path.realpath(__file__))
         logging.debug("changing into dir: " + base_dir)
         os.chdir(base_dir)
@@ -72,7 +72,8 @@ class Updater(object):
         logging.debug("local_rev is: '%s'" % local_rev)
         return local_rev
 
-    def get_upstream_revision(self):
+    @staticmethod
+    def get_upstream_revision():
         client_version_endpoint = os.path.join(CONFIG['url'],'clientref')
         try:
             upstream_response = urllib2.urlopen(client_version_endpoint).read()
@@ -86,7 +87,7 @@ class Updater(object):
         except KeyError:
             logging.error("response did not have key 'ref':\n\t%s" % json_response)
             exit(1)
-        except Exception, e:
+        except Exception:
             logging.error('could not get client version from app at:')
             logging.error("\t" + client_version_endpoint)
             logging.error(traceback.format_exc())
@@ -106,7 +107,7 @@ class Updater(object):
         return True
 
     def ensure_clean_working_tree(self):
-        status, stdout, stderr = self.run('git status --porcelain')
+        _, stdout, stderr = self.run('git status --porcelain')
         if stdout:
             logging.error('working tree is dirty:')
             logging.error(stdout)
@@ -118,7 +119,7 @@ class Updater(object):
 
     def ensure_correct_branch(self,local_branch):
         # ensure branch is correct
-        status, stdout, stderr = self.run('git rev-parse --abbrev-ref HEAD')
+        _, stdout, _ = self.run('git rev-parse --abbrev-ref HEAD')
         if stdout.strip() != local_branch:
             logging.error("current branch is set to %s, not %s" % (stdout.strip(), local_branch))
             logging.error('exiting')
@@ -135,7 +136,8 @@ class Updater(object):
             exit(1)
 
     # TODO: use common run func
-    def run(self,cmd):
+    @staticmethod
+    def run(cmd):
         logging.debug("about to run command: " + cmd)
         command = subprocess.Popen(
             cmd,

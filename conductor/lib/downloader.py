@@ -642,7 +642,8 @@ class DownloadWorker(multiprocessing.Process):
             if self._run_state.value == Downloader.STATE_RUNNING:
                 time.sleep(1)
 
-    def _adapt_payload(self, payload):
+    @staticmethod
+    def _adapt_payload(payload):
         '''
         change the contents of the payload to meet client expectations.
         '''

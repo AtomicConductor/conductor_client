@@ -422,7 +422,7 @@ def get_render_layers_info():
         layer_info = {"layer_name": render_layer}
         try:
             cmds.editRenderLayerGlobals(currentRenderLayer=render_layer)
-        except RuntimeError, e:
+        except RuntimeError:
             continue
         renderable_cameras = [get_transform(camera) for camera in cameras if cmds.getAttr("%s.renderable" % camera)]
         assert renderable_cameras, 'No Renderable camera found for render layer "%s"' % render_layer
@@ -521,7 +521,7 @@ def scrape_yeti_graph(yeti_node):
     For the given pgYetiMaya node, scrape all of it's external file dependencies.
 
     Note that this node not only contains typical string attributes which may
-    contain filepaths, but it also is a "gateway" into yeti's own internal dependency 
+    contain filepaths, but it also is a "gateway" into yeti's own internal dependency
     node system.... which must be queried for file dependencies as well.
 
     To further complicate things, these nodes allow paths to be defined relatively

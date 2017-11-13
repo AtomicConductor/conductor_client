@@ -22,7 +22,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-type', mimetypes.guess_type(path)[0])
         self.end_headers()
 
-    def _write_credentials(self, credentials):
+    @staticmethod
+    def _write_credentials(credentials):
         print ("Writing credentials to %s" % credentials_file)
         if not os.path.exists(os.path.dirname(credentials_file)):
             print("Creating creds directory %s" % os.path.dirname(credentials_file))
