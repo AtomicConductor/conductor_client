@@ -322,6 +322,9 @@ package_ids:
                 "2.0.0.0": 7a7f842ec99a5498b1dbd57f42888ddb
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
+                "2.0.2.2": b207880c13ded2258d43b2982f075766
+                "2.0.2.3": eac8ce5ae43407a1544df73dc2ae5c20
+                "2.0.2.4": a21a3832da741b8344077a3d565550ac
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -388,6 +391,9 @@ package_ids:
                 "2.0.0.0": 7a7f842ec99a5498b1dbd57f42888ddb
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
+                "2.0.2.2": b207880c13ded2258d43b2982f075766
+                "2.0.2.3": eac8ce5ae43407a1544df73dc2ae5c20
+                "2.0.2.4": a21a3832da741b8344077a3d565550ac
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -453,6 +459,9 @@ package_ids:
                 "2.0.0.0": 7a7f842ec99a5498b1dbd57f42888ddb
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
+                "2.0.2.2": b207880c13ded2258d43b2982f075766
+                "2.0.2.3": eac8ce5ae43407a1544df73dc2ae5c20
+                "2.0.2.4": a21a3832da741b8344077a3d565550ac
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -519,6 +528,9 @@ package_ids:
                 "2.0.0.0": 7a7f842ec99a5498b1dbd57f42888ddb
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
+                "2.0.2.2": b207880c13ded2258d43b2982f075766
+                "2.0.2.3": eac8ce5ae43407a1544df73dc2ae5c20
+                "2.0.2.4": a21a3832da741b8344077a3d565550ac
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -585,6 +597,9 @@ package_ids:
                 "2.0.0.0": 7a7f842ec99a5498b1dbd57f42888ddb
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
+                "2.0.2.2": b207880c13ded2258d43b2982f075766
+                "2.0.2.3": eac8ce5ae43407a1544df73dc2ae5c20
+                "2.0.2.4": a21a3832da741b8344077a3d565550ac
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -651,6 +666,9 @@ package_ids:
                 "2.0.0.0": 7a7f842ec99a5498b1dbd57f42888ddb
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
+                "2.0.2.2": b207880c13ded2258d43b2982f075766
+                "2.0.2.3": eac8ce5ae43407a1544df73dc2ae5c20
+                "2.0.2.4": a21a3832da741b8344077a3d565550ac
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -717,6 +735,9 @@ package_ids:
                 "2.0.0.0": 7a7f842ec99a5498b1dbd57f42888ddb
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
+                "2.0.2.2": b207880c13ded2258d43b2982f075766
+                "2.0.2.3": eac8ce5ae43407a1544df73dc2ae5c20
+                "2.0.2.4": a21a3832da741b8344077a3d565550ac
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -783,6 +804,9 @@ package_ids:
                 "2.0.0.0": 7a7f842ec99a5498b1dbd57f42888ddb
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
+                "2.0.2.2": b207880c13ded2258d43b2982f075766
+                "2.0.2.3": eac8ce5ae43407a1544df73dc2ae5c20
+                "2.0.2.4": a21a3832da741b8344077a3d565550ac
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -849,6 +873,9 @@ package_ids:
                 "2.0.0.0": 7a7f842ec99a5498b1dbd57f42888ddb
                 "2.0.0.1": d7b03ce47d776e7c0aaa81605057f316
                 "2.0.1.0": bc3e8efee88223db05e4c84a69cbbed7
+                "2.0.2.2": b207880c13ded2258d43b2982f075766
+                "2.0.2.3": eac8ce5ae43407a1544df73dc2ae5c20
+                "2.0.2.4": a21a3832da741b8344077a3d565550ac
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -898,6 +925,9 @@ package_ids:
                 "1.4.2.2": 7cab2249b2964c31fcbbb29bf7c1c451
                 "2.0.0.0": e4e9283b3e7dd83e2e96e1b4a5344c2c
                 "2.0.0.1": 69a42a9410001b8a1535a27bcd1b9ded
+                "2.0.2.2": edda58b8f7f4f407204ab4380b6a8b92
+                "2.0.2.3": 310224896895ed8b5760feaf33dabd9c
+                "2.0.2.4": 55c37ce5db55be046461e16d05f67e8d
             renderman-maya:
                 "21.3": c691fab2d2770adc01d614e16b8d6e64
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
@@ -944,6 +974,9 @@ package_ids:
                 "1.4.2.2": 7cab2249b2964c31fcbbb29bf7c1c451
                 "2.0.0.0": e4e9283b3e7dd83e2e96e1b4a5344c2c
                 "2.0.0.1": 69a42a9410001b8a1535a27bcd1b9ded
+                "2.0.2.2": edda58b8f7f4f407204ab4380b6a8b92
+                "2.0.2.3": 310224896895ed8b5760feaf33dabd9c
+                "2.0.2.4": 55c37ce5db55be046461e16d05f67e8d
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -992,6 +1025,9 @@ package_ids:
                 "1.4.2.2": 7cab2249b2964c31fcbbb29bf7c1c451
                 "2.0.0.0": e4e9283b3e7dd83e2e96e1b4a5344c2c
                 "2.0.0.1": 69a42a9410001b8a1535a27bcd1b9ded
+                "2.0.2.2": edda58b8f7f4f407204ab4380b6a8b92
+                "2.0.2.3": 310224896895ed8b5760feaf33dabd9c
+                "2.0.2.4": 55c37ce5db55be046461e16d05f67e8d
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
