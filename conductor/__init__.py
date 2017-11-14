@@ -11,12 +11,15 @@ from conductor.lib import common, loggeria, version_check, wizard
 #Do not modify the following line.
 #__version__="0.0.0"
 
+def loadConfig():
+    '''
+    Create Config object and return its combined config
+    data object
+    '''
+    return common.Config().config
+        
 # Read the config yaml file upon module import
-try:
-    CONFIG = common.Config().config
-except ValueError:
-    # wizard.run()
-    CONFIG = common.Config().config
+CONFIG = loadConfig()
 
 # IF there is log level specified in config (which by default there should be), then set it for conductor's logger
 log_level = CONFIG.get("log_level")

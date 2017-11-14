@@ -25,7 +25,7 @@ global proc shelf_Conductor () {
         -style "iconOnly" 
         -marginWidth 1
         -marginHeight 1
-        -command "from conductor import submitter_maya\nsubmitter_maya.MayaConductorSubmitter.runUi()" 
+        -command "import conductor\nconductor.loadConfig()\nfrom conductor import submitter_maya\nsubmitter_maya.MayaConductorSubmitter.runUi()" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1
