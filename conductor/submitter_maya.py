@@ -29,7 +29,6 @@ except ImportError, e:
 # 1. When the Upload Only argument is sent to the conductor Submit object as True, does it ignore the
 #    filepath and render layer arguments?  Or should those arguments not be given to the Submit object.
 # 2. Cull out unused maya dependencies.  Should we exclude materials that aren't assigned, etc?
-# 3. Validate the maya file has been saved
 
 logger = logging.getLogger(__name__)
 
@@ -281,6 +280,21 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             plugins_info.append(plugin_info)
         return plugins_info
 
+
+    def checkSaveBeforeSubmission(self):
+        '''
+        Check if scene has unsaved changes and prompt user if they'd like to
+        save their Maya scene before continuing
+        '''
+        file_unsaved = maya_utils.get_maya_save_state()
+        if file_unsaved:
+            title = "Unsaved Maya Scene Data"
+            message = "Save Maya file before submitting?"
+            answer, _ = pyside_utils.launch_yes_no_dialog(title, message, show_not_again_checkbox=False, parent=self)
+            return answer
+        return True
+                
+
     def runPreSubmission(self):
         '''
         Override the base class (which is an empty stub method) so that a
@@ -294,7 +308,14 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         again (after validation succeeds), we also pass the depenencies along
         in the returned dictionary (so that we don't need to collect them again).
         '''
-
+        
+        # Check if scene has unsaved changes and ask user if they'd like to
+        # save their scene before continuing with submission
+        if not self.checkSaveBeforeSubmission():
+            raise common.UserCanceled()
+        else:
+            maya_utils.save_current_maya_scene()
+            
         # TODO(lws): This try/except should be moved up to the parent-class so
         # that there's a clear control flow.  This work has actually been done in
         # another branch...that will hopefully go out one day.

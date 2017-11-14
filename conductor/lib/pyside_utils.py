@@ -163,7 +163,7 @@ def launch_error_box(title, message, parent=None):
     return dialog.exec_()
 
 
-def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=None):
+def launch_yes_no_dialog(title, message, show_not_again_checkbox=True, parent=None):
     '''
     Launch a dialog box that has "yes" and "no" buttons.
     Optionally display a checkbox that asks whether to show this dialog box again.
@@ -198,7 +198,7 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
     # Create the buttonbox with "yes" and "no buttons"
     dialog.buttonBox = QtWidgets.QDialogButtonBox(dialog.widget)
     dialog.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-    dialog.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes)
+    dialog.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Yes)
     dialog.horizontalLayout.addWidget(dialog.buttonBox)
     # Connect the buttonbox signals
     dialog.buttonBox.accepted.connect(dialog.accept)
@@ -206,7 +206,7 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
     QtCore.QMetaObject.connectSlotsByName(dialog)
 
     # Hide the checkbox if not desired
-    if not show_not_agin_checkbox:
+    if not show_not_again_checkbox:
         dialog.checkBox.hide()
 
     # Resize the dialog box to scale to its contents

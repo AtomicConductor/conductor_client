@@ -27,6 +27,12 @@ logger = logging.getLogger(__name__)
 SIGINT_EXIT = False
 
 
+class UserCanceled(Exception):
+    '''
+    Custom Exception to indicate that the user cancelled their action
+    '''
+
+
 def signal_handler(sig_number, stack_frame):
     logger.debug('in signal_handler. setting common.SIGINT_EXIT to True')
     global SIGINT_EXIT

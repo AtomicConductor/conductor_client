@@ -388,7 +388,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         # Prompt the user
         yes, _ = pyside_utils.launch_yes_no_dialog(title, message,
-                                                   show_not_agin_checkbox=False,
+                                                   show_not_again_checkbox=False,
                                                    parent=self)
         # If the user has confirmed deletion
         if yes:
@@ -726,13 +726,14 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             if not self.validateJobPackages():
                 return
             data = self.runPreSubmission()
-            response_code, response = self.runConductorSubmission(data)
-            self.runPostSubmission(response_code)
+            if data:
+                response_code, response = self.runConductorSubmission(data)
+                self.runPostSubmission(response_code)
+    
+                # Launch a dialog box what diesplays the results of the job submission
+                self.launch_result_dialog(response_code, response)
 
-            # Launch a dialog box what diesplays the results of the job submission
-            self.launch_result_dialog(response_code, response)
-
-        except UserCanceled:
+        except common.UserCanceled:
             logger.info("Canceled by user")
 
     def runPreSubmission(self):
@@ -954,7 +955,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
             # if the user cancelled
             if not ok:
-                raise UserCanceled()
+                raise common.UserCanceled()
 
             # Record the scout frames specified to the user prefs
             self.prefs.setFileScoutFrames(source_filepath, scout_frames)
@@ -1875,12 +1876,6 @@ class TaskFramesGenerator(object):
             else:
                 ranges.append(tuple(group_))
         return ranges
-
-
-class UserCanceled(Exception):
-    '''
-    Custom Exception to indicate that the user cancelled their action
-    '''
 
 
 if __name__ == "__main__":
