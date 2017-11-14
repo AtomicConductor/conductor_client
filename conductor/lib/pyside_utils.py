@@ -131,7 +131,6 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
         text_label.setTextInteractionFlags(text_label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
         text_label.setTextFormat(QtCore.Qt.RichText)
         text_label.setOpenExternalLinks(True)
-    dialog.adjustSize()
     return dialog.exec_()
 
 
@@ -157,7 +156,7 @@ def launch_error_box(title, message, parent=None):
     # find the checkbox and hide it (it serves no purpose for us)
     checkbox = dialog.findChild(QtWidgets.QCheckBox)
     checkbox.hide()
-    
+
     # set the minimum width/height of the QErrorMessage
     dialog.setStyleSheet("QErrorMessage{min-width: 560px; min-height: 320px;}");
 
