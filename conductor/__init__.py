@@ -20,7 +20,7 @@ def loadConfig():
     '''
     global CONFIG
     CONFIG = common.Config().config
-        
+
 # Read the config yaml file upon module import
 loadConfig()
 
