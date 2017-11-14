@@ -111,7 +111,7 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
     """
     Launches a very basic message dialog box with the given title and message.
 
-    is_richtext: bool. If True, willl set the given as RichText.  This will also
+    is_richtext: bool. If True, will set the given as RichText.  This will also
                  allow the text to support hyperlink behavior.
     """
 
@@ -131,7 +131,7 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
         text_label.setTextInteractionFlags(text_label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
         text_label.setTextFormat(QtCore.Qt.RichText)
         text_label.setOpenExternalLinks(True)
-
+    dialog.adjustSize()
     return dialog.exec_()
 
 
@@ -157,9 +157,10 @@ def launch_error_box(title, message, parent=None):
     # find the checkbox and hide it (it serves no purpose for us)
     checkbox = dialog.findChild(QtWidgets.QCheckBox)
     checkbox.hide()
+    
+    # set the minimum width/height of the QErrorMessage
+    dialog.setStyleSheet("QErrorMessage{min-width: 560px; min-height: 320px;}");
 
-    # expand the dailog box a little larger if needed
-    dialog.adjustSize()
     return dialog.exec_()
 
 
