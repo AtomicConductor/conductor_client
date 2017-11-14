@@ -103,6 +103,21 @@ def get_plugin_versions():
     return plugin_versions
 
 
+def save_current_maya_scene():
+    '''
+    Saves current Maya scene using standard save command
+    '''
+    cmds.SaveScene()
+
+
+def get_maya_save_state():
+    '''
+    Returns True if the current Maya scene has unsaved changes
+    '''
+    save_state = cmds.file(q=True, modified=True)
+    return save_state
+
+
 def get_maya_scene_filepath():
     filepath = cmds.file(q=True, sceneName=True)
     if not filepath or not os.path.isfile(filepath):
