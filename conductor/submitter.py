@@ -18,7 +18,7 @@ except ImportError, e:
 
 from conductor import CONFIG
 
-from conductor.lib import conductor_submit, pyside_utils, common, api_client, loggeria, package_utils
+from conductor.lib import api_client, common, conductor_submit, exceptions, loggeria, package_utils, pyside_utils
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -733,7 +733,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                 # Launch a dialog box what diesplays the results of the job submission
                 self.launch_result_dialog(response_code, response)
 
-        except common.UserCanceled:
+        except exceptions.UserCanceledError:
             logger.info("Canceled by user")
 
     def runPreSubmission(self):
@@ -955,7 +955,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
             # if the user cancelled
             if not ok:
-                raise common.UserCanceled()
+                raise exceptions.UserCanceledError()
 
             # Record the scout frames specified to the user prefs
             self.prefs.setFileScoutFrames(source_filepath, scout_frames)

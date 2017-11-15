@@ -107,6 +107,7 @@ def save_current_maya_scene():
     '''
     Saves current Maya scene using standard save command
     '''
+    logger.debug("Saving Maya scene...")
     cmds.SaveScene()
 
 
