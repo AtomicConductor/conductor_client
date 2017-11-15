@@ -293,7 +293,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             answer, _ = pyside_utils.launch_yes_no_dialog(title, message, show_not_again_checkbox=False, parent=self)
             return answer
         return True
-                
+
 
     def runPreSubmission(self):
         '''
