@@ -315,7 +315,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             raise common.UserCanceled()
         else:
             maya_utils.save_current_maya_scene()
-            
+
         # TODO(lws): This try/except should be moved up to the parent-class so
         # that there's a clear control flow.  This work has actually been done in
         # another branch...that will hopefully go out one day.
