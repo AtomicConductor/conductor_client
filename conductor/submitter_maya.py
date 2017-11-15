@@ -308,7 +308,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         again (after validation succeeds), we also pass the depenencies along
         in the returned dictionary (so that we don't need to collect them again).
         '''
-        
+
         # Check if scene has unsaved changes and ask user if they'd like to
         # save their scene before continuing with submission
         if not self.checkSaveBeforeSubmission():
