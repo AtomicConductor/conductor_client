@@ -729,7 +729,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             if data:
                 response_code, response = self.runConductorSubmission(data)
                 self.runPostSubmission(response_code)
-    
+
                 # Launch a dialog box what diesplays the results of the job submission
                 self.launch_result_dialog(response_code, response)
 
