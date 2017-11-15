@@ -1,5 +1,5 @@
 
-from conductor.lib import maya_utils, pyside_utils, file_utils, common, package_utils
+from conductor.lib import maya_utils, pyside_utils, file_utils, common, exceptions, package_utils
 from conductor import CONFIG, submitter
 from conductor.lib.lsseq import seqLister
 from maya import OpenMayaUI
@@ -312,7 +312,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Check if scene has unsaved changes and ask user if they'd like to
         # save their scene before continuing with submission
         if not self.checkSaveBeforeSubmission():
-            raise common.UserCanceled()
+            raise exceptions.UserCanceledError()
         else:
             maya_utils.save_current_maya_scene()
 
