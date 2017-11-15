@@ -389,9 +389,9 @@ class Config():
                       'local_upload': True,
                       'md5_caching': True,
                       'log_level': "INFO"}
-    default_config_locations = {'linux2': os.path.join(os.environ['HOME'], '.conductor', 'config.yml'),
-                                'win32': os.path.join(os.environ['APPDATA'], 'Conductor Technologies', 'Conductor', 'config.yml'),
-                                'darwin': os.path.join(os.environ['HOME'], 'Application Support/Conductor', 'config.yml')}
+    default_config_locations = {'linux2': os.path.join(os.environ.get('HOME'), '.conductor', 'config.yml'),
+                                'win32': os.path.join(os.environ.get('APPDATA'), 'Conductor Technologies', 'Conductor', 'config.yml'),
+                                'darwin': os.path.join(os.environ.get('HOME'), 'Application Support/Conductor', 'config.yml')}
 
     def __init__(self):
         logger.debug('base dir is %s' % base_dir())
@@ -493,7 +493,7 @@ class Config():
             if len(possible_paths) > 0:
                 return possible_paths
         # This is for when CONDUCTOR_CONFIG variable is empty.
-        return [self.default_config_locations[sys.platform()]]
+        return [self.default_config_locations[sys.platform]]
 
     @staticmethod
     def create_default_config(path):
