@@ -111,7 +111,7 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
     """
     Launches a very basic message dialog box with the given title and message.
 
-    is_richtext: bool. If True, willl set the given as RichText.  This will also
+    is_richtext: bool. If True, will set the given as RichText.  This will also
                  allow the text to support hyperlink behavior.
     """
 
@@ -131,7 +131,6 @@ def launch_message_box(title, message, is_richtext=False, parent=None):
         text_label.setTextInteractionFlags(text_label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
         text_label.setTextFormat(QtCore.Qt.RichText)
         text_label.setOpenExternalLinks(True)
-
     return dialog.exec_()
 
 
@@ -158,12 +157,13 @@ def launch_error_box(title, message, parent=None):
     checkbox = dialog.findChild(QtWidgets.QCheckBox)
     checkbox.hide()
 
-    # expand the dailog box a little larger if needed
-    dialog.adjustSize()
+    # set the minimum width/height of the QErrorMessage
+    dialog.setStyleSheet("QErrorMessage{min-width: 560px; min-height: 320px;}");
+
     return dialog.exec_()
 
 
-def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=None):
+def launch_yes_no_dialog(title, message, show_not_again_checkbox=True, parent=None):
     '''
     Launch a dialog box that has "yes" and "no" buttons.
     Optionally display a checkbox that asks whether to show this dialog box again.
@@ -198,7 +198,7 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
     # Create the buttonbox with "yes" and "no buttons"
     dialog.buttonBox = QtWidgets.QDialogButtonBox(dialog.widget)
     dialog.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-    dialog.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.No | QtWidgets.QDialogButtonBox.Yes)
+    dialog.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Yes)
     dialog.horizontalLayout.addWidget(dialog.buttonBox)
     # Connect the buttonbox signals
     dialog.buttonBox.accepted.connect(dialog.accept)
@@ -206,7 +206,7 @@ def launch_yes_no_dialog(title, message, show_not_agin_checkbox=True, parent=Non
     QtCore.QMetaObject.connectSlotsByName(dialog)
 
     # Hide the checkbox if not desired
-    if not show_not_agin_checkbox:
+    if not show_not_again_checkbox:
         dialog.checkBox.hide()
 
     # Resize the dialog box to scale to its contents
