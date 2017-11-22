@@ -57,7 +57,6 @@ class UserCanceledError(Exception):
     '''
     Custom Exception to indicate that the user cancelled their action
     '''
-    
 
 
 
