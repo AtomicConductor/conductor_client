@@ -5,15 +5,16 @@ This module handles all custom exceptions for the Conductor Client Tools
 All exceptions should at minimum inherit off of the Exception base class
 '''
 
-class BackendError(Exception):
-    '''
-    Something happened on the backend
-    '''
-    
 class BackendDown(Exception):
     '''
     Backend is down
     '''
+
+class BackendError(Exception):
+    '''
+    Something happened on the backend
+    '''
+
 
 class DownloaderExit(SystemExit):
     '''
