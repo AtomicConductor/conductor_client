@@ -467,12 +467,8 @@ class UploaderWorker(multiprocessing.Process):
             uploads = Backend.next(
                 self.account, location=self.location,
                 project=self.project) or []
-        except exceptions.BackendDown as err:
-            # print err
-            raise err
-        except exceptions.BackendError as err:
-            # print err
-            raise err
+        except (exceptions.BackendDown, exceptions.BackendError):
+            raise
         else:
             if uploads:
                 # Return the one download in the list
