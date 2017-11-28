@@ -15,7 +15,6 @@ class BackendError(Exception):
     Something happened on the backend
     '''
 
-
 class DownloaderExit(SystemExit):
     '''
     Custom exception to handle (and raise) when the DownloadWorker processes
@@ -47,7 +46,6 @@ class UploaderMissingFile(Exception):
     A file is missing
     '''
 
-
 class UploaderFileModified(Exception):
     '''
     Something wrong with a local file
@@ -57,10 +55,3 @@ class UserCanceledError(Exception):
     '''
     Custom Exception to indicate that the user cancelled their action
     '''
-
-
-
-
-
-
-
