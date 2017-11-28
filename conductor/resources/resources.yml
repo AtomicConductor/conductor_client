@@ -333,6 +333,7 @@ package_ids:
                 "21.3": 84af004297b442860ab1341a68361c8c
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
+                "21.6": a3a3e5e98293b1fcd87432296f158cb4
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -404,6 +405,7 @@ package_ids:
                 "21.3": 84af004297b442860ab1341a68361c8c
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
+                "21.6": a3a3e5e98293b1fcd87432296f158cb4
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -474,6 +476,7 @@ package_ids:
                 "21.3": 84af004297b442860ab1341a68361c8c
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
+                "21.6": a3a3e5e98293b1fcd87432296f158cb4
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -545,6 +548,7 @@ package_ids:
                 "21.3": 84af004297b442860ab1341a68361c8c
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
+                "21.6": a3a3e5e98293b1fcd87432296f158cb4
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -616,6 +620,7 @@ package_ids:
                 "21.3": 84af004297b442860ab1341a68361c8c
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
+                "21.6": a3a3e5e98293b1fcd87432296f158cb4
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -687,6 +692,7 @@ package_ids:
                 "21.3": 84af004297b442860ab1341a68361c8c
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
+                "21.6": a3a3e5e98293b1fcd87432296f158cb4
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -758,6 +764,7 @@ package_ids:
                 "21.3": 84af004297b442860ab1341a68361c8c
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
+                "21.6": a3a3e5e98293b1fcd87432296f158cb4
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -829,6 +836,7 @@ package_ids:
                 "21.3": 84af004297b442860ab1341a68361c8c
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
+                "21.6": a3a3e5e98293b1fcd87432296f158cb4
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -900,6 +908,7 @@ package_ids:
                 "21.3": 84af004297b442860ab1341a68361c8c
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
+                "21.6": a3a3e5e98293b1fcd87432296f158cb4
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -952,6 +961,7 @@ package_ids:
                 "21.3": c691fab2d2770adc01d614e16b8d6e64
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
+                "21.6": 04116397b91f786baa0852ee6a33484a
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1005,6 +1015,7 @@ package_ids:
                 "21.3": c691fab2d2770adc01d614e16b8d6e64
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
+                "21.6": 04116397b91f786baa0852ee6a33484a
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1058,6 +1069,7 @@ package_ids:
                 "21.3": c691fab2d2770adc01d614e16b8d6e64
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
+                "21.6": 04116397b91f786baa0852ee6a33484a
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1107,6 +1119,7 @@ package_ids:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
+                "21.6": 5c058e15fd8be1105e18db9687444898
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1160,6 +1173,7 @@ package_ids:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
+                "21.6": 5c058e15fd8be1105e18db9687444898
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1214,6 +1228,7 @@ package_ids:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
+                "21.6": 5c058e15fd8be1105e18db9687444898
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1267,6 +1282,7 @@ package_ids:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
+                "21.6": 5c058e15fd8be1105e18db9687444898
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1300,6 +1316,8 @@ package_ids:
                 "2.0.2.4": ed3839551e44709a7820cec9307a23fe
                 "2.1.0": cbe8d96aea67a3f39d17918f69312432
                 "2.1.0.1": 95a2241e0efdba008eec42deef13c24d
+            renderman-maya:
+                "21.6": 914263d130a20364759697ba1aef15f1
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1318,6 +1336,8 @@ package_ids:
                 "2.0.2.4": ed3839551e44709a7820cec9307a23fe
                 "2.1.0": cbe8d96aea67a3f39d17918f69312432
                 "2.1.0.1": 95a2241e0efdba008eec42deef13c24d
+            renderman-maya:
+                "21.6": 914263d130a20364759697ba1aef15f1
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
