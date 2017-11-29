@@ -210,7 +210,7 @@ class Downloader(object):
     STATE_STOPPING = "stopping"
 
     # the maximum number of dl result data to maintain (for history purposes, etc)
-    RESULTS_MAX = 100
+    RESULTS_MAX = 256
 
     def __init__(self, args):
         self._start_time = None

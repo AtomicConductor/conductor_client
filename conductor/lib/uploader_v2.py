@@ -60,7 +60,7 @@ class Uploader(object):
     STATE_RUNNING = "running"
     STATE_STOPPING = "stopping"
 
-    RESULTS_MAX = 100
+    RESULTS_MAX = 256
 
     def __init__(self, args):
         self._start_time = None
