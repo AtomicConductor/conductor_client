@@ -13,7 +13,7 @@ import requests
 from logging import INFO, DEBUG, WARNING
 
 from conductor import CONFIG
-from conductor.lib import common, loggeria, api_client
+from conductor.lib import common, exceptions, loggeria, api_client
 from conductor.lib.downloader import DecAuthorize  # , DecDownloaderRetry
 from conductor.lib.downloader import HistoryWorker
 from conductor.lib.downloader import get_bearer_token
@@ -355,7 +355,7 @@ class UploaderWorker(multiprocessing.Process):
                 self.current_upload, event_handler=self.handle_upload_event)
             return self.maybe_upload()
 
-        except UploaderMissingFile as err:
+        except exceptions.UploaderMissingFile as err:
             self.log("LOCAL_FILE_MISSING", level=WARNING)
             if not self.current_upload.get("id"):
                 Backend.fail_unsigned(
@@ -366,7 +366,7 @@ class UploaderWorker(multiprocessing.Process):
                     bytes_downloaded=0,
                     location=self.location)
 
-        except UploaderFileModified as err:
+        except exceptions.UploaderFileModified as err:
             self.log("LOCAL_FILE_CHANGED msg=%s" % err, level=WARNING)
             Backend.fail(
                 self.current_upload,
@@ -391,7 +391,7 @@ class UploaderWorker(multiprocessing.Process):
             local_md5 = self.current_upload["md5"]
         if local_md5 != expected_md5:
             # error
-            raise UploaderFileModified("different md5 - local: %s expected: %s"
+            raise exceptions.UploaderFileModified("different md5 - local: %s expected: %s"
                                        % (local_md5, expected_md5))
 
         # print meh
@@ -446,7 +446,7 @@ class UploaderWorker(multiprocessing.Process):
         self.log("STARTING_UPLOAD", level=INFO)
         try:
             Backend.put_file(self.fileobj, self.current_upload["gcs_url"])
-        except FilePutError as err:
+        except exceptions.FilePutError as err:
             self.handle_put_error(err, self.fileobj)
             raise
 
@@ -467,12 +467,8 @@ class UploaderWorker(multiprocessing.Process):
             uploads = Backend.next(
                 self.account, location=self.location,
                 project=self.project) or []
-        except BackendDown as err:
-            # print err
-            raise err
-        except BackendError as err:
-            # print err
-            raise err
+        except (exceptions.BackendDown, exceptions.BackendError):
+            raise
         else:
             if uploads:
                 # Return the one download in the list
@@ -584,26 +580,6 @@ class UploaderWorker(multiprocessing.Process):
         # print "process shutdown complete"
 
 
-class UploaderMissingFile(Exception):
-    """A file is missing"""
-
-
-class UploaderFileModified(Exception):
-    """something wring with local file"""
-
-
-class FilePutError(Exception):
-    """Something happened during the put"""
-
-
-class BackendDown(Exception):
-    """Backend is down"""
-
-
-class BackendError(Exception):
-    """Something happened on the backend"""
-
-
 class FileGenerator(object):
     """
     Since requests.put() can take a generator as the data param in order to
@@ -618,7 +594,7 @@ class FileGenerator(object):
         self.upload_file = upload_file
         filepath = self.upload_file.get("filepath")
         if not os.path.exists(filepath):
-            raise UploaderMissingFile(filepath)
+            raise exceptions.UploaderMissingFile(filepath)
         self._chunk_size = chunk_size
         self._file = open(filepath, "rb")
 
@@ -677,7 +653,7 @@ class Backend:
         try:
             resp = requests.put(signed_url, headers=headers, data=filegen)
         except Exception as err:
-            raise FilePutError(err)
+            raise exceptions.FilePutError(err)
         else:
             return resp
 
@@ -695,7 +671,8 @@ class Backend:
                 LOGGER.warning("Cannot Touch file %s.  Already finished \
                     (not active) (410)", upload["id"])
             raise err
-        raise
+        except:
+            raise
 
     @classmethod
     def next(cls, account, project=None, location=None, number=1):
@@ -710,7 +687,8 @@ class Backend:
             if err.response.status_code == 410:
                 LOGGER.warning("Cannot fetch next upload: %s", err)
             raise err
-        raise
+        except:
+            raise
 
     @classmethod
     def touch(cls, upload, location=None, bytes_downloaded=0):
@@ -726,7 +704,8 @@ class Backend:
                 LOGGER.warning("Cannot Touch file %s.  Already finished \
                     (not active) (410)", upload["id"])
             raise err
-        raise
+        except:
+            raise
 
     @classmethod
     def finish(cls, upload, location=None, bytes_downloaded=0):
@@ -743,7 +722,8 @@ class Backend:
                 LOGGER.warning("Cannot finish file %s.  File not active (410)",
                                upload["id"])
             raise err
-        raise
+        except:
+            raise
 
     @classmethod
     def fail(cls, upload, location=None, bytes_downloaded=0):
@@ -759,7 +739,8 @@ class Backend:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)",
                                upload["id"])
             raise err
-        raise
+        except:
+            raise
 
     @classmethod
     def fail_unsigned(cls, upload, location=None):
@@ -776,7 +757,8 @@ class Backend:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)",
                                upload["id"])
             raise err
-        raise
+        except:
+            raise
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
