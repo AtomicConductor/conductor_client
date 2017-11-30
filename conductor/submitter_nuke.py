@@ -142,10 +142,10 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         Example(two tasks):
 
             # Task 0
-            [{"command": "nuke-render --view main -X AFWrite.write_exr -F 1-1x1 /tmp/my_nuke_file.nk
+            [{"command": "nuke-render --view main -X AFWrite.write_exr -F 1-1x1 \"/tmp/my_nuke_file.nk\""
               "frames": "1"},
             # Task 1
-             {"command": "nuke-render --view main -X AFWrite.write_exr -F 10-20x2 /tmp/my_nuke_file.nk""
+             {"command": "nuke-render --view main -X AFWrite.write_exr -F 10-20x2 \"/tmp/my_nuke_file.nk\""
               "frames": "10-20x2"}]
         '''
 
@@ -176,7 +176,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
                                        start_frame,
                                        end_frame,
                                        step,
-                                       nuke_filepath_nodrive)
+                                       file_utils.quote_path(nuke_filepath_nodrive))
 
             # generate tasks data
             # convert the list of frame ints into a single string expression

@@ -176,10 +176,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         Example(two tasks):
 
             # Task 0
-            [ {"command": "Render -s 1 -e 1 -rl renderlayer1 maya_filepath.ma"
+            [ {"command": "Render -s 1 -e 1 -rl renderlayer1 \"maya_filepath.ma\""
                "frames": "1"},
             # Task 1
-            {"command": "Render -s 10 -e 20 -b 2 maya_filepath.ma"
+            {"command": "Render -s 10 -e 20 -b 2 \"maya_filepath.ma\""
              "frames": "10-20x2"} ]
         '''
 
@@ -217,7 +217,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                                        end_frame,
                                        step,
                                        render_layer_args,
-                                       maya_filepath_nodrive)
+                                       file_utils.quote_path(maya_filepath_nodrive))
 
             # Generate tasks data
             # convert the list of frame ints into a single string expression
