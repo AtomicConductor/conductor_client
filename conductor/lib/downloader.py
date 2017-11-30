@@ -16,7 +16,7 @@ import Queue
 import requests
 
 from conductor import CONFIG
-from conductor.lib import common, loggeria, downloader2, api_client
+from conductor.lib import api_client, common, downloader2, exceptions, loggeria
 
 # Duration that workers sleep when there's no work to perform
 WORKER_SLEEP_DURATION = 60
@@ -93,7 +93,6 @@ class DecAuthorize(object):
         return decorater_function
 
 
-
 class DecDownloaderRetry(common.DecRetry):
     '''
     Some Docs.
@@ -119,26 +118,8 @@ class DecDownloaderRetry(common.DecRetry):
 
         for _ in range(10):
             if RUN_STATE.value != self.run_value:
-                raise DownloaderExit(0)
+                raise exceptions.DownloaderExit(0)
             time.sleep(sleep_interval)
-
-
-
-class FailDownload(Exception):
-    '''
-    Custom exception to raise when a download should be failed. This may be due to
-    a variety of reasons, such as the remote file not existing, or not having adequate
-    permissions for writing to a local disk, etc.
-    This exception is used to bypass the retry decorator so that the download is NOT retried.
-    '''
-
-
-class DownloaderExit(SystemExit):
-    '''
-    Custom exception to handle (and raise) when the DownloadWorker processes
-    should be halted.  This subclasses the SystemExit builtin exception. Raising it
-    will exit the process with the given return code.
-    '''
 
 
 class Downloader(object):
@@ -477,7 +458,7 @@ class DownloadWorker(multiprocessing.Process):
                 self._run()
 
             # Catch DownloaderExit exception, and exit the while loop
-            except DownloaderExit:
+            except exceptions.DownloaderExit:
                 break
 
             # catch all other exceptions here. This should hopefully never happen.
@@ -586,7 +567,7 @@ class DownloadWorker(multiprocessing.Process):
 
         # Catch a DownloaderExit exception, perform any cleanup, then re-raise
         # the exception
-        except DownloaderExit:
+        except exceptions.DownloaderExit:
             success = False
             self._cleanup_download(id_, jid, tid, destination, local_file)
             raise
@@ -682,7 +663,7 @@ class DownloadWorker(multiprocessing.Process):
         # return True to indicate that the file was downloaded
         return True
 
-    @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, skip_exceptions=(DownloaderExit, FailDownload), tries=MAX_DOWNLOAD_RETRIES)
+    @DecDownloaderRetry(run_value=Downloader.STATE_RUNNING, skip_exceptions=(exceptions.DownloaderExit, exceptions.FailDownload), tries=MAX_DOWNLOAD_RETRIES)
     def download(self, id_, local_file, url, dl_info):
         """
         The "outer" download function that wraps the "real" download function
@@ -739,7 +720,7 @@ class DownloadWorker(multiprocessing.Process):
         if response.status_code not in [200]:
             msg = "Bad response code %s: %s" % (response.status_code, response.text)
             self._log_msg(jid, tid, msg, local_file, log_level=logging.DEBUG)
-            raise FailDownload(msg)
+            raise exceptions.FailDownload(msg)
 
         # Create the local directory if it does not exist
         safe_mkdirs(os.path.dirname(local_file))
@@ -758,7 +739,7 @@ class DownloadWorker(multiprocessing.Process):
                 # If the run state = stopping. raise a system exit error.
                 # This will not trigger
                 if self._run_state.value == Downloader.STATE_STOPPING:
-                    raise DownloaderExit(0)
+                    raise exceptions.DownloaderExit(0)
 
                 # filter out bad chunks due to http errors
                 if chunk:
@@ -931,7 +912,7 @@ class DownloadWorker(multiprocessing.Process):
         '''
         if self._run_state.value != Downloader.STATE_RUNNING:
             LOGGER.warning("Exiting hashing")
-            raise DownloaderExit(0)
+            raise exceptions.DownloaderExit(0)
         self._bytes_counter.value = bytes_processed
         self._progress_queue.put_nowait((id_, "hash", bytes_processed))
 
@@ -1205,7 +1186,8 @@ class Backend:
             if e.response.status_code == 410:
                 LOGGER.warning("Cannot Touch file %s.  Already finished (not active) (410)", id_)
                 return
-        raise
+        except:
+            raise
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
@@ -1222,7 +1204,8 @@ class Backend:
             if e.response.status_code == 410:
                 LOGGER.warning("Cannot finish file %s.  File not active (410)", id_)
                 return
-        raise
+        except:
+            raise
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)
@@ -1239,7 +1222,8 @@ class Backend:
             if e.response.status_code == 410:
                 LOGGER.warning("Cannot fail file %s.  File not active (410)", id_)
                 return
-        raise
+        except:
+            raise
 
     @classmethod
     @common.dec_timer_exit(log_level=logging.DEBUG)

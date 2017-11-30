@@ -4,6 +4,7 @@ import re
 import sys
 import glob
 
+from conductor.lib import exceptions
 
 # Regular expressions for different path expressions that are supported
 RX_HASH = r"#+"  # image.####.exr
@@ -23,10 +24,6 @@ PATH_EXPRESSIONS = [RX_HASH, RX_MAPID, RX_PERCENT, RX_UDIM_MARI, RX_UDIM_MUDBOX_
                     RX_ASTERISK]
 
 logger = logging.getLogger(__name__)
-
-
-class InvalidPathException(Exception):
-    pass
 
 
 def separate_path(path, no_extension=False):
@@ -82,7 +79,7 @@ def process_dependencies(paths):
         try:
             process_upload_filepath(path)
             dependencies[path] = None
-        except InvalidPathException as e:
+        except exceptions.InvalidPathException as e:
             logger.debug("%s", e)
             dependencies[path] = str(e)
 
@@ -155,7 +152,7 @@ def process_upload_filepath(path, strict=True):
             if error_msg:
                 logger.warning(error_msg)
                 if strict:
-                    raise InvalidPathException(error_msg)
+                    raise exceptions.InvalidPathException(error_msg)
             paths.append(filepath)
 
         # If the path is a directory
@@ -171,7 +168,7 @@ def process_upload_filepath(path, strict=True):
             message = "No file(s) found for path: %s" % path
             # If we're being strict, then raise an exception
             if strict:
-                raise InvalidPathException(message)
+                raise exceptions.InvalidPathException(message)
             # otherwise warn
             logger.warning(message)
 
@@ -192,7 +189,7 @@ def process_upload_filepath(path, strict=True):
                 if not filepaths:
                     message = "No files found for path: %s" % path
                     if strict:
-                        raise InvalidPathException(message)
+                        raise exceptions.InvalidPathException(message)
                     logger.warning(message)
 
     return paths
