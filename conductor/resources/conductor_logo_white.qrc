@@ -1,0 +1,7 @@
+<!DOCTYPE RCC><RCC version="1.0">
+	<qresource>
+		<file alias="conductor_logo_white.png">conductor_logo_white_100.png</file>
+		<file>conductor_logo_white_150.png</file>
+		<file>conductor_logo_white_200.png</file>
+	</qresource>
+</RCC>
