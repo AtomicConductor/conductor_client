@@ -5,7 +5,7 @@ import logging
 import tempfile
 import warnings
 
-from conductor.lib import common, loggeria, version_check, wizard
+from conductor.lib import common, config, loggeria, version_check, wizard
 
 #The version string is updated by the build system.
 #Do not modify the following line.
@@ -13,10 +13,10 @@ from conductor.lib import common, loggeria, version_check, wizard
 
 # Read the config yaml file upon module import
 try:
-    CONFIG = common.Config().config
+    CONFIG = config.loadConfig()
 except ValueError:
     # wizard.run()
-    CONFIG = common.Config().config
+    CONFIG = config.loadConfig()
 
 # IF there is log level specified in config (which by default there should be), then set it for conductor's logger
 log_level = CONFIG.get("log_level")
