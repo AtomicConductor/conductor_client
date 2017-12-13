@@ -12,7 +12,7 @@ import os
 import sys
 import yaml
 
-from conductor.lib import common
+from conductor.lib import common, loggeria
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class Config(object):
                                 'darwin': os.path.join(os.getenv('HOME', ''), 'Application Support/Conductor', 'config.yml')}
 
     def __init__(self):
-        logger.debug('base dir is %s' % common.base_dir())
+        logger.debug('base dir is %s', common.base_dir())
 
         # create config. precedence is default, ENV, CLI
         combined_config = self.default_config
@@ -51,7 +51,7 @@ class Config(object):
         self.validate_api_key(combined_config)
         recombined_config = self.add_api_settings(combined_config)
         self.config = recombined_config
-        logger.debug('config is:\n%s' % self.config)
+        logger.debug('config is:\n%s', self.config)
 
     @staticmethod
     def add_api_settings(settings_dict):
@@ -123,7 +123,7 @@ class Config(object):
 
         return bool_values.get(env_var.lower(), env_var)
 
-    def get_config_file_paths(self, config_file=None):
+    def get_config_file_paths(self):
         if 'CONDUCTOR_CONFIG' in os.environ:
             # We need to take into account multiple paths
             possible_paths = [x for x in os.environ['CONDUCTOR_CONFIG'].split(os.pathsep) if len(x) > 0]
@@ -144,7 +144,7 @@ class Config(object):
     def get_user_config(self):
         config_files = self.get_config_file_paths()
         for config_file in config_files:
-            logger.debug('Attempting to load config located at: %s' % config_file)
+            logger.debug('Attempting to load config located at: %s', config_file)
 
             if os.path.isfile(config_file):
                 logger.debug('Loading config: %s', config_file)
@@ -155,8 +155,8 @@ class Config(object):
                         message = 'config found at %s is not in proper yaml syntax' % config_file
                         logger.error(message)
 
-                    logger.debug('config is %s' % config)
-                    logger.debug('config.__class__ is %s' % config.__class__)
+                    logger.debug('config is %s', config)
+                    logger.debug('config.__class__ is %s', config.__class__)
                     return config
                 except IOError:
                     message = "could't open config file: %s\n" % config_file
@@ -170,7 +170,7 @@ class Config(object):
         return self.create_default_config(config_files[-1])
 
     def verify_required_params(self, config):
-        logger.debug('config is %s' % config)
+        logger.debug('config is %s', config)
         for required_key in self.required_keys:
             if required_key not in config:
                 message = "required param '%s' is not set in the config\n" % required_key
@@ -181,17 +181,14 @@ class Config(object):
 
 def loadConfig():
     '''
-    Create a new config object and return it
-    This will load the related config.yaml file
+    Create a new config object based on config.yml and return it
+    Set up logging based on configuration loaded
     '''
-    return Config().config
-
-
-# Read the config yaml file upon module import
-try:
-    CONFIG = Config().config
-except ValueError:
-    # wizard.run()
-    CONFIG = Config().config
-    
+    configuration = Config().config
+    # If there is log level specified in config (which by default there should be)
+    # then set it for conductor's logger
+    log_level = configuration.get("log_level")
+    if log_level:
+        loggeria.set_conductor_log_level(log_level)
+    return configuration
 

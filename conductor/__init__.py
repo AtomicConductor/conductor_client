@@ -12,16 +12,7 @@ from conductor.lib import common, config, loggeria, version_check, wizard
 #__version__="0.0.0"
 
 # Read the config yaml file upon module import
-try:
-    CONFIG = config.loadConfig()
-except ValueError:
-    # wizard.run()
-    CONFIG = config.loadConfig()
-
-# IF there is log level specified in config (which by default there should be), then set it for conductor's logger
-log_level = CONFIG.get("log_level")
-if log_level:
-    loggeria.set_conductor_log_level(log_level)
+CONFIG = config.loadConfig()
 
 #Try to ensure that we have the latest version of Conductor
 try:

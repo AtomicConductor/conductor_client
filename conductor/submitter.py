@@ -16,9 +16,9 @@ try:
 except ImportError, e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from conductor import CONFIG
+import conductor
 
-from conductor.lib import api_client, common, conductor_submit, exceptions, loggeria, package_utils, pyside_utils
+from conductor.lib import api_client, common, conductor_submit, config, exceptions, loggeria, package_utils, pyside_utils
 from conductor import submitter_resources  # This is a required import  so that when the .ui file is loaded, any resources that it uses from the qrc resource file will be found
 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
@@ -44,7 +44,6 @@ TODO:
 9. what are the available commands for the "cmd" arg?
 
 '''
-
 
 class ConductorSubmitter(QtWidgets.QMainWindow):
     '''
@@ -87,7 +86,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
-
+        
         # Create widgets
         self.createUI()
 
@@ -136,6 +135,10 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         global _parent_window  # This global statement is particularly important (though it may not appear so when using simple usecases that don't use complex inheritence structures).
         global _ui_instance
+
+        # Always reload the config upon new run of a submitter UI
+        conductor.CONFIG = config.loadConfig()
+        print conductor.CONFIG
 
         # Reuse the same parent window object, otherwise ownshership gets jacked, and child widgets start getting deleted. This took about 3 hours to figure out.
         if not _parent_window:
@@ -242,7 +245,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self.setInstanceType(self.default_instance_type)
 
         # Set the default project by querying the config
-        default_project = CONFIG.get('project')
+        default_project = conductor.CONFIG.get('project')
         if default_project:
             self.setProject(default_project, strict=False)
 
@@ -419,7 +422,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         for all projects
         '''
         self.ui_project_cmbx.clear()
-        projects = CONFIG.get("projects") or api_client.request_projects()
+        projects = conductor.CONFIG.get("projects") or api_client.request_projects()
         # sort alphabetically. may be unicode, so can't use str.lower directly
         for project in sorted(projects, key=lambda x: x.lower()):
             self.ui_project_cmbx.addItem(project)
@@ -606,7 +609,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         If there is a docker image in the config.yml file, then use it.
         '''
 
-        return CONFIG.get("docker_image")
+        return conductor.CONFIG.get("docker_image")
 
     def getEnvironment(self):
         '''
@@ -615,7 +618,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         the environment of the packages that the user has selected.
         '''
         #  Get any environment variable settings from config.yml
-        config_environment = CONFIG.get("environment") or {}
+        config_environment = conductor.CONFIG.get("environment") or {}
         assert isinstance(config_environment, dict), "Not a dictionary: %s" % config_environment
         selected_packages = self.getJobPackages()
         return package_utils.merge_package_environments(selected_packages,
@@ -628,7 +631,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         any packages that are defined in the config with those that are selected
         by the user.
         '''
-        config_package_ids = CONFIG.get("software_package_ids") or []
+        config_package_ids = conductor.CONFIG.get("software_package_ids") or []
         assert isinstance(config_package_ids, list), "Not a list: %s" % config_package_ids
         selected_package_ids = [package["package_id"] for package in self.getJobPackages()]
         return list(set(config_package_ids + selected_package_ids))
@@ -678,7 +681,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         Simply return the value set in the config.yml.  In the future this option
         may be exposed in the UI
         '''
-        return CONFIG.get("local_upload")
+        return conductor.CONFIG.get("local_upload")
 
     def launch_result_dialog(self, response_code, response):
 
@@ -686,7 +689,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         if response_code in SUCCESS_CODES_SUBMIT:
             job_id = str(response.get("jobid") or 0).zfill(5)
             title = "Job Submitted"
-            job_url = CONFIG['url'] + "/job/" + job_id
+            job_url = conductor.CONFIG['url'] + "/job/" + job_id
             message = ('<html><head/><body><p>Job submitted: '
                        '<a href="%s"><span style=" text-decoration: underline; '
                        'color:%s;">%s</span></a></p></body></html>') % (job_url, self.link_color, job_id)
@@ -1066,7 +1069,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Hack for pyside. If there is only one package id, it will return it as unicode type (rather than a lost of 1 string)
         if isinstance(software_package_ids, unicode):
             software_package_ids = [str(software_package_ids)]
-        software_package_ids += (CONFIG.get("software_package_ids") or [])
+        software_package_ids += (conductor.CONFIG.get("software_package_ids") or [])
 
         # If no packages have been found in prefs or config, then autodetect packages
         if not software_package_ids:
