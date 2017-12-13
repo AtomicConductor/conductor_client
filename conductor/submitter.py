@@ -86,7 +86,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
-        
+    
         # Create widgets
         self.createUI()
 
@@ -138,7 +138,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         # Always reload the config upon new run of a submitter UI
         conductor.CONFIG = config.loadConfig()
-        print conductor.CONFIG
 
         # Reuse the same parent window object, otherwise ownshership gets jacked, and child widgets start getting deleted. This took about 3 hours to figure out.
         if not _parent_window:
