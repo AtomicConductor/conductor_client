@@ -86,7 +86,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
-    
+
         # Create widgets
         self.createUI()
 
