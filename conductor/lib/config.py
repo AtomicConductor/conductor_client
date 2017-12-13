@@ -105,7 +105,8 @@ class Config(object):
 
         return environment_config
 
-    def _process_var_value(self, env_var):
+    @classmethod
+    def _process_var_value(cls, env_var):
         '''
         Read the given value (which was read from an environment variable, and
         process it onto an appropriate value for the config.yml file.
