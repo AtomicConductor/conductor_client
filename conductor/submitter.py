@@ -137,7 +137,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         global _ui_instance
 
         # Always reload the config upon new run of a submitter UI
-        conductor.CONFIG = config.loadConfig()
+        conductor.CONFIG = config.load_config()
 
         # Reuse the same parent window object, otherwise ownshership gets jacked, and child widgets start getting deleted. This took about 3 hours to figure out.
         if not _parent_window:

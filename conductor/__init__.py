@@ -12,7 +12,7 @@ from conductor.lib import common, config, loggeria, version_check, wizard
 #__version__="0.0.0"
 
 # Read the config yaml file upon module import
-CONFIG = config.loadConfig()
+CONFIG = config.load_config()
 
 #Try to ensure that we have the latest version of Conductor
 try:

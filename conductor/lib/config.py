@@ -180,7 +180,7 @@ class Config(object):
                 raise ValueError(message)
 
 
-def loadConfig():
+def load_config():
     '''
     Create a new config object based on config.yml and return it
     Set up logging based on configuration loaded
