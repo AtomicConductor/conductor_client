@@ -18,7 +18,7 @@ try:
                                          tooltip="Conductor tools")
 
         menu.addCommand(name='Submitter UI',
-                        command="from conductor import submitter_nuke;submitter_nuke.NukeConductorSubmitter.runUi()",
+                        command="import conductor;conductor.loadConfig();from conductor import submitter_nuke;submitter_nuke.NukeConductorSubmitter.runUi()",
                         tooltip="Launch the Conductur Submitter UI")
 
         return menu
