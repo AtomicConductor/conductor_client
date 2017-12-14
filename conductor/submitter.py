@@ -189,6 +189,10 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # connect the scout job checkbox signal
         self.ui_scout_job_chkbx.stateChanged.connect(self.saveScoutJobPref)
 
+        # connect the preemptible checkbox signal
+        self.ui_preemptible_chkbx.stateChanged.connect(self.savePreemptiblePref)
+        self.ui_preemptible_chkbx.toggled.connect(self.ui_autoretry_wgt.setEnabled)
+
         # Set the window title name
         self.setWindowTitle(self._window_title)
 
@@ -238,8 +242,15 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Set the radio button on for the start/end frames by default
         self.on_ui_start_end_rdbtn_toggled(True)
 
-        # Set the default instance type
-        self.setInstanceType(self.default_instance_type)
+        # Set the default preemptible pref
+        default_preemptible = CONFIG.get('preemptible')
+        if default_preemptible is not None:
+            self.setPreemptibleCheckbox(default_preemptible)
+
+        # Set the default preemptible pref
+        default_preempted_autoretry_count = CONFIG.get('autoretry_policy', {}).get("preempted", {}).get("max_retries")
+        if default_preempted_autoretry_count is not None:
+            self.setAutoretryCount(default_preempted_autoretry_count)
 
         # Set the default project by querying the config
         default_project = CONFIG.get('project')
@@ -516,6 +527,24 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         return self.ui_preemptible_chkbx.isChecked()
 
+    def setPreemptibleCheckbox(self, bool_):
+        '''
+        Set the checkbox value for the "Preemptible" checkbox
+        '''
+        return self.ui_preemptible_chkbx.setChecked(bool_)
+
+    def setAutoretryCount(self, count):
+        '''
+        Set the UI's Auto Retry spinbox value
+        '''
+        self.ui_autoretry_spnbx.setValue(int(count))
+
+    def getAutoretryCount(self):
+        '''
+        Get the UI's Auto Retry spinbox value
+        '''
+        return self.ui_autoretry_spnbx.value()
+
     def setProject(self, project_str, strict=True):
         '''
         Set the UI's Project field
@@ -596,6 +625,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["project"] = self.getProject()
         conductor_args["scout_frames"] = self.getScoutFrames()
         conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
+        conductor_args["autoretry_policy"] = self.getAutoretryPolicy()
 
         return conductor_args
 
@@ -961,6 +991,15 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             self.prefs.setFileScoutFrames(source_filepath, scout_frames)
             return scout_frames
 
+    def getAutoretryPolicy(self):
+        '''
+        Construct/return an autoretry policy if the user as selected to use preemptible instances.
+        '''
+        # Only return an autoretry policy if the user has specified preemptible instances
+        if self.getPreemptibleCheckbox():
+            max_retries = self.getAutoretryCount()
+            return {"preempted": {"max_retries": max_retries}}
+
     def launchScoutFramesDialog(self, default_scout_frames):
         '''
         Launch a dialog box to prompt the user to enter their desired scout
@@ -1031,6 +1070,15 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
     def saveScoutJobPref(self, is_checked):
         '''
         Save the "Scout Job" checkbox user preference for the open file
+        '''
+        filepath = self.getSourceFilepath()
+        widget_name = self.sender().objectName()
+        return self.prefs.setFileWidgetPref(filepath, widget_name, bool(is_checked))
+
+    @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
+    def savePreemptiblePref(self, is_checked):
+        '''
+        Save the "Preemptible" checkbox user preference for the open file
         '''
         filepath = self.getSourceFilepath()
         widget_name = self.sender().objectName()
