@@ -9,14 +9,14 @@ import multiprocessing
 import os
 import signal
 import time
+from logging import DEBUG, INFO, WARNING
+
 import requests
-from logging import INFO, DEBUG, WARNING
 
 from conductor import CONFIG
-from conductor.lib import common, exceptions, loggeria, api_client
+from conductor.lib import api_client, common, exceptions, loggeria
 from conductor.lib.downloader import DecAuthorize  # , DecDownloaderRetry
-from conductor.lib.downloader import HistoryWorker
-from conductor.lib.downloader import get_bearer_token
+from conductor.lib.downloader import HistoryWorker, get_bearer_token
 
 # define constant for logging
 EXCEPTION = "exception"
@@ -383,7 +383,8 @@ class UploaderWorker(multiprocessing.Process):
         expected_md5 = self.md5_for_current_upload()
 
         if expected_md5 == "skip":
-            self.log("UPLOADED_FILE_EXISTS", level=INFO)
+            self.log("File exists upstream, skipping.", level=INFO)
+            return None
 
         if origingal_md5:
             local_md5 = self.file_md5(filepath)
