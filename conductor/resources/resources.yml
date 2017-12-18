@@ -1141,6 +1141,7 @@ package_ids:
                 "2.2.2": 359252402f4bb8c3174c5f8cf01669f8
                 "2.2.3": 1972bd11022fb2507b7e9875fb9baaf0
                 "2.2.4": ed769e61551e416ea205f7d4b232db9b
+                "2.2.5": d17b74caab01172eb28cbc54ee67040c
 
         "Autodesk Maya 2017 Security Fix": # We're treating this as SP0
             package: bef6c5499dc2654623d2d892469ac5d0
@@ -1195,7 +1196,7 @@ package_ids:
                 "2.2.2": 359252402f4bb8c3174c5f8cf01669f8
                 "2.2.3": 1972bd11022fb2507b7e9875fb9baaf0
                 "2.2.4": ed769e61551e416ea205f7d4b232db9b
-
+                "2.2.5": d17b74caab01172eb28cbc54ee67040c
 
         "Autodesk Maya 2017 Update 3":
             package: 23f1d45354dd7eacf852386a659a8309
@@ -1250,6 +1251,7 @@ package_ids:
                 "2.2.2": 359252402f4bb8c3174c5f8cf01669f8
                 "2.2.3": 1972bd11022fb2507b7e9875fb9baaf0
                 "2.2.4": ed769e61551e416ea205f7d4b232db9b
+                "2.2.5": d17b74caab01172eb28cbc54ee67040c
 
         "Autodesk Maya 2017 Update 4":
             package: 830958e28d6e02263af4f0971f036473
@@ -1304,6 +1306,7 @@ package_ids:
                 "2.2.2": 359252402f4bb8c3174c5f8cf01669f8
                 "2.2.3": 1972bd11022fb2507b7e9875fb9baaf0
                 "2.2.4": ed769e61551e416ea205f7d4b232db9b
+                "2.2.5": d17b74caab01172eb28cbc54ee67040c
 
         "Autodesk Maya 2017 Update 5":
             package: 40b7a0da3efc58046f95269d533fbbed
@@ -1358,6 +1361,7 @@ package_ids:
                 "2.2.2": 359252402f4bb8c3174c5f8cf01669f8
                 "2.2.3": 1972bd11022fb2507b7e9875fb9baaf0
                 "2.2.4": ed769e61551e416ea205f7d4b232db9b
+                "2.2.5": d17b74caab01172eb28cbc54ee67040c
 
         "Autodesk Maya 2018":
             package: 460411ee5c24661ed354863bcb3d7c21
@@ -1378,6 +1382,7 @@ package_ids:
                 "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
                 "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
                 "2.2.4": 64950eaef0d9ae5a6b72da9a8deab4bd
+                "2.2.5": 25eee62bbcca44249ec55153a79c96ae
 
         "Autodesk Maya 2018 Update 1":
             package: 38015a170f892bf61e5275deac8dd421
@@ -1398,6 +1403,7 @@ package_ids:
                 "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
                 "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
                 "2.2.4": 64950eaef0d9ae5a6b72da9a8deab4bd
+                "2.2.5": 25eee62bbcca44249ec55153a79c96ae
 
     "nuke":
         "8.0v1":
