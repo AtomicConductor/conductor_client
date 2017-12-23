@@ -63,6 +63,9 @@ class Submit(object):
 
         '''
 
+        self.autoretry_policy = self.resolve_arg(args, 'autoretry_policy', {})
+        logger.debug("autoretry_policy: %s", self.autoretry_policy)
+
         self.command = self.resolve_arg(args, 'cmd', "")
         logger.debug("command: %s", self.command)
 
@@ -354,6 +357,8 @@ class Submit(object):
                 submit_dict['scout_frames'] = self.scout_frames
             if self.preemptible:
                 submit_dict['preemptible'] = self.preemptible
+            if self.autoretry_policy:
+                submit_dict['autoretry_policy'] = self.autoretry_policy
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):
