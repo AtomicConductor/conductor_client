@@ -37,6 +37,17 @@ def parse_args():
                                           description=submit_parser_desciption,
                                           formatter_class=argparse.RawTextHelpFormatter)
 
+    submit_parser.add_argument("--autoretry_policy",
+                               type=json.loads,
+                               help=('Enables tasks to be automatically retried if they have been preempted and/or '
+                                     'failed.\n'
+                                     'A policy can be defined for more than one status, e.g. "preempted", "failed"\n'
+                                     'A policy for a status must define a "max_retries" key with an integer from 0 '
+                                     'through 5\n\n'
+                                     'Example 1: --autoretry_policy "{\\"preempted\\": {\\"max_retries\\": 2 } }"\n\n'
+                                     'Example 2: --autoretry_policy "{\\"failed\\": {\\"max_retries\\": 1 },'
+                                     '\\"preempted\\": {\\"max_retries\\": 5 }}"\n\n'))
+
     submit_parser.add_argument("--cmd",
                                help=('[DEPRECATED. Use --tasks_data instead]\n'
                                      'The command to execute. This works in tandem with the --frames '
@@ -406,6 +417,7 @@ class CastLogLevelName(argparse.Action):
     Cast a log level name to it's contstant value, e.g.
         "INFO" --> logging.INFO
     '''
+
     def __call__(self, parser, namespace, values, option_string):
         setattr(namespace, self.dest, loggeria.LEVEL_MAP[values])
 
