@@ -1275,9 +1275,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
                 # PLUGIN PRODUCT GROUP ####
                 plugin_product_name = plugin_package["product"]
-                # HACK: hide yeti for now
-                if plugin_product_name == "yeti":
-                    continue
                 plugin_parent_product_item = plugin_parent_items.get(plugin_product_name)
                 if not plugin_parent_product_item:
                     plugin_parent_product_item = QtWidgets.QTreeWidgetItem([plugin_product_name, ""])
