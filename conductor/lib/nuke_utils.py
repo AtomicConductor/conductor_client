@@ -191,6 +191,8 @@ def get_all_write_nodes():
     '''
     write_nodes = nuke.allNodes(filter="Write")
     write_nodes.extend(nuke.allNodes(filter="DeepWrite"))
+    # Filter out Write / DeepWrite nodes that are marked as disabled
+    write_nodes = [node for node in write_nodes if not node['disable'].value()]
     selected_nodes = nuke.selectedNodes()
     node_names = dict([(node.fullName(), bool(node in selected_nodes)) for node in write_nodes])
     return node_names
