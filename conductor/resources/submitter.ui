@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1177</width>
-    <height>782</height>
+    <height>778</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -82,7 +82,7 @@
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap resource="../submitter_resources.qrc">:/images/resources/conductorTech_logo_white.svg</pixmap>
+             <pixmap resource="../submitter_resources.qrc">:/images/resources/conductor_logo_white.svg</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
