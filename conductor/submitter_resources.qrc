@@ -2,6 +2,6 @@
   <qresource prefix="images">
     <file>resources/arrow_refresh_x16.png</file>
     <file>resources/conductor_logo_01_x32.png</file>
-    <file>resources/conductor_logo_red_w_title_x64.png</file>
+    <file>resources/conductorTech_logo_white.svg</file>
   </qresource>
 </RCC>
