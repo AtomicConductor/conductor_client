@@ -1,6 +1,4 @@
 import hou
-from conductor import CONFIG
-from conductor.lib import api_client
 from hda_lib import instance_types, projects, frame_spec, render_source
 reload(projects)
 reload(instance_types)
