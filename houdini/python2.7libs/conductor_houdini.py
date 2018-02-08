@@ -1,12 +1,6 @@
-import glob
 import hou
-import os
-import re
-import sys
-import webbrowser
-
 from conductor import CONFIG
-from conductor.lib import api_client, common
+from conductor.lib import api_client
 from hda_lib import instance_types, projects, frame_spec, render_source
 reload(projects)
 reload(instance_types)
@@ -76,8 +70,6 @@ def print_debug_callback(node, **_):
 
 
 callbacks = dict(
-    login=login_callback,
-    logout=logout_callback,
     conductor_submit=conductor_submit_callback,
     num_instances=num_instances_callback,
     print_debug=print_debug_callback,

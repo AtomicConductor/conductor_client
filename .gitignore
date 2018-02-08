@@ -51,3 +51,6 @@ GTAGS
 # houdini
 houdini/**/backup/
 houdini/notes
+
+# sublime
+conductor_client.sublime-*
