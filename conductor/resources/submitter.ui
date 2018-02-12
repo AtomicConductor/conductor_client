@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>511</width>
-    <height>590</height>
+    <width>411</width>
+    <height>547</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1280,7 +1280,7 @@ tasks before deciding to execute the job's remaining tasks.
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>511</width>
+     <width>411</width>
      <height>22</height>
     </rect>
    </property>
