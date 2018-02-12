@@ -280,7 +280,6 @@ maya_supported_plugins:
 
 package_ids:
     maya-io:
-
         "Autodesk Maya 2016":
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya:
@@ -1445,7 +1444,6 @@ package_ids:
                 "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
                 "2.2.4": 64950eaef0d9ae5a6b72da9a8deab4bd
                 "2.2.5": 25eee62bbcca44249ec55153a79c96ae
-
     "nuke":
         "8.0v1":
             package: c8467d09a1cf38e7940a0f87bd01d5da
@@ -1511,3 +1509,78 @@ package_ids:
             package: c5bd7a5ac46ece3d637cfc0e11b23258
         "11.1v1":
             package: a66022567a0860a64e2d7a9390a2cabf
+
+           
+
+
+    "houdini":
+        "16.0.736":
+            package: 40ac5f8ccfc2493380ec54e0aef1c9fe
+            v-ray-houdini:
+                "3.60.01": 9294e24981d840f9bc1a086940d84708
+            htoa:
+                "2.0.1": f3471d0224cf466eb26a3963e825dbdc
+                "2.0.2.2": c28f3f5071b045df9c89f2fa4e844c77
+                "2.0.2.3": 597593f11a8f46348489f18ec5bed45b
+                "2.0.2.4": a8978a85641d430a929158322f91ef25
+                "2.1.0": bb11595b0dd54b5faee22d51d23a1493
+                "2.1.0.1": f23fa07afcf44971a138738d871c92e8
+                "2.1.0.2": ea05ee52c3bc4fceadb6a681afd0de24
+                "2.2.2": 9c0ce24ca688445b8db795546b573940
+            renderman-houdini:
+                "21.6": a42bbfff792c4759b46fa6c386a2bbf7
+            yeti-houdini:
+                "2.2.0": bb89cd0f7b754cf9bfbc27652be90ac0
+                "2.2.1": 9ad582ae811f4e2eaf051c83c9183066
+                "2.2.2": 626bacf45bf049d8943d8f0c60194087
+                "2.2.3": f02dfe8a1d3b40ca81f1a349e00ce14a
+                "2.2.4": 1c6acb1027544d48ab11bd75c81bbfdb
+                "2.2.5": 734632a2150b431f88dcedabc013f177
+
+        "16.5.268":
+            package: e1b35e649d384bd382b0d37054d6b6af
+            v-ray-houdini:
+                "3.60.01": 9294e24981d840f9bc1a086940d84708
+            htoa:
+                "2.0.1": f3471d0224cf466eb26a3963e825dbdc
+                "2.0.2.2": c28f3f5071b045df9c89f2fa4e844c77
+                "2.0.2.3": 597593f11a8f46348489f18ec5bed45b
+                "2.0.2.4": a8978a85641d430a929158322f91ef25
+                "2.1.0": bb11595b0dd54b5faee22d51d23a1493
+                "2.1.0.1": f23fa07afcf44971a138738d871c92e8
+                "2.1.0.2": ea05ee52c3bc4fceadb6a681afd0de24
+                "2.2.2": 9c0ce24ca688445b8db795546b573940
+            renderman-houdini:
+                "21.6": a42bbfff792c4759b46fa6c386a2bbf7
+            yeti-houdini:
+                "2.2.0": bb89cd0f7b754cf9bfbc27652be90ac0
+                "2.2.1": 9ad582ae811f4e2eaf051c83c9183066
+                "2.2.2": 626bacf45bf049d8943d8f0c60194087
+                "2.2.3": f02dfe8a1d3b40ca81f1a349e00ce14a
+                "2.2.4": 1c6acb1027544d48ab11bd75c81bbfdb
+                "2.2.5": 734632a2150b431f88dcedabc013f177
+
+        "16.5.323":
+            package: 99f156102d6c4b358ff88e8c2e98fc0c
+            v-ray-houdini:
+                "3.60.01": 9294e24981d840f9bc1a086940d84708
+            htoa:
+                "2.0.1": f3471d0224cf466eb26a3963e825dbdc
+                "2.0.2.2": c28f3f5071b045df9c89f2fa4e844c77
+                "2.0.2.3": 597593f11a8f46348489f18ec5bed45b
+                "2.0.2.4": a8978a85641d430a929158322f91ef25
+                "2.1.0": bb11595b0dd54b5faee22d51d23a1493
+                "2.1.0.1": f23fa07afcf44971a138738d871c92e8
+                "2.1.0.2": ea05ee52c3bc4fceadb6a681afd0de24
+                "2.2.2": 9c0ce24ca688445b8db795546b573940
+            renderman-houdini:
+                "21.6": a42bbfff792c4759b46fa6c386a2bbf7
+            yeti-houdini:
+                "2.2.0": bb89cd0f7b754cf9bfbc27652be90ac0
+                "2.2.1": 9ad582ae811f4e2eaf051c83c9183066
+                "2.2.2": 626bacf45bf049d8943d8f0c60194087
+                "2.2.3": f02dfe8a1d3b40ca81f1a349e00ce14a
+                "2.2.4": 1c6acb1027544d48ab11bd75c81bbfdb
+                "2.2.5": 734632a2150b431f88dcedabc013f177
+
+
