@@ -254,7 +254,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         if not self.checkSaveBeforeSubmission():
             raise exceptions.UserCanceledError()
 			
-		nuke_utils.save_current_nuke_script()
+        nuke_utils.save_current_nuke_script()
 
         # Get the write nodes that have been selected by the user (in the UI)
         write_nodes = self.extended_widget.getSelectedWriteNodes()
