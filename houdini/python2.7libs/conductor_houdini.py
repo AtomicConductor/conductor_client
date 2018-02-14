@@ -1,11 +1,11 @@
-"""Handle callbacks from the node.
+"""Handle callbacks and other actions from the node.
 
-This includes handling all actions from widgets, as well as
-populating menus, initializing state and so on.
+This includes handling all actions from widgets, aux buttons
+as well as populating menus, initializing state and so on.
 
 """
 import hou
-from hda import instances, projects, frame_spec, render_source, submit, software, stats
+from hda import instances, projects, frame_spec, render_source, submit, software, stats, notifications
 reload(projects)
 reload(instances)
 reload(frame_spec)
@@ -13,6 +13,7 @@ reload(render_source)
 reload(submit)
 reload(software)
 reload(stats)
+reload(notifications)
 
 __version__ = '1.0.0'
 
@@ -49,7 +50,8 @@ def update_node_callback(node, **kw):
     render_source.update_input_node(node)
     stats.update_estimates(node)
     frame_spec.set_type(node)
-
+    notifications.validate_emails(node)
+    notifications.email_hook_changed(node)
 
 def show_request_callback(node, **kw):
     """Display the request info that will be sent to Conductor.
@@ -76,7 +78,12 @@ ACTIONS = dict(
     detect_software=software.detect,
     choose_software=software.choose,
     clear_software=software.clear,
-    project=projects.select
+    project=projects.select,
+    email_addresses=notifications.validate_emails,
+    email_on_submit=notifications.email_hook_changed,
+    email_on_start=notifications.email_hook_changed,
+    email_on_finish=notifications.email_hook_changed,
+    email_on_failure=notifications.email_hook_changed
 )
 
 AUX_BUTTON_ACTIONS = dict(
