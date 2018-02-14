@@ -231,7 +231,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         file_unsaved = nuke_utils.check_script_modified()
         if file_unsaved:
             title = "Unsaved Nuke Script Data"
-            message = "Save Nuke file script before submitting?"
+            message = "Save Nuke script before submitting?"
             answer, _ = pyside_utils.launch_yes_no_dialog(title, message, show_not_again_checkbox=False, parent=self)
             return answer
         return True
