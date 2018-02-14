@@ -176,7 +176,7 @@ def save_current_nuke_script():
     '''
     Save the current script
     '''
-    nuke.scriptSave()
+    return nuke.scriptSave()
 
 def get_frame_range():
     '''
