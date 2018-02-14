@@ -1,40 +1,81 @@
-from conductor import CONFIG
 from conductor.lib import api_client
+import json
+import submit
+
+
+def active_projects():
+    """Get active projects from the server.
+
+    If there is a problem of any kind (exception, empty
+    list) just return the single object to signify not set,
+    otherwise prepend "not set to the list of projects". In
+    this way we can populate the menu with at least one item
+    and disable submit button if not set, rather than
+    interrupting flow with an error.
+
+    """
+    notset = [{"id": "notset", "name": "- Not set -"}]
+    api = api_client.ApiClient()
+
+    response, response_code = api.make_request(
+        uri_path='api/v1/projects/', verb="GET", raise_on_error=False, use_api_key=True)
+    if response_code not in [200]:
+        return notset
+
+    projects = json.loads(response).get("data")
+    if not projects:
+        return notset
+
+    projects = [{"id": project["id"], "name": project["name"]}
+                for project in projects if (project.get("status") == "active")]
+    if not projects:
+        return notset
+
+    projects += notset
+    return sorted(projects, key=lambda project: project["name"].lower())
 
 
 def fetch(node):
-    """Fetch the list of projects and store them on projects param.
+    """Fetch the list of projects and store on projects param. If we don't do
+    this, and instead fetch every time the menu is accessed, there is an
+    unacceptable delay. If we rebuild this list, and for some reason the
+    selected project is not in it, then set selected to the.
 
-    If we don't do this, and instead fetch
-    every time the menu is accessed, there is an unacceptable delay.
+    first item in the list, which will be the - Not set - item.
 
-    Args:
-        node (hou.Node): The node
-
-    Returns:
-        Dict: tokens and values to be use in menu creation
     """
-    result = {}
+    projects = active_projects()
+    node.parm('projects').set(json.dumps(projects))
 
-    projects = CONFIG.get("projects") or api_client.request_projects()
-    for i, obj in enumerate(projects):
-        result[str(i).zfill(3)] = obj
-    node.parm('projects').set(result)
-    return result
+    selected = node.parm('project').eval()
+    if selected not in (project["id"] for project in projects):
+        node.parm('project').set(projects[0]["id"])
+
+    return projects
 
 
-def populate(node):
-    """Populate project menu
+def populate_menu(node):
+    """Populate project menu.
 
-    Get list from projects param where they are cached.
+    Get list from the projects param where they are cached.
+    If there are none, which can only happen on create, then fetch them from the server.
 
-    Args:
-      node (hou.Node): The node
-
-    Returns:
-      List: A flat array from kv pairs containing [k0, v0, k1, v2, ... kn, vn]
     """
-    existing = node.parm('projects').eval()
-    if not bool(existing):
-        existing = fetch(node)
-    return [item for pair in existing.iteritems() for item in pair] or []
+    projects = json.loads(node.parm('projects').eval())
+    if not bool(projects):
+        projects = fetch(node)
+    res = [k for i in projects for k in (i["id"], i["name"])]
+    return res
+
+
+def has_valid_project(node):
+    projects = json.loads(node.parm('projects').eval())
+    selected = node.parm('project').eval()
+    if selected == "notset" or selected not in (
+            project["id"] for project in projects):
+        return False
+    return True
+
+
+def select(node, **kw):
+    submit.update_button_state(node)

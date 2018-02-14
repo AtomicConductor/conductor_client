@@ -4,37 +4,31 @@ This includes handling all actions from widgets, as well as
 populating menus, initializing state and so on.
 
 """
-import os
 import hou
-from hda import instance_types, projects, frame_spec, render_source, submit, software
+from hda import instances, projects, frame_spec, render_source, submit, software, stats
 reload(projects)
-reload(instance_types)
+reload(instances)
 reload(frame_spec)
 reload(render_source)
 reload(submit)
 reload(software)
+reload(stats)
 
 __version__ = '1.0.0'
 
 MENUS = dict(
-    machine_type=instance_types.populate,
-    project=projects.populate
+    machine_type=instances.populate_menu,
+    project=projects.populate_menu
 )
 
 
 def populate_menu(node, parm, **kw):
-    """Populate any menu dynamically.
+    """Populate a menu dynamically.
 
-    Delegate the job of constructing the list to functions
-    specific to each menu. Houdini requires the kv pairs to
-    be flattened into a list.
-
-    Args:
-        node (hou.Node): The node
-        parm (hou.Parm): The menu parm
-
-    Returns:
-        List: A flat array from kv pairs [k0, v0, k1, v2, ... kn, vn]
+    Delegate the job of constructing the list of items.
+    Houdini requires the token value pairs for menu item
+    creation to be flattened into a flattened list like so:
+    [k0, v0, k1, v2, ... kn, vn]
 
     """
     try:
@@ -44,73 +38,73 @@ def populate_menu(node, parm, **kw):
                               severity=hou.severityType.Error)
 
 
-def foo(node, **kw):
-    """Update the whole node.
-
-    and add a newline before and after the summary of a one
-    add a newline before and after the summary of a one
-
-    """
-    print ("hello goodbye")
-
-
 def update_node_callback(node, **kw):
-    """Update the whole node.
+    """Initialize or update.
 
     We do this on creation/loading or manually.
 
-    Args:
-        node (hou.Node): The node
-
     """
-    instance_types.fetch(node)
-    projects.fetch(node)
+    instances.fetch_types(node)
     frame_spec.validate_custom_range(node)
     render_source.update_input_node(node)
+    stats.update_estimates(node)
+    frame_spec.set_type(node)
 
 
-def num_instances_callback(node, **kw):
-    """Summary.
+def show_request_callback(node, **kw):
+    """Display the request info that will be sent to Conductor.
 
-    Args:
-        node (TYPE): Description
-        **kw: Description
+    Useful for checking validity and debugging
 
     """
-    # update_estimated_cost(node)
     pass
 
 
-def print_debug_callback(node, **kw):
-    print("print_debug")
-
-
 ACTIONS = dict(
-    conductor_submit=submit.doit,
-    num_instances=num_instances_callback,
-    print_debug=print_debug_callback,
+    submit=submit.doit,
+    machine_type=instances.machine_type_changed,
+    preemptible=instances.preemptible_changed,
+    show_request=show_request_callback,
     update=update_node_callback,
     range_type=frame_spec.set_type,
+    fs1=frame_spec.set_frame_range,
+    fs2=frame_spec.set_frame_range,
+    fs3=frame_spec.set_frame_range,
     custom_range=frame_spec.validate_custom_range,
+    clump_size=frame_spec.set_clump_size,
+    avg_frame_time=stats.avg_frame_time_changed,
     detect_software=software.detect,
     choose_software=software.choose,
     clear_software=software.clear,
-       
+    project=projects.select
+)
+
+AUX_BUTTON_ACTIONS = dict(
+    clump_size=frame_spec.best_clump_size
 )
 
 
-def action_callback(**kwargs):
-    """Parameter callbacks.
+def action_button_callback(**kwargs):
+    """Handle actions triggered by the little aux buttons next to params.
 
-    Lookup correct allback in `callbacks` registry
-       using the parm_name kw arg.
-
-    Args:
-        **kwargs: Description
+    Uses the parmtuple kw arg provided by houdini to
+    differentiate.
 
     """
+    try:
+        AUX_BUTTON_ACTIONS[kwargs['parmtuple'].name()](**kwargs)
+    except Exception as e:
+        hou.ui.displayMessage(title='Error', text=str(e),
+                              severity=hou.severityType.Error)
 
-    print kwargs
+
+def action_callback(**kwargs):
+    """Lookup callback in `CALLBACKS` registry.
+
+    Uses the parm_name kw arg provided by houdini to
+    differentiate.
+
+    """
     try:
         ACTIONS[kwargs['parm_name']](**kwargs)
     except Exception as e:
@@ -119,33 +113,15 @@ def action_callback(**kwargs):
 
 
 def on_input_changed_callback(node, **kw):
-    """Summary.
-
-    Args:
-        node (TYPE): Description
-        **kw: Description
-
-    """
+    """Make sure correct render source is displayed."""
     render_source.update_input_node(node)
 
 
 def on_created_callback(node, **kw):
-    """Summary.
-
-    Args:
-        node (TYPE): Description
-        **kw: Description
-
-    """
+    """Initialize state when a node is created."""
     update_node_callback(node)
 
 
 def on_loaded_callback(node, **kw):
-    """Summary.
-
-    Args:
-        node (TYPE): Description
-        **kw: Description
-
-    """
+    """Initialize state when a node is loaded."""
     update_node_callback(node)

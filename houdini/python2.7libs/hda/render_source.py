@@ -1,17 +1,16 @@
-"""Manage connection to the input render node
-"""
+import submit
+
 
 def get_render_node(node):
-    """Input node"""
+    """Get the input node."""
     inputs = node.inputs()
     if not inputs:
         return None
     return inputs[0]
 
 
-
 def _get_render_type(input_node):
-    """String to display render type"""
+    """String to display render type in the node header."""
     if input_node:
         input_node_type = input_node.type().name()
         if input_node_type == 'ifd':
@@ -26,10 +25,7 @@ def _get_render_type(input_node):
 
 
 def update_input_node(node):
-    """Callback for every time a connection is made/broken 
-
-    Args:
-        node (hou.Node): The node
-    """
+    """Callback triggered every time a connection is made/broken."""
     render_type = _get_render_type(get_render_node(node))
     node.parm('render_type').set(render_type)
+    submit.update_button_state(node)
