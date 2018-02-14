@@ -225,8 +225,8 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
     def checkSaveBeforeSubmission(self):
         '''
-        Check if scene has unsaved changes and prompt user if they'd like to
-        save their Maya scene before continuing
+        Check if script has unsaved changes and prompt user if they'd like to
+        save it before continuing
         '''
         file_unsaved = nuke_utils.check_script_modified()
         if file_unsaved:
