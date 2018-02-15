@@ -72,7 +72,7 @@ def update_frames_stats(node):
 def _get_estimate_message(node):
     """Generate estimate info string.
 
-    This formula is a mock. Also the estimate UI is
+    This formula is a mock. Also estimate UI is
     currently hidden.
 
     """
