@@ -58,7 +58,8 @@ def populate_menu(node):
     """Populate project menu.
 
     Get list from the projects param where they are cached.
-    If there are none, which can only happen on create, then fetch them from the server.
+    If there are none, which can only happen on create, then
+    fetch them from the server.
 
     """
     projects = json.loads(node.parm('projects').eval())
@@ -69,6 +70,12 @@ def populate_menu(node):
 
 
 def has_valid_project(node):
+    """Make sure the project is valid.
+
+    This helps determine if the submit button should be
+    enabled.
+
+    """
     projects = json.loads(node.parm('projects').eval())
     selected = node.parm('project').eval()
     if selected == "notset" or selected not in (
@@ -78,4 +85,5 @@ def has_valid_project(node):
 
 
 def select(node, **kw):
+    """When user chooses a new project, update the submit button."""
     submit.update_button_state(node)

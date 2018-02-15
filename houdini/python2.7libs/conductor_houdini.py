@@ -4,19 +4,30 @@ This includes handling all actions from widgets, aux buttons
 as well as populating menus, initializing state and so on.
 
 """
+
 import hou
-from hda import instances, projects, frame_spec, render_source, submit, software, stats, notifications
+from hda import (
+    instances,
+    projects,
+    frame_spec,
+    render_source,
+    submit,
+    software,
+    stats,
+    notifications
+)
 
-reload(projects)
-reload(instances)
-reload(frame_spec)
-reload(render_source)
-reload(submit)
-reload(software)
-reload(stats)
-reload(notifications)
+from conductor import CONFIG
 
-__version__ = '1.0.0'
+if CONFIG.get("log_level") == "dev":
+    reload(projects)
+    reload(instances)
+    reload(frame_spec)
+    reload(render_source)
+    reload(submit)
+    reload(software)
+    reload(stats)
+    reload(notifications)
 
 MENUS = dict(
     machine_type=instances.populate_menu,
@@ -55,6 +66,7 @@ def update_node_callback(node, **kw):
     frame_spec.set_type(node)
     notifications.validate_emails(node)
     notifications.email_hook_changed(node)
+
 
 def show_request_callback(node, **kw):
     """Display the request info that will be sent to Conductor.
