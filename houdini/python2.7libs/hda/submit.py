@@ -19,9 +19,9 @@ def show_request(node, **kw):
     pass
 
 def doit(node, **kw):
-    """Implement in CT-59"""
     pass
 
+    """Implement in CT-59"""
     #     if hou.hipFile.hasUnsavedChanges():
     #         save_file_response = hou.ui.displayMessage(
     #             "There are some unsaved changes. Do you want to save the file before "
