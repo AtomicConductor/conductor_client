@@ -6,6 +6,7 @@ as well as populating menus, initializing state and so on.
 """
 import hou
 from hda import instances, projects, frame_spec, render_source, submit, software, stats, notifications
+
 reload(projects)
 reload(instances)
 reload(frame_spec)
@@ -45,8 +46,10 @@ def update_node_callback(node, **kw):
     We do this on creation/loading or manually.
 
     """
+    projects.fetch(node)
     instances.fetch_types(node)
     frame_spec.validate_custom_range(node)
+    frame_spec.validate_scout_range(node)
     render_source.update_input_node(node)
     stats.update_estimates(node)
     frame_spec.set_type(node)
@@ -74,6 +77,8 @@ ACTIONS = dict(
     fs3=frame_spec.set_frame_range,
     custom_range=frame_spec.validate_custom_range,
     clump_size=frame_spec.set_clump_size,
+    do_scout=frame_spec.do_scout_changed,
+    scout_frames=frame_spec.validate_scout_range,
     avg_frame_time=stats.avg_frame_time_changed,
     detect_software=software.detect,
     choose_software=software.choose,

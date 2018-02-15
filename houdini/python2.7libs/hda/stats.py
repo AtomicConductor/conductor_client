@@ -1,6 +1,10 @@
-"""All things related to cost estimation."""
+"""Cost estimation and frame stats.
 
-from frame_spec import frame_count
+The cost estimate part is currently hidden
+
+"""
+
+import frame_spec
 from math import ceil
 
 MACHINE_PRICE_MAP = {
@@ -24,21 +28,34 @@ MACHINE_PRICE_MAP = {
 
 K_UNIT_OF_WORK = 0.01
 
-
 def update_frames_stats(node):
     """Generate frame stats message.
 
     Especially useful to know the frame count when frame
-    spec set to custom.
+    spec is set to custom. Additionally, if scout frames are
+    set, display the frame info as the num_scout_frames /
+    num_frames. The only scout frames counted are those
+    that intersect the main set of frames.
 
     """
-    num_frames = frame_count(node)
+    frame_set = frame_spec.frame_set(node)
+    scout_set = frame_spec.scout_frame_set(node)
+
+    num_frames = len(frame_set)
+
     if not num_frames:
         node.parm("frame_stats1").set("-")
         node.parm("frame_stats2").set("-")
         return
 
-    node.parm("frame_stats1").set("%d Frames" % num_frames)
+    frame_info = "%d Frames" % num_frames
+
+    if (node.parm("do_scout").eval()):
+        frame_info = "%d Frames" % num_frames
+        num_scout_frames = len(frame_set.intersection(scout_set))
+        frame_info = "%d/%d Frames" % (num_scout_frames, num_frames)
+
+    node.parm("frame_stats1").set(frame_info)
 
     clump_size = node.parm("clump_size").eval()
 
@@ -50,12 +67,13 @@ def update_frames_stats(node):
     clumps = ceil(num_frames / float(clump_size))
 
     node.parm("frame_stats2").set("%d Clumps" % clumps)
- 
+
 
 def _get_estimate_message(node):
     """Generate estimate info string.
 
-    This formula is a mock.
+    This formula is a mock. Also the estimate UI is
+    currently hidden.
 
     """
     preemp_factor = 0.6 if node.parm("preemptible").eval() else 1.0
@@ -68,7 +86,7 @@ def _get_estimate_message(node):
     if type_factor is None:
         type_factor = 1.0
 
-    num_frames = frame_count(node)
+    num_frames = len(frame_spec.frame_set(node))
     if not num_frames:
         return "Cant estimate: frame count is invalid"
 
@@ -77,7 +95,7 @@ def _get_estimate_message(node):
         return "Cant estimate: accumulated mins is invalid"
 
     job_cost = K_UNIT_OF_WORK * type_factor * accumulated_mins * preemp_factor
- 
+
     frame_cost = job_cost / num_frames
 
     return "%s frames at \$%0.2f each.     TOTAL: \$%0.2f" % (
