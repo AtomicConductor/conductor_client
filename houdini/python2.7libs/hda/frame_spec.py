@@ -96,16 +96,38 @@ def _to_xrange(tup):
     return xrange(start, (end + 1), step)
 
 
-def _custom_frame_set(node):
-    """Generate an exclusive set of frames.
+def _validate_irregular_frame_spec(spec):
+    """Irregular range spec must be reducible to a list of frames.
 
-    Input is from the string in custom range parm. It is
-    assumed to be valid, but will quietly return empty set
-    if not.
+    Valid irregular range spec consists of either numbers or
+    ranges separated by commas. Ranges can have an optional
+    step value indicated by 'x'. Example valid custom range
+    spec: "120, 5, 26-76,19-23x4, 1000-2000, 3,9," Also
+    strips leading/trailing commas from input spec and
+    returns it along with a bool (valid)
+
+    """
+    valid = True
+    value = spec.strip(',')
+    if not bool(value):
+        valid = False
+    for part in [x.strip() for x in value.split(',')]:
+        if not (NUMBER_RE.match(part) or RANGE_RE.match(part)):
+            valid = False
+            break
+    return (valid, value)
+
+
+def _irregular_frame_set(spec):
+    """Set of frames from a string spec.
+
+    Given an irregular frame spec, such as that in custom
+    range or scout frames, return a set containing those
+    frames.
 
     """
     s = set()
-    val = node.parm("custom_range").eval().strip(',')
+    val = spec.strip(',')
     for part in [x.strip() for x in val.split(',')]:
         number_matches = NUMBER_RE.match(part)
         range_matches = RANGE_RE.match(part)
@@ -118,38 +140,46 @@ def _custom_frame_set(node):
     return s
 
 
-def frame_count(node, **kw):
-    """Count the frames for any range input type."""
+def _custom_frame_set(node):
+    """Generate set from value in custom_range parm"""
+    spec = node.parm("custom_range").eval()
+    return _irregular_frame_set(spec)
+
+
+def scout_frame_set(node):
+    """Generate set from value in scout_frames parm"""
+    spec = node.parm("scout_frames").eval()
+    return _irregular_frame_set(spec)
+
+
+def frame_set(node):
+    """Generate set containing current chosen frames"""
     if node.parm("range_type").eval() == "custom":
-        return len(_custom_frame_set(node)) if node.parm(
-            "custom_valid").eval() else 0
-    return len(_to_xrange([
+        return _custom_frame_set(node) if node.parm(
+            "custom_valid").eval() else set()
+    return set(_to_xrange([
         node.parm('fs%s' % parm).eval() for parm in ['1', '2', '3']
     ]))
 
-
 def validate_custom_range(node, **kw):
-    """Custom range spec must be reducible to a list of frames.
+    """Set valid tick for custom range spec."""
+    spec = node.parm("custom_range").eval()
+    valid, value = _validate_irregular_frame_spec(spec)
 
-    Valid custom range spec consists of either numbers or
-    ranges separated by commas. Ranges can have an optional
-    step value indicated by 'x'. Example valid custom range
-    spec: "120, 5, 26-76,19-23x4, 1000-2000, 3,9," Also
-    strips leading/trailing commas from input
-
-    """
-    result = True
-    val = node.parm("custom_range").eval().strip(',')
-    if not bool(val):
-        result = False
-    for part in [x.strip() for x in val.split(',')]:
-        if not (NUMBER_RE.match(part) or RANGE_RE.match(part)):
-            result = False
-            break
-    node.parm("custom_valid").set(result)
-    node.parm("custom_range").set(val)
+    node.parm("custom_valid").set(valid)
+    node.parm("custom_range").set(value)
 
     stats.update_estimates(node)
+    stats.update_frames_stats(node)
+
+
+def validate_scout_range(node, **kw):
+    """Set valid tick for scout range spec."""
+    spec = node.parm("scout_frames").eval()
+    valid, value = _validate_irregular_frame_spec(spec)
+
+    node.parm("scout_valid").set(valid)
+    node.parm("scout_frames").set(value)
     stats.update_frames_stats(node)
 
 
@@ -198,7 +228,7 @@ def best_clump_size(node, **kw):
     be to adjust clump size to 60
 
     """
-    num_frames = frame_count(node)
+    num_frames = len(frame_set(node))
     if not num_frames:
         return
     clump_size = node.parm("clump_size").eval()
@@ -210,4 +240,8 @@ def best_clump_size(node, **kw):
     clumps = ceil(num_frames / float(clump_size))
     clump_size = ceil(num_frames / float(clumps))
     node.parm("clump_size").set(clump_size)
+    stats.update_frames_stats(node)
+
+
+def do_scout_changed(node, **kw):
     stats.update_frames_stats(node)
