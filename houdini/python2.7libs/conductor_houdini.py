@@ -18,8 +18,9 @@ from hda import (
 )
 
 from conductor import CONFIG
-
-if CONFIG.get("log_level") == "dev":
+print  CONFIG.get("log_level") 
+if CONFIG.get("log_level") == "DEBUG":
+    print ("Reloading modules")
     reload(projects)
     reload(instances)
     reload(frame_spec)
@@ -46,12 +47,15 @@ def populate_menu(node, parm, **kw):
     """
     try:
         return MENUS[parm.name()](node)
-    except Exception as e:
+    except hou.Error as e:
         hou.ui.displayMessage(title='Error', text=str(e),
                               severity=hou.severityType.Error)
 
 
-def update_node_callback(node, **kw):
+ 
+
+
+def update_node(node, **kw):
     """Initialize or update.
 
     We do this on creation/loading or manually.
@@ -68,21 +72,14 @@ def update_node_callback(node, **kw):
     notifications.email_hook_changed(node)
 
 
-def show_request_callback(node, **kw):
-    """Display the request info that will be sent to Conductor.
-
-    Useful for checking validity and debugging
-
-    """
-    pass
-
+ 
 
 ACTIONS = dict(
     submit=submit.doit,
     machine_type=instances.machine_type_changed,
     preemptible=instances.preemptible_changed,
-    show_request=show_request_callback,
-    update=update_node_callback,
+    show_request=submit.show_request,
+    update=update_node,
     range_type=frame_spec.set_type,
     fs1=frame_spec.set_frame_range,
     fs2=frame_spec.set_frame_range,
@@ -117,7 +114,7 @@ def action_button_callback(**kwargs):
     """
     try:
         AUX_BUTTON_ACTIONS[kwargs['parmtuple'].name()](**kwargs)
-    except Exception as e:
+    except hou.Error as e:
         hou.ui.displayMessage(title='Error', text=str(e),
                               severity=hou.severityType.Error)
 
@@ -131,21 +128,33 @@ def action_callback(**kwargs):
     """
     try:
         ACTIONS[kwargs['parm_name']](**kwargs)
-    except Exception as e:
+    except hou.Error as e:
         hou.ui.displayMessage(title='Error', text=str(e),
                               severity=hou.severityType.Error)
 
 
 def on_input_changed_callback(node, **kw):
     """Make sure correct render source is displayed."""
-    render_source.update_input_node(node)
+    try:
+        render_source.update_input_node(node)
+    except hou.Error as e:
+        hou.ui.displayMessage(title='Error', text=str(e),
+                              severity=hou.severityType.Error)
 
 
 def on_created_callback(node, **kw):
     """Initialize state when a node is created."""
-    update_node_callback(node)
+    try:
+        update_node(node)
+    except hou.Error as e:
+        hou.ui.displayMessage(title='Error', text=str(e),
+                              severity=hou.severityType.Error)
 
 
 def on_loaded_callback(node, **kw):
     """Initialize state when a node is loaded."""
-    update_node_callback(node)
+    try:
+        update_node(node)
+    except hou.Error as e:
+        hou.ui.displayMessage(title='Error', text=str(e),
+                              severity=hou.severityType.Error)
