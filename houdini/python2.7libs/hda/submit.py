@@ -3,25 +3,6 @@ import render_source
 import projects
 
 
-def doit(node):
-    """Implement in CT-59"""
-    pass
-    # try:
-    #     if hou.hipFile.hasUnsavedChanges():
-    #         save_file_response = hou.ui.displayMessage(
-    #             "There are some unsaved changes. Do you want to save the file before "
-    #             "submitting to Conductor?", buttons=(
-    #                 "Yes", "No", "Cancel"), close_choice=2)
-    #         if save_file_response == 2:
-    #             return
-    #         if save_file_response == 0:
-    #             hou.hipFile.save()
-    #     hou.ui.displayMessage(text='Job submitted')
-  
-    # except Exception as e:
-    #     hou.ui.displayMessage(text=str(e), title='Job submission failed')
-
-
 def _can_submit(node):
     """Determine if everything is valid for a submission to happen.
 
@@ -33,6 +14,24 @@ def _can_submit(node):
     if not projects.has_valid_project(node):
         return False
     return True
+
+def show_request(node, **kw):
+    pass
+
+def doit(node, **kw):
+    """Implement in CT-59"""
+    pass
+
+    #     if hou.hipFile.hasUnsavedChanges():
+    #         save_file_response = hou.ui.displayMessage(
+    #             "There are some unsaved changes. Do you want to save the file before "
+    #             "submitting to Conductor?", buttons=(
+    #                 "Yes", "No", "Cancel"), close_choice=2)
+    #         if save_file_response == 2:
+    #             return
+    #         if save_file_response == 0:
+    #             hou.hipFile.save()
+    #     hou.ui.displayMessage(text='Job submitted')
 
 
 def update_button_state(node):
