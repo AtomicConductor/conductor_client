@@ -166,6 +166,17 @@ def get_nuke_script_filepath():
         raise Exception("Nuke script has not been saved to a file location.  Please save file before submitting to Conductor.")
     return filepath
 
+def check_script_modified():
+    '''
+    Check if the scene's been modified, and error out if it has been
+    '''
+    return nuke.root().modified()
+
+def save_current_nuke_script():
+    '''
+    Save the current script
+    '''
+    return nuke.scriptSave()
 
 def get_frame_range():
     '''
