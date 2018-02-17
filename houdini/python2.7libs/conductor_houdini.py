@@ -14,7 +14,8 @@ from hda import (
     submit,
     software,
     stats,
-    notifications
+    notifications,
+    takes
 )
 
 from conductor import CONFIG
@@ -29,6 +30,7 @@ if CONFIG.get("log_level") == "DEBUG":
     reload(software)
     reload(stats)
     reload(notifications)
+    reload(takes)
 
 MENUS = dict(
     machine_type=instances.populate_menu,
@@ -70,8 +72,7 @@ def update_node(node, **kw):
     frame_spec.set_type(node)
     notifications.validate_emails(node)
     notifications.email_hook_changed(node)
-
-
+    takes.update_takes(node)
  
 
 ACTIONS = dict(
@@ -97,7 +98,8 @@ ACTIONS = dict(
     email_on_submit=notifications.email_hook_changed,
     email_on_start=notifications.email_hook_changed,
     email_on_finish=notifications.email_hook_changed,
-    email_on_failure=notifications.email_hook_changed
+    email_on_failure=notifications.email_hook_changed,
+    update_takes=takes.update_takes
 )
 
 AUX_BUTTON_ACTIONS = dict(
@@ -126,11 +128,11 @@ def action_callback(**kwargs):
     differentiate.
 
     """
-    try:
-        ACTIONS[kwargs['parm_name']](**kwargs)
-    except hou.Error as e:
-        hou.ui.displayMessage(title='Error', text=str(e),
-                              severity=hou.severityType.Error)
+    # try:
+    ACTIONS[kwargs['parm_name']](**kwargs)
+    # except hou.Error as e:
+    #     hou.ui.displayMessage(title='Error', text=str(e),
+    #                           severity=hou.severityType.Error)
 
 
 def on_input_changed_callback(node, **kw):
