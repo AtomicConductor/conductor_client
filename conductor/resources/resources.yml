@@ -1,5 +1,5 @@
 instance_types:
-    - {cores: 2,  flavor: standard,  description: "2 core, 7.50GB Mem"}
+    - {cores: 2,  flavor: standard, description: "2 core, 7.50GB Mem"}
     - {cores: 2,  flavor: highmem,  description: "2 core, 13.0GB Mem"}
     - {cores: 4,  flavor: standard, description: "4 core, 15.0GB Mem"}
     - {cores: 4,  flavor: highmem,  description: "4 core, 26.0GB Mem"}
