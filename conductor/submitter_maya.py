@@ -148,8 +148,20 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         super(MayaConductorSubmitter, self).applyDefaultSettings()
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
+        self.configureGPUWidget()
         self.extended_widget.refreshUi()
         self.setOutputDir(maya_utils.get_image_dirpath())
+
+    def configureGPUWidget(self):
+        '''
+        Check if V-Ray is current renderer is set to a GPU mode, if so
+        then show the GPU options in submitter
+        '''
+        if maya_utils.is_vray_renderer():
+            if maya_utils.is_vray_gpu_enabled():
+                self.gpu_widget.show()
+                return
+        self.gpu_widget.hide()
 
     def getExtendedWidget(self):
         return MayaWidget()
