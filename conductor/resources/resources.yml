@@ -17,7 +17,7 @@ instance_types:
     - {cores: 64, flavor: highmem,  description: "64 core, 416GB Mem"}
 
 gpu_types:
-    - {gpu_count: 1,  flavor: k80,  description: "NVIDIA Tesla K80, 1 GPU"}
+    - {gpu_count: 1,  gpu_flavor: k80,  description: "NVIDIA Tesla K80, 1 GPU"}
     
  # A dictionary of maya node types and their corresponing attributes name(s) for
  # seeking out file dependencies (external filepaths)

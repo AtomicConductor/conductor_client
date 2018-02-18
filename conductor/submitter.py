@@ -228,6 +228,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Populate the Instance Type combobox with the available instance configs
         self.populateInstanceTypeCmbx()
 
+        # Populate the GPU Acceleration combobox with the available instance configs
+        self.populateGPUTypeCmbx()
+
         # Populate the software versions tree widget
         self.populateSoftwareVersionsTrWgt()
 
