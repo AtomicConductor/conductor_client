@@ -87,6 +87,12 @@ class Submit(object):
         self.frames = self.resolve_arg(args, 'frames', "")
         logger.debug("frames: %s", self.frames)
 
+        self.gpu_count = self.resolve_arg(args, 'gpu_count', 0)
+        logger.debug("gpu_count: %s", self.gpu_count)
+        
+        self.gpu_flavor = self.resolve_arg(args, 'gpu_flavor', "")
+        logger.debug("gpu_flavor: %s", self.gpu_flavor)
+
         self.job_title = self.resolve_arg(args, 'job_title', "")
         logger.debug("job_title: %s", self.job_title)
 
@@ -294,6 +300,12 @@ class Submit(object):
 
         if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
+        
+        if self.gpu_flavor:
+            supported_gpu_flavors = ['k80', 'k100']
+            if self.gpu_flavor not in supported_gpu_flavors:
+                raise BadArgumentError("GPU type %s is not one of %s" % (self.gpu_flavor, supported_gpu_flavors))
+            
 
     def send_job(self, upload_files, upload_size):
         '''
@@ -343,6 +355,10 @@ class Submit(object):
                                 'cores': self.cores,
                                 'machine_flavor': self.machine_flavor})
 
+            if self.gpu_count:
+                submit_dict['gpu_count'] = self.gpu_count
+            if self.gpu_flavor:
+                submit_dict['gpu_flavor'] = self.gpu_flavor
             if self.priority:
                 submit_dict['priority'] = self.priority
             if self.output_path:
