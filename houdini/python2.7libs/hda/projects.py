@@ -1,3 +1,5 @@
+"""Manage project menu selection."""
+
 from conductor.lib import api_client
 import json
 import submit
