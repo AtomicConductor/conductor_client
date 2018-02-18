@@ -5,12 +5,13 @@ building and refreshing the list of takes. We recurse down
 the takes hierarchy to get the takes in the correct order
 for a tree like display. Parm names are "take_<takename>"
 because if they were simply <takename> there could be a name
-clash. Each time we refresh, we simply delete all the old
-widgets and rebuild, remembering any ON values.
-Unfortunately there are no events emitted when takes are
-added or deleted, and there is no way to detect if a tab
-changed in the param group, so we have to provide a refresh
-button.
+clash. Each time we refresh, we delete all the old widgets
+and rebuild, remembering any ON values. Unfortunately there
+are no events emitted when takes are added or deleted, and
+there is no way to detect if a tab changed in the param
+group, so we have to provide a refresh button.
+
+ptg variable is the parmTemplateGroup.
 
 """
 
