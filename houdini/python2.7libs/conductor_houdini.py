@@ -21,7 +21,6 @@ from hda import (
 from conductor import CONFIG
 
 if CONFIG.get("log_level") == "DEBUG":
-    print ("Reloading modules")
     reload(projects)
     reload(instances)
     reload(frame_spec)
