@@ -1156,7 +1156,7 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
 
         "Autodesk Maya 2017 Security Fix": # We're treating this as SP0
-            package: bef6c5499dc2654623d2d892469ac5d0
+            package: c14b3fcde1e0d8bd66f88a4e750856b6
             v-ray-maya:
                 "3.40.04": d0a2b65e5b9f3f952e4129b64ac58a6d
                 "3.52.01": 68e5a3d6974edf2893fdd52b30530f4f

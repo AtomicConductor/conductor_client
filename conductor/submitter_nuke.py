@@ -223,6 +223,19 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         output_path = file_utils.get_common_dirpath(write_paths)
         return output_path, write_paths
 
+    def checkSaveBeforeSubmission(self):
+        '''
+        Check if script has unsaved changes and prompt user if they'd like to
+        save it before continuing
+        '''
+        file_unsaved = nuke_utils.check_script_modified()
+        if file_unsaved:
+            title = "Unsaved Nuke Script Data"
+            message = "Save Nuke script before submitting?"
+            answer, _ = pyside_utils.launch_yes_no_dialog(title, message, show_not_again_checkbox=False, parent=self)
+            return answer
+        return True
+
     def runPreSubmission(self):
         '''
         Override the base class (which is an empty stub method) so that a
@@ -236,6 +249,12 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         again (after validation succeeds), we also pass the depenencies along
         in the returned dictionary (so that we don't need to collect them again).
         '''
+        # Check if script has unsaved changes and ask user if they'd like to
+        # save their script before continuing with submission
+        if not self.checkSaveBeforeSubmission():
+            raise exceptions.UserCanceledError()
+
+        nuke_utils.save_current_nuke_script()
 
         # Get the write nodes that have been selected by the user (in the UI)
         write_nodes = self.extended_widget.getSelectedWriteNodes()
