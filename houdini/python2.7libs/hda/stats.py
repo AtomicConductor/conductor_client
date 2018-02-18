@@ -1,6 +1,12 @@
 """Cost estimation and frame stats.
 
-The cost estimate part is uses fake values and is currently hidden
+The cost estimate part uses fake values and is currently
+hidden.
+
+Frame stats tells the user how many frames there
+are, how many scout frames if scout selected, and how many
+clumps will be generated with the current clump size.
+TODO - put frame stats in frame_spec file or in its own file.
 
 """
 
@@ -28,11 +34,12 @@ MACHINE_PRICE_MAP = {
 
 K_UNIT_OF_WORK = 0.01
 
+
 def _get_estimate_message(node):
     """Generate estimate info string.
 
-    This formula is a mock. Also estimate UI is
-    currently hidden.
+    This formula is a mock. Also estimate UI is currently
+    hidden.
 
     """
     preemp_factor = 0.6 if node.parm("preemptible").eval() else 1.0
@@ -87,8 +94,8 @@ def update_frames_stats(node):
     Especially useful to know the frame count when frame
     spec is set to custom. Additionally, if scout frames are
     set, display the frame info as the num_scout_frames /
-    num_frames. The only scout frames counted are those
-    that intersect the set of total frames.
+    num_frames. The only scout frames counted are those that
+    intersect the set of total frames.
 
     """
     frame_set = frame_spec.frame_set(node)
@@ -120,5 +127,3 @@ def update_frames_stats(node):
     clumps = ceil(num_frames / float(clump_size))
 
     node.parm("frame_stats2").set("%d Clumps" % clumps)
-
-

@@ -1,3 +1,9 @@
+"""Priovide UI to specify what events to notify users of.
+
+Currently only email notifications.
+
+"""
+
 import re
 
 """Very simple loose email regex, matches 1 email address."""

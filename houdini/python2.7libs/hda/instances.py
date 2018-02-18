@@ -1,4 +1,4 @@
-"""Manage instance_type selection."""
+"""Manage instance_type menu selection."""
 
 from conductor.lib import common
 import stats

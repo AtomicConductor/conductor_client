@@ -1,4 +1,4 @@
-# import hou
+"""Entry point for job submission"""
 import render_source
 import projects
 

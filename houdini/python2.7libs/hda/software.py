@@ -1,3 +1,5 @@
+"""Manage selection and autodetection of software dependencies."""
+
 import re
 import hou
 from conductor.lib import common
