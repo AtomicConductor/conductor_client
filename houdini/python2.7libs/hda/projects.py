@@ -3,7 +3,7 @@ import json
 import submit
 
 
-def active_projects():
+def _active_projects():
     """Get active projects from the server.
 
     If there is a problem of any kind (exception, empty
@@ -36,15 +36,18 @@ def active_projects():
 
 
 def fetch(node):
-    """Fetch the list of projects and store on projects param. If we don't do
-    this, and instead fetch every time the menu is accessed, there is an
-    unacceptable delay. If we rebuild this list, and for some reason the
-    selected project is not in it, then set selected to the.
+    """Fetch the list of projects and store on projects param.
 
-    first item in the list, which will be the - Not set - item.
+    If we don't do this and instead populate from scratch
+    every time the menu is accessed, there is an
+    unacceptable delay. If we rebuild this list, and for
+    some reason the selected project is not in it, then set
+    selected to the first item in the list, which will be
+    the NotSet item.
 
     """
-    projects = active_projects()
+
+    projects = _active_projects()
     node.parm('projects').set(json.dumps(projects))
 
     selected = node.parm('project').eval()
@@ -59,7 +62,11 @@ def populate_menu(node):
 
     Get list from the projects param where they are cached.
     If there are none, which can only happen on create, then
-    fetch them from the server.
+    fetch them from the server. If a previous fetch failed,
+    there will at least be a NotSet menu item. If we didn't
+    implement a NotSet menu item, then there would be
+    repeated attempts to hit the server to login and it
+    would get very annoying.
 
     """
     projects = json.loads(node.parm('projects').eval())

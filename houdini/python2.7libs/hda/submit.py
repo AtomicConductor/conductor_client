@@ -15,8 +15,16 @@ def _can_submit(node):
         return False
     return True
 
+
 def show_request(node, **kw):
+    """Display the object to be submitted.
+
+    Should be instant and not mutate anything. Therefore, do
+    not save a file or actually submit anything.
+
+    """
     pass
+
 
 def doit(node, **kw):
     pass
@@ -35,6 +43,6 @@ def doit(node, **kw):
 
 
 def update_button_state(node):
-    """Enable/disable the submit button"""
+    """Enable/disable the submit button."""
     can_submit = 1 if _can_submit(node) else 0
     node.parm("can_submit").set(can_submit)

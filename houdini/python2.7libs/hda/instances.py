@@ -60,7 +60,7 @@ def machine_type_changed(node, **kw):
 def preemptible_changed(node, **kw):
     """Upate estimates when machine preemp type changes.
 
-    Currently hidden
+    Estimates currently hidden
 
     """
     stats.update_estimates(node)

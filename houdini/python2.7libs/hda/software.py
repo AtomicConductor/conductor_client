@@ -7,12 +7,12 @@ def _get_entries(path, ui_map):
     """Get possible entries from the given path.
 
     Path may contain one or 2 levels i.e. 'host/plugin' or just host.
-    We look up the items from the map that comes from resources file to
+    We look up the items from the map that comes from resources.yml to
     get the GID. The return is a dict with 1 or 2 entries to be displayed
-    in the kv widget. host GID will be prefixed with * (so it comes first
-    alphabetically) and plugin GIDs are prefixed with -. For example,
-    given the path some-host/some-plugin, return\
+    in the widget. host GID will be prefixed with *  and plugin GIDs are
+    prefixed with -. For example, given the path some-host/some-plugin,
 
+    return:
     {
         "*abcd1234": "some-host",
         "-4321dcba": "some-plugin"
@@ -33,11 +33,11 @@ def _get_entries(path, ui_map):
 def _to_ui_map(packages):
     """Create a simple mapping from versioned software to ID.
 
-    Software IDs structure in the resources.yml file is
-    not suitable for houdini's tree chooser UI. So we concat name and
-    version together, build hierarchy with "/" character. Each entry points
-    to its guid.
-    Example result.
+    Software IDs structure in the resources.yml file is not
+    suitable for houdini's tree chooser UI. So we concat
+    name and version together, build hierarchy with "/"
+    character. Each entry points to its guid. Example
+    result:
 
     {
         houdini-16.5.323: "abcd12345678abcdabcd12345678abcd",
@@ -60,36 +60,6 @@ def _to_ui_map(packages):
                 tool_entry = "%s/%s-%s" % (hou_entry, tool, tool_version)
                 result[tool_entry] = gid
     return result
-
-
-def choose(node, **kw):
-    """Open a tree chooser with all possible software choices.
-
-    Add the result to existing chosen software and set the
-    param value.
-
-    """
-    packages = common.get_package_ids().get('houdini')
-    ui_map = _to_ui_map(packages)
-    choices = [val for val in ui_map.keys()]
-
-    paths = hou.ui.selectFromTree(
-        choices,
-        exclusive=False,
-        message="Choose software",
-        title="Chooser",
-        clear_on_cancel=True)
-
-    software = node.parm('software').eval()
-    for path in paths:
-        software.update(_get_entries(path, ui_map))
-    node.parm('software').set(software)
-
-
-def clear(node, **kw):
-    """Clear all entries."""
-    empty = {}
-    node.parm('software').set(empty)
 
 
 def _get_current_package():
@@ -166,11 +136,36 @@ def _detect_plugins():
     return plugins
 
 
+def choose(node, **kw):
+    """Open a tree chooser with all possible software choices.
+
+    Add the result to existing chosen software and set the
+    param value.
+
+    TODO - remove or warn on conflicting software versions
+
+    """
+    packages = common.get_package_ids().get('houdini')
+    ui_map = _to_ui_map(packages)
+    choices = [val for val in ui_map.keys()]
+
+    paths = hou.ui.selectFromTree(
+        choices,
+        exclusive=False,
+        message="Choose software",
+        title="Chooser",
+        clear_on_cancel=True)
+
+    software = node.parm('software').eval()
+    for path in paths:
+        software.update(_get_entries(path, ui_map))
+    node.parm('software').set(software)
+
+
 def detect(node, **kw):
     """Autodetect host package and plugins used in the scene.
 
-    Match them against versions that are available at
-    Conductor.
+    Match them against versions available at Conductor.
 
     """
     host = _detect_host()
@@ -179,3 +174,9 @@ def detect(node, **kw):
     software.update(host)
     software.update(plugins)
     node.parm('software').set(software)
+
+
+def clear(node, **kw):
+    """Clear all entries."""
+    empty = {}
+    node.parm('software').set(empty)
