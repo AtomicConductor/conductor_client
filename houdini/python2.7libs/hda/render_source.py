@@ -2,7 +2,7 @@ import submit
 
 
 def get_render_node(node):
-    """Get the input node."""
+    """Get connected render node."""
     inputs = node.inputs()
     if not inputs:
         return None
@@ -10,18 +10,21 @@ def get_render_node(node):
 
 
 def _get_render_type(input_node):
-    """String to display render type in the node header."""
-    if input_node:
-        input_node_type = input_node.type().name()
-        if input_node_type == 'ifd':
-            return 'Mantra render'
-        elif input_node_type == 'arnold':
-            return 'Arnold render'
-        elif input_node_type == 'rib':
-            return 'Prman render'
-        elif input_node_type in ['output', 'filecache']:
-            return 'Simulation'
-    return "Please connect a source node"
+    """Display render type in the node header."""
+    if not input_node:
+        return "Please connect a source node"
+
+    node_type = input_node.type().name()
+
+    if node_type == 'ifd':
+        return 'Mantra render'
+    if node_type == 'arnold':
+        return 'Arnold render'
+    if node_type == 'rib':
+        return 'Prman render'
+    if node_type in ['output', 'filecache']:
+        return 'Simulation'
+    return 'Unknown'
 
 
 def update_input_node(node):

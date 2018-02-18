@@ -1,12 +1,4 @@
-
-"""Deal with various ways of specifying frame range.
-
-Attributes:
-* NUMBER_RE: (Regex) Catch a frame number
-* RANGE_RE: (Regex) Catch a frame range with optional step
-* XP (Enum): Specify that Expressions are Python
-
-"""
+"""Deal with various ways of specifying frame range."""
 
 import re
 import hou
@@ -14,8 +6,11 @@ import render_source
 import stats
 from math import ceil
 
+# Catch a frame number
 NUMBER_RE = re.compile(r"^(\d+)$")
+# Catch a frame range with optional step
 RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
+# Specify that Expressions are Python
 XP = hou.exprLanguage.Python
 
 
@@ -140,29 +135,30 @@ def _irregular_frame_set(spec):
     return s
 
 
-def _custom_frame_set(node):
-    """Generate set from value in custom_range parm"""
+def custom_frame_set(node):
+    """Generate set from value in custom_range parm."""
     spec = node.parm("custom_range").eval()
     return _irregular_frame_set(spec)
 
 
 def scout_frame_set(node):
-    """Generate set from value in scout_frames parm"""
+    """Generate set from value in scout_frames parm."""
     spec = node.parm("scout_frames").eval()
     return _irregular_frame_set(spec)
 
 
 def frame_set(node):
-    """Generate set containing current chosen frames"""
+    """Generate set containing current chosen frames."""
     if node.parm("range_type").eval() == "custom":
-        return _custom_frame_set(node) if node.parm(
+        return custom_frame_set(node) if node.parm(
             "custom_valid").eval() else set()
     return set(_to_xrange([
         node.parm('fs%s' % parm).eval() for parm in ['1', '2', '3']
     ]))
 
+
 def validate_custom_range(node, **kw):
-    """Set valid tick for custom range spec."""
+    """Set valid tickmark for custom range spec."""
     spec = node.parm("custom_range").eval()
     valid, value = _validate_irregular_frame_spec(spec)
 
@@ -174,7 +170,14 @@ def validate_custom_range(node, **kw):
 
 
 def validate_scout_range(node, **kw):
-    """Set valid tick for scout range spec."""
+    """Set valid tickmark for scout range spec.
+
+    TODO Currently we just validate that the string produces
+    ranges, however we should also validate that the numbers
+    produced exist in the total frame range because clearly
+    scout frames must be a subset of total frames
+
+    """
     spec = node.parm("scout_frames").eval()
     valid, value = _validate_irregular_frame_spec(spec)
 
@@ -224,8 +227,8 @@ def best_clump_size(node, **kw):
     """Adjust the clumpsize based on best distribution.
 
     If for example there are 120 frames and clump size is
-    100, 2 clumps are needed, so a better distribution will
-    be to adjust clump size to 60
+    100, then 2 clumps are needed, so better to adjust clump
+    size to 60
 
     """
     num_frames = len(frame_set(node))
@@ -244,4 +247,5 @@ def best_clump_size(node, **kw):
 
 
 def do_scout_changed(node, **kw):
+    """Update stats when scout_frames toggle on or off."""
     stats.update_frames_stats(node)

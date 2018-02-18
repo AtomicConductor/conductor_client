@@ -1,13 +1,14 @@
 import re
 
-"""Very simple loose email regex."""
+"""Very simple loose email regex, matches 1 email address."""
 SIMPLE_EMAIL_RE = re.compile(r"^\S+@\S+$")
 
 
 def validate_emails(node, **kw):
     """Emails must all be somewhat valid.
 
-    Otherwise disable `valid` tickmark
+    Split the list of emails and loop through. Disable
+    `valid` tickmark if any matches fail.
 
     """
     result = True
