@@ -17,21 +17,7 @@ from hda import (
     notifications,
     takes
 )
-
-from conductor import CONFIG
-
-if CONFIG.get("log_level") == "DEBUG":
-    reload(projects)
-    reload(instances)
-    reload(frame_spec)
-    reload(render_source)
-    reload(submit)
-    reload(software)
-    reload(stats)
-    reload(notifications)
-    reload(takes)
-
-
+ 
 def _update_node(node, **kw):
     """Initialize or update.
 

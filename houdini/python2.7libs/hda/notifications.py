@@ -1,4 +1,4 @@
-"""Priovide UI to specify what events to notify users of.
+"""Provide UI to specify what events to notify users of.
 
 Currently only email notifications.
 
@@ -17,16 +17,13 @@ def validate_emails(node, **kw):
     `valid` tickmark if any matches fail.
 
     """
-    result = True
+ 
     val = node.parm("email_addresses").eval().strip(',').strip()
-
-    if not bool(val):
-        result = False
-    else:
-        for address in [x.strip() for x in val.split(',')]:
-            if not (SIMPLE_EMAIL_RE.match(address)):
-                result = False
-                break
+    result = bool(val)
+    for address in [x.strip() for x in val.split(',')]:
+        if not (SIMPLE_EMAIL_RE.match(address)):
+            result = False
+            break
     node.parm("email_valid").set(result)
 
 

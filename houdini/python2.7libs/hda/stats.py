@@ -110,7 +110,7 @@ def update_frames_stats(node):
 
     frame_info = "%d Frames" % num_frames
 
-    if (node.parm("do_scout").eval()):
+    if node.parm("do_scout").eval():
         frame_info = "%d Frames" % num_frames
         num_scout_frames = len(frame_set.intersection(scout_set))
         frame_info = "%d/%d Frames" % (num_scout_frames, num_frames)

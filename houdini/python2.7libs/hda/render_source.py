@@ -4,7 +4,7 @@ Currently only sets the label to indicate what type of
 input, but later it may adjust other parts of the UI. For
 example, We allow the user to select different renderers in
 the software section, but if the input type changes here, to
-Arnold say, then we can promt the user to revisit the
+Arnold say, then we can prompt the user to revisit the
 software section, or even deal with it automatically.
 
 """
