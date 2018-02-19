@@ -6,7 +6,7 @@ Currently only email notifications.
 
 import re
 
-"""Very simple loose email regex, matches 1 email address."""
+# Very simple loose email regex, matches 1 email address.
 SIMPLE_EMAIL_RE = re.compile(r"^\S+@\S+$")
 
 
