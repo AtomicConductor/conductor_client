@@ -14,6 +14,11 @@ RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
 XP = hou.exprLanguage.Python
 
 
+def _clamp(low, val, high):
+    """Restrict a value."""
+    return sorted((low, val, high))[1]
+
+
 def _replace_with_value(parm, value=None):
     """Overwrite a controlled parm with its evaluated value or a given
     value."""
@@ -234,10 +239,7 @@ def best_clump_size(node, **kw):
     if not num_frames:
         return
     clump_size = node.parm("clump_size").eval()
-    if clump_size < 1:
-        clump_size = 1
-    elif clump_size > num_frames:
-        clump_size = num_frames
+    clump_size = _clamp(1, clump_size, num_frames)
 
     clumps = math.ceil(num_frames / float(clump_size))
     clump_size = math.ceil(num_frames / float(clumps))

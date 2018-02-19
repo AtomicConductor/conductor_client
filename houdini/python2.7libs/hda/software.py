@@ -125,7 +125,7 @@ def _get_used_libraries():
 def _detect_plugins():
     """Find plugins in the scene that are available at Conductor."""
     plugins = {}
-    path, package = _get_current_package()
+    _, package = _get_current_package()
     available_plugins = _plugins_for_host_package(package)
     used_libraries = _get_used_libraries()
     for plugin in available_plugins.keys():

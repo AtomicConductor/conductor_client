@@ -17,7 +17,8 @@ from hda import (
     notifications,
     takes
 )
- 
+
+
 def _update_node(node, **kw):
     """Initialize or update.
 
