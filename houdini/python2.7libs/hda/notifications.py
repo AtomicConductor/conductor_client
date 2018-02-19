@@ -17,7 +17,7 @@ def validate_emails(node, **kw):
     `valid` tickmark if any matches fail.
 
     """
- 
+
     val = node.parm("email_addresses").eval().strip(',').strip()
     result = bool(val)
     for address in [x.strip() for x in val.split(',')]:

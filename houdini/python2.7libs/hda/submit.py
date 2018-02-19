@@ -1,10 +1,11 @@
-"""Entry point for job submission"""
+"""Entry point for job submission."""
 import render_source
 import projects
 
 
 def _can_submit(node):
-    """TODO in CT-59 determine if everything is valid for a submission to happen.
+    """TODO in CT-59 determine if everything is valid for a submission to
+    happen.
 
     Use this to enable/disable the submit button
 
@@ -27,7 +28,7 @@ def show_request(node, **kw):
 
 
 def doit(node, **kw):
-    """TODO  in CT-59 submit jobs"""
+    """TODO  in CT-59 submit jobs."""
     pass
     #     if hou.hipFile.hasUnsavedChanges():
     #         save_file_response = hou.ui.displayMessage(
