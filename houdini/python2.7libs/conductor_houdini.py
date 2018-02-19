@@ -80,7 +80,7 @@ def populate_menu(node, parm, **kw):
 
     Delegate the job of constructing the list of items.
     Houdini requires the token value pairs for menu item
-    creation to be flattened into a flattened list like so:
+    creation to be a flattened list like so:
     [k0, v0, k1, v2, ... kn, vn]
 
     """
