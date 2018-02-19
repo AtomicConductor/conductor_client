@@ -97,7 +97,7 @@ def _set_values(node, values):
 
 
 def update_takes(node, **kw):
-    """Public function to rebuild the list of controls.
+    """Rebuild the list of controls.
 
     The list represents the hierarchy of takes.
 
