@@ -4,7 +4,7 @@ import re
 import hou
 import render_source
 import stats
-from math import ceil
+import math
 
 # Catch a frame number
 NUMBER_RE = re.compile(r"^(\d+)$")
@@ -81,7 +81,7 @@ def _to_xrange(tup):
 
     """
     start, end, step = tup
-    if (step is None or step == 0):
+    if not step:
         step = 1
     start = int(start)
     end = int(end)
@@ -102,10 +102,9 @@ def _validate_irregular_frame_spec(spec):
     returns it along with a bool (valid)
 
     """
-    valid = True
+
     value = spec.strip(',')
-    if not bool(value):
-        valid = False
+    valid = bool(value)
     for part in [x.strip() for x in value.split(',')]:
         if not (NUMBER_RE.match(part) or RANGE_RE.match(part)):
             valid = False
@@ -240,8 +239,8 @@ def best_clump_size(node, **kw):
     elif clump_size > num_frames:
         clump_size = num_frames
 
-    clumps = ceil(num_frames / float(clump_size))
-    clump_size = ceil(num_frames / float(clumps))
+    clumps = math.ceil(num_frames / float(clump_size))
+    clump_size = math.ceil(num_frames / float(clumps))
     node.parm("clump_size").set(clump_size)
     stats.update_frames_stats(node)
 

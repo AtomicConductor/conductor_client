@@ -28,9 +28,8 @@ def _to_parm_name(take_name):
 def _takes_with_depth(take, depth, result):
     """Recurse to get a take and its children."""
     result.append((take.name(), depth))
-    depth = depth + 1
     for child in take.children():
-        _takes_with_depth(child, depth, result)
+        _takes_with_depth(child, depth+1, result)
 
 
 def get_takes_with_depth():

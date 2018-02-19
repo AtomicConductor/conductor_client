@@ -67,12 +67,12 @@ def populate_menu(node):
     fetch them from the server. If a previous fetch failed,
     there will at least be a NotSet menu item. If we didn't
     implement a NotSet menu item, then there would be
-    repeated attempts to hit the server to login and it
-    would get very annoying.
+    repeated attempts to hit the server to login which would
+    get very annoying.
 
     """
     projects = json.loads(node.parm('projects').eval())
-    if not bool(projects):
+    if not projects:
         projects = fetch(node)
     res = [k for i in projects for k in (i["id"], i["name"])]
     return res
@@ -87,10 +87,8 @@ def has_valid_project(node):
     """
     projects = json.loads(node.parm('projects').eval())
     selected = node.parm('project').eval()
-    if selected == "notset" or selected not in (
-            project["id"] for project in projects):
-        return False
-    return True
+    return not (selected == "notset" or selected not in (
+        project["id"] for project in projects))
 
 
 def select(node, **kw):

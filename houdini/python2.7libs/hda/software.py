@@ -92,9 +92,9 @@ def _detect_host():
 
 
 def _plugins_for_host_package(package):
-    """Generate kv pars of plugins in a package.
+    """Generate kv pairs of plugins in a package.
 
-    A package is one host software from the rsources file
+    A package is one host software from the resources file
     and its available plugins. We turn it into a flat kv
     dict: {"plugin-version": "identifier"}
 
@@ -115,15 +115,15 @@ def _get_used_libraries():
     for category in hou.nodeTypeCategories().values():
         for node_type in category.nodeTypes().values():
             used = node_type.instances()
-            if len(used):
+            if used:
                 definition = node_type.definition()
-                if definition is not None:
+                if definition:
                     result.append(definition.libraryFilePath())
     return result
 
 
 def _detect_plugins():
-    """Find plugins in the scene that are available at conductor."""
+    """Find plugins in the scene that are available at Conductor."""
     plugins = {}
     path, package = _get_current_package()
     available_plugins = _plugins_for_host_package(package)
@@ -180,5 +180,4 @@ def detect(node, **kw):
 
 def clear(node, **kw):
     """Clear all entries."""
-    empty = {}
-    node.parm('software').set(empty)
+    node.parm('software').set({})

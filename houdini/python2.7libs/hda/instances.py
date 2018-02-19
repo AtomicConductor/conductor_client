@@ -12,7 +12,8 @@ def _kv(item):
     menu. e.g. ( "highmem_32", "32 core, 208GB Mem")
 
     """
-    return (("%s_%s" % (item["flavor"], item["cores"])), item["description"])
+    key = "%s_%s" % (item["flavor"], item["cores"])
+    return (key, item["description"])
 
 
 def fetch_types(node):
@@ -49,7 +50,7 @@ def populate_menu(node):
 
 
 def machine_type_changed(node, **kw):
-    """Upate estimates when machine type changes.
+    """Update estimates when machine type changes.
 
     Currently hidden
 
@@ -58,7 +59,7 @@ def machine_type_changed(node, **kw):
 
 
 def preemptible_changed(node, **kw):
-    """Upate estimates when machine preemp type changes.
+    """Update estimates when machine preemp type changes.
 
     Estimates currently hidden
 

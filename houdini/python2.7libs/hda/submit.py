@@ -4,7 +4,7 @@ import projects
 
 
 def _can_submit(node):
-    """Determine if everything is valid for a submission to happen.
+    """TODO in CT-59 determine if everything is valid for a submission to happen.
 
     Use this to enable/disable the submit button
 
@@ -17,7 +17,7 @@ def _can_submit(node):
 
 
 def show_request(node, **kw):
-    """Display the object to be submitted.
+    """TODO in CT-59 generate request and open a panel.
 
     Should be instant and not mutate anything. Therefore, do
     not save a file or actually submit anything.
@@ -27,9 +27,8 @@ def show_request(node, **kw):
 
 
 def doit(node, **kw):
+    """TODO  in CT-59 submit jobs"""
     pass
-
-    """Implement in CT-59"""
     #     if hou.hipFile.hasUnsavedChanges():
     #         save_file_response = hou.ui.displayMessage(
     #             "There are some unsaved changes. Do you want to save the file before "
@@ -43,6 +42,6 @@ def doit(node, **kw):
 
 
 def update_button_state(node):
-    """Enable/disable the submit button."""
+    """Enable/disable submit button."""
     can_submit = 1 if _can_submit(node) else 0
     node.parm("can_submit").set(can_submit)
