@@ -20,7 +20,7 @@ class BestClumpSizeTest(TestCase):
 
     # This not unittest.TestCase#setUp, it is manual set_up to support args
     @classmethod
-    def set_up(cls, clump_size=1, frame_iterable):
+    def set_up(cls, clump_size, frame_iterable):
         node = Mock(["parm"])
         parm = Mock(["eval", "set"])
         parm.eval = Mock(return_value=clump_size)
