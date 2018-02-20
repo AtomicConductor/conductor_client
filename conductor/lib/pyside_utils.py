@@ -236,19 +236,17 @@ def launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=True, pa
     dialog.label.setAlignment(QtCore.Qt.AlignCenter)
     dialog.label.setTextInteractionFlags(dialog.label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
     dialog.label.setTextFormat(QtCore.Qt.RichText)
-    dialog.label.setOpenExternalLinks(True)
     dialog.label.setText(message)
     dialog.verticalLayout.addWidget(dialog.label)
 
     dialog.widget = QtWidgets.QWidget(dialog)
     dialog.horizontalLayout = QtWidgets.QHBoxLayout(dialog.widget)
     dialog.horizontalLayout.setContentsMargins(-1, -1, -1, 0)
-    dialog.horizontalLayout.setObjectName("horizontalLayout")
     dialog.verticalLayout.addWidget(dialog.widget)
 
-    # Create the "Don\t ask again" checkbox
+    # Create the "Don't ask again" checkbox
     dialog.checkBox = QtWidgets.QCheckBox(dialog.widget)
-    dialog.checkBox.setText("Don\'t ask again")
+    dialog.checkBox.setText("Don't ask again")
     dialog.horizontalLayout.addWidget(dialog.checkBox)
 
     # Create the buttonbox
