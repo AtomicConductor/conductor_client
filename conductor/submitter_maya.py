@@ -290,7 +290,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         if file_unsaved:
             title = "Unsaved Maya Scene Data"
             message = "Save Maya file before submitting?"
-            answer, _ = pyside_utils.launch_yes_no_dialog(title, message, show_not_again_checkbox=False, parent=self)
+            answer, _ = pyside_utils.launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=False, parent=self)
             return answer
         return True
 
@@ -311,9 +311,13 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         # Check if scene has unsaved changes and ask user if they'd like to
         # save their scene before continuing with submission
-        if not self.checkSaveBeforeSubmission():
+        # NOTE: The option of 'No' has a value of 2, and would
+        # be the fall-through value here (i.e. continue without
+        # doing anything).
+        save_dialog_result = self.checkSaveBeforeSubmission()
+        if not save_dialog_result:
             raise exceptions.UserCanceledError()
-        else:
+        elif save_dialog_result == 1:
             maya_utils.save_current_maya_scene()
 
         # TODO(lws): This try/except should be moved up to the parent-class so
