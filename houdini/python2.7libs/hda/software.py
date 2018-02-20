@@ -48,17 +48,17 @@ def _to_ui_map(packages):
 
     """
     result = {}
-    hou_versions = packages.keys()
-    for hou_version in hou_versions:
-        gid = packages[hou_version]['package']
+    for hou_version in packages:
+        package = packages[hou_version]
+        gid = package['package']
         hou_entry = "houdini-%s" % hou_version
         result[hou_entry] = gid
 
-        tools = [p for p in packages[hou_version].keys() if not p == "package"]
+        tools = [p for p in package if not p == "package"]
         for tool in tools:
-            tool_versions = packages[hou_version][tool].keys()
-            for tool_version in tool_versions:
-                gid = packages[hou_version][tool][tool_version]
+            # tool_versions = package[tool].keys()
+            for tool_version in package[tool]:
+                gid = package[tool][tool_version]
                 tool_entry = "%s/%s-%s" % (hou_entry, tool, tool_version)
                 result[tool_entry] = gid
     return result
@@ -100,9 +100,9 @@ def _plugins_for_host_package(package):
 
     """
     result = {}
-    for tool in [p for p in package.keys() if not p == "package"]:
-        versions = package[tool].keys()
-        for version in versions:
+    for tool in [p for p in package if not p == "package"]:
+        # versions = package[tool]
+        for version in package[tool]:
             key = "%s-%s" % (tool, version)
             value = package[tool][version]
             result[key] = value
@@ -128,7 +128,7 @@ def _detect_plugins():
     _, package = _get_current_package()
     available_plugins = _plugins_for_host_package(package)
     used_libraries = _get_used_libraries()
-    for plugin in available_plugins.keys():
+    for plugin in available_plugins:
         regex = re.compile(plugin)
         for lib_path in used_libraries:
             if regex.search(lib_path):
@@ -138,7 +138,7 @@ def _detect_plugins():
     return plugins
 
 
-def choose(node, **kw):
+def choose(node, **_):
     """Open a tree chooser with all possible software choices.
 
     Add the result to existing chosen software and set the
@@ -149,7 +149,7 @@ def choose(node, **kw):
     """
     packages = common.get_package_ids().get('houdini')
     ui_map = _to_ui_map(packages)
-    choices = [val for val in ui_map.keys()]
+    choices = [val for val in ui_map]
 
     paths = hou.ui.selectFromTree(
         choices,
@@ -164,7 +164,7 @@ def choose(node, **kw):
     node.parm('software').set(software)
 
 
-def detect(node, **kw):
+def detect(node, **_):
     """Autodetect host package and plugins used in the scene.
 
     Match them against versions available at Conductor.
@@ -178,6 +178,6 @@ def detect(node, **kw):
     node.parm('software').set(software)
 
 
-def clear(node, **kw):
+def clear(node, **_):
     """Clear all entries."""
     node.parm('software').set({})

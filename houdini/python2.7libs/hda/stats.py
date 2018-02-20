@@ -11,7 +11,6 @@ TODO - put frame stats in frame_spec file or in its own file.
 """
 
 import frame_spec
-from math import ceil
 
 MACHINE_PRICE_MAP = {
     "standard_2": 1.0,
@@ -64,7 +63,7 @@ def _get_estimate_message(node):
 
     frame_cost = job_cost / num_frames
 
-    return "%s frames at \$%0.2f each.     TOTAL: \$%0.2f" % (
+    return r"%s frames at $%0.2f each.     TOTAL: $%0.2f" % (
         num_frames, frame_cost, job_cost)
 
 
@@ -79,51 +78,10 @@ def update_estimates(node):
     node.parm("cost_time_estimates").set(msg)
 
 
-def avg_frame_time_changed(node, **kw):
+def avg_frame_time_changed(node, **_):
     """Call when average frame time slider changed.
 
     This will update the estimate
 
     """
     update_estimates(node)
-
-
-def update_frames_stats(node):
-    """Generate frame stats message.
-
-    Especially useful to know the frame count when frame
-    spec is set to custom. Additionally, if scout frames are
-    set, display the frame info as the num_scout_frames /
-    num_frames. The only scout frames counted are those that
-    intersect the set of total frames.
-
-    """
-    frame_set = frame_spec.frame_set(node)
-    scout_set = frame_spec.scout_frame_set(node)
-
-    num_frames = len(frame_set)
-
-    if not num_frames:
-        node.parm("frame_stats1").set("-")
-        node.parm("frame_stats2").set("-")
-        return
-
-    frame_info = "%d Frames" % num_frames
-
-    if node.parm("do_scout").eval():
-        frame_info = "%d Frames" % num_frames
-        num_scout_frames = len(frame_set.intersection(scout_set))
-        frame_info = "%d/%d Frames" % (num_scout_frames, num_frames)
-
-    node.parm("frame_stats1").set(frame_info)
-
-    clump_size = node.parm("clump_size").eval()
-
-    if clump_size < 1:
-        clump_size = 1
-    elif clump_size > num_frames:
-        clump_size = num_frames
-
-    clumps = ceil(num_frames / float(clump_size))
-
-    node.parm("frame_stats2").set("%d Clumps" % clumps)

@@ -1,3 +1,5 @@
+"""Test the frame_spec.py module."""
+
 import sys
 import os
 import unittest
@@ -5,20 +7,18 @@ from unittest import TestCase
 from mock import Mock
 import logging
 
-module = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if module not in sys.path:
-    sys.path.insert(0, module)
+HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if HDA_MODULE not in sys.path:
+    sys.path.insert(0, HDA_MODULE)
 
 sys.modules['hou'] = Mock()
 
-from hda import frame_spec, stats
+from hda import frame_spec
 
 logging.basicConfig()
 
 
 class BestClumpSizeTest(TestCase):
-
-    # This not unittest.TestCase#setUp, it is manual set_up to support args
     @classmethod
     def set_up(cls, clump_size, frame_iterable):
         node = Mock(["parm"])
@@ -27,7 +27,7 @@ class BestClumpSizeTest(TestCase):
         parm.set = Mock()
         node.parm = Mock(return_value=parm)
         frame_spec.frame_set = Mock(return_value=set(frame_iterable))
-        stats.update_frames_stats = Mock()
+        frame_spec._update_frames_stats = Mock()
         return (node, parm)
 
     def test_clump_size_should_remain_1(self):
@@ -46,7 +46,7 @@ class BestClumpSizeTest(TestCase):
         parm.set.assert_called_with(8)
 
     def test_should_adjust_clump_size_when_zero(self):
-        node, parm = self.set_up(clump_size=0, frame_iterable=xrange(1, 9, 1))
+        node, parm = self.set_up(clump_size=0, frame_iterable=xrange(1, 2, 1))
         frame_spec.best_clump_size(node)
         parm.set.assert_called_with(1)
 
