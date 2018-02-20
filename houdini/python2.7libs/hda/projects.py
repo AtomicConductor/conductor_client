@@ -1,7 +1,7 @@
 """Manage project menu selection."""
 
-from conductor.lib import api_client
 import json
+from conductor.lib import api_client
 import submit
 
 
@@ -20,7 +20,8 @@ def _active_projects():
     api = api_client.ApiClient()
 
     response, response_code = api.make_request(
-        uri_path='api/v1/projects/', verb="GET", raise_on_error=False, use_api_key=True)
+        uri_path='api/v1/projects/', verb="GET",
+        raise_on_error=False, use_api_key=True)
     if response_code not in [200]:
         return notset
 
@@ -29,7 +30,7 @@ def _active_projects():
         return notset
 
     projects = [{"id": project["id"], "name": project["name"]}
-                for project in projects if (project.get("status") == "active")]
+                for project in projects if project.get("status") == "active"]
     if not projects:
         return notset
 
@@ -91,6 +92,6 @@ def has_valid_project(node):
         project["id"] for project in projects))
 
 
-def select(node, **kw):
+def select(node, **_):
     """When user chooses a new project, update the submit button."""
     submit.update_button_state(node)

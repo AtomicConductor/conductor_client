@@ -1,10 +1,9 @@
 """Deal with various ways of specifying frame range."""
 
+import math
 import re
 import hou
 import render_source
-import stats
-import math
 
 # Catch a frame number
 NUMBER_RE = re.compile(r"^(\d+)$")
@@ -74,7 +73,6 @@ def _set_scene(node):
 def _set_custom(node):
     """When switching to custom, just validate existing input."""
     validate_custom_range(node)
-    stats.update_estimates(node)
 
 
 def _to_xrange(tup):
@@ -125,18 +123,18 @@ def _irregular_frame_set(spec):
     frames.
 
     """
-    s = set()
+    result = set()
     val = spec.strip(',')
     for part in [x.strip() for x in val.split(',')]:
         number_matches = NUMBER_RE.match(part)
         range_matches = RANGE_RE.match(part)
         if number_matches:
             vals = number_matches.groups()
-            s = s.union([int(vals[0])])
+            result = result.union([int(vals[0])])
         elif range_matches:
             tup = _to_xrange(range_matches.groups())
-            s = s.union(tup)
-    return s
+            result = result.union(tup)
+    return result
 
 
 def custom_frame_set(node):
@@ -161,7 +159,39 @@ def frame_set(node):
     ]))
 
 
-def validate_custom_range(node, **kw):
+def _update_frames_stats(node):
+    """Generate frame stats message.
+
+    Especially useful to know the frame count when frame
+    spec is set to custom. Additionally, if scout frames are
+    set, display the frame info as the num_scout_frames /
+    num_frames. The only scout frames counted are those that
+    intersect the set of total frames.
+
+    """
+    main_set = frame_set(node)
+    scout_set = scout_frame_set(node)
+
+    num_frames = len(main_set)
+
+    if not num_frames:
+        node.parm("frame_stats1").set("-")
+        node.parm("frame_stats2").set("-")
+        return
+
+    frame_info = "%d Frames" % num_frames
+    if node.parm("do_scout").eval():
+        num_scout_frames = len(main_set.intersection(scout_set))
+        frame_info = "%d/%d Frames" % (num_scout_frames, num_frames)
+    node.parm("frame_stats1").set(frame_info)
+
+    clump_size = node.parm("clump_size").eval()
+    clump_size = _clamp(1, clump_size, num_frames)
+    clumps = math.ceil(num_frames / float(clump_size))
+    node.parm("frame_stats2").set("%d Clumps" % clumps)
+
+
+def validate_custom_range(node, **_):
     """Set valid tickmark for custom range spec."""
     spec = node.parm("custom_range").eval()
     valid, value = _validate_irregular_frame_spec(spec)
@@ -169,11 +199,10 @@ def validate_custom_range(node, **kw):
     node.parm("custom_valid").set(valid)
     node.parm("custom_range").set(value)
 
-    stats.update_estimates(node)
-    stats.update_frames_stats(node)
+    _update_frames_stats(node)
 
 
-def validate_scout_range(node, **kw):
+def validate_scout_range(node, **_):
     """Set valid tickmark for scout range spec.
 
     TODO Currently we just validate that the string produces
@@ -187,10 +216,10 @@ def validate_scout_range(node, **kw):
 
     node.parm("scout_valid").set(valid)
     node.parm("scout_frames").set(value)
-    stats.update_frames_stats(node)
+    _update_frames_stats(node)
 
 
-def set_type(node, **kw):
+def set_type(node, **_):
     """Switch between different types of frame specification.
 
     * Explicit: make inputs settable directly
@@ -207,27 +236,27 @@ def set_type(node, **kw):
     }
     func = node.parm("range_type").eval()
     funcs[func](node)
-    stats.update_estimates(node)
-    stats.update_frames_stats(node)
+
+    _update_frames_stats(node)
 
 
-def set_frame_range(node, **kw):
+def set_frame_range(node, **_):
     """When frame range changes, update stats.
 
     Also update cost estimates, although they are currently
     hidden.
 
     """
-    stats.update_estimates(node)
-    stats.update_frames_stats(node)
+
+    _update_frames_stats(node)
 
 
-def set_clump_size(node, **kw):
+def set_clump_size(node, **_):
     """When clump size changes, update stats."""
-    stats.update_frames_stats(node)
+    _update_frames_stats(node)
 
 
-def best_clump_size(node, **kw):
+def best_clump_size(node, **_):
     """Adjust the clumpsize based on best distribution.
 
     If for example there are 120 frames and clump size is
@@ -244,9 +273,9 @@ def best_clump_size(node, **kw):
     clumps = math.ceil(num_frames / float(clump_size))
     clump_size = math.ceil(num_frames / float(clumps))
     node.parm("clump_size").set(clump_size)
-    stats.update_frames_stats(node)
+    _update_frames_stats(node)
 
 
-def do_scout_changed(node, **kw):
+def do_scout_changed(node, **_):
     """Update stats when scout_frames toggle on or off."""
-    stats.update_frames_stats(node)
+    _update_frames_stats(node)

@@ -1,8 +1,8 @@
 """Manage instance_type menu selection."""
 
+import json
 from conductor.lib import common
 import stats
-import json
 
 
 def _kv(item):
@@ -49,7 +49,7 @@ def populate_menu(node):
     return [k for i in existing for k in _kv(i)]
 
 
-def machine_type_changed(node, **kw):
+def machine_type_changed(node, **_):
     """Update estimates when machine type changes.
 
     Currently hidden
@@ -58,7 +58,7 @@ def machine_type_changed(node, **kw):
     stats.update_estimates(node)
 
 
-def preemptible_changed(node, **kw):
+def preemptible_changed(node, **_):
     """Update estimates when machine preemp type changes.
 
     Estimates currently hidden
