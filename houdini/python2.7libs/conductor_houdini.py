@@ -92,7 +92,7 @@ def populate_menu(node, parm, **_):
 
 
 def action_callback(**kwargs):
-    """Lookup callback in `CALLBACKS` registry.
+    """Lookup callback in `ACTIONS` registry.
 
     Uses the parm_name kw arg provided by houdini to
     differentiate.
