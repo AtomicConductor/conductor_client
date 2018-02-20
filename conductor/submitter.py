@@ -538,7 +538,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         Return the number of GPUs and GPU type that the user has selected
         from the "GPU Acceleration" combobox
         '''
-        return self.ui_gpu_type_cmbx.itemData(self.ui_gpu_type_cmbx.currentIndex())
+        if self.ui_gpu_type_cmbx.count():
+            return self.ui_gpu_type_cmbx.itemData(self.ui_gpu_type_cmbx.currentIndex())
+        return {}
 
     def getPreemptibleCheckbox(self):
         '''
@@ -639,8 +641,15 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["preemptible"] = self.getPreemptibleCheckbox()
-        conductor_args["gpu_type"] = self.getGPUType()['gpu_flavor']
-        conductor_args["gpu_count"] = self.getGPUType()['gpu_count']
+        
+        gpu_config = self.getGPUType()
+        if gpu_config:
+            conductor_args["gpu_type"] = self.getGPUType()['gpu_flavor']
+            conductor_args["gpu_count"] = self.getGPUType()['gpu_count']
+        else:
+            conductor_args["gpu_type"] = ""
+            conductor_args["gpu_count"] = 0
+            
         conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
