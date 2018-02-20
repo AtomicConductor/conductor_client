@@ -46,7 +46,7 @@ class BestClumpSizeTest(TestCase):
         parm.set.assert_called_with(8)
 
     def test_should_adjust_clump_size_when_zero(self):
-        node, parm = self.set_up(clump_size=0, frame_iterable=xrange(1, 2, 1))
+        node, parm = self.set_up(clump_size=0, frame_iterable=xrange(1, 9, 1))
         frame_spec.best_clump_size(node)
         parm.set.assert_called_with(1)
 
