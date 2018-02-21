@@ -651,7 +651,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         else:
             conductor_args["gpu_type"] = ""
             conductor_args["gpu_count"] = 0
-            
+
         conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
