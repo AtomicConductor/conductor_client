@@ -56,7 +56,6 @@ def _to_ui_map(packages):
 
         tools = [p for p in package if not p == "package"]
         for tool in tools:
-            # tool_versions = package[tool].keys()
             for tool_version in package[tool]:
                 gid = package[tool][tool_version]
                 tool_entry = "%s/%s-%s" % (hou_entry, tool, tool_version)
