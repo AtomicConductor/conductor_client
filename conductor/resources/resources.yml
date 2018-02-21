@@ -21,9 +21,9 @@ gpu_types:
     - {gpu_count: 2,  gpu_flavor: k80,  description: "NVIDIA Tesla K80, 2 GPU"}
     - {gpu_count: 4,  gpu_flavor: k80,  description: "NVIDIA Tesla K80, 4 GPU"}
     - {gpu_count: 8,  gpu_flavor: k80,  description: "NVIDIA Tesla K80, 8 GPU"}
-    - {gpu_count: 1,  gpu_flavor: k100,  description: "NVIDIA Tesla K100, 1 GPU"}
-    - {gpu_count: 2,  gpu_flavor: k100,  description: "NVIDIA Tesla K100, 2 GPU"}
-    - {gpu_count: 4,  gpu_flavor: k100,  description: "NVIDIA Tesla K100, 4 GPU"}
+    - {gpu_count: 1,  gpu_flavor: k100, description: "NVIDIA Tesla K100, 1 GPU"}
+    - {gpu_count: 2,  gpu_flavor: k100, description: "NVIDIA Tesla K100, 2 GPU"}
+    - {gpu_count: 4,  gpu_flavor: k100, description: "NVIDIA Tesla K100, 4 GPU"}
     
  # A dictionary of maya node types and their corresponing attributes name(s) for
  # seeking out file dependencies (external filepaths)
