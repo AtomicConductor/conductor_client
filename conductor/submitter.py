@@ -643,7 +643,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["preemptible"] = self.getPreemptibleCheckbox()
-        
+
         gpu_config = self.getGPUType()
         if gpu_config:
             conductor_args["gpu_type"] = self.getGPUType()['gpu_flavor']
