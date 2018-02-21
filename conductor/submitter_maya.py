@@ -162,6 +162,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                 self.populateGPUTypeCmbx()
                 self.gpu_widget.show()
                 return
+        # We clear the combobox to ensure that it has no entries to be
+        # queried during submission - and will default to 0
         self.ui_gpu_type_cmbx.clear()
         self.gpu_widget.hide()
 
