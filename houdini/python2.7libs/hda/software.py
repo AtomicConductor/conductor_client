@@ -100,7 +100,6 @@ def _plugins_for_host_package(package):
     """
     result = {}
     for tool in [p for p in package if not p == "package"]:
-        # versions = package[tool]
         for version in package[tool]:
             key = "%s-%s" % (tool, version)
             value = package[tool][version]
