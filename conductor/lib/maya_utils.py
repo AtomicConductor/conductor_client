@@ -791,13 +791,13 @@ def is_vray_gpu_enabled():
     Return True if a GPU mode is selected in V-Ray's render settings
     Current potential values set on V-Ray's productionEngine attr are:
     0 = CPU mode (False)
-    1 = OpenCL mode (True)
+    1 = OpenCL mode (False - not supported on Intel/NVIDIA hardware)
     2 = CUDA mode (True)
     '''
     vray_node = get_vray_settings_node(strict=False)
     if vray_node:
         production_engine = cmds.getAttr("%s.productionEngine" % vray_node)
-        if production_engine > 0:
+        if production_engine == 2:
             return True
     return False
 
