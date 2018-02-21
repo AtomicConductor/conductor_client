@@ -538,6 +538,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         Return the number of GPUs and GPU type that the user has selected
         from the "GPU Acceleration" combobox
         '''
+        # We check if the GPU combobox has any items, as if it is hidden it should
+        # have also been cleared of its entries
         if self.ui_gpu_type_cmbx.count():
             return self.ui_gpu_type_cmbx.itemData(self.ui_gpu_type_cmbx.currentIndex())
         return {}
