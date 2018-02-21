@@ -89,7 +89,7 @@ class Submit(object):
 
         self.gpu_count = self.resolve_arg(args, 'gpu_count', 0)
         logger.debug("gpu_count: %s", self.gpu_count)
-        
+
         self.gpu_flavor = self.resolve_arg(args, 'gpu_flavor', "")
         logger.debug("gpu_flavor: %s", self.gpu_flavor)
 
