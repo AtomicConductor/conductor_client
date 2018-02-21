@@ -300,12 +300,12 @@ class Submit(object):
 
         if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
-        
+
         if self.gpu_flavor:
             supported_gpu_flavors = ['k80', 'k100']
             if self.gpu_flavor not in supported_gpu_flavors:
                 raise BadArgumentError("GPU type %s is not one of %s" % (self.gpu_flavor, supported_gpu_flavors))
-            
+
 
     def send_job(self, upload_files, upload_size):
         '''
