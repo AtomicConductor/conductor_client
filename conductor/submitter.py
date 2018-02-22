@@ -539,7 +539,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         from the "GPU Acceleration" combobox
         '''
         # We check if the GPU combobox is enabled, as if it is hidden then the renderer
-        # being used isn't GPU compatible 
+        # being used isn't GPU compatible
         if self.ui_gpu_type_cmbx.enabled():
             return self.ui_gpu_type_cmbx.itemData(self.ui_gpu_type_cmbx.currentIndex())
         return {}
