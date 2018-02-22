@@ -17,7 +17,7 @@ def _can_submit(node):
     return True
 
 
-def show_request(node, **kw):
+def show_request():
     """TODO in CT-59 generate request and open a panel.
 
     Should be instant and not mutate anything. Therefore, do
@@ -27,7 +27,7 @@ def show_request(node, **kw):
     pass
 
 
-def doit(node, **kw):
+def doit():
     """TODO  in CT-59 submit jobs."""
     pass
     #     if hou.hipFile.hasUnsavedChanges():

@@ -1,11 +1,11 @@
 """Manage instance_type menu selection."""
 
+import json
 from conductor.lib import common
 import stats
-import json
 
 
-def _kv(item):
+def _to_menu_item(item):
     """Convert instance_type object to tuple.
 
     Tuple has unique key and value pair needed to build the
@@ -20,19 +20,19 @@ def fetch_types(node):
     """Fetch list of instance types.
 
     Store them on machine_types param as json so they can be
-    accessed from the dynamic menu cretion script. If we
+    accessed from the dynamic menu creation script. If we
     don't do this, and instead fetch every time the menu is
     accessed, there is an unacceptable delay. Also check
     that the selected item in the menu is in the list. If it
-    is not then set it to the first one in the list.
+    is not then set it to the first item in the list.
 
     """
     types = common.get_conductor_instance_types()
     node.parm('machine_types').set(json.dumps(types))
     selected = node.parm('machine_type').eval()
 
-    if selected not in (_kv(item)[0] for item in types):
-        node.parm('machine_type').set(_kv(types[0])[0])
+    if selected not in (_to_menu_item(item)[0] for item in types):
+        node.parm('machine_type').set(_to_menu_item(types[0])[0])
     return types
 
 
@@ -46,10 +46,10 @@ def populate_menu(node):
     existing = json.loads(node.parm('machine_types').eval())
     if not bool(existing):
         existing = fetch_types(node)
-    return [k for i in existing for k in _kv(i)]
+    return [k for i in existing for k in _to_menu_item(i)]
 
 
-def machine_type_changed(node, **kw):
+def machine_type_changed(node, **_):
     """Update estimates when machine type changes.
 
     Currently hidden
@@ -58,7 +58,7 @@ def machine_type_changed(node, **kw):
     stats.update_estimates(node)
 
 
-def preemptible_changed(node, **kw):
+def preemptible_changed(node, **_):
     """Update estimates when machine preemp type changes.
 
     Estimates currently hidden
