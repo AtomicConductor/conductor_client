@@ -797,8 +797,7 @@ def is_vray_gpu_enabled():
     vray_node = get_vray_settings_node(strict=False)
     if vray_node:
         production_engine = cmds.getAttr("%s.productionEngine" % vray_node)
-        if production_engine == 2:
-            return True
+        return production_engine == 2
     return False
 
 
