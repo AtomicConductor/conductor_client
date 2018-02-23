@@ -717,6 +717,9 @@ Preemption rate ~10%.  Recommended best use when renders are short, or not again
                 <property name="text">
                  <string/>
                 </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
                 <property name="isFileUserPref" stdset="0">
                  <bool>true</bool>
                 </property>
