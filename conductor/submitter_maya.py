@@ -159,7 +159,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
         self.ui_gpu_type_cmbx.clear()
         self.populateGPUTypeCmbx()
-
         show = maya_utils.is_vray_renderer() and maya_utils.is_vray_gpu_enabled()
         self.ui_gpu_widget.setVisible(show)
 
