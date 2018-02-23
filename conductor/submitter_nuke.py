@@ -232,7 +232,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         if file_unsaved:
             title = "Unsaved Nuke Script Data"
             message = "Save Nuke script before submitting?"
-            answer, _ = pyside_utils.launch_yes_no_dialog(title, message, show_not_again_checkbox=False, parent=self)
+            answer, _ = pyside_utils.launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=False, parent=self)
             return answer
         return True
 
@@ -251,10 +251,14 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         '''
         # Check if script has unsaved changes and ask user if they'd like to
         # save their script before continuing with submission
-        if not self.checkSaveBeforeSubmission():
+        # NOTE: The option of 'No' has a value of 2, and would
+        # be the fall-through value here (i.e. continue without
+        # doing anything).
+        save_dialog_result = self.checkSaveBeforeSubmission()
+        if not save_dialog_result:
             raise exceptions.UserCanceledError()
-
-        nuke_utils.save_current_nuke_script()
+        elif save_dialog_result == 1:
+            nuke_utils.save_current_nuke_script()
 
         # Get the write nodes that have been selected by the user (in the UI)
         write_nodes = self.extended_widget.getSelectedWriteNodes()

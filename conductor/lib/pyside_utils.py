@@ -217,6 +217,74 @@ def launch_yes_no_dialog(title, message, show_not_again_checkbox=True, parent=No
     dont_notify_again = dialog.checkBox.isChecked()
     return bool(yes), dont_notify_again
 
+def launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=True, parent=None):
+    '''
+    Launch a dialog box that has "yes", "no" and "cancel" buttons.
+    Optionally display a checkbox that asks whether to show this dialog box again.
+    This is different from the Yes/No style of dialog since it offers three choices.
+    As a consequence, the return code needs to return one of three statuses.
+    return the result of this dialog (0/1/2) for 'Yes'/'No'/'Cancel' respectively, and
+    whether the user checked the "Don't ask again" checkbox (True/False).
+    '''
+
+    dialog = QtWidgets.QDialog(parent=parent)
+    dialog.setWindowTitle(title)
+    dialog.verticalLayout = QtWidgets.QVBoxLayout(dialog)
+
+    # Create the dialogs main message (Qlabel)
+    dialog.label = QtWidgets.QLabel(dialog)
+    dialog.label.setAlignment(QtCore.Qt.AlignCenter)
+    dialog.label.setTextInteractionFlags(dialog.label.textInteractionFlags() | QtCore.Qt.TextBrowserInteraction)
+    dialog.label.setTextFormat(QtCore.Qt.RichText)
+    dialog.label.setText(message)
+    dialog.verticalLayout.addWidget(dialog.label)
+
+    dialog.widget = QtWidgets.QWidget(dialog)
+    dialog.horizontalLayout = QtWidgets.QHBoxLayout(dialog.widget)
+    dialog.horizontalLayout.setContentsMargins(-1, -1, -1, 0)
+    dialog.verticalLayout.addWidget(dialog.widget)
+
+    # Create the "Don't ask again" checkbox
+    dialog.checkBox = QtWidgets.QCheckBox(dialog.widget)
+    dialog.checkBox.setText("Don't ask again")
+    dialog.horizontalLayout.addWidget(dialog.checkBox)
+
+    # Create the buttonbox
+    dialog.buttonBox = QtWidgets.QDialogButtonBox(dialog.widget)
+    dialog.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+
+    # Create the "Yes", "No" and "Cancel" options
+    dialog.yesButton = QtWidgets.QPushButton('Yes', dialog.widget)
+    dialog.noButton = QtWidgets.QPushButton('No', dialog.widget)
+    dialog.cancelButton = QtWidgets.QPushButton('Cancel', dialog.widget)
+
+    # Link the buttons to their respective return values
+    dialog.yesButton.clicked.connect(lambda: dialog.done(1))
+    dialog.noButton.clicked.connect(lambda: dialog.done(2))
+    dialog.cancelButton.clicked.connect(lambda: dialog.done(0))
+
+    # Add the buttons to the UI
+    dialog.buttonBox.addButton(dialog.yesButton, QtWidgets.QDialogButtonBox.ActionRole)
+    dialog.buttonBox.addButton(dialog.noButton, QtWidgets.QDialogButtonBox.ActionRole)
+    dialog.buttonBox.addButton(dialog.cancelButton, QtWidgets.QDialogButtonBox.ActionRole)
+
+    dialog.horizontalLayout.addWidget(dialog.buttonBox)
+
+    # Connect the buttonbox signals
+    QtCore.QMetaObject.connectSlotsByName(dialog)
+
+    # Hide the checkbox if not desired
+    if not show_not_again_checkbox:
+        dialog.checkBox.hide()
+
+    # Resize the dialog box to scale to its contents
+    dialog.adjustSize()
+
+    # Launch the dialog
+    yes = dialog.exec_()
+    dont_notify_again = dialog.checkBox.isChecked()
+
+    return yes, dont_notify_again
 
 def get_widgets_by_property(widget, property_name, match_value=False, property_value=None):
     '''
