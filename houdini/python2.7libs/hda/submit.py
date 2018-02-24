@@ -1,6 +1,8 @@
 """Entry point for job submission."""
 import render_source
 import projects
+from hda.submission import Submission
+import takes
 
 
 def _can_submit(node):
@@ -27,19 +29,23 @@ def show_request():
     pass
 
 
-def doit():
+def doit(node, **_):
+    print "CREATE SUBMISSION"
+    submission = Submission(node, takes.active_takes(node))
+    submission.view()
+
     """TODO  in CT-59 submit jobs."""
-    pass
-    #     if hou.hipFile.hasUnsavedChanges():
-    #         save_file_response = hou.ui.displayMessage(
-    #             "There are some unsaved changes. Do you want to save the file before "
-    #             "submitting to Conductor?", buttons=(
-    #                 "Yes", "No", "Cancel"), close_choice=2)
-    #         if save_file_response == 2:
-    #             return
-    #         if save_file_response == 0:
-    #             hou.hipFile.save()
-    #     hou.ui.displayMessage(text='Job submitted')
+
+    # if hou.hipFile.hasUnsavedChanges():
+    #     save_file_response = hou.ui.displayMessage(
+    #         "There are some unsaved changes. Do you want to save the file before "
+    #         "submitting to Conductor?", buttons=(
+    #             "Yes", "No", "Cancel"), close_choice=2)
+    #     if save_file_response == 2:
+    #         return
+    #     if save_file_response == 0:
+    #         hou.hipFile.save()
+    # hou.ui.displayMessage(text='Job submitted')
 
 
 def update_button_state(node):
