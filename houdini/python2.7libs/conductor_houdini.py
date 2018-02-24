@@ -87,7 +87,7 @@ def populate_menu(node, parm, **_):
     try:
         return MENUS[parm.name()](node)
     except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=str(err),
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
 
 
@@ -98,11 +98,11 @@ def action_callback(**kwargs):
     differentiate.
 
     """
-    try:
-        ACTIONS[kwargs['parm_name']](**kwargs)
-    except (hou.Error) as err:
-        hou.ui.displayMessage(title='Error', text=str(err),
-                              severity=hou.severityType.Error)
+    # try:
+    ACTIONS[kwargs['parm_name']](**kwargs)
+    # except (hou.Error) as err:
+    #     hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+    #                           severity=hou.severityType.Error)
 
 
 
@@ -116,7 +116,7 @@ def action_button_callback(**kwargs):
     try:
         AUX_BUTTON_ACTIONS[kwargs['parmtuple'].name()](**kwargs)
     except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=str(err),
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
 
 
@@ -125,7 +125,7 @@ def takes_callback(**kwargs):
     try:
         takes.on_toggle_change(**kwargs)
     except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=str(err),
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
 
 
@@ -134,7 +134,7 @@ def on_input_changed_callback(node, **_):
     try:
         render_source.update_input_node(node)
     except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=str(err),
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
 
 def on_created_callback(node, **_):
@@ -142,7 +142,7 @@ def on_created_callback(node, **_):
     try:
         _update_node(node)
     except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=str(err),
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
 
 
@@ -151,5 +151,5 @@ def on_loaded_callback(node, **_):
     try:
         _update_node(node)
     except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=str(err),
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
