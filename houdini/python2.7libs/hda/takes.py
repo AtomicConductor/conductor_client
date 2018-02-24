@@ -32,8 +32,8 @@ def _is_takable(template):
     labels don't have tags so we can't differentiate.
 
     """
-    return (template.type().name() == "Label" or
-            template.tags().get("takes") == "True")
+    return (template.type().name() == "Label") or (
+        template.tags().get("takes") == "True")
 
 
 def _takable_templates(parent):
@@ -53,6 +53,8 @@ def _enable_takable_parms(take, node):
     ptg = node.parmTemplateGroup()
     for template in _takable_templates(ptg):
         parm_tuple = node.parmTuple(template.name())
+        print "%s : %s : %s" % (
+            take.name(), template.name(), parm_tuple.name())
         take.addParmTuple(parm_tuple)
 
 
@@ -196,3 +198,12 @@ def on_toggle_change(node, parm_name, **_):
     if not values:
         node.parm(parm_name).set(1)
     _sync_parms_to_active_takes(node)
+
+
+def active_takes(node):
+    active = _get_existing_values(node)
+    result = []
+    for take in hou.takes.takes():
+        if active.get(_to_parm_name(take.name())):
+            result.append(take)
+    return result
