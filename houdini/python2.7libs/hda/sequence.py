@@ -15,6 +15,11 @@ NUMBER_RE = re.compile(r"^(\d+)$")
 RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
 
 
+def _clamp(low, val, high):
+    """Restrict a value."""
+    return sorted((low, val, high))[1]
+
+
 def resolve_start_end_step(*args):
     """Generate a valid start, end, step.
 
@@ -158,7 +163,8 @@ class Sequence(object):
         26-76,19-23x4, 1000-2000, 3,9,"
 
         """
-
+        print "--------------- %s"  % frame_spec
+    
         the_set = set()
         for part in [x.strip() for x in frame_spec.split(',')]:
             number_matches = NUMBER_RE.match(part)
@@ -168,7 +174,7 @@ class Sequence(object):
             elif RANGE_RE.match(part):
                 start, end, step = resolve_start_end_step(part)
                 the_set = the_set.union(xrange(start, end + 1, step))
-            else:
+            elif part:
                 raise ValueError("Invalid frame spec")
         frames = sorted(the_set)
         return cls(frames, **kw)
@@ -188,7 +194,7 @@ class Sequence(object):
 
     def __init__(self, frames, **kw):
         self._frames = frames
-        self._clump_size = kw.get('clump_size', 1)
+        self._clump_size = max(1, kw.get('clump_size', 1))
         self._cycle = kw.get('cycle', False)
 
     def _cycle_clumps(self):
@@ -225,6 +231,15 @@ class Sequence(object):
     def clump_count(self):
         """Calculate the number of clumps that will be emitted."""
         return int(math.ceil(len(self._frames) / float(self._clump_size)))
+
+    def intersection(self, iterable):
+        return Sequence(set(self._frames).intersection(set(iterable)))
+
+    def best_clump_size(self):
+        if not self._frames:
+            return
+        num_clumps = self.clump_count()
+        return math.ceil(len(self._frames) / float(num_clumps))
 
     @property
     def clump_size(self):
