@@ -27,7 +27,7 @@ class BestClumpSizeTest(TestCase):
         parm.set = Mock()
         node.parm = Mock(return_value=parm)
         frame_spec.frame_set = Mock(return_value=set(frame_iterable))
-        frame_spec._update_frames_stats = Mock()
+        frame_spec._update_sequence_stats = Mock()
         return (node, parm)
 
     def test_clump_size_should_remain_1(self):
