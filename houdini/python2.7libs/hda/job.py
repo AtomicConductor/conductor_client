@@ -1,3 +1,4 @@
+import hou
 import hda
 
 
@@ -35,4 +36,5 @@ class Job(object):
         return result
 
     def generate_tasks():
+        pass
         

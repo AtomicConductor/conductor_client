@@ -189,26 +189,30 @@ class SequenceFromRangeTest(unittest.TestCase):
         self.assertEqual([x for x in self.s], expected)
 
     def test_iterator_cycle_step_1(self):
-        self.s = Sequence.from_range(1, 10)
-        self.s.clump_size = 4
-        self.s.cycle = True
+        s = Sequence.from_range(1, 10)
+        s.clump_size = 4
+        s.cycle = True
         expected = [1, 4, 7, 10, 2, 5, 8, 3, 6, 9]
-        self.assertEqual([x for x in self.s], expected)
+        self.assertEqual([x for x in s], expected)
 
     def test_cycle_clumps_step_1(self):
-        self.s = Sequence.from_range(1, 10)
-        self.s.clump_size = 4
-        self.s.cycle = True
+        s = Sequence.from_range(1, 10)
+        s.clump_size = 4
+        s.cycle = True
         expected = 'Sequence(RegularClump(1-10x3), RegularClump(2-8x3), RegularClump(3-9x3))'
-        self.assertEqual(str(self.s), expected)
+        self.assertEqual(str(s), expected)
 
-    def test_successive_adjustments1(self):
-        self.s = Sequence.from_range(1, 10)
-        self.assertEqual(len(self.s.clumps()), 10)
-        self.s.clump_size = 4
-        self.assertEqual(len(self.s.clumps()), 3)
-        self.s.clump_size = 10
-        self.assertEqual(len(self.s.clumps()), 1)
+    def test_intersection(self):
+        s = Sequence.from_range(1, 10)
+        t = Sequence.from_range(5, 15)
+        st = s.intersection(t)
+        self.assertEqual(len(st), 6)
+
+    def test_no_intersection(self):
+        s = Sequence.from_range(1, 10)
+        t = Sequence.from_range(15, 25)
+        st = s.intersection(t)
+        self.assertEqual(len(st), 0)
 
 
 class SequenceFromSpecTest(unittest.TestCase):
@@ -237,6 +241,11 @@ class SequenceFromSpecTest(unittest.TestCase):
         self.s.clump_size = 5
         expected = [1, 5, 8, 15, 24, 2, 6, 9, 18, 4, 7, 12, 21]
         self.assertEqual([x for x in self.s], expected)
+
+    def test_create_empty_sequence(self):
+        self.s = Sequence([])
+        self.assertEqual(len(self.s.clumps()), 0)
+        self.assertEqual(list(self.s), [])
 
     def test_is_valid_method_true(self):
         self.assertTrue(Sequence.is_valid_spec("12-26x3, 1,7,8,2,4-9"))
