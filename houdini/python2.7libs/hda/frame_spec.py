@@ -4,6 +4,7 @@ import math
 import re
 import hou
 import render_source
+import sequence as sq
 
 # Catch a frame number
 NUMBER_RE = re.compile(r"^(\d+)$")
@@ -13,9 +14,9 @@ RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
 XP = hou.exprLanguage.Python
 
 
-def _clamp(low, val, high):
-    """Restrict a value."""
-    return sorted((low, val, high))[1]
+# def _clamp(low, val, high):
+#     """Restrict a value."""
+#     return sorted((low, val, high))[1]
 
 
 def _replace_with_value(parm, value=None):
@@ -75,88 +76,98 @@ def _set_custom(node):
     validate_custom_range(node)
 
 
-def _to_xrange(tup):
-    """Generate a valid xrange from 3 frame spec numbers.
+# def _to_xrange(tup):
+#     """Generate a valid xrange from 3 frame spec numbers.
 
-    Numbers may be strings, start may be after end, step may
-    be None. We add 1 to the end because when a user
-    specifies the end val she expects it to be inclusive.
+#     Numbers may be strings, start may be after end, step may
+#     be None. We add 1 to the end because when a user
+#     specifies the end val she expects it to be inclusive.
 
-    """
-    start, end, step = tup
-    if not step:
-        step = 1
-    start = int(start)
-    end = int(end)
-    step = int(step)
-    if start > end:
-        start, end = end, start
-    return xrange(start, (end + 1), step)
-
-
-def _validate_irregular_frame_spec(spec):
-    """Irregular range spec must be reducible to a list of frames.
-
-    Valid irregular range spec consists of either numbers or
-    ranges separated by commas. Ranges can have an optional
-    step value indicated by 'x'. Example valid custom range
-    spec: "120, 5, 26-76,19-23x4, 1000-2000, 3,9," Also
-    strips leading/trailing commas from input spec and
-    returns it along with a bool (valid)
-
-    """
-
-    value = spec.strip(',')
-    valid = bool(value)
-    for part in [x.strip() for x in value.split(',')]:
-        if not (NUMBER_RE.match(part) or RANGE_RE.match(part)):
-            valid = False
-            break
-    return (valid, value)
+#     """
+#     start, end, step = tup
+#     if not step:
+#         step = 1
+#     start = int(start)
+#     end = int(end)
+#     step = int(step)
+#     if start > end:
+#         start, end = end, start
+#     return xrange(start, (end + 1), step)
 
 
-def _irregular_frame_set(spec):
-    """Set of frames from a string spec.
+# def _irregular_frame_set(spec):
+#     """Set of frames from a string spec.
 
-    Given an irregular frame spec, such as that in custom
-    range or scout frames, return a set containing those
-    frames.
+#     Given an irregular frame spec, such as that in custom
+#     range or scout frames, return a set containing those
+#     frames.
 
-    """
-    result = set()
-    val = spec.strip(',')
-    for part in [x.strip() for x in val.split(',')]:
-        number_matches = NUMBER_RE.match(part)
-        range_matches = RANGE_RE.match(part)
-        if number_matches:
-            vals = number_matches.groups()
-            result = result.union([int(vals[0])])
-        elif range_matches:
-            tup = _to_xrange(range_matches.groups())
-            result = result.union(tup)
-    return result
+#     """
+#     result = set()
+#     val = spec.strip(',')
+#     for part in [x.strip() for x in val.split(',')]:
+#         number_matches = NUMBER_RE.match(part)
+#         range_matches = RANGE_RE.match(part)
+#         if number_matches:
+#             vals = number_matches.groups()
+#             result = result.union([int(vals[0])])
+#         elif range_matches:
+#             tup = _to_xrange(range_matches.groups())
+#             result = result.union(tup)
+#     return result
 
 
-def custom_frame_set(node):
-    """Generate set from value in custom_range parm."""
+def custom_frame_sequence(node):
+    """Generate Sequence from value in custom_range parm."""
     spec = node.parm("custom_range").eval()
-    return _irregular_frame_set(spec)
+    clump_size = node.parm("clump_size").eval()
+    if sq.Sequence.is_valid_spec(spec):
+        return sq.Sequence.from_spec(spec, clump_size=clump_size)
+    return sq.Sequence([])
 
-
-def scout_frame_set(node):
-    """Generate set from value in scout_frames parm."""
-    spec = node.parm("scout_frames").eval()
-    return _irregular_frame_set(spec)
-
-
-def frame_set(node):
-    """Generate set containing current chosen frames."""
-    if node.parm("range_type").eval() == "custom":
-        return custom_frame_set(node) if node.parm(
-            "custom_valid").eval() else set()
-    return set(_to_xrange([
+def range_frame_sequence(node):
+    """Generate Sequence from value in standard range parm."""
+    clump_size = node.parm("clump_size").eval()
+    start, end, step = [
         node.parm('fs%s' % parm).eval() for parm in ['1', '2', '3']
-    ]))
+    ]
+    return  sq.Sequence.from_range(start, end, step=step, clump_size=clump_size)
+
+
+def scout_frame_sequence(node):
+    """Generate Sequence from value in scout_frames parm."""
+    spec = node.parm("scout_frames").eval()
+    return sq.Sequence.from_spec(spec)
+
+
+def main_frame_sequence(node):
+    """Generate Sequence containing current chosen frames."""
+    if node.parm("range_type").eval() == "custom":
+        return custom_frame_sequence(node)
+    return range_frame_sequence(node)
+
+
+
+# def custom_frame_set(node):
+#     """Generate set from value in custom_range parm."""
+#     spec = node.parm("custom_range").eval()
+#     return _irregular_frame_set(spec)
+
+
+# def scout_frame_set(node):
+#     """Generate set from value in scout_frames parm."""
+#     spec = node.parm("scout_frames").eval()
+#     return _irregular_frame_set(spec)
+
+
+# def frame_set(node):
+#     """Generate set containing current chosen frames."""
+#     if node.parm("range_type").eval() == "custom":
+#         return custom_frame_set(node) if node.parm(
+#             "custom_valid").eval() else set()
+#     return set(_to_xrange([
+#         node.parm('fs%s' % parm).eval() for parm in ['1', '2', '3']
+#     ]))
 
 
 def _update_frames_stats(node):
@@ -169,10 +180,10 @@ def _update_frames_stats(node):
     intersect the set of total frames.
 
     """
-    main_set = frame_set(node)
-    scout_set = scout_frame_set(node)
+    main_seq = main_frame_sequence(node)
+    scout_seq = scout_frame_sequence(node)
 
-    num_frames = len(main_set)
+    num_frames = len(main_seq)
 
     if not num_frames:
         node.parm("frame_stats1").set("-")
@@ -181,20 +192,21 @@ def _update_frames_stats(node):
 
     frame_info = "%d Frames" % num_frames
     if node.parm("do_scout").eval():
-        num_scout_frames = len(main_set.intersection(scout_set))
-        frame_info = "%d/%d Frames" % (num_scout_frames, num_frames)
+        num_scout_frames = len(main_seq.intersection(scout_seq))
+        if num_scout_frames:
+            frame_info = "%d/%d Frames" % (num_scout_frames, num_frames)
     node.parm("frame_stats1").set(frame_info)
+ 
+    clumps = main_seq.clump_count()
 
-    clump_size = node.parm("clump_size").eval()
-    clump_size = _clamp(1, clump_size, num_frames)
-    clumps = math.ceil(num_frames / float(clump_size))
     node.parm("frame_stats2").set("%d Clumps" % clumps)
 
 
 def validate_custom_range(node, **_):
     """Set valid tickmark for custom range spec."""
     spec = node.parm("custom_range").eval()
-    valid, value = _validate_irregular_frame_spec(spec)
+    value = spec.strip(',')
+    valid = sq.Sequence.is_valid_spec(spec)
 
     node.parm("custom_valid").set(valid)
     node.parm("custom_range").set(value)
@@ -205,14 +217,14 @@ def validate_custom_range(node, **_):
 def validate_scout_range(node, **_):
     """Set valid tickmark for scout range spec.
 
-    TODO Currently we just validate that the string produces
-    ranges, however we should also validate that the numbers
-    produced exist in the total frame range because clearly
-    scout frames must be a subset of total frames
-
+    TODO Currently we only validate that the spec produces
+    valid frames. We should also validate that at
+    least one scout frame exist in the main
+    frame range.
     """
     spec = node.parm("scout_frames").eval()
-    valid, value = _validate_irregular_frame_spec(spec)
+    value = spec.strip(',')
+    valid = sq.Sequence.is_valid_spec(spec)
 
     node.parm("scout_valid").set(valid)
     node.parm("scout_frames").set(value)
@@ -264,15 +276,9 @@ def best_clump_size(node, **_):
     size to 60
 
     """
-    num_frames = len(frame_set(node))
-    if not num_frames:
-        return
-    clump_size = node.parm("clump_size").eval()
-    clump_size = _clamp(1, clump_size, num_frames)
-
-    clumps = math.ceil(num_frames / float(clump_size))
-    clump_size = math.ceil(num_frames / float(clumps))
-    node.parm("clump_size").set(clump_size)
+    main_seq = main_frame_sequence(node)
+    best_clump_size = main_seq.best_clump_size()
+    node.parm("clump_size").set(best_clump_size)
     _update_frames_stats(node)
 
 
