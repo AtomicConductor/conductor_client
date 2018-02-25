@@ -163,8 +163,7 @@ class Sequence(object):
         26-76,19-23x4, 1000-2000, 3,9,"
 
         """
-        print "--------------- %s"  % frame_spec
-    
+
         the_set = set()
         for part in [x.strip() for x in frame_spec.split(',')]:
             number_matches = NUMBER_RE.match(part)
@@ -236,6 +235,12 @@ class Sequence(object):
         return Sequence(set(self._frames).intersection(set(iterable)))
 
     def best_clump_size(self):
+        """Return clumpsize for best distribution.
+
+        The result is the smallest clumpsize that maintains
+        the current clump_count.
+
+        """
         if not self._frames:
             return
         num_clumps = self.clump_count()
@@ -260,7 +265,7 @@ class Sequence(object):
         self._cycle = bool(value)
 
     def __iter__(self):
-        """Frames in the order computed from clump_size and cycle."""
+        """Frames in the order computed using clump_size and cycle."""
         return iter([item for sublist in self.clumps() for item in sublist])
 
     def __len__(self):

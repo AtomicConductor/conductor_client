@@ -47,21 +47,3 @@ def populate_menu(node):
     if not bool(existing):
         existing = fetch_types(node)
     return [k for i in existing for k in _to_menu_item(i)]
-
-
-def machine_type_changed(node, **_):
-    """Update estimates when machine type changes.
-
-    Currently hidden
-
-    """
-    stats.update_estimates(node)
-
-
-def preemptible_changed(node, **_):
-    """Update estimates when machine preemp type changes.
-
-    Estimates currently hidden
-
-    """
-    stats.update_estimates(node)
