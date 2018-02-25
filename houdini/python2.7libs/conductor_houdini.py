@@ -13,7 +13,6 @@ from hda import (
     render_source,
     submit,
     software,
-    stats,
     notifications,
     takes
 )
@@ -30,7 +29,6 @@ def _update_node(node, **_):
     frame_spec.validate_custom_range(node)
     frame_spec.validate_scout_range(node)
     render_source.update_input_node(node)
-    stats.update_estimates(node)
     frame_spec.set_type(node)
     notifications.validate_emails(node)
     notifications.email_hook_changed(node)
@@ -45,8 +43,6 @@ MENUS = dict(
 
 ACTIONS = dict(
     submit=submit.doit,
-    machine_type=instances.machine_type_changed,
-    preemptible=instances.preemptible_changed,
     show_request=submit.show_request,
     update=_update_node,
     range_type=frame_spec.set_type,
@@ -57,7 +53,6 @@ ACTIONS = dict(
     clump_size=frame_spec.set_clump_size,
     do_scout=frame_spec.do_scout_changed,
     scout_frames=frame_spec.validate_scout_range,
-    avg_frame_time=stats.avg_frame_time_changed,
     detect_software=software.detect,
     choose_software=software.choose,
     clear_software=software.clear,
@@ -80,8 +75,8 @@ def populate_menu(node, parm, **_):
 
     Delegate the job of constructing the list of items.
     Houdini requires the token value pairs for menu item
-    creation to be a flattened list like so:
-    [k0, v0, k1, v2, ... kn, vn]
+    creation to be a flattened list like so: [k0, v0, k1,
+    v2, ... kn, vn]
 
     """
     try:
@@ -98,12 +93,11 @@ def action_callback(**kwargs):
     differentiate.
 
     """
-    # try:
-    ACTIONS[kwargs['parm_name']](**kwargs)
-    # except (hou.Error) as err:
-    #     hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
-    #                           severity=hou.severityType.Error)
-
+    try:
+        ACTIONS[kwargs['parm_name']](**kwargs)
+    except (hou.Error) as err:
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              severity=hou.severityType.Error)
 
 
 def action_button_callback(**kwargs):
@@ -136,6 +130,7 @@ def on_input_changed_callback(node, **_):
     except hou.Error as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
+
 
 def on_created_callback(node, **_):
     """Initialize state when a node is created."""
