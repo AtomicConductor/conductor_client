@@ -214,6 +214,14 @@ class SequenceFromRangeTest(unittest.TestCase):
         st = s.intersection(t)
         self.assertEqual(len(st), 0)
 
+    def test_best_clump_size(self):
+        s = Sequence.from_range(1, 100, clump_size=77)
+        self.assertEqual(s.best_clump_size(), 50)
+        s.clump_size = 37
+        self.assertEqual(s.best_clump_size(), 34)
+        s.clump_size = 100
+        self.assertEqual(s.best_clump_size(), 100)
+
 
 class SequenceFromSpecTest(unittest.TestCase):
 
