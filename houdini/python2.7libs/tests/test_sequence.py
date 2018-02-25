@@ -1,0 +1,256 @@
+import unittest
+import sys
+import os
+
+HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if HDA_MODULE not in sys.path:
+    sys.path.insert(0, HDA_MODULE)
+
+from hda.sequence import (
+    Clump,
+    RegularClump,
+    IrregularClump,
+    Sequence,
+    resolve_start_end_step)
+
+
+class ResolveStartEndStepTest(unittest.TestCase):
+
+    def test_create_from_start_end_ints(self):
+        start, end, step = resolve_start_end_step(1, 5)
+        self.assertEqual(start, 1)
+        self.assertEqual(end, 5)
+        self.assertEqual(step, 1)
+
+    def test_create_from_start_end_strings(self):
+        start, end, step = resolve_start_end_step("1", "5")
+        self.assertEqual(start, 1)
+        self.assertEqual(end, 5)
+        self.assertEqual(step, 1)
+
+    def test_create_from_start_end_strings_backwards(self):
+        start, end, step = resolve_start_end_step("5", "1")
+        self.assertEqual(start, 1)
+        self.assertEqual(end, 5)
+        self.assertEqual(step, 1)
+
+    def test_create_with_step_ints(self):
+        start, end, step = resolve_start_end_step(1, 5, 2)
+        self.assertEqual(start, 1)
+        self.assertEqual(end, 5)
+        self.assertEqual(step, 2)
+
+    def test_create_with_step_strings(self):
+        start, end, step = resolve_start_end_step("1", "5", "2")
+        self.assertEqual(start, 1)
+        self.assertEqual(end, 5)
+        self.assertEqual(step, 2)
+
+    def test_create_with_single_string(self):
+        start, end, step = resolve_start_end_step("1-5")
+        self.assertEqual(start, 1)
+        self.assertEqual(end, 5)
+        self.assertEqual(step, 1)
+
+    def test_create_with_single_string_step(self):
+        start, end, step = resolve_start_end_step("1-5x2")
+        self.assertEqual(start, 1)
+        self.assertEqual(end, 5)
+        self.assertEqual(step, 2)
+
+    def test_bad_step_raise(self):
+        with self.assertRaises(ValueError):
+            resolve_start_end_step(1, 5, 0)
+
+    def test_invalid_spec(self):
+        with self.assertRaises(ValueError):
+            resolve_start_end_step("10-3x2f")
+        with self.assertRaises(ValueError):
+            resolve_start_end_step("10")
+
+
+class ClumpFactoryTest(unittest.TestCase):
+
+    def test_create_regular_clump(self):
+        c = Clump.create(xrange(1, 10, 2))
+        self.assertIsInstance(c, RegularClump)
+
+    def test_create_irregular_clump(self):
+        c = Clump.create([1, 3, 5, 7, 10])
+        self.assertIsInstance(c, IrregularClump)
+
+
+class RegularClumpTest(unittest.TestCase):
+
+    def test_start_end_step_properties(self):
+        c = RegularClump(3, 10, 2)
+        self.assertEqual(c.start, 3)
+        self.assertEqual(c.end, 10)
+        self.assertEqual(c.step, 2)
+
+    def test_length(self):
+        c = RegularClump(3, 5, 1)
+        self.assertEqual(len(c), 3)
+        c = RegularClump(0, 10, 4)
+        self.assertEqual(len(c), 3)
+
+    def test_single_frame(self):
+        c = RegularClump(2, 2)
+        self.assertEqual(len(c), 1)
+
+    def test_str(self):
+        c = RegularClump(3, 5, 2)
+        self.assertEqual(str(c), "RegularClump(3-5x2)")
+
+    def test_iterable(self):
+        self.assertEqual([x for x in RegularClump(3, 6, 1)], [3, 4, 5, 6])
+
+    def test_not_enough_args_raise(self):
+        with self.assertRaises(IndexError):
+            RegularClump()
+
+    def test_format(self):
+        c = RegularClump(1, 10, 3)
+        template = "root/%02d/name.%04d.ext"
+        result = c.format(template)
+        self.assertEqual(result[1], "root/04/name.0004.ext")
+        self.assertEqual(len(result), 4)
+
+    def test_start_end_step_properties_spec_args(self):
+        c = RegularClump("3-10x2")
+        self.assertEqual(c.start, 3)
+        self.assertEqual(c.end, 10)
+        self.assertEqual(c.step, 2)
+
+
+class IrregularClumpTest(unittest.TestCase):
+
+    def test_iterable(self):
+        c = IrregularClump([1, 3, 2])
+        self.assertEqual([x for x in c], [1, 2, 3])
+
+    def test_length(self):
+        c = IrregularClump([1, 7, 12])
+        self.assertEqual(len(c), 3)
+
+    def test_str(self):
+        c = IrregularClump([1, 2, 3])
+        self.assertEqual(str(c), "IrregularClump(1~3)")
+
+
+class SequenceFromRangeTest(unittest.TestCase):
+
+    def setUp(self):
+        self.s = Sequence.from_range(1, 20, step=2, clump_size=3)
+
+    def test_clump_count(self):
+        self.assertEqual(self.s.clump_count(), 4)
+        self.assertEqual(len(self.s.clumps()), 4)
+
+    def test_linear_clumps(self):
+        clumps = self.s.clumps()
+        self.assertEqual(str(clumps[0]), 'RegularClump(1-5x2)')
+        self.assertEqual(str(clumps[3]), 'RegularClump(19-19x1)')
+
+    def test_length(self):
+        self.assertEqual(len(self.s), 10)
+
+    def test_new_clump_size(self):
+        self.s.clump_size = 5
+        self.assertEqual(len(self.s.clumps()), 2)
+        self.assertEqual(str(self.s),
+                         "Sequence(RegularClump(1-9x2), RegularClump(11-19x2))")
+
+    def test_clump_size_1(self):
+        self.s.clump_size = 1
+        self.assertEqual(len(self.s.clumps()), 10)
+
+    def test_oversize_clump(self):
+        self.s.clump_size = 100
+        self.assertEqual(len(self.s.clumps()), 1)
+
+    def test_invalid_clump_size(self):
+        with self.assertRaises(ValueError):
+            self.s.clump_size = 0
+
+    def test_iterator_linear(self):
+        self.assertEqual([x for x in self.s], [x for x in xrange(1, 21, 2)])
+
+    def test_cycle_clumps(self):
+        self.s.cycle = True
+        self.s.clump_size = 4
+        expected = "Sequence(RegularClump(1-19x6), RegularClump(3-15x6), RegularClump(5-17x6))"
+        self.assertEqual(str(self.s), expected)
+
+    def test_iterator_cycle(self):
+        self.s.cycle = True
+        self.s.clump_size = 4
+        expected = [1, 7, 13, 19, 3, 9, 15, 5, 11, 17]
+        self.assertEqual([x for x in self.s], expected)
+
+    def test_iterator_cycle_step_1(self):
+        self.s = Sequence.from_range(1, 10)
+        self.s.clump_size = 4
+        self.s.cycle = True
+        expected = [1, 4, 7, 10, 2, 5, 8, 3, 6, 9]
+        self.assertEqual([x for x in self.s], expected)
+
+    def test_cycle_clumps_step_1(self):
+        self.s = Sequence.from_range(1, 10)
+        self.s.clump_size = 4
+        self.s.cycle = True
+        expected = 'Sequence(RegularClump(1-10x3), RegularClump(2-8x3), RegularClump(3-9x3))'
+        self.assertEqual(str(self.s), expected)
+
+    def test_successive_adjustments1(self):
+        self.s = Sequence.from_range(1, 10)
+        self.assertEqual(len(self.s.clumps()), 10)
+        self.s.clump_size = 4
+        self.assertEqual(len(self.s.clumps()), 3)
+        self.s.clump_size = 10
+        self.assertEqual(len(self.s.clumps()), 1)
+
+
+class SequenceFromSpecTest(unittest.TestCase):
+
+    def setUp(self):
+        self.s = Sequence.from_spec("12-26x3, 1,7,8,2,4-9")
+
+    def test_iterator_linear_sorted_no_dups(self):
+        expected = [1, 2, 4, 5, 6, 7, 8, 9, 12, 15, 18, 21, 24]
+        self.assertEqual([x for x in self.s], expected)
+
+    def test_clump_count(self):
+        self.s.clump_size = 5
+        self.assertEqual(self.s.clump_count(), 3)
+        self.assertEqual(len(self.s.clumps()), 3)
+
+    def test_makes_regular_and_irregular_clumps(self):
+        self.s.clump_size = 5
+        r = self.s.clumps()
+        self.assertIsInstance(r[0], IrregularClump)
+        self.assertIsInstance(r[1], IrregularClump)
+        self.assertIsInstance(r[2], RegularClump)
+
+    def test_iterator_cycle(self):
+        self.s.cycle = True
+        self.s.clump_size = 5
+        expected = [1, 5, 8, 15, 24, 2, 6, 9, 18, 4, 7, 12, 21]
+        self.assertEqual([x for x in self.s], expected)
+
+    def test_is_valid_method_true(self):
+        self.assertTrue(Sequence.is_valid_spec("12-26x3, 1,7,8,2,4-9"))
+        self.assertTrue(Sequence.is_valid_spec("1"))
+        self.assertTrue(Sequence.is_valid_spec(",4-9,2,"))
+
+    def test_is_valid_method_false(self):
+        self.assertFalse(Sequence.is_valid_spec("12-26x3d, 1,7,8,2,4-9"))
+        self.assertFalse(Sequence.is_valid_spec(",4x9,2,"))
+
+    def test_is_valid_method_bad_type(self):
+        with self.assertRaises(TypeError):
+            Sequence.is_valid_spec(1)
+
+
+if __name__ == '__main__':
+    unittest.main()
