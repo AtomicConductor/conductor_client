@@ -2,8 +2,6 @@
 
 import json
 from conductor.lib import common
-import stats
-
 
 def _to_menu_item(item):
     """Convert instance_type object to tuple.
