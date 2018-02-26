@@ -12,7 +12,7 @@ except ImportError, e:
 
 
 from conductor import CONFIG, submitter
-from conductor.lib import file_utils, nuke_utils, pyside_utils, common, package_utils
+from conductor.lib import file_utils, nuke_utils, pyside_utils, common, exceptions, package_utils
 from conductor.lib.lsseq import seqLister
 
 logger = logging.getLogger(__name__)
@@ -183,7 +183,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             # TODO:(lws) this is silly. We should keep this as a native int list.
             task_frames_str = ", ".join(seqLister.condenseSeq(task_frames))
             tasks_data.append({"command": task_cmd,
-                               "frames":  task_frames_str})
+                               "frames": task_frames_str})
 
         return tasks_data
 
