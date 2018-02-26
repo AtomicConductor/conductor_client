@@ -155,7 +155,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def configureGPUWidget(self):
         '''
         Populate the GPU combobox in the submitter. Only show the combobox if
-        V-Ray is the current renderer and its set to a GPU mode.
+        V-Ray is the current renderer and its set to a supported GPU mode.
         '''
         self.ui_gpu_type_cmbx.clear()
         self.populateGPUTypeCmbx()
