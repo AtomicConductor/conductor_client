@@ -152,7 +152,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         cmd_template = "nuke-render %s %s -F %s-%sx%s %s"
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
-        write_nodes_args = " ".join(["-X %s" % write_node for write_node in write_nodes])
+        write_nodes_args = "-X %s" % (",".join(write_nodes))
         selected_views = self.extended_widget.getSelectedViews()
         view_args = "--view %s" % ",".join(selected_views)
         nuke_scriptpath = self.getSourceFilepath()
