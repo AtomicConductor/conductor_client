@@ -50,7 +50,7 @@ GTAGS
 
 # houdini
 houdini/**/backup/
-houdini/notes
+houdini/notes/
 
 # sublime
 conductor_client.sublime-*
