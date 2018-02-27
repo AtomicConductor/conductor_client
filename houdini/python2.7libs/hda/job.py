@@ -29,16 +29,11 @@ class Job(object):
         job["metadata"] = expander.evaluate(
             self._node.parm("metadata").eval())
 
-        scene_file_temp =  self._node.parm("scene_file").eval()
+        job["scene_file"] = expander.evaluate(
+            self._node.parm("scene_file").eval())
 
-
-        job["scene_file"] = expander.evaluate(scene_file_temp)
-        
-        print scene_file_temp
-        print tokens
-        print  "SCENE FILE %s" % job["scene_file"]
-
-
+        # print tokens
+        # print  "SCENE FILE %s" % job["scene_file"]
 
         return job
 
@@ -46,8 +41,9 @@ class Job(object):
         flavor, cores = self._node.parm(
             'machine_type').eval().split("_")
         machines = json.loads(self._node.parm('machine_types').eval())
-        result = [machine for machine in machines if machine['cores'] == int(cores) and machine['flavor'] == flavor][0]
- 
+        result = [machine for machine in machines if machine['cores'] ==
+                  int(cores) and machine['flavor'] == flavor][0]
+
         result["preemptible"] = self._node.parm('preemptible').eval()
         result["retries"] = self._node.parm("retries").eval()
         return result
