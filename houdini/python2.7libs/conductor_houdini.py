@@ -95,9 +95,13 @@ def action_callback(**kwargs):
     """
     try:
         ACTIONS[kwargs['parm_name']](**kwargs)
-    except (hou.Error) as err:
+    except hou.InvalidInput as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              severity=hou.severityType.ImportantMessage)
+    except hou.Error as err:
+        hou.ui.displayMessage(title='Warning', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
+
 
 
 def action_button_callback(**kwargs):

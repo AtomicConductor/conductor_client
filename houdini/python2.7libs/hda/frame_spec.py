@@ -96,6 +96,26 @@ def main_frame_sequence(node):
     return range_frame_sequence(node)
 
 
+def resolved_scout_sequence(node):
+    """The sub-sequence the user intends to render immediately.
+
+    If do_scout is off then returning None indicates all
+    frames will be rendered. However, if its on and the set
+    of scout frames intersects the main frames, then only
+    start those frames. If scout frames does not intersect
+    the main frames, then the user intended to scout but
+    ended up with no frames. This produces an empty
+    sequence. Its up to the calling function to handle the
+    difference between None and empty Sequence.
+
+    """
+    main_seq = main_frame_sequence(node)
+    if not node.parm("do_scout").eval():
+        return None
+    scout_seq = scout_frame_sequence(node)
+    return main_seq.intersection(scout_seq)
+
+
 def _update_sequence_stats(node):
     """Generate frame stats message.
 
@@ -117,10 +137,12 @@ def _update_sequence_stats(node):
         return
 
     frame_info = "%d Frames" % num_frames
-    if node.parm("do_scout").eval():
-        num_scout_frames = len(main_seq.intersection(scout_seq))
-        if num_scout_frames:
-            frame_info = "%d/%d Frames" % (num_scout_frames, num_frames)
+    scout_seq = resolved_scout_sequence(node)
+
+    if scout_seq:
+        num_scout = len(scout_seq)
+        if num_scout:
+            frame_info = "%d/%d Frames" % (num_scout, num_frames)
     node.parm("frame_stats1").set(frame_info)
 
     clumps = main_seq.clump_count()

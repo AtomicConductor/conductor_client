@@ -1,8 +1,13 @@
-"""A Sequence holds frame numbers which can be clumped together.
+"""Manage sequences of frames with optional clumping.
 
-It can be initialized with a range or with a list of
-numbers. It has two properties that define how clumps will
-be made: clump_size and cycle.
+It can emit clumps according to a specified policy, for
+example, linearly or cycle. Where cycle will distrtibute
+frames across clumps such that the first frame completed by
+each clump will together form a continuous sequence. For
+rationale see _cycle_clumps. It can be initialized
+with a range or with a list of numbers. It has two
+properties that define how clumps will be made: clump_size
+and cycle.
 
 """
 import re
@@ -89,7 +94,7 @@ class Clump(object):
         return iter(self._iterable)
 
     def __str__(self):
-        return str(self._iterable)
+        raise NotImplementedError()
 
 
 class RegularClump(Clump):
@@ -275,3 +280,6 @@ class Sequence(object):
         """String representation containes the stringified clumps."""
         seq = (', ').join([str(clump) for clump in self.clumps()])
         return "%s(%s)" % (self.__class__.__name__, seq)
+
+    # TODO: rewrite __str__ and __repr__ for sequence and clumps
+    # https://stackoverflow.com/questions/1436703/difference-between-str-and-repr-in-python
