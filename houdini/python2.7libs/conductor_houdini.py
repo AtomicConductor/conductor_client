@@ -34,6 +34,7 @@ def _update_node(node, **_):
     notifications.email_hook_changed(node)
     takes.update_takes(node)
     software.detect(node)
+    submit.update_button_state(node)
 
 
 MENUS = dict(

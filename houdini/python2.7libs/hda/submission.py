@@ -1,4 +1,5 @@
 import datetime
+import re
 from contextlib import contextmanager
 import hou
 import hda
@@ -13,6 +14,11 @@ def take_context(take):
     hou.takes.setCurrentTake(remember)
 
 
+# Catch a timestamp of the form 2018_02_27_10_59_47 with optional
+# underscore delimiters at the start and/or end of a string
+TIMESTAMP_RE = re.compile(r"^[\d]{4}(_[\d]{2}){5}_*|_*[\d]{4}(_[\d]{2}){5}$")
+
+
 class Submission(object):
 
     def __init__(self, node, **kw):
@@ -20,12 +26,20 @@ class Submission(object):
         take = kw.get('take')
         self._takes = [take] if take else hda.takes.active_takes(node)
         self._source_node = hda.render_source.get_render_node(node)
+        self._hip_basename = hou.hipFile.basename()
+        self._hip_fullname = hou.hipFile.name()
+
         if not (self._takes and self._source_node):
-            raise hou.InvalidInput("Need at least one active take and a connected source_node to create a submission.")
+            raise hou.InvalidInput(
+                "Need at least one active take and a connected source_node to create a submission.")
         self._tokens = self._collect_tokens()
 
     def _collect_tokens(self):
-        """Tokens are string kv pairs used for substitutions. Any we generate here will be available to sr"""
+        """Tokens are string kv pairs used for substitutions.
+
+        Notice how these are values that can't change per take/Job. You can't  
+
+        """
         tokens = {}
         tokens["timestamp"] = datetime.datetime.now().strftime(
             '%Y_%m_%d_%H_%M_%S')
@@ -33,7 +47,15 @@ class Submission(object):
         tokens["project"] = self._node.parm('project').eval()
         tokens["source"] = self._source_node.name()
         tokens["type"] = self._source_node.type().name()
+        tokens["hipbase"] = self._stripped_hip()
+
         return tokens
+
+    def _stripped_hip(self):
+        """Strip off the extension and timestamp from start or end."""
+        no_ext = re.sub('\.hip$', '', self._hip_basename)
+        return re.sub(TIMESTAMP_RE, '', no_ext)
+        
 
     def dry_run(self):
         """Build an object that fully describes the submission without mutating
@@ -54,5 +76,6 @@ class Submission(object):
         print submission
 
 
- 
+
+
 
