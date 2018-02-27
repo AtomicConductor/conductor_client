@@ -16,15 +16,15 @@ instance_types:
     - {cores: 64, flavor: standard, description: "64 core, 240GB Mem"}
     - {cores: 64, flavor: highmem,  description: "64 core, 416GB Mem"}
 
-gpu_types:
-    - {gpu_count: 1, gpu_flavor: k80,  description: "NVIDIA Tesla K80, 1 GPU"}
-    - {gpu_count: 2, gpu_flavor: k80,  description: "NVIDIA Tesla K80, 2 GPU"}
-    - {gpu_count: 4, gpu_flavor: k80,  description: "NVIDIA Tesla K80, 4 GPU"}
-    - {gpu_count: 8, gpu_flavor: k80,  description: "NVIDIA Tesla K80, 8 GPU"}
-    - {gpu_count: 1, gpu_flavor: k100, description: "NVIDIA Tesla K100, 1 GPU"}
-    - {gpu_count: 2, gpu_flavor: k100, description: "NVIDIA Tesla K100, 2 GPU"}
-    - {gpu_count: 4, gpu_flavor: k100, description: "NVIDIA Tesla K100, 4 GPU"}
-    
+gpu_configs:
+    - {type: nvidia-tesla-k80,   count: 1, description: "NVIDIA Tesla K80, 1 GPU"}
+    - {type: nvidia-tesla-k80,   count: 2, description: "NVIDIA Tesla K80, 2 GPU"}
+    - {type: nvidia-tesla-k80,   count: 4, description: "NVIDIA Tesla K80, 4 GPU"}
+    - {type: nvidia-tesla-k80,   count: 8, description: "NVIDIA Tesla K80, 8 GPU"}
+    - {type: nvidia-tesla-k100,  count: 1, description: "NVIDIA Tesla K100, 1 GPU"}
+    - {type: nvidia-tesla-k100,  count: 2, description: "NVIDIA Tesla K100, 2 GPU"}
+    - {type: nvidia-tesla-k100,  count: 4, description: "NVIDIA Tesla K100, 4 GPU"}
+ 
  # A dictionary of maya node types and their corresponing attributes name(s) for
  # seeking out file dependencies (external filepaths)
 maya_dependency_attrs:

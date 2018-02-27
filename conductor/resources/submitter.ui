@@ -589,19 +589,22 @@
                <number>0</number>
               </property>
               <item>
-               <widget class="QLabel" name="gpu_label">
+               <widget class="QLabel" name="ui_gpu_label">
                 <property name="text">
                  <string>GPU Acceleration</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QComboBox" name="ui_gpu_type_cmbx">
+               <widget class="QComboBox" name="ui_gpu_cmbx">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
+                </property>
+                <property name="isFileUserPref" stdset="0">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -1117,7 +1120,7 @@ tasks before deciding to execute the job's remaining tasks.
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>439</width>
+     <width>411</width>
      <height>26</height>
     </rect>
    </property>
