@@ -216,6 +216,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Hide the widget that holds advanced settings. TODO: need to come back to this.
         self.ui_advanced_wgt.hide()
 
+        # Hide the gpu widget by default. One day we may reevalaute this behavior
+        self.ui_gpu_widget.hide()
+
         # Add the extended widget (must be implemented by the child class
         self._addExtendedWidget()
 
@@ -229,7 +232,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self.populateInstanceTypeCmbx()
 
         # Populate the GPU Acceleration combobox with the available instance configs
-        self.populateGPUTypeCmbx()
+        self.populateGpuCmbx()
 
         # Populate the software versions tree widget
         self.populateSoftwareVersionsTrWgt()
@@ -426,14 +429,14 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         for instance_info in instance_types:
             self.ui_instance_type_cmbx.addItem(instance_info['description'], userData=instance_info)
 
-    def populateGPUTypeCmbx(self):
+    def populateGpuCmbx(self):
         '''
         Populate the GPU combobox with all of the available GPU types
         '''
-        gpu_types = common.get_conductor_gpu_types()
-        self.ui_gpu_type_cmbx.clear()
+        gpu_types = common.get_conductor_gpu_configs()
+        self.ui_gpu_cmbx.clear()
         for gpu_info in gpu_types:
-            self.ui_gpu_type_cmbx.addItem(gpu_info['description'], userData=gpu_info)
+            self.ui_gpu_cmbx.addItem(gpu_info.pop('description'), userData=gpu_info)
 
     def populateProjectCmbx(self):
         '''
@@ -533,15 +536,16 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         return self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex())
 
-    def getGPUType(self):
+    def getGpuConfig(self):
         '''
         Return the number of GPUs and GPU type that the user has selected
         from the "GPU Acceleration" combobox
         '''
-        # We check if the GPU combobox is enabled, as if it is hidden then the renderer
-        # being used isn't GPU compatible
-        if self.ui_gpu_type_cmbx.enabled():
-            return self.ui_gpu_type_cmbx.itemData(self.ui_gpu_type_cmbx.currentIndex())
+        # Only return GPU combobox value if the widget is visible to the user.
+        # Note that there is a subtle difference between using the "isVisible()" method versus
+        # "not isHidden()".  The latter is most appropriate in this case.
+        if not self.ui_gpu_widget.isHidden():
+            return self.ui_gpu_cmbx.itemData(self.ui_gpu_cmbx.currentIndex())
         return {}
 
     def getPreemptibleCheckbox(self):
@@ -643,15 +647,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["preemptible"] = self.getPreemptibleCheckbox()
-
-        gpu_config = self.getGPUType()
-        if gpu_config:
-            conductor_args["gpu_type"] = self.getGPUType()['gpu_flavor']
-            conductor_args["gpu_count"] = self.getGPUType()['gpu_count']
-        else:
-            conductor_args["gpu_type"] = ""
-            conductor_args["gpu_count"] = 0
-
+        conductor_args["gpu_config"] = self.getGpuConfig()
         conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()

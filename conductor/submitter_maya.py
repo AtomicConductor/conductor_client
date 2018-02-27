@@ -148,17 +148,14 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         super(MayaConductorSubmitter, self).applyDefaultSettings()
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
-        self.configureGPUWidget()
+        self.setGpuWidgetVisibility()
         self.extended_widget.refreshUi()
         self.setOutputDir(maya_utils.get_image_dirpath())
 
-    def configureGPUWidget(self):
+    def setGpuWidgetVisibility(self):
         '''
-        Populate the GPU combobox in the submitter. Only show the combobox if
-        V-Ray is the current renderer and its set to a supported GPU mode.
+        Show the Gpu combobox if V-Ray is the current renderer and its set to a GPU mode.
         '''
-        self.ui_gpu_type_cmbx.clear()
-        self.populateGPUTypeCmbx()
         show = maya_utils.is_vray_renderer() and maya_utils.is_vray_gpu_enabled()
         self.ui_gpu_widget.setVisible(show)
 
@@ -291,7 +288,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             plugins_info.append(plugin_info)
         return plugins_info
 
-
     def checkSaveBeforeSubmission(self):
         '''
         Check if scene has unsaved changes and prompt user if they'd like to
@@ -304,7 +300,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             answer, _ = pyside_utils.launch_yes_no_dialog(title, message, show_not_again_checkbox=False, parent=self)
             return answer
         return True
-
 
     def runPreSubmission(self):
         '''
