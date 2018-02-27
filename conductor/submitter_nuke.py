@@ -149,7 +149,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
               "frames": "10-20x2"}]
         '''
 
-        cmd_template = "nuke-render %s %s -F %s-%sx%s %s"
+        cmd_template = "nuke-render -V 2 %s %s -F %s-%sx%s %s"
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
         write_nodes_args = "-X %s" % (",".join(write_nodes))
