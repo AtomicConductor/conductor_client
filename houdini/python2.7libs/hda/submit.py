@@ -1,7 +1,7 @@
 """Entry point for job submission."""
 import render_source
 import projects
-from hda.submission import Submission
+import hda
 import takes
 
 
@@ -12,6 +12,8 @@ def _can_submit(node):
     Use this to enable/disable the submit button
 
     """
+    if not len(takes.active_takes(node)):
+        return False
     if not render_source.get_render_node(node):
         return False
     if not projects.has_valid_project(node):
@@ -19,21 +21,21 @@ def _can_submit(node):
     return True
 
 
-def show_request():
+def show_request(node, **_):
     """TODO in CT-59 generate request and open a panel.
 
     Should be instant and not mutate anything. Therefore, do
     not save a file or actually submit anything.
 
     """
-    pass
+    submission = hda.submission.Submission(node)
+    print submission.dry_run()
 
 
 def doit(node, **_):
-    print "CREATE SUBMISSION"
-    submission = Submission(node, takes.active_takes(node))
-    submission.view()
-
+    # print "CREATE SUBMISSION"
+    # submission = Submission(node, takes.active_takes(node))
+    # submission.view()
     """TODO  in CT-59 submit jobs."""
 
     # if hou.hipFile.hasUnsavedChanges():
