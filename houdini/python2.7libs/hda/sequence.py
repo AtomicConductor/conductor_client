@@ -4,15 +4,14 @@ It can emit clumps according to a specified policy, for
 example, linearly or cycle. Where cycle will distrtibute
 frames across clumps such that the first frame completed by
 each clump will together form a continuous sequence. For
-rationale see _cycle_clumps. It can be initialized
-with a range or with a list of numbers. It has two
-properties that define how clumps will be made: clump_size
-and cycle.
+rationale see _cycle_clumps. It can be initialized with a
+range or with a list of numbers. It has two properties that
+define how clumps will be made: clump_size and cycle.
 
 """
 import re
 import math
-
+import itertools as it
 # Catch a number
 NUMBER_RE = re.compile(r"^(\d+)$")
 
@@ -125,8 +124,11 @@ class RegularClump(Clump):
         return self._end
 
     def __str__(self):
-        return "%s(%s-%sx%s)" % (self.__class__.__name__,
-                                 self.start, self.end, self.step)
+        return "%s-%sx%s" % (self.start, self.end, self.step)
+
+    def __repr__(self):
+        return "%s(\"%r-%rx%r\")" % (self.__class__.__name__,
+                                   self.start, self.end, self.step)
 
 
 class IrregularClump(Clump):
@@ -137,8 +139,10 @@ class IrregularClump(Clump):
         self._iterable = sorted(list(iterable))
 
     def __str__(self):
-        return "%s(%s~%s)" % (self.__class__.__name__,
-                              self._iterable[0], self._iterable[-1])
+        return "%s~%s" % (self._iterable[0], self._iterable[-1])
+
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__.__name__, self._iterable)
 
 
 class Sequence(object):
@@ -248,8 +252,7 @@ class Sequence(object):
         """
         if not self._frames:
             return
-        num_clumps = self.clump_count()
-        return math.ceil(len(self._frames) / float(num_clumps))
+        return math.ceil(len(self._frames) / float(self.clump_count()))
 
     @property
     def clump_size(self):
@@ -270,7 +273,7 @@ class Sequence(object):
         self._cycle = bool(value)
 
     def __iter__(self):
-        """Frames in the order computed using clump_size and cycle."""
+        """Frames in the order computed using clump_size and cycle. WHY?"""
         return iter([item for sublist in self.clumps() for item in sublist])
 
     def __len__(self):
@@ -278,8 +281,13 @@ class Sequence(object):
 
     def __str__(self):
         """String representation containes the stringified clumps."""
-        seq = (', ').join([str(clump) for clump in self.clumps()])
-        return "%s(%s)" % (self.__class__.__name__, seq)
+        seq = (', ').join([repr(clump) for clump in self.clumps()])
+        return "[%s]" % seq
+
+    def __repr__(self):
+        """Repr containes whats necessary to init."""
+        # seq = (', ').join([repr(clump) for clump in self.clumps()])
+        return "%s(%r, clump_size=%r, cycle=%r)" % (self.__class__.__name__, self._frames, self._clump_size, self._cycle )
 
     # TODO: rewrite __str__ and __repr__ for sequence and clumps
     # https://stackoverflow.com/questions/1436703/difference-between-str-and-repr-in-python

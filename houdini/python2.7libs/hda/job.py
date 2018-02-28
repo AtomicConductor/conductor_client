@@ -25,10 +25,11 @@ class Job(object):
         expander = hda.expansion.Expander(**tokens)
 
         job = {}
-        job["tokens"] = self._tokens
+        job["tokens"] = tokens
         job["metadata"] = expander.evaluate(
             self._node.parm("metadata").eval())
-
+        job["title"] = expander.evaluate(
+            self._node.parm("job_title").eval())
         job["scene_file"] = expander.evaluate(
             self._node.parm("scene_file").eval())
 
@@ -44,6 +45,9 @@ class Job(object):
         result = [machine for machine in machines if machine['cores'] ==
                   int(cores) and machine['flavor'] == flavor][0]
 
+
+                  
+
         result["preemptible"] = self._node.parm('preemptible').eval()
         result["retries"] = self._node.parm("retries").eval()
         return result
@@ -52,16 +56,16 @@ class Job(object):
         """Tokens are string kv pairs used for substitutions."""
         tokens = {}
         tokens["take"] = self._take.name()
-        tokens["length"] = len(self._sequence)
-        tokens["clumpsize"] = self._sequence.clump_size
-        tokens["clumpcount"] = self._sequence.clump_count()
-        tokens["scoutcount"] = len(self._scout_sequence or [])
-        tokens["instcores"] = self._instance.get("cores")
+        tokens["length"] = str(len(self._sequence))
+        tokens["clumpsize"] = str(self._sequence.clump_size)
+        tokens["clumpcount"] = str(self._sequence.clump_count())
+        tokens["scoutcount"] = str(len(self._scout_sequence or []))
+        tokens["instcores"] = str(self._instance.get("cores"))
         tokens["instflavor"] = self._instance.get("flavor")
         tokens["instdesc"] = self._instance.get("description")
         tokens["preemptible"] = "preemptible" if self._instance.get(
             "preemptible") else "not preemptible"
-        tokens["retries"] = self._instance.get("retries")
+        tokens["retries"] = str(self._instance.get("retries"))
         return tokens
 
     def generate_tasks():
