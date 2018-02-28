@@ -1,9 +1,9 @@
 """Entry point for job submission."""
+
 import render_source
 import projects
 import hda
 import takes
-
 
 def _can_submit(node):
     """TODO in CT-59 determine if everything is valid for a submission to
@@ -30,6 +30,9 @@ def show_request(node, **_):
     """
     submission = hda.submission.Submission(node)
     print submission.dry_run()
+
+    # treeWin = qt.createWindow()
+
 
 
 def doit(node, **_):
