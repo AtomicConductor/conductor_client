@@ -100,7 +100,11 @@ class RegularClumpTest(unittest.TestCase):
 
     def test_str(self):
         c = RegularClump(3, 5, 2)
-        self.assertEqual(str(c), "RegularClump(3-5x2)")
+        self.assertEqual(str(c), "3-5x2")
+
+    def test_repr(self):
+        c = RegularClump(3, 5, 2)
+        self.assertEqual(repr(c), 'RegularClump("3-5x2")')
 
     def test_iterable(self):
         self.assertEqual([x for x in RegularClump(3, 6, 1)], [3, 4, 5, 6])
@@ -134,8 +138,12 @@ class IrregularClumpTest(unittest.TestCase):
         self.assertEqual(len(c), 3)
 
     def test_str(self):
-        c = IrregularClump([1, 2, 3])
-        self.assertEqual(str(c), "IrregularClump(1~3)")
+        c = IrregularClump([1, 2, 5])
+        self.assertEqual(str(c), "1~5")
+
+    def test_repr(self):
+        c = IrregularClump([1, 2, 5])
+        self.assertEqual(repr(c), "IrregularClump([1, 2, 5])")
 
 
 class SequenceFromRangeTest(unittest.TestCase):
@@ -149,8 +157,8 @@ class SequenceFromRangeTest(unittest.TestCase):
 
     def test_linear_clumps(self):
         clumps = self.s.clumps()
-        self.assertEqual(str(clumps[0]), 'RegularClump(1-5x2)')
-        self.assertEqual(str(clumps[3]), 'RegularClump(19-19x1)')
+        self.assertEqual(str(clumps[0]), '1-5x2')
+        self.assertEqual(str(clumps[3]), '19-19x1')
 
     def test_length(self):
         self.assertEqual(len(self.s), 10)
@@ -159,7 +167,7 @@ class SequenceFromRangeTest(unittest.TestCase):
         self.s.clump_size = 5
         self.assertEqual(len(self.s.clumps()), 2)
         self.assertEqual(str(self.s),
-                         "Sequence(RegularClump(1-9x2), RegularClump(11-19x2))")
+                         '[RegularClump("1-9x2"), RegularClump("11-19x2")]')
 
     def test_clump_size_1(self):
         self.s.clump_size = 1
@@ -179,7 +187,7 @@ class SequenceFromRangeTest(unittest.TestCase):
     def test_cycle_clumps(self):
         self.s.cycle = True
         self.s.clump_size = 4
-        expected = "Sequence(RegularClump(1-19x6), RegularClump(3-15x6), RegularClump(5-17x6))"
+        expected = '[RegularClump("1-19x6"), RegularClump("3-15x6"), RegularClump("5-17x6")]'
         self.assertEqual(str(self.s), expected)
 
     def test_iterator_cycle(self):
@@ -199,8 +207,22 @@ class SequenceFromRangeTest(unittest.TestCase):
         s = Sequence.from_range(1, 10)
         s.clump_size = 4
         s.cycle = True
-        expected = 'Sequence(RegularClump(1-10x3), RegularClump(2-8x3), RegularClump(3-9x3))'
+        expected = '[RegularClump("1-10x3"), RegularClump("2-8x3"), RegularClump("3-9x3")]'
         self.assertEqual(str(s), expected)
+
+    def test_str(self):
+        s = Sequence.from_range(1, 10)
+        s.clump_size = 5
+        s.cycle = False
+        expected = '[RegularClump("1-5x1"), RegularClump("6-10x1")]'
+        self.assertEqual(str(s), expected)
+
+    def test_repr(self):
+        s = Sequence.from_range(1, 5)
+        s.clump_size = 2
+        s.cycle = False
+        expected = 'Sequence([1, 2, 3, 4, 5], clump_size=2, cycle=False)'
+        self.assertEqual(repr(s), expected)
 
     def test_intersection(self):
         s = Sequence.from_range(1, 10)
@@ -230,7 +252,7 @@ class SequenceFromSpecTest(unittest.TestCase):
 
     def test_iterator_linear_sorted_no_dups(self):
         expected = [1, 2, 4, 5, 6, 7, 8, 9, 12, 15, 18, 21, 24]
-        self.assertEqual([x for x in self.s], expected)
+        self.assertEqual(list(self.s), expected)
 
     def test_clump_count(self):
         self.s.clump_size = 5
