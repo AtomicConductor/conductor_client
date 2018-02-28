@@ -12,7 +12,7 @@ except ImportError, e:
 
 
 from conductor import CONFIG, submitter
-from conductor.lib import file_utils, nuke_utils, pyside_utils, common, package_utils
+from conductor.lib import file_utils, nuke_utils, pyside_utils, common, exceptions, package_utils
 from conductor.lib.lsseq import seqLister
 
 logger = logging.getLogger(__name__)
@@ -149,10 +149,10 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
               "frames": "10-20x2"}]
         '''
 
-        cmd_template = "nuke-render %s %s -F %s-%sx%s %s"
+        cmd_template = "nuke-render -V 2 %s %s -F %s-%sx%s %s"
 
         write_nodes = self.extended_widget.getSelectedWriteNodes()
-        write_nodes_args = " ".join(["-X %s" % write_node for write_node in write_nodes])
+        write_nodes_args = "-X %s" % (",".join(write_nodes))
         selected_views = self.extended_widget.getSelectedViews()
         view_args = "--view %s" % ",".join(selected_views)
         nuke_scriptpath = self.getSourceFilepath()
@@ -183,7 +183,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             # TODO:(lws) this is silly. We should keep this as a native int list.
             task_frames_str = ", ".join(seqLister.condenseSeq(task_frames))
             tasks_data.append({"command": task_cmd,
-                               "frames":  task_frames_str})
+                               "frames": task_frames_str})
 
         return tasks_data
 
