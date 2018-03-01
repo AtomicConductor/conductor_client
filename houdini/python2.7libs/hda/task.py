@@ -4,17 +4,14 @@
 import hou
 import hda
 import json
-from sequence import Clump
+# from sequence import Clump 
 
+class Task(object):
+    """Prepare a Task."""
 
-class Job(object):
-    """Prepare a Job."""
-
-    def __init__(self, node):
+    def __init__(self, node, clump):
         self._node = node
-        self._sequence = hda.frame_spec.main_frame_sequence(node)
-
-        # will be none if not doing scout frames
+        self._clump = clump
         self._scout_sequence = hda.frame_spec.resolved_scout_sequence(node)
         self._instance = self._get_instance()
         self._take = hou.takes.currentTake()
@@ -27,20 +24,18 @@ class Job(object):
         tokens.update(self._tokens)
         expander = hda.expansion.Expander(**tokens)
 
-        job = {
-            "tokens": tokens,
-            "metadata": expander.evaluate(self._node.parm("metadata").eval()),
-            "title": expander.evaluate(self._node.parm("job_title").eval()),
-            "scene_file": expander.evaluate(
-                self._node.parm("scene_file").eval()),
-            "take_name": self._take.name(),
-            "tasks": []
-        }
+        job = {}
+        job["tokens"] = tokens
+        job["metadata"] = expander.evaluate(
+            self._node.parm("metadata").eval())
+        job["title"] = expander.evaluate(
+            self._node.parm("job_title").eval())
+        job["scene_file"] = expander.evaluate(
+            self._node.parm("scene_file").eval())
+        job["take_name"] = self._take.name()
 
-        # for clump in self._sequence.clumps():
-        #     print repr(clump)
-        #     task = hda.task.Task(self._node, clump)
-        #     job["tasks"].append(task.dry_run(self._tokens))
+        # print tokens
+        # print  "SCENE FILE %s" % job["scene_file"]
 
         return job
 
@@ -51,31 +46,26 @@ class Job(object):
         result = [machine for machine in machines if machine['cores'] ==
                   int(cores) and machine['flavor'] == flavor][0]
 
+
+                  
+
         result["preemptible"] = self._node.parm('preemptible').eval()
         result["retries"] = self._node.parm("retries").eval()
         return result
 
     def _collect_tokens(self):
         """Tokens are string kv pairs used for substitutions."""
-
-        # print "-" * 30
-        # print iter(self._scout_sequence)
         tokens = {}
         tokens["take"] = self._take.name()
         tokens["length"] = str(len(self._sequence))
         tokens["sequence"] = str(Clump.create(iter(self._sequence)))
-        tokens["scout"] = "false"
-        if self._scout_sequence:
-            tokens["scout"] = (
-                ",".join([str(x) for x in Clump.regular_clumps(self._scout_sequence)]))
         tokens["clumpsize"] = str(self._sequence.clump_size)
         tokens["clumpcount"] = str(self._sequence.clump_count())
         tokens["scoutcount"] = str(len(self._scout_sequence or []))
         tokens["instcores"] = str(self._instance.get("cores"))
         tokens["instflavor"] = self._instance.get("flavor")
         tokens["instance"] = self._instance.get("description")
-        tokens["preemptible"] = "true" if self._instance.get(
-            "preemptible") else "false"
+        tokens["preemptible"] = "true" if self._instance.get("preemptible") else "false"  
         tokens["retries"] = str(self._instance.get("retries"))
         return tokens
 
