@@ -2,9 +2,12 @@
 
 
 import hou
-import hda
 import json
 from sequence import Clump
+from expansion import Expander
+from task import Task
+import frame_spec
+
 
 
 class Job(object):
@@ -12,10 +15,10 @@ class Job(object):
 
     def __init__(self, node):
         self._node = node
-        self._sequence = hda.frame_spec.main_frame_sequence(node)
+        self._sequence = frame_spec.main_frame_sequence(node)
 
         # will be none if not doing scout frames
-        self._scout_sequence = hda.frame_spec.resolved_scout_sequence(node)
+        self._scout_sequence = frame_spec.resolved_scout_sequence(node)
         self._instance = self._get_instance()
         self._take = hou.takes.currentTake()
         self._tokens = self._collect_tokens()
@@ -25,7 +28,7 @@ class Job(object):
         anything."""
         tokens = submission_tokens.copy()
         tokens.update(self._tokens)
-        expander = hda.expansion.Expander(**tokens)
+        expander =  Expander(**tokens)
 
         job = {
             "tokens": tokens,
@@ -37,10 +40,10 @@ class Job(object):
             "tasks": []
         }
 
-        # for clump in self._sequence.clumps():
-        #     print repr(clump)
-        #     task = hda.task.Task(self._node, clump)
-        #     job["tasks"].append(task.dry_run(self._tokens))
+        for clump in self._sequence.clumps():
+            print repr(clump)
+            task = Task(self._node, clump)
+            job["tasks"].append(task.dry_run(tokens))
 
         return job
 
@@ -61,9 +64,12 @@ class Job(object):
         # print "-" * 30
         # print iter(self._scout_sequence)
         tokens = {}
+        tokens["scene"] = self._take.name()
         tokens["take"] = self._take.name()
         tokens["length"] = str(len(self._sequence))
         tokens["sequence"] = str(Clump.create(iter(self._sequence)))
+        # tokens["sequencestart"] = str(self._sequence[0])
+        # tokens["sequenceend"] = str(self._sequence[-1])
         tokens["scout"] = "false"
         if self._scout_sequence:
             tokens["scout"] = (
@@ -78,6 +84,4 @@ class Job(object):
             "preemptible") else "false"
         tokens["retries"] = str(self._instance.get("retries"))
         return tokens
-
-    def generate_tasks():
-        pass
+ 

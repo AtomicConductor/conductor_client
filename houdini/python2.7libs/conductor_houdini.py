@@ -103,6 +103,10 @@ def action_callback(**kwargs):
         hou.ui.displayMessage(title='Warning', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
 
+    except( TypeError, ValueError) as err:
+        hou.ui.displayMessage(title='Error', text=str(err),
+                              severity=hou.severityType.Error)
+
 
 
 def action_button_callback(**kwargs):

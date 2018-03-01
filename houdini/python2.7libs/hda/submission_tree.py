@@ -57,3 +57,9 @@ class SubmissionTree(QtWidgets.QWidget):
             job_token_item = self.appendRow(job_item, "Tokens:")
             for t in sorted(j["tokens"]):
                 self.appendRow(job_token_item, t, j["tokens"][t])
+
+            task_item = self.appendRow(job_item, "Tasks:")
+            for i, t in enumerate(j["tasks"]):
+                task_header = self.appendRow(task_item, "[%d] %s" % (i,  str(t["clump"])) )
+                self.appendRow(task_header, "Command:",  t["command"] )
+                self.appendRow(task_header, "Frames:",  str(tuple(t["clump"])) )
