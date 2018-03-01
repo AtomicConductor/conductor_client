@@ -3,9 +3,11 @@ import re
 import json
 from contextlib import contextmanager
 import hou
-import hda
-
-from hda.submission_tree import SubmissionTree
+# from expansion import Expander
+from submission_tree import SubmissionTree
+from job import Job
+import takes
+import render_source
 
 
 @contextmanager
@@ -27,15 +29,17 @@ class Submission(object):
     def __init__(self, node, **kw):
         self._node = node
         take = kw.get('take')
-        self._takes = [take] if take else hda.takes.active_takes(node)
-        self._source_node = hda.render_source.get_render_node(node)
+        self._takes = [take] if take else takes.active_takes(node)
+        self._source_node = render_source.get_render_node(node)
         self._hip_basename = hou.hipFile.basename()
         self._hip_fullname = hou.hipFile.name()
         self._project = self._node.parm('project').eval()
 
         if not (self._takes and self._source_node):
             raise hou.InvalidInput(
-                "Need at least one active take and a connected source_node to create a submission.")
+                """Need at least one active take and a
+                connected source_node to create a
+                submission.""")
         self._tokens = self._collect_tokens()
 
     def _project_name(self):
@@ -52,7 +56,7 @@ class Submission(object):
         """Build an object that fully describes the submission without mutating
         anything."""
 
-        expander = hda.expansion.Expander(**self._tokens)
+        # expander = Expander(**self._tokens)
 
         submission = {
             "submitter": self._node.name(),
@@ -66,7 +70,7 @@ class Submission(object):
 
         for take in self._takes:
             with take_context(take):
-                job = hda.job.Job(self._node)
+                job = Job(self._node)
                 submission["jobs"].append(job.dry_run(self._tokens))
 
         print submission
