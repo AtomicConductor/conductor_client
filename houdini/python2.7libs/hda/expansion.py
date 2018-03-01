@@ -50,3 +50,6 @@ class Expander(object):
         if not isinstance(value, dict):
             raise TypeError("Context must be a dict")
         self._context = value
+
+
+Render <type> -s <clumpstart> -e <clumpend> -b <clumpstep> -rl <take> -rd /tmp/render_output/ $JOB/<hipbase>_<timestamp>.hip

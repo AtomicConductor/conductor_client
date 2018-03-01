@@ -56,4 +56,3 @@ def create(iterable):
         results[p] = results[p][:-1]
 
     return results
-
