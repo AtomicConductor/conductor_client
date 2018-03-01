@@ -7,6 +7,7 @@ import hda
 
 from hda.submission_tree import SubmissionTree
 
+
 @contextmanager
 def take_context(take):
     """Put houdini in the context of a take to run some code."""
@@ -37,36 +38,15 @@ class Submission(object):
                 "Need at least one active take and a connected source_node to create a submission.")
         self._tokens = self._collect_tokens()
 
-
-
-    def _collect_tokens(self):
-        """Tokens are string kv pairs used for substitutions.
-
-        Notice how these are values that can't change per take/Job. You can't  
-
-        """
-        tokens = {}
-        tokens["timestamp"] = datetime.datetime.now().strftime(
-            '%Y_%m_%d_%H_%M_%S')
-        tokens["submitter"] = self._node.name()
-        tokens["project"] = self._project_name()
-        tokens["source"] = self._source_node.name()
-        tokens["type"] = self._source_node.type().name()
-        tokens["hipbase"] = self._stripped_hip()
-
-        return tokens
-
     def _project_name(self):
         projects = json.loads(self._node.parm('projects').eval())
-        return [project["name"] for project in projects if project['id'] == self._project][0]
- 
+        return [project["name"]
+                for project in projects if project['id'] == self._project][0]
 
     def _stripped_hip(self):
         """Strip off the extension and timestamp from start or end."""
         no_ext = re.sub('\.hip$', '', self._hip_basename)
         return re.sub(TIMESTAMP_RE, '', no_ext)
-
-
 
     def dry_run(self):
         """Build an object that fully describes the submission without mutating
@@ -75,7 +55,7 @@ class Submission(object):
         expander = hda.expansion.Expander(**self._tokens)
 
         submission = {
-            "submitter":  self._node.name(),
+            "submitter": self._node.name(),
             "tokens": self._tokens,
             "filename": self._hip_fullname,
             "source": self._source_node.name(),
@@ -91,7 +71,7 @@ class Submission(object):
 
         print submission
         # t = self._prepare_for_tree_view(submission)
-        submission_tree =  SubmissionTree()
+        submission_tree = SubmissionTree()
 
         submission_tree.populate(submission)
 
@@ -102,13 +82,24 @@ class Submission(object):
 
         pass
 
+    def _collect_tokens(self):
+        """Tokens are variables to help the user build strings.
 
+        The user interface has fields for strings such as
+        job title, render command, and various paths. The
+        user can enclose any of these tokens in angle
+        brackets and they will be resolved for the
+        submission.
 
+        """
+        tokens = {}
+        tokens["timestamp"] = datetime.datetime.now().strftime(
+            '%Y_%m_%d_%H_%M_%S')
+        tokens["submitter"] = self._node.name()
+        tokens["project"] = self._project_name()
+        tokens["source"] = self._source_node.name()
+        tokens["type"] = self._source_node.type().name()
+        tokens["hipbase"] = self._stripped_hip()
+        tokens["takes"] = (", ").join([take.name() for take in self._takes])
 
-
-
-
-
-
-
-
+        return tokens

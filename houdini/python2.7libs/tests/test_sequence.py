@@ -6,11 +6,13 @@ HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
-from hda.sequence import (
+from hda.sequence import Sequence
+
+
+from hda.clump import (
     Clump,
     RegularClump,
     IrregularClump,
-    Sequence,
     resolve_start_end_step)
 
 
@@ -79,6 +81,21 @@ class ClumpFactoryTest(unittest.TestCase):
         c = Clump.create([1, 3, 5, 7, 10])
         self.assertIsInstance(c, IrregularClump)
 
+    def test_auto_create_regular_clumps_type(self):
+        c = Clump.regular_clumps([1, 3, 5, 7, 10])
+        self.assertIsInstance(c, list)
+
+    def test_auto_create_regular_clumps_single(self):
+        c = Clump.regular_clumps([1])
+        self.assertEqual(repr(c[0]), 'RegularClump("1-1x1")')
+
+    def test_auto_create_regular_clumps_many(self):
+        spec = "1, 4, 9-18x3, 26, 28, 46-60, 100"
+        s = Sequence.from_spec(spec)
+        c = Clump.regular_clumps(s)
+        newspec = (", ").join([str(x) for x in c])
+        self.assertEqual(newspec, spec)
+
 
 class RegularClumpTest(unittest.TestCase):
 
@@ -98,9 +115,17 @@ class RegularClumpTest(unittest.TestCase):
         c = RegularClump(2, 2)
         self.assertEqual(len(c), 1)
 
-    def test_str(self):
+    def test_str_with_step(self):
         c = RegularClump(3, 5, 2)
         self.assertEqual(str(c), "3-5x2")
+
+    def test_str_with_1_step(self):
+        c = RegularClump(3, 5, 1)
+        self.assertEqual(str(c), "3-5")
+
+    def test_str_with_single_value(self):
+        c = RegularClump(3, 3, 1)
+        self.assertEqual(str(c), "3")
 
     def test_repr(self):
         c = RegularClump(3, 5, 2)
@@ -158,7 +183,7 @@ class SequenceFromRangeTest(unittest.TestCase):
     def test_linear_clumps(self):
         clumps = self.s.clumps()
         self.assertEqual(str(clumps[0]), '1-5x2')
-        self.assertEqual(str(clumps[3]), '19-19x1')
+        self.assertEqual(str(clumps[3]), '19')
 
     def test_length(self):
         self.assertEqual(len(self.s), 10)
