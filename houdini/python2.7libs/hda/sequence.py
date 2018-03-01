@@ -9,140 +9,16 @@ range or with a list of numbers. It has two properties that
 define how clumps will be made: clump_size and cycle.
 
 """
-import re
+
 import math
-import itertools as it
-# Catch a number
-NUMBER_RE = re.compile(r"^(\d+)$")
 
-# Catch a frame range with optional step
-RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
-
-
-def _clamp(low, val, high):
-    """Restrict a value."""
-    return sorted((low, val, high))[1]
-
-
-def resolve_start_end_step(*args):
-    """Generate a valid start, end, step.
-
-    Args may be individual ints or strings. Start may be
-    after end. Step may be None or missing. Arg may be a
-    single range string as 'start-endxstep' where step is
-    optional.
-
-    """
-    if len(args) == 1:
-        range_match = RANGE_RE.match(args[0])
-        if not range_match:
-            raise ValueError("Single arg must be 'start-end<xstep>")
-        start, end, step = [int(n or 1) for n in range_match.groups()]
-    else:
-        start, end = [int(n) for n in [args[0], args[1]]]
-        step = int(args[2]) if len(args) == 3 else 1
-    start, end = sorted([start, end])
-    if step < 1 or start < 0:
-        raise ValueError(
-            "Args must have non-negative range and a positive step")
-    return (start, end, step)
-
-
-class Clump(object):
-    """A Clump is a sorted iterable representing a sequence of frames."""
-    @staticmethod
-    def create(iterable):
-        """Factory makes one of the Clump subclasses.
-
-        If iterable is equal to a range made from first
-        element, last element, and gap between first and
-        second element, then the clump is regular, which
-        means it is in ascending order and has the same gap
-        between consecutive elements. Otherwise it is
-        irregular.
-
-        """
-        frames = sorted(set(iterable))
-        if len(frames) == 1:
-            return RegularClump(frames[0], frames[0])
-        step = frames[1] - frames[0]
-        regular_range = range(frames[0], frames[-1] + 1, step)
-        if regular_range == frames:
-            return RegularClump(frames[0], frames[-1], step)
-        return IrregularClump(frames)
-
-    def format(self, template):
-        """Insert each number in a template.
-
-        For example if format string is
-        "foo/%02d/fn.%04d.ass" Then the result array will
-        contain: "foo/01/fn.0001.ass" "foo/02/fn.0002.ass"
-        and so on
-
-        """
-        num_tokens = template.count('%')
-        return [template % ((i,) * num_tokens) for i in self._iterable]
-
-    def __init__(self):
-        self._iterable = None
-
-    def __len__(self):
-        return len(self._iterable)
-
-    def __iter__(self):
-        return iter(self._iterable)
-
-    def __str__(self):
-        raise NotImplementedError()
-
-
-class RegularClump(Clump):
-    """A RegularClump is an itetatable that wraps an xrange.
-
-    It can be initialized with two or three numbers start,
-    end, <step> or a "string start-endxstep" where step is
-    optional It has inclusive upper bound.
-
-    """
-
-    def __init__(self, *args):
-        """one_line_doc_string."""
-        Clump.__init__(self)
-        self._start, self._end, self._step = resolve_start_end_step(*args)
-        self._iterable = xrange(self._start, self._end + 1, self._step)
-
-    @property
-    def step(self):
-        return self._step
-
-    @property
-    def start(self):
-        return self._start
-
-    @property
-    def end(self):
-        return self._end
-
-    def __str__(self):
-        return "%s-%sx%s" % (self.start, self.end, self.step)
-
-    def __repr__(self):
-        return "%s(\"%r-%rx%r\")" % (self.__class__.__name__,
-                                   self.start, self.end, self.step)
-
-
-class IrregularClump(Clump):
-    """A sorted list of frames that cannot be represented by a range."""
-
-    def __init__(self, iterable):
-        Clump.__init__(self)
-        self._iterable = sorted(list(iterable))
-
-    def __str__(self):
-        return "%s~%s" % (self._iterable[0], self._iterable[-1])
-
-    def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self._iterable)
+from clump import (
+    NUMBER_RE,
+    RANGE_RE,
+    resolve_start_end_step,
+    Clump,
+    RegularClump,
+    IrregularClump)
 
 
 class Sequence(object):
@@ -179,7 +55,7 @@ class Sequence(object):
             if number_matches:
                 vals = number_matches.groups()
                 the_set = the_set.union([int(vals[0])])
-            elif RANGE_RE.match(part):
+            elif  RANGE_RE.match(part):
                 start, end, step = resolve_start_end_step(part)
                 the_set = the_set.union(xrange(start, end + 1, step))
             elif part:
@@ -201,7 +77,14 @@ class Sequence(object):
         return cls(frames, **kw)
 
     def __init__(self, frames, **kw):
+        """Instantiate from iterable.
+
+        If frames is given as a set, convert to a list
+
+        """
         self._frames = frames
+        if not hasattr(frames, '__getitem__'):
+            self._frames = list(frames)
         self._clump_size = max(1, kw.get('clump_size', 1))
         self._cycle = kw.get('cycle', False)
 
@@ -227,9 +110,11 @@ class Sequence(object):
 
     def _linear_clumps(self):
         """Generate clumps in sorted order."""
-        return [Clump.create(self._frames[i:i + self._clump_size])
-                for i in xrange(0, len(self._frames), self._clump_size)]
-
+        result = []
+        for i in xrange(0, len(self._frames), self._clump_size):
+            result.append(Clump.create(self._frames[i:i + self._clump_size]))
+        return result
+ 
     def clumps(self):
         """return list of clumps according to size and cycle."""
         if self._cycle:
@@ -241,7 +126,8 @@ class Sequence(object):
         return int(math.ceil(len(self._frames) / float(self._clump_size)))
 
     def intersection(self, iterable):
-        return Sequence(set(self._frames).intersection(set(iterable)))
+        common_frames = set(self._frames).intersection(set(iterable))
+        return Sequence(common_frames)
 
     def best_clump_size(self):
         """Return clumpsize for best distribution.
@@ -273,7 +159,11 @@ class Sequence(object):
         self._cycle = bool(value)
 
     def __iter__(self):
-        """Frames in the order computed using clump_size and cycle. WHY?"""
+        """Frames in the order computed using clump_size and cycle.
+
+        WHY?
+
+        """
         return iter([item for sublist in self.clumps() for item in sublist])
 
     def __len__(self):
@@ -286,8 +176,8 @@ class Sequence(object):
 
     def __repr__(self):
         """Repr containes whats necessary to init."""
-        # seq = (', ').join([repr(clump) for clump in self.clumps()])
-        return "%s(%r, clump_size=%r, cycle=%r)" % (self.__class__.__name__, self._frames, self._clump_size, self._cycle )
+        return "%s(%r, clump_size=%r, cycle=%r)" % (
+            self.__class__.__name__, self._frames, self._clump_size, self._cycle)
 
     # TODO: rewrite __str__ and __repr__ for sequence and clumps
     # https://stackoverflow.com/questions/1436703/difference-between-str-and-repr-in-python
