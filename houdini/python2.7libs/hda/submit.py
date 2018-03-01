@@ -2,7 +2,7 @@
 
 import render_source
 import projects
-import hda
+import submission
 import takes
 
 def _can_submit(node):
@@ -28,8 +28,8 @@ def show_request(node, **_):
     not save a file or actually submit anything.
 
     """
-    submission = hda.submission.Submission(node)
-    print submission.dry_run()
+    sub =  submission.Submission(node)
+    print sub.dry_run()
 
     # treeWin = qt.createWindow()
 
