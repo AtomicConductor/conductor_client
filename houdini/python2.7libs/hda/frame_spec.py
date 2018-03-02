@@ -3,6 +3,7 @@
 import hou
 import render_source
 import sequence as sq
+import takes
 
 # Specify that Expressions are Python
 XP = hou.exprLanguage.Python
@@ -126,10 +127,13 @@ def _update_sequence_stats(node):
     intersect the set of total frames.
 
     """
-    main_seq = main_frame_sequence(node)
-    scout_seq = scout_frame_sequence(node)
-
-    num_frames = len(main_seq)
+    takes.enable_for_current(node, "frame_stats")
+    
+    try:
+        main_seq = main_frame_sequence(node)
+        num_frames = len(main_seq)
+    except ValueError:
+        num_frames = None
 
     if not num_frames:
         node.parm("frame_stats1").set("-")
@@ -137,27 +141,27 @@ def _update_sequence_stats(node):
         return
 
     frame_info = "%d Frames" % num_frames
-    scout_seq = resolved_scout_sequence(node)
 
-    if scout_seq:
-        num_scout = len(scout_seq)
-        if num_scout:
-            frame_info = "%d/%d Frames" % (num_scout, num_frames)
+    try:
+        scout_seq = resolved_scout_sequence(node)
+    except ValueError:
+        scout_seq = None
+
+
+    if scout_seq is not None:
+        frame_info = "%d/%d Frames" % (len(scout_seq), num_frames)
+
     node.parm("frame_stats1").set(frame_info)
-
     clumps = main_seq.clump_count()
-
     node.parm("frame_stats2").set("%d Clumps" % clumps)
 
 
 def validate_custom_range(node, **_):
     """Set valid tickmark for custom range spec."""
+    takes.enable_for_current(node, "custom_valid")
     spec = node.parm("custom_range").eval()
-    value = spec.strip(',')
     valid = sq.Sequence.is_valid_spec(spec)
-
     node.parm("custom_valid").set(valid)
-    node.parm("custom_range").set(value)
 
     _update_sequence_stats(node)
 
@@ -170,12 +174,10 @@ def validate_scout_range(node, **_):
     scout frame exist in the main frame range.
 
     """
+    takes.enable_for_current(node, "scout_valid")
     spec = node.parm("scout_frames").eval()
-    value = spec.strip(',')
     valid = sq.Sequence.is_valid_spec(spec)
-
     node.parm("scout_valid").set(valid)
-    node.parm("scout_frames").set(value)
     _update_sequence_stats(node)
 
 
@@ -188,6 +190,9 @@ def set_type(node, **_):
     * Custom: give a range spec
 
     """
+
+    takes.enable_for_current(node, "fs", "custom_range")
+
     funcs = {
         "explicit": _set_explicit,
         "input": _set_input,
