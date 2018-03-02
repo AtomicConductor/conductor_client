@@ -29,7 +29,7 @@ def resolve_start_end_step(*args):
     start, end = sorted([start, end])
     if step < 1 or start < 0:
         raise ValueError(
-            "Args must have non-negative range and a positive step")
+            "Args must have non-negative range and positive step")
     return (start, end, step)
 
 

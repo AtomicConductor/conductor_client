@@ -55,5 +55,6 @@ def doit(node, **_):
 
 def update_button_state(node):
     """Enable/disable submit button."""
+    takes.enable_for_current(node, "can_submit", "submit", "show_request", "update", "render_type")
     can_submit = 1 if _can_submit(node) else 0
     node.parm("can_submit").set(can_submit)
