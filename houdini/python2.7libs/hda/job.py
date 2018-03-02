@@ -8,6 +8,8 @@ from expansion import Expander
 from task import Task
 import frame_spec
 
+import dependency_scan as deps
+
 
 
 class Job(object):
@@ -37,6 +39,7 @@ class Job(object):
             "scene_file": expander.evaluate(
                 self._node.parm("scene_file").eval()),
             "take_name": self._take.name(),
+            "dependencies": deps.fetch(self._sequence),
             "tasks": []
         }
 
@@ -44,6 +47,9 @@ class Job(object):
             print repr(clump)
             task = Task(self._node, clump)
             job["tasks"].append(task.dry_run(tokens))
+
+
+
 
         return job
 
