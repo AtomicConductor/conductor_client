@@ -18,24 +18,27 @@ from hda import (
 )
 
 
+
 def _update_node(node, **_):
     """Initialize or update.
 
-    We do this on creation/loading or manually.
+    We do this on creation/loading or manually. We do it in the root take context to ensure  everything is unlocked.
 
     """
-    projects.fetch(node)
-    instances.fetch_types(node)
-    frame_spec.validate_custom_range(node)
-    frame_spec.validate_scout_range(node)
-    render_source.update_input_node(node)
-    frame_spec.set_type(node)
-    notifications.validate_emails(node)
-    notifications.email_hook_changed(node)
-    takes.update_takes(node)
-    software.detect(node)
-    submit.update_button_state(node)
+    with takes.take_context(hou.takes.rootTake()):
+        projects.fetch(node)
+        instances.fetch_types(node)
+        frame_spec.validate_custom_range(node)
+        frame_spec.validate_scout_range(node)
+        render_source.update_input_node(node)
+        frame_spec.set_type(node)
+        notifications.validate_emails(node)
+        notifications.email_hook_changed(node)
+        takes.update_takes(node)
+        software.detect(node)
+        submit.update_button_state(node)
 
+ 
 
 MENUS = dict(
     machine_type=instances.populate_menu,

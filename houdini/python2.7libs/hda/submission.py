@@ -1,7 +1,7 @@
 import datetime
 import re
 import json
-from contextlib import contextmanager
+
 import hou
 # from expansion import Expander
 from submission_tree import SubmissionTree
@@ -10,13 +10,6 @@ import takes
 import render_source
 
 
-@contextmanager
-def take_context(take):
-    """Put houdini in the context of a take to run some code."""
-    remember = hou.takes.currentTake()
-    hou.takes.setCurrentTake(take)
-    yield
-    hou.takes.setCurrentTake(remember)
 
 
 # Catch a timestamp of the form 2018_02_27_10_59_47 with optional
@@ -69,7 +62,7 @@ class Submission(object):
         }
 
         for take in self._takes:
-            with take_context(take):
+            with takes.take_context(take):
                 job = Job(self._node)
                 submission["jobs"].append(job.dry_run(self._tokens))
 
