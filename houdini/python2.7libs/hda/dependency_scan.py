@@ -38,4 +38,4 @@ def fetch(sequence):
                             result.add(file)
                     except hou.OperationFailed:
                         pass
-    return result
+    return list(result)
