@@ -36,7 +36,7 @@ class Expander(object):
         item = item.strip()
         template = AngleBracketTemplate(item)
         try:
-            item = template.substitute(self._context)
+            item = template.safe_substitute(self._context)
         except KeyError:
             raise ValueError("Invalid token %s" % item)
         return item
@@ -52,4 +52,4 @@ class Expander(object):
         self._context = value
 
 
-Render <type> -s <clumpstart> -e <clumpend> -b <clumpstep> -rl <take> -rd /tmp/render_output/ $JOB/<hipbase>_<timestamp>.hip
+# Render <type> -s <clumpstart> -e <clumpend> -b <clumpstep> -rl <take> -rd /tmp/render_output/ $JOB/<hipbase>_<timestamp>.hip

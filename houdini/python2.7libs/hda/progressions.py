@@ -56,3 +56,10 @@ def create(iterable):
         results[p] = results[p][:-1]
 
     return results
+
+
+print create([1, 2, 3, 5, 7, 8, 11, 13, 15, 17])
+
+print create([10, 20, 23, 5, 7, 8, 9, 11, 13, 15, 17])
+
+# hrender -d <source> -f <clumpstart> <clumpend> -i <clumpstep> -take <take> -o /tmp/render_output/ $JOB/<hipbase>_<timestamp>.hip

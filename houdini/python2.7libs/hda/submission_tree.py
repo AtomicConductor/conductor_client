@@ -50,6 +50,10 @@ class SubmissionTree(QtWidgets.QWidget):
             self.appendRow(job_item, "Title:", j["title"])
             self.appendRow(job_item, "Scene file:", j["scene_file"])
 
+            deps_item =  self.appendRow(job_item, "Dependencies:")
+            for i, d in enumerate(j["dependencies"]):
+                self.appendRow(deps_item, "[%d]" % i, d)
+
             metatdata_item = self.appendRow(job_item, "Job Metadata:")
             for k, v in j["metadata"].iteritems():
                 self.appendRow(metatdata_item, k, v)
@@ -62,4 +66,7 @@ class SubmissionTree(QtWidgets.QWidget):
             for i, t in enumerate(j["tasks"]):
                 task_header = self.appendRow(task_item, "[%d] %s" % (i,  str(t["clump"])) )
                 self.appendRow(task_header, "Command:",  t["command"] )
-                self.appendRow(task_header, "Frames:",  str(tuple(t["clump"])) )
+                self.appendRow(task_header, "Frames:",  str(tuple(t["clump"])) )            
+                task_token_item = self.appendRow(task_header, "Tokens:")
+                for tok in sorted(t["tokens"]):
+                    self.appendRow(task_token_item, tok, t["tokens"][tok])
