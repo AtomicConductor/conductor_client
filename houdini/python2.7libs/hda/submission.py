@@ -66,7 +66,7 @@ class Submission(object):
                 job = Job(self._node)
                 submission["jobs"].append(job.dry_run(self._tokens))
 
-        print submission
+     
         # t = self._prepare_for_tree_view(submission)
         submission_tree = SubmissionTree()
 

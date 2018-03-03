@@ -39,81 +39,6 @@ def _to_parm_name(take_name):
     """Prefix take name with take_ to avoid parm name clashes."""
     return "take_%s" % take_name
 
-
-# def _is_takable(template):
-#     """Determine if template is takable.
-
-#     It is takable if it has a tag `takes` set to the string
-#     True, or if it is a label. We enable all labels because
-#     labels don't have tags so we can't differentiate.
-
-#     """
-#     return (template.type().name() == "Label") or (
-#         template.tags().get("takes") == "True")
-
-
-# def _takable_templates(parent):
-#     """Collect templates that have been whitelisted for take inclusion."""
-#     for template in parent.parmTemplates():
-#         if _is_takable(template):
-#             yield template
-#         if (template.type() == hou.parmTemplateType.Folder and
-#                 template.isActualFolder()):
-#             for child in _takable_templates(template):
-#                 if _is_takable(child):
-#                     yield child
-
-
-# def _enable_takable_parms(take, node):
-#     """Enable all whitelisted parms for this take."""
-#     ptg = node.parmTemplateGroup()
-#     for template in _takable_templates(ptg):
-#         parm_tuple = node.parmTuple(template.name())
-#         print "%s : %s : %s" % (
-#             take.name(), template.name(), parm_tuple.name())
-#         take.addParmTuple(parm_tuple)
-
-
-# def _disable_takable_parms(take, node):
-#     """Disable all whitelisted parms for this take."""
-#     ptg = node.parmTemplateGroup()
-#     for template in _takable_templates(ptg):
-#         parm_tuple = node.parmTuple(template.name())
-#         take.removeParmTuple(parm_tuple)
-
-
-# def _sync_parms_to_active_takes(node):
-#     """Parameters should be enabled for active takes.
-
-#     We enable a subset of parameters on the node for takes
-#     that will be rendered, and disable all parameters for
-#     all non rendering takes, except the root take, whose
-#     parameters are always enabled. In order to set parameter
-#     states for a take, the take must be current. Therefore
-#     we remember the current take before this procedure and
-#     set it back afterwards, unless it has somehow been
-#     turned off (which shouldn't be possible), in which case
-#     we set the root take to be current.
-
-#     """
-#     remember_current = hou.takes.currentTake()
-
-#     for take in hou.takes.takes():
-#         if take.name() == hou.takes.rootTake().name():
-#             continue
-#         hou.takes.setCurrentTake(take)
-#         parm_name = _to_parm_name(take.name())
-#         if node.parm(parm_name).eval():
-#             _enable_takable_parms(take, node)
-#         else:
-#             _disable_takable_parms(take, node)
-#     current_take_parm_name = _to_parm_name(remember_current.name())
-#     if node.parm(current_take_parm_name).eval():
-#         hou.takes.setCurrentTake(remember_current)
-#     else:
-#         hou.takes.setCurrentTake(hou.takes.rootTake())
-
-
 def enable_for_current(node, *parm_tuple_names):
     """Enable parm dependencies for the current take.
 
@@ -235,6 +160,7 @@ def on_toggle_change(node, parm_name, **_):
 
 
 def active_takes(node):
+    """Active takes are the list of takes we want to submit"""
     active = _get_existing_values(node)
     result = []
     for take in hou.takes.takes():

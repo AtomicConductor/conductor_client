@@ -58,9 +58,14 @@ class SubmissionTree(QtWidgets.QWidget):
             for k, v in j["metadata"].iteritems():
                 self._appendRow(metatdata_item, k, v)
 
+            packages_item = self._appendRow(job_item, "Package IDs:")
+            for i, p in enumerate(j["package_ids"]):
+                self._appendRow(packages_item, "[%d]" % i, p)
+
             job_token_item = self._appendRow(job_item, "Tokens:")
             for t in sorted(j["tokens"]):
                 self._appendRow(job_token_item, t, j["tokens"][t])
+
 
             task_item = self._appendRow(job_item, "Tasks:")
             for i, t in enumerate(j["tasks"]):

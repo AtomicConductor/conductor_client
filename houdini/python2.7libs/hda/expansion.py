@@ -14,12 +14,13 @@ class AngleBracketTemplate(Template):
 
 
 class Expander(object):
+    """Expand angle bracket tokens in dictionaries, lists, and strings."""
 
     def __init__(self, **kw):
         self._context = kw
 
     def evaluate(self, target):
-        """Expand angle bracket tokens in dictionaries, lists, and strings."""
+        """Evaluate for different types"""
         if isinstance(target, dict):
             return {k: self.evaluate_item(v) for k, v in target.items()}
         elif isinstance(target, list):
@@ -30,7 +31,7 @@ class Expander(object):
         """Evaluate a templated string.
 
         Replace <token>s with values provided by the
-        _context dict.
+        _context dict. Unrecognised tokens remain unchanged.
 
         """
         item = item.strip()
@@ -51,5 +52,4 @@ class Expander(object):
             raise TypeError("Context must be a dict")
         self._context = value
 
-
-# Render <type> -s <clumpstart> -e <clumpend> -b <clumpstep> -rl <take> -rd /tmp/render_output/ $JOB/<hipbase>_<timestamp>.hip
+ 
