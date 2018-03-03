@@ -7,9 +7,8 @@ from sequence import Clump
 from expansion import Expander
 from task import Task
 import frame_spec
-
+import software
 import dependency_scan as deps
-
 
 
 class Job(object):
@@ -30,7 +29,7 @@ class Job(object):
         anything."""
         tokens = submission_tokens.copy()
         tokens.update(self._tokens)
-        expander =  Expander(**tokens)
+        expander = Expander(**tokens)
 
         job = {
             "tokens": tokens,
@@ -40,16 +39,14 @@ class Job(object):
                 self._node.parm("scene_file").eval()),
             "take_name": self._take.name(),
             "dependencies": deps.fetch(self._sequence),
-            "tasks": []
+            "package_ids": software.get_chosen_package_ids(self._node),
+            "tasks": [],
         }
 
         for clump in self._sequence.clumps():
             print repr(clump)
             task = Task(self._node, clump)
             job["tasks"].append(task.dry_run(tokens))
-
-
-
 
         return job
 
@@ -90,4 +87,3 @@ class Job(object):
             "preemptible") else "false"
         tokens["retries"] = str(self._instance.get("retries"))
         return tokens
- 

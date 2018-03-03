@@ -3,6 +3,7 @@
 import re
 import hou
 from conductor.lib import common
+from conductor import CONFIG
 
 
 def _get_entries(path, ui_map):
@@ -179,3 +180,14 @@ def detect(node, **_):
 def clear(node, **_):
     """Clear all entries."""
     node.parm('software').set({})
+
+
+def get_chosen_package_ids(node):
+    results = CONFIG.get("software_package_ids") or []
+    packages = common.get_package_ids().get('houdini')
+    ui_map = _to_ui_map(packages)
+    short_ids = [p[2:] for p in node.parm('software').eval().keys()]
+    results += [val for val in ui_map.values()
+                for sid in short_ids if val.startswith(sid)]
+
+    return list(set(results))

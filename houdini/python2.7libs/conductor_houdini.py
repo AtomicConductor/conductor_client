@@ -18,11 +18,11 @@ from hda import (
 )
 
 
-
 def _update_node(node, **_):
     """Initialize or update.
 
-    We do this on creation/loading or manually. We do it in the root take context to ensure  everything is unlocked.
+    We do this on creation/loading or manually. We do it in
+    the root take context to ensure everything is unlocked.
 
     """
     with takes.take_context(hou.takes.rootTake()):
@@ -38,7 +38,6 @@ def _update_node(node, **_):
         software.detect(node)
         submit.update_button_state(node)
 
- 
 
 MENUS = dict(
     machine_type=instances.populate_menu,
@@ -106,10 +105,9 @@ def action_callback(**kwargs):
         hou.ui.displayMessage(title='Warning', text=err.instanceMessage(),
                               severity=hou.severityType.Error)
 
-    except( TypeError, ValueError) as err:
+    except(TypeError, ValueError) as err:
         hou.ui.displayMessage(title='Error', text=str(err),
                               severity=hou.severityType.Error)
-
 
 
 def action_button_callback(**kwargs):
