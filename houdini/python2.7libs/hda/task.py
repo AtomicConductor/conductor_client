@@ -1,10 +1,5 @@
-"""Nothing expanded in __init__ No expansion in _get_tokens either."""
-
-
-import hou
-import json
 from expansion import Expander
-from clump import RegularClump
+
 
 class Task(object):
     """Prepare a Task."""
@@ -14,7 +9,7 @@ class Task(object):
         self._clump = clump
         self._tokens = self._collect_tokens()
 
-    def dry_run(self,job_tokens):
+    def dry_run(self, job_tokens):
         """Build an object that fully describes the task without mutating
         anything."""
         tokens = job_tokens.copy()
@@ -23,22 +18,22 @@ class Task(object):
 
         task = {}
         task["tokens"] = tokens
-        task["command"] = expander.evaluate(self._node.parm("task_command").eval())
-        task["clump"] =  self._clump
+        task["command"] = expander.evaluate(
+            self._node.parm("task_command").eval())
+        task["clump"] = self._clump
         return task
-
-    
 
     def _collect_tokens(self):
         """Tokens are string kv pairs used for substitutions."""
 
-        clump_type = type(self._clump).__name__ 
+        clump_type = type(self._clump).__name__
 
         tokens = {}
         tokens["clump"] = str(self._clump)
         tokens["clumplength"] = str(len(self._clump))
         tokens["clumpstart"] = str(self._clump.start)
         tokens["clumpend"] = str(self._clump.end)
-        tokens["clumpstep"] = str(self._clump.step) if clump_type == "RegularClump" else "irregular"
+        tokens["clumpstep"] = str(
+            self._clump.step) if clump_type == "RegularClump" else "irregular"
         tokens["clumptype"] = clump_type
         return tokens
