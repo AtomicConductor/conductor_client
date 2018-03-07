@@ -352,8 +352,6 @@ class Submit(object):
                                 'cores': self.cores,
                                 'machine_flavor': self.machine_flavor})
 
-            if self.gpu_count:
-                submit_dict['gpu_count'] = self.gpu_count
             if self.gpu_config:
                 submit_dict['gpu_config'] = self.gpu_config
             if self.priority:
