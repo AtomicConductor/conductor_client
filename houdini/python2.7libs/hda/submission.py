@@ -3,13 +3,13 @@ import re
 import json
 
 import hou
+from conductor.lib import api_client
+
 # from expansion import Expander
 from submission_tree import SubmissionTree
 from job import Job
 import takes
 import render_source
-
-
 
 
 # Catch a timestamp of the form 2018_02_27_10_59_47 with optional

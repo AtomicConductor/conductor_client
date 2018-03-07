@@ -9,7 +9,7 @@ if HDA_MODULE not in sys.path:
 from hda.expansion import Expander
 
 
-class ExpanderpTest(unittest.TestCase):
+class ExpanderTest(unittest.TestCase):
 
     def test_smoke(self):
         exp = Expander()
