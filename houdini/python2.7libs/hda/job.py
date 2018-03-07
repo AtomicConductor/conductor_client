@@ -63,9 +63,6 @@ class Job(object):
 
     def _collect_tokens(self):
         """Tokens are string kv pairs used for substitutions."""
-
-        # print "-" * 30
-        # print iter(self._scout_sequence)
         tokens = {}
         tokens["scene"] = self._take.name()
         tokens["take"] = self._take.name()

@@ -4,16 +4,7 @@ import hou
 
 
 def fetch(sequence):
-    """Finds all file dependencies in the project for specific range of frames.
-
-    Args:
-      frame_begin: First frame (inclusive) of range to render.
-      frame_end: Last frame (inclusive) of range to render.
-      step: Frame range step.
-
-    Returns:
-      set of str, List of detected dependencies.
-
+    """Finds all file dependencies in the project for specific sequence.
     """
     refs = hou.fileReferences()
     # frames = xrange(int(sequence), int(frame_end) + 1, int(step))
