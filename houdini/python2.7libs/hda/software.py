@@ -1,140 +1,86 @@
-"""Manage selection and autodetection of software dependencies."""
+"""Manage selection and autodetection of software dependencies.
+
+This module is concerned with the houdini UI. Any logic that
+deals with the software tree should happen in the
+software_data module
+
+"""
 
 import re
 import hou
-from conductor.lib import common
+from conductor.lib import common, api_client
 from conductor import CONFIG
+import software_data as swd
+import houdini_info
+
+FOLDER_PATH = ("Software", "Packages")
 
 
-def _get_entries(path, ui_map):
-    """Get possible entries from the given path.
+def _get_field_names(ptg):
+    """Get names of existing toggles."""
+    folder = ptg.findFolder(FOLDER_PATH)
 
-    Path may contain one or 2 levels i.e. 'host/plugin' or just host.
-    We look up the items from the map that comes from resources.yml to
-    get the GID. The return is a dict with 1 or 2 entries to be displayed
-    in the widget. host GID will be prefixed with *  and plugin GIDs are
-    prefixed with -. For example, given the path some-host/some-plugin,
-
-    return:
-    {
-        "*abcd1234": "some-host",
-        "-4321dcba": "some-plugin"
-    }
-
-    """
-    result = {}
-    parts = path.split("/")
-    host_only = len(parts) == 1
-    gid = "* %s" % ui_map[parts[0]][:8]
-    result[gid] = parts[0]
-    if not host_only:
-        gid = "- %s" % ui_map[path][:8]
-        result[gid] = parts[1]
-    return result
+    return [t.name() for t in folder.parmTemplates()]
 
 
-def _to_ui_map(packages):
-    """Create a simple mapping from versioned software to ID.
-
-    Software IDs structure in the resources.yml file is not
-    suitable for houdini's tree chooser UI. So we concat
-    name and version together, build hierarchy with "/"
-    character. Each entry points to its guid. Example
-    result:
-
-    {
-        houdini-16.5.323: "abcd12345678abcdabcd12345678abcd",
-        houdini-16.5.323/htoa-2.2.2: "12345678abcdabcd12345678abcdabcd"
-    }
-
-    """
-    result = {}
-    for hou_version in packages:
-        package = packages[hou_version]
-        gid = package['package']
-        hou_entry = "houdini-%s" % hou_version
-        result[hou_entry] = gid
-
-        tools = [p for p in package if not p == "package"]
-        for tool in tools:
-            for tool_version in package[tool]:
-                gid = package[tool][tool_version]
-                tool_entry = "%s/%s-%s" % (hou_entry, tool, tool_version)
-                result[tool_entry] = gid
-    return result
+def _remove_package_entries(node):
+    """Remove existing toggles in preparation to build new."""
+    ptg = node.parmTemplateGroup()
+    fields = _get_field_names(ptg)
+    for field in fields:
+        ptg.remove(field)
+    node.setParmTemplateGroup(ptg)
 
 
-def _get_current_package():
-    """Introspect to find the host software and check that Conductor knows
-    about it.
-
-    Return a tuple with a useful name like hoodini-16.5.323
-    and the package object
-
-    """
-    hou_version = hou.applicationVersionString()
-    versioned_name = "houdini-%s" % hou_version
-    package = common.get_package_ids().get('houdini').get(hou_version)
-    if not package:
-        raise Exception(
-            """Current houdini version (%s) is not available at Conductor.
-            Please choose one manually.""" %
-            hou_version)
-    return (versioned_name, package)
+def _get_existing_values(node):
+    """Remember a map of exiting takes that are enabled."""
+    ptg = node.parmTemplateGroup()
+    return [node.parm(name).eval() for name in _get_field_names(
+        ptg) if name != "package_path_empty"]
 
 
-def _detect_host():
-    """Get host info and make a 32 bit id for display."""
-    name, package = _get_current_package()
-    package_id = package.get('package')
-    gid_key = "* %s" % package_id[:8]
-    return {gid_key: name}
+def _create_label_when_empty():
+    return hou.LabelParmTemplate(
+        "package_path_empty",
+        "No software packages selected")
 
 
-def _plugins_for_host_package(package):
-    """Generate kv pairs of plugins in a package.
-
-    A package is one host software from the resources file
-    and its available plugins. We turn it into a flat kv
-    dict: {"plugin-version": "identifier"}
-
-    """
-    result = {}
-    for tool in [p for p in package if not p == "package"]:
-        for version in package[tool]:
-            key = "%s-%s" % (tool, version)
-            value = package[tool][version]
-            result[key] = value
-    return result
+def _create_entry_parm(path, index):
+    name = "package_path_%d" % index
+    return hou.StringParmTemplate(
+        name, "", 1, default_value=path, is_label_hidden=True)
 
 
-def _get_used_libraries():
-    """Introspect session to find library paths for used node types."""
-    result = []
-    for category in hou.nodeTypeCategories().values():
-        for node_type in category.nodeTypes().values():
-            used = node_type.instances()
-            if used:
-                definition = node_type.definition()
-                if definition:
-                    result.append(definition.libraryFilePath())
-    return result
+def _add_empty_entry(node):
+    ptg = node.parmTemplateGroup()
+    ptg.appendToFolder(FOLDER_PATH, _create_label_when_empty())
+    node.setParmTemplateGroup(ptg)
 
 
-def _detect_plugins():
-    """Find plugins in the scene that are available at Conductor."""
-    plugins = {}
-    _, package = _get_current_package()
-    available_plugins = _plugins_for_host_package(package)
-    used_libraries = _get_used_libraries()
-    for plugin in available_plugins:
-        regex = re.compile(plugin)
-        for lib_path in used_libraries:
-            if regex.search(lib_path):
-                gid_key = "- %s" % available_plugins[plugin][:8]
-                plugins[gid_key] = plugin
-                continue
-    return plugins
+def _add_package_entries(node, new_paths):
+    """Create new strings to contain packages."""
+    paths = sorted(list(set(_get_existing_values(node) + new_paths)))
+    _remove_package_entries(node)
+    ptg = node.parmTemplateGroup()
+    for i, path in enumerate(paths):
+        ptg.appendToFolder(FOLDER_PATH, _create_entry_parm(path, i))
+    node.setParmTemplateGroup(ptg)
+
+    for i, path in enumerate(paths):
+        parm = node.parm("package_path_%d" % i)
+        parm.set(path)
+        parm.lock(True)
+
+
+def get_package_tree(node, force_fetch=False):
+    """Get the software tree object."""
+    cached_json = node.parm("softwares").eval()
+    if cached_json and not force_fetch:
+        sw = swd.PackageTree(json=cached_json)
+    else:
+        sw = swd.PackageTree(product="houdini")
+        node.parm("softwares").set(sw.json())
+    return sw
 
 
 def choose(node, **_):
@@ -146,48 +92,44 @@ def choose(node, **_):
     TODO - remove or warn on conflicting software versions
 
     """
-    packages = common.get_package_ids().get('houdini')
-    ui_map = _to_ui_map(packages)
-    choices = [val for val in ui_map]
 
-    paths = hou.ui.selectFromTree(
+    package_tree = get_package_tree(node)
+
+    choices = package_tree.to_path_list()
+
+    results = hou.ui.selectFromTree(
         choices,
         exclusive=False,
         message="Choose software",
         title="Chooser",
         clear_on_cancel=True)
-
-    software = node.parm('software').eval()
-    for path in paths:
-        software.update(_get_entries(path, ui_map))
-    node.parm('software').set(software)
+    paths = []
+    for path in results:
+        paths += swd.to_all_paths(path)
+    _add_package_entries(node, paths)
 
 
 def detect(node, **_):
     """Autodetect host package and plugins used in the scene.
 
-    Match them against versions available at Conductor.
+    Create entries for those available at Conductor.
 
     """
-    host = _detect_host()
-    plugins = _detect_plugins()
-    software = node.parm('software').eval()
-    software.update(host)
-    software.update(plugins)
-    node.parm('software').set(software)
+    paths = []
+    package_tree = get_package_tree(node)
+
+    host = houdini_info.HoudiniInfo().get()
+    host_path = package_tree.get_path_to(**host)
+    paths.append(host_path)
+
+    for info in houdini_info.get_used_plugin_info():
+        plugin_path = package_tree.get_path_to(**info)
+        paths.append(plugin_path)
+
+    _add_package_entries(node, paths)
 
 
 def clear(node, **_):
     """Clear all entries."""
-    node.parm('software').set({})
-
-
-def get_chosen_package_ids(node):
-    results = CONFIG.get("software_package_ids") or []
-    packages = common.get_package_ids().get('houdini')
-    ui_map = _to_ui_map(packages)
-    short_ids = [p[2:] for p in node.parm('software').eval().keys()]
-    results += [val for val in ui_map.values()
-                for sid in short_ids if val.startswith(sid)]
-
-    return list(set(results))
+    _remove_package_entries(node)
+    _add_empty_entry(node)
