@@ -24,7 +24,7 @@ gpu_configs:
     - {type: nvidia-tesla-k100,  count: 1, description: "NVIDIA Tesla K100, 1 GPU"}
     - {type: nvidia-tesla-k100,  count: 2, description: "NVIDIA Tesla K100, 2 GPU"}
     - {type: nvidia-tesla-k100,  count: 4, description: "NVIDIA Tesla K100, 4 GPU"}
- 
+
  # A dictionary of maya node types and their corresponing attributes name(s) for
  # seeking out file dependencies (external filepaths)
 maya_dependency_attrs:
