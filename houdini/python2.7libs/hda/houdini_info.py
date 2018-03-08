@@ -139,7 +139,7 @@ class ArnoldInfo(HoudiniPluginInfo):
 
         return re.compile(
             r"(?P<version>htoa-(?P<major_version>\d+)(?:\.(?P<minor_version>\d+))?(?:\.(?P<release_version>\d+))?(?:\.(?P<build_version>\d+))?)")
-
+ 
 
 HANDLER_MAP = {
     "Arnold": ArnoldInfo
