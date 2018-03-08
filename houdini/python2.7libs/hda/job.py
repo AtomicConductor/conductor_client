@@ -39,12 +39,11 @@ class Job(object):
                 self._node.parm("scene_file").eval()),
             "take_name": self._take.name(),
             "dependencies": deps.fetch(self._sequence),
-            "package_ids": software.get_chosen_package_ids(self._node),
+            "package_ids": software.get_chosen_ids(self._node),
             "tasks": [],
         }
 
         for clump in self._sequence.clumps():
-            print repr(clump)
             task = Task(self._node, clump)
             job["tasks"].append(task.dry_run(tokens))
 

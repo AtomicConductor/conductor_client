@@ -79,7 +79,7 @@ def create(iterable, max_size=-1):
 
 # print create([10, 20, 23, 5, 7, 8, 9, 11, 13, 15, 17])
 
-# print create(xrange(1, 50), 6)
+print create(xrange(1, 50), 3)
 
 
 # hrender -d <source> -f <clumpstart> <clumpend> -i <clumpstep> -take

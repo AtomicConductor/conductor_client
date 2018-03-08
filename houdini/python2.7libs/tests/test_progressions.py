@@ -42,6 +42,12 @@ class ProgressionsTest(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(len(result[0]), 32)
 
+    def test_max_size_one(self):
+        result = prog.create([2, 4, 6, 8, 10], 2)
+
+        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result[0]), [2, 4])
+
 
 if __name__ == '__main__':
     unittest.main()

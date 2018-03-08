@@ -115,6 +115,9 @@ class Sequence(object):
             result.append(Clump.create(self._frames[i:i + self._clump_size]))
         return result
  
+    
+
+
     def clumps(self):
         """return list of clumps according to size and cycle."""
         if self._cycle:
@@ -179,5 +182,3 @@ class Sequence(object):
         return "%s(%r, clump_size=%r, cycle=%r)" % (
             self.__class__.__name__, self._frames, self._clump_size, self._cycle)
 
-    # TODO: rewrite __str__ and __repr__ for sequence and clumps
-    # https://stackoverflow.com/questions/1436703/difference-between-str-and-repr-in-python
