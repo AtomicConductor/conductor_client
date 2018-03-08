@@ -32,7 +32,7 @@ def _remove_package_entries(node):
     node.setParmTemplateGroup(ptg)
 
 
-def _get_existing_values(node):
+def _get_existing_paths(node):
     """Remember a map of exiting takes that are enabled."""
     ptg = node.parmTemplateGroup()
     return [node.parm(name).eval() for name in _get_field_names(
@@ -59,7 +59,7 @@ def _add_empty_entry(node):
 
 def _add_package_entries(node, new_paths):
     """Create new strings to contain packages."""
-    paths = sorted(list(set(_get_existing_values(node) + new_paths)))
+    paths = sorted(list(set(_get_existing_paths(node) + new_paths)))
     _remove_package_entries(node)
     ptg = node.parmTemplateGroup()
     for i, path in enumerate(paths):
@@ -83,11 +83,25 @@ def get_package_tree(node, force_fetch=False):
     return sw
 
 
+def get_chosen_ids(node):
+    paths = _get_existing_paths(node)
+    package_tree = get_package_tree(node)
+    results = []
+    for path in paths:
+        name = path.split("/")[-1]
+        package = package_tree.find_by_name(name)
+        if package:
+            package_id = package.get("package_id")
+            if package_id:
+                results.append(package_id)
+    return results
+
+
 def choose(node, **_):
     """Open a tree chooser with all possible software choices.
 
     Add the result to existing chosen software and set the
-    param value.
+    param value. When the user chooses a package below a host package, all ancestors are added. For this reason there is no need to run
 
     TODO - remove or warn on conflicting software versions
 
@@ -119,12 +133,14 @@ def detect(node, **_):
     package_tree = get_package_tree(node)
 
     host = houdini_info.HoudiniInfo().get()
-    host_path = package_tree.get_path_to(**host)
-    paths.append(host_path)
+    host_paths = package_tree.get_all_paths_to(**host)
+    paths += host_paths
 
     for info in houdini_info.get_used_plugin_info():
-        plugin_path = package_tree.get_path_to(**info)
-        paths.append(plugin_path)
+        plugin_paths = package_tree.get_all_paths_to(**info)
+        paths += plugin_paths
+
+    paths = swd.remove_unreachable(paths)
 
     _add_package_entries(node, paths)
 

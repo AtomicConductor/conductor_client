@@ -10,6 +10,7 @@ from submission_tree import SubmissionTree
 from job import Job
 import takes
 import render_source
+import notifications
 
 
 # Catch a timestamp of the form 2018_02_27_10_59_47 with optional
@@ -27,6 +28,7 @@ class Submission(object):
         self._hip_basename = hou.hipFile.basename()
         self._hip_fullname = hou.hipFile.name()
         self._project = self._node.parm('project').eval()
+        self._notifications = notifications.get_notifications(self._node)
 
         if not (self._takes and self._source_node):
             raise hou.InvalidInput(
@@ -58,6 +60,7 @@ class Submission(object):
             "source": self._source_node.name(),
             "type": self._source_node.type().name(),
             "project": self._project,
+            "notifications":  self._notifications,
             "jobs": []
         }
 
