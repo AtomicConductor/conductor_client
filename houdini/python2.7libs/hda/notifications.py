@@ -27,6 +27,11 @@ def validate_emails(node, **_):
     node.parm("email_valid").set(result)
 
 
+def _get_hook_parm_names(node):
+    template = node.type().definition().parmTemplateGroup().find('hooks')
+    return [p.name() for p in template.parmTemplates()
+             if p.type().name() == "Toggle"]
+
 def email_hook_changed(node, **_):
     """If no email hooks selected then dim out the email field.
 
@@ -35,12 +40,21 @@ def email_hook_changed(node, **_):
     hooks can be added with minimum fuss.
 
     """
-    result = 0
-    template = node.type().definition().parmTemplateGroup().find('hooks')
-    hooks = [p.name() for p in template.parmTemplates()
-             if p.type().name() == "Toggle"]
-    for hook in hooks:
+    for hook in _get_hook_parm_names(node):
         if node.parm(hook).eval():
             result = 1
             break
     node.parm("do_email").set(result)
+
+def get_notifications(node):
+    if not node.parm("do_email").eval():
+        return None
+    result = { "email": {} }
+    address_val =  node.parm("email_addresses").eval()
+    result["email"]["addresses"] =  [email.strip() for email in address_val.split(",") if email]
+    hook_names = _get_hook_parm_names(node)
+    result["email"]["hooks"] =  [(hook, bool(node.parm(hook).eval()) ) for hook in hook_names ]
+    return result
+
+
+

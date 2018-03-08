@@ -40,6 +40,15 @@ class SubmissionTree(QtWidgets.QWidget):
         self._appendRow(self._model, "Source type:", submission["type"])
         self._appendRow(self._model, "Project id:", submission["project"])
 
+        email_item = self._appendRow(self._model, "Email notifications:")
+        addresses_item = self._appendRow(email_item, "Addresses:")
+        for i, address in enumerate(sorted(submission["notifications"]["email"]["addresses"])):
+            self._appendRow(addresses_item,  "[%d]" % i, address)
+        hooks_item = self._appendRow(email_item, "Hooks:")
+        for hook in submission["notifications"]["email"]["hooks"]:
+            self._appendRow(hooks_item,  hook[0], str(hook[1]))
+
+
         token_item = self._appendRow(self._model, "Tokens:")
         for t in sorted(submission["tokens"]):
             self._appendRow(token_item, t, submission["tokens"][t])
