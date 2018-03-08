@@ -173,7 +173,7 @@ def process_upload_filepath(path, strict=True):
             logger.warning(message)
 
         # If we've gotten here, then we know that that the path string is not a literal file or directory.
-        # Therefore attempt to resolve the path string from any any variables/expessions
+        # Therefore attempt to resolve the path string from any any variables/expressions
         else:
             # First, try to resolve any environment variables found in the path.
             path = os.path.expandvars(path)
@@ -185,9 +185,9 @@ def process_upload_filepath(path, strict=True):
                 filepaths = get_files_from_path_expression(path)
 
                 if filepaths:
-                    # if there are matching frames/files for the given path
-                    # expression(e.g image sequence), treat each frame as a dependency
-                    # (adding it to the dependency dictionary and running it through validation)
+                    # if there are matching frames/files for the given path  expression (e.g image
+                    # sequence), treat each frame as a dependency (adding it to the dependency
+                    # dictionary and running it through validation)
                     for filepath in filepaths:
                         paths.extend(process_upload_filepath(filepath))
                 else:
