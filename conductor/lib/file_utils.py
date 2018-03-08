@@ -172,25 +172,33 @@ def process_upload_filepath(path, strict=True):
             # otherwise warn
             logger.warning(message)
 
-        # If the path is not a file and not a directory then see if it's a path expression
+        # If we've gotten here, then we know that that the path string is not a literal file or directory.
+        # Therefore attempt to resolve the path string from any any variables/expessions
         else:
-            filepaths = get_files_from_path_expression(path)
+            # First, try to resolve any environment variables found in the path.
+            path = os.path.expandvars(path)
+            if os.path.exists(path):
+                paths.extend(process_upload_filepath(path))
 
-            if filepaths:
-                # if there are matching frames/files for the given path
-                # expression(e.g image sequence), treat each frame as a dependency
-                # (adding it to the dependency dictionary and running it through validation)
-                for filepath in filepaths:
-                    paths.extend(process_upload_filepath(filepath))
+            # Lastly, try to resolve any expressions found in the path
             else:
-                # if there are no matching frames/files found on disk for the given
-                # path expression(e.g image sequence) and we're being strict,
-                # then raise an exception
-                if not filepaths:
-                    message = "No files found for path: %s" % path
-                    if strict:
-                        raise exceptions.InvalidPathException(message)
-                    logger.warning(message)
+                filepaths = get_files_from_path_expression(path)
+
+                if filepaths:
+                    # if there are matching frames/files for the given path
+                    # expression(e.g image sequence), treat each frame as a dependency
+                    # (adding it to the dependency dictionary and running it through validation)
+                    for filepath in filepaths:
+                        paths.extend(process_upload_filepath(filepath))
+                else:
+                    # if there are no matching frames/files found on disk for the given
+                    # path expression(e.g image sequence) and we're being strict,
+                    # then raise an exception
+                    if not filepaths:
+                        message = "No files found for path: %s" % path
+                        if strict:
+                            raise exceptions.InvalidPathException(message)
+                        logger.warning(message)
 
     return paths
 
@@ -348,11 +356,13 @@ def validate_path(filepath):
     if not filepath.startswith("/"):
         return "Filepath does not begin with expected %r. Got %r" % ("/", filepath)
 
+
 def quote_path(filepath):
     '''
     Wrap the given filepath in double quotes and escape its content.
     '''
     return '"%s"' % filepath.replace('"', '\\"')
+
 
 def reconstruct_filename(matched, file_pieces):
     full_file_string = ""
