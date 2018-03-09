@@ -28546,6 +28546,11 @@
         "merge_policy": "append",
         "value": "/opt/solidangle/houdini-maya/htoa-2.2.2_ra19fd97_houdini-16.5.323/arnold/plugins",
         "name": "HTOA_PLUGIN_PATH"
+      },
+      {
+        "merge_policy": "append",
+        "value": "/opt/solidangle/houdini-maya/htoa-2.2.2_ra19fd97_houdini-16.5.323/python2.7libs",
+        "name": "PYTHONPATH"
       }
     ],
     "release_version": "2",
@@ -28587,6 +28592,11 @@
         "merge_policy": "append",
         "value": "/opt/solidangle/houdini-maya/htoa-2.1.0.2_ra97aba7_houdini-16.5.323/arnold/plugins",
         "name": "HTOA_PLUGIN_PATH"
+      },
+      {
+        "merge_policy": "append",
+        "value": "/opt/solidangle/houdini-maya/htoa-2.1.0.2_ra97aba7_houdini-16.5.323/python2.7libs",
+        "name": "PYTHONPATH"
       }
     ],
     "release_version": "0",
@@ -28631,6 +28641,11 @@
         "merge_policy": "append",
         "value": "/opt/solidangle/houdini-maya/htoa-2.0.1_r65dd45f_houdini-16.0.736/arnold/plugins",
         "name": "HTOA_PLUGIN_PATH"
+      },
+      {
+        "merge_policy": "append",
+        "value": "/opt/solidangle/houdini-maya/htoa-2.0.1_r65dd45f_houdini-16.0.736/python2.7libs",
+        "name": "PYTHONPATH"
       }
     ],
     "release_version": "1",
@@ -28671,6 +28686,11 @@
         "merge_policy": "append",
         "value": "/opt/solidangle/houdini-maya/htoa-2.0.2.2_r57ffad7_houdini-16.0.736/arnold/plugins",
         "name": "HTOA_PLUGIN_PATH"
+      },
+      {
+        "merge_policy": "append",
+        "value": "/opt/solidangle/houdini-maya/htoa-2.0.2.2_r57ffad7_houdini-16.0.736/python2.7libs",
+        "name": "PYTHONPATH"
       }
     ],
     "release_version": "2",
@@ -28694,6 +28714,13 @@
       "c28f3f5071b045df9c89f2fa4e844c77",
       "f3471d0224cf466eb26a3963e825dbdc"
     ],
+    "environment": [
+      {
+        "merge_policy": "append",
+        "value": "/opt/anders/al-shaders-1.0/python",
+        "name": "PYTHONPATH"
+      }
+    ],
     "major_version": "1",
     "updated_at": "Tue, 27 Feb 2018 00:22:16 GMT",
     "time_created": "Tue, 27 Feb 2018 00:22:16 GMT",
@@ -28704,7 +28731,7 @@
     "plugin_host_version": "any",
     "plugins": [],
     "build_version": "",
-    "relative_path": "usr/local/al-shaders-1.0",
+    "relative_path": "anders/al-shaders-1.0",
     "plugin_host_product": "arnold"
   }
   ,
@@ -28719,6 +28746,13 @@
       "c28f3f5071b045df9c89f2fa4e844c77",
       "f3471d0224cf466eb26a3963e825dbdc"
     ],
+      "environment": [
+      {
+        "merge_policy": "append",
+        "value": "/opt/anders/al-shaders-1.1/python",
+        "name": "PYTHONPATH"
+      }
+    ],
     "major_version": "1",
     "updated_at": "Tue, 27 Feb 2018 00:22:16 GMT",
     "time_created": "Tue, 27 Feb 2018 00:22:16 GMT",
@@ -28729,7 +28763,7 @@
     "plugin_host_version": "any",
     "plugins": [],
     "build_version": "",
-    "relative_path": "usr/local/al-shaders-1.0",
+    "relative_path": "anders/al-shaders-1.1",
     "plugin_host_product": "arnold"
   }
 

@@ -29,7 +29,7 @@ def show_request(node, **_):
 
     """
     sub =  submission.Submission(node)
-    print sub.dry_run()
+    sub.dry_run()
 
     # treeWin = qt.createWindow()
 

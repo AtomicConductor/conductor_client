@@ -183,44 +183,26 @@ class SoftwareDataFindByPathTest(unittest.TestCase):
     def test_find_root_path(self):
         pt = swd.PackageTree(product="houdini")
         path = "houdini 16.0.736"
-        pkgs = pt.find_by_path(path)
-
-        self.assertEqual(len(pkgs), 1)
-        self.assertEqual(swd.to_name(pkgs[0]), path)
+        pkg = pt.find_by_path(path)
+        self.assertEqual(swd.to_name(pkg), path)
 
     def test_find_leaf_path(self):
         pt = swd.PackageTree(product="houdini")
         path = "houdini 16.0.736/arnold-houdini 2.0.2.2/al-shaders 1.0"
-        pkgs = pt.find_by_path(path)
-        self.assertEqual(len(pkgs), 3)
-        self.assertEqual(swd.to_name(pkgs[0]), "houdini 16.0.736")
-        self.assertEqual(swd.to_name(pkgs[-1]), "al-shaders 1.0")
+        pkg = pt.find_by_path(path)
+        self.assertEqual(swd.to_name(pkg), "al-shaders 1.0")
 
-    def test_find_path_no_ancestors(self):
-        pt = swd.PackageTree(product="houdini")
-        path = "houdini 16.0.736/arnold-houdini 2.0.2.2"
-        pkgs = pt.find_by_path(path, with_ancestors=False)
-        self.assertEqual(len(pkgs), 1)
-        self.assertEqual(
-            swd.to_name(
-                pkgs[0]),
-            "arnold-houdini 2.0.2.2")
-
-    def test_find_nonexistent_path_return_empty(self):
+    def test_find_nonexistent_path_return_none(self):
         pt = swd.PackageTree(product="houdini")
         path = "houdini 16.0.736/arnold-houdini 9.0.2.2"
-        pkgs = pt.find_by_path(path)
-        self.assertEqual(pkgs, [])
-        pkgs = pt.find_by_path(path, with_ancestors=False)
-        self.assertEqual(pkgs, [])
+        pkg = pt.find_by_path(path)
+        self.assertEqual(pkg, None)
 
-    def test_find_empty_path_return_empty(self):
+    def test_find_empty_path_return_none(self):
         pt = swd.PackageTree(product="houdini")
         path = ""
-        pkgs = pt.find_by_path(path)
-        self.assertEqual(pkgs, [])
-        pkgs = pt.find_by_path(path, with_ancestors=False)
-        self.assertEqual(pkgs, [])
+        pkg = pt.find_by_path(path)
+        self.assertEqual(pkg, None)
 
 
 class FindByNameTest(unittest.TestCase):
