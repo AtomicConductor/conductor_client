@@ -9,8 +9,8 @@ packages and build paths etc.
 import copy
 import json
 import re
-# from conductor.lib.api_client import request_software_packages
-from tests.mocks.api_client_mock import request_software_packages
+from conductor.lib.api_client import request_software_packages
+# from tests.mocks.api_client_mock import request_software_packages
 
 
 def remove_unreachable(paths):
@@ -157,7 +157,7 @@ def _find_by_name(branch, name, limit=None, depth=0):
     return None
 
 
-def _find_by_path(tree, path, **kw):
+def _find_by_path(tree, path):
     """Find the package uniquely described by this path.
 
     This method loops through parts of the path name and
@@ -169,17 +169,18 @@ def _find_by_path(tree, path, **kw):
 
     """
 
-    with_ancestors = kw.get("with_ancestors", True)
-    results = []
+    # with_ancestors = kw.get("with_ancestors", True)
+    result = None
     for name in [p for p in path.split("/") if p]:
         tree = _find_by_name(tree, name, 1)
-        if not tree:
-            return []
-        if tree.get("package_id"):
-            results.append(tree)
-    if len(results) and not with_ancestors:
-        results = [results[-1]]
-    return results
+        result = tree
+        # if not tree:
+        #     return None
+        # if tree.get("package_id"):
+        #     result = tree if tree.get("package_id")
+    # if len(results) and not with_ancestors:
+    #     results = [results[-1]]
+    return result
 
 
 def _to_path_list(tree, **kw):
@@ -257,9 +258,9 @@ class PackageTree(object):
     def find_by_keys(self, **kw):
         return _find_by_keys(self._tree, **kw)
 
-    def find_by_path(self, path, **kw):
+    def find_by_path(self, path):
         """Find the package uniquely described by this path."""
-        return _find_by_path(self._tree, path, **kw)
+        return _find_by_path(self._tree, path)
 
     def to_path_list(self):
         """Get paths to all nodes."""

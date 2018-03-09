@@ -27,8 +27,10 @@ class Submission(object):
         self._source_node = render_source.get_render_node(node)
         self._hip_basename = hou.hipFile.basename()
         self._hip_fullname = hou.hipFile.name()
+        self._hip_unsaved = hou.hipFile.hasUnsavedChanges()
         self._project = self._node.parm('project').eval()
         self._notifications = notifications.get_notifications(self._node)
+        self._merge_takes = bool(self._node.parm('merge_takes').eval())
 
         if not (self._takes and self._source_node):
             raise hou.InvalidInput(
@@ -60,7 +62,9 @@ class Submission(object):
             "source": self._source_node.name(),
             "type": self._source_node.type().name(),
             "project": self._project,
-            "notifications":  self._notifications,
+            "notifications": self._notifications,
+            "unsaved": self._hip_unsaved,
+            "merge_takes": self._merge_takes,
             "jobs": []
         }
 
@@ -69,18 +73,11 @@ class Submission(object):
                 job = Job(self._node)
                 submission["jobs"].append(job.dry_run(self._tokens))
 
-     
         # t = self._prepare_for_tree_view(submission)
         submission_tree = SubmissionTree()
-
         submission_tree.populate(submission)
-
         submission_tree.show()
         hou.session.dummy = submission_tree
-
-    def _prepare_for_tree_view(self, obj):
-
-        pass
 
     def _collect_tokens(self):
         """Tokens are variables to help the user build strings.

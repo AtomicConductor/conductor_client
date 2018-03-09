@@ -40,6 +40,7 @@ class Job(object):
             "take_name": self._take.name(),
             "dependencies": deps.fetch(self._sequence),
             "package_ids": software.get_chosen_ids(self._node),
+            "environment": software.get_environment(self._node),
             "tasks": [],
         }
 
@@ -62,13 +63,15 @@ class Job(object):
 
     def _collect_tokens(self):
         """Tokens are string kv pairs used for substitutions."""
+        sorted_frames = sorted(self._sequence._frames)
+
         tokens = {}
         tokens["scene"] = self._take.name()
         tokens["take"] = self._take.name()
         tokens["length"] = str(len(self._sequence))
         tokens["sequence"] = str(Clump.create(iter(self._sequence)))
-        # tokens["sequencestart"] = str(self._sequence[0])
-        # tokens["sequenceend"] = str(self._sequence[-1])
+        tokens["sequencemin"] = str(sorted_frames[0])
+        tokens["sequencemax"] = str(sorted_frames[-1])
         tokens["scout"] = "false"
         if self._scout_sequence:
             tokens["scout"] = (
