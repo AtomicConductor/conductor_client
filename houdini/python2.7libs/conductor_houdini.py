@@ -35,7 +35,7 @@ def _update_node(node, **_):
         notifications.validate_emails(node)
         notifications.email_hook_changed(node)
         takes.update_takes(node)
-        software.detect(node)
+        software.update_package_tree(node)
         submit.update_button_state(node)
 
 
@@ -106,6 +106,10 @@ def action_callback(**kwargs):
                               severity=hou.severityType.Error)
 
     except(TypeError, ValueError) as err:
+        hou.ui.displayMessage(title='Error', text=str(err),
+                              severity=hou.severityType.Error)
+
+    except(Exception) as err:
         hou.ui.displayMessage(title='Error', text=str(err),
                               severity=hou.severityType.Error)
 

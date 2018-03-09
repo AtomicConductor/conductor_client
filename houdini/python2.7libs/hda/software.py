@@ -8,7 +8,7 @@ software_data module
 
 import re
 import hou
-from conductor.lib import common, api_client
+from conductor.lib import common, api_client, package_utils
 from conductor import CONFIG
 import software_data as swd
 import houdini_info
@@ -96,6 +96,13 @@ def get_chosen_ids(node):
                 results.append(package_id)
     return results
 
+def get_environment(node):
+    package_tree = get_package_tree(node)
+    paths = _get_existing_paths(node)
+    config_environment = CONFIG.get("environment") or {}
+    pkgs = [package_tree.find_by_path(path) for path in paths]
+    return package_utils.merge_package_environments(pkgs,base_env=config_environment)
+
 
 def choose(node, **_):
     """Open a tree chooser with all possible software choices.
@@ -123,12 +130,19 @@ def choose(node, **_):
     _add_package_entries(node, paths)
 
 
+
+def update_package_tree(node, **kw):
+    package_tree = get_package_tree(node, force_fetch=True)
+    if not _get_existing_paths(node):
+        detect(node)
+
 def detect(node, **_):
     """Autodetect host package and plugins used in the scene.
 
     Create entries for those available at Conductor.
 
     """
+
     paths = []
     package_tree = get_package_tree(node)
 
