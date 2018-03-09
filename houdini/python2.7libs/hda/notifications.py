@@ -40,6 +40,7 @@ def email_hook_changed(node, **_):
     hooks can be added with minimum fuss.
 
     """
+    result = 0
     for hook in _get_hook_parm_names(node):
         if node.parm(hook).eval():
             result = 1

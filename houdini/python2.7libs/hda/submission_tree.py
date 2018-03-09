@@ -39,6 +39,12 @@ class SubmissionTree(QtWidgets.QWidget):
         self._appendRow(self._model, "Source node:", submission["source"])
         self._appendRow(self._model, "Source type:", submission["type"])
         self._appendRow(self._model, "Project id:", submission["project"])
+        self._appendRow(self._model, "Unsaved changes:", str(submission["unsaved"]))
+        self._appendRow(self._model, "Merge Takes:", str(submission["merge_takes"]))
+
+
+
+ 
 
         email_item = self._appendRow(self._model, "Email notifications:")
         addresses_item = self._appendRow(email_item, "Addresses:")
@@ -70,6 +76,12 @@ class SubmissionTree(QtWidgets.QWidget):
             packages_item = self._appendRow(job_item, "Package IDs:")
             for i, p in enumerate(j["package_ids"]):
                 self._appendRow(packages_item, "[%d]" % i, p)
+
+
+            environment_item = self._appendRow(job_item, "Environment:")
+            for  envkey in  sorted(j["environment"]):
+                self._appendRow(environment_item,  envkey , j["environment"][envkey])
+
 
             job_token_item = self._appendRow(job_item, "Tokens:")
             for t in sorted(j["tokens"]):
