@@ -9,8 +9,8 @@ packages and build paths etc.
 import copy
 import json
 import re
-from conductor.lib.api_client import request_software_packages
-# from tests.mocks.api_client_mock import request_software_packages
+# from conductor.lib.api_client import request_software_packages
+from tests.mocks.api_client_mock import request_software_packages
 
 
 def remove_unreachable(paths):
@@ -169,17 +169,10 @@ def _find_by_path(tree, path):
 
     """
 
-    # with_ancestors = kw.get("with_ancestors", True)
     result = None
     for name in [p for p in path.split("/") if p]:
         tree = _find_by_name(tree, name, 1)
         result = tree
-        # if not tree:
-        #     return None
-        # if tree.get("package_id"):
-        #     result = tree if tree.get("package_id")
-    # if len(results) and not with_ancestors:
-    #     results = [results[-1]]
     return result
 
 
@@ -277,6 +270,52 @@ class PackageTree(object):
         all_paths = _to_path_list(self._tree)
         name = to_name(kw)
         return [p for p in all_paths if p.endswith(name)]
+
+#     def merge_environments(self, paths, base_env={}):
+#         env = dict(base_env
+#         for path in paths:
+#             _find_by_path(self._tree, path)
+
+
+# def merge_package_environments(packages, base_env=None):
+#     '''
+#     For the given conductor software packages, resolve and merge their environements
+#     int one single dictionary.
+
+#     Merge policies:
+#         append: appends values, separated by colons
+#         exclusive: indicates that
+#     '''
+#     env = dict(base_env or {})  # Make a copy of the dict. Don't want to alter original
+#     for package in packages:
+# #         logger.debug("package: %s", package)
+#         for env_variable in package.get("environment", []):
+#             name = env_variable["name"]
+#             value = env_variable["value"]
+#             merge_policy = env_variable["merge_policy"]
+
+#             ### APPEND ###
+#             if merge_policy == "append":
+#                 env[name] = ":".join([env[name], value]) if  env.get(name) else value
+
+#             ### EXCLUSIVE ###
+#             elif merge_policy == "exclusive":
+#                 if name in  env and env[name] != value:
+#                     raise Exception("Could not merge package environments due to "
+#                                     "difference in exclusive environment variable: %s "
+#                                     "(%s vs %s)\n"
+#                                     "Packages:\n\t%s" % (name,
+#                                                          env[name],
+#                                                          value,
+#                                                          "\n\t".join([pformat(p) for p in packages])))
+#                 env[name] = value
+
+#             else:
+#                 raise Exception("Got unexpected merge policy: %s" % merge_policy)
+#     return env
+
+
+
 
     @property
     def tree(self):
