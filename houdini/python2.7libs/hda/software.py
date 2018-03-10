@@ -97,9 +97,11 @@ def get_chosen_ids(node):
     return results
 
 def get_environment(node):
+    
     package_tree = get_package_tree(node)
-    paths = _get_existing_paths(node)
     config_environment = CONFIG.get("environment") or {}
+    
+    paths = _get_existing_paths(node)
     pkgs = [package_tree.find_by_path(path) for path in paths]
     return package_utils.merge_package_environments(pkgs,base_env=config_environment)
 

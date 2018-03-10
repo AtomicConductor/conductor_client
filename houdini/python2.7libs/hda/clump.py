@@ -140,6 +140,14 @@ class IrregularClump(Clump):
         Clump.__init__(self)
         self._iterable = sorted(list(iterable))
 
+    @property
+    def start(self):
+        return self._iterable[0]
+
+    @property
+    def end(self):
+        return self._iterable[-1]
+
     def __str__(self):
         return "%s~%s" % (self._iterable[0], self._iterable[-1])
 
