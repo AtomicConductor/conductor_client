@@ -33,7 +33,11 @@ class Task(object):
         tokens["clumplength"] = str(len(self._clump))
         tokens["clumpstart"] = str(self._clump.start)
         tokens["clumpend"] = str(self._clump.end)
+
+        # TODO: In fact if a clump is irregular, there is no way for Houdini
+        # cmdline render to render it without breaking it up some more. This
+        # is what we shall do
         tokens["clumpstep"] = str(
-            self._clump.step) if clump_type == "RegularClump" else "irregular"
+            self._clump.step) if clump_type == "RegularClump" else "~"
         tokens["clumptype"] = clump_type
         return tokens
