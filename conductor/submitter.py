@@ -979,7 +979,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         This method returns a dictionary of filepaths and and their corresponding
         md5 hashes, which is used by the uploader daemon when uploading the files
         to conductor. The daemon will do its own md5 hash of all files in
-        this dictionary,and match it against the md5s that the dictionary provides.
+        this dictionary, and match it against the md5s that the dictionary provides.
         If the uploader finds a mismatch then it fails the upload process (and
         fails the job).
 
