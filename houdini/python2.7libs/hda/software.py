@@ -8,9 +8,13 @@ software_data module
 
 import re
 import hou
-from conductor.lib import common, api_client, package_utils
-from conductor import CONFIG
+from conductor.lib import common, api_client
+
+
+
+
 import software_data as swd
+
 import houdini_info
 
 FOLDER_PATH = ("Software", "Packages")
@@ -99,12 +103,8 @@ def get_chosen_ids(node):
 def get_environment(node):
     
     package_tree = get_package_tree(node)
-    config_environment = CONFIG.get("environment") or {}
-    
     paths = _get_existing_paths(node)
-    pkgs = [package_tree.find_by_path(path) for path in paths]
-    return package_utils.merge_package_environments(pkgs,base_env=config_environment)
-
+    return package_tree.get_environment(paths)
 
 def choose(node, **_):
     """Open a tree chooser with all possible software choices.
