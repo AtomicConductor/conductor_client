@@ -1,0 +1,4 @@
+#!/bin/bash
+
+exec hython $CONDUCTOR_CLIENT/houdini/bin/chrender.py "$@"
+
