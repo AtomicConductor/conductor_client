@@ -72,7 +72,7 @@ def create(iterable, max_size=-1):
     return results
 
 
-# print create([1, 10, 20, 30, 34, 35, 36, 37, 38, 40, 101, 201, 301])
+print create([1, 10, 20, 30, 34, 35, 36, 37, 38, 40, 101, 201, 301])
 
 
 # print create([1, 2, 3, 5, 7, 8, 11, 13, 15, 17])

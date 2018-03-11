@@ -2,7 +2,7 @@
 
 import hou
 import render_source
-import sequence as sq
+from conductor.hou_lib.sequence import Sequence
 import takes
 
 # Specify that Expressions are Python
@@ -70,9 +70,9 @@ def custom_frame_sequence(node):
     """Generate Sequence from value in custom_range parm."""
     spec = node.parm("custom_range").eval()
     clump_size = node.parm("clump_size").eval()
-    if sq.Sequence.is_valid_spec(spec):
-        return sq.Sequence.from_spec(spec, clump_size=clump_size)
-    return sq.Sequence([])
+    if Sequence.is_valid_spec(spec):
+        return Sequence.from_spec(spec, clump_size=clump_size)
+    return Sequence([])
 
 
 def range_frame_sequence(node):
@@ -81,13 +81,13 @@ def range_frame_sequence(node):
     start, end, step = [
         node.parm('fs%s' % parm).eval() for parm in ['1', '2', '3']
     ]
-    return sq.Sequence.from_range(start, end, step=step, clump_size=clump_size)
+    return Sequence.from_range(start, end, step=step, clump_size=clump_size)
 
 
 def scout_frame_sequence(node):
     """Generate Sequence from value in scout_frames parm."""
     spec = node.parm("scout_frames").eval()
-    return sq.Sequence.from_spec(spec)
+    return Sequence.from_spec(spec)
 
 
 def main_frame_sequence(node):
@@ -160,7 +160,7 @@ def validate_custom_range(node, **_):
     """Set valid tickmark for custom range spec."""
     takes.enable_for_current(node, "custom_valid")
     spec = node.parm("custom_range").eval()
-    valid = sq.Sequence.is_valid_spec(spec)
+    valid = Sequence.is_valid_spec(spec)
     node.parm("custom_valid").set(valid)
 
     _update_sequence_stats(node)
@@ -176,7 +176,7 @@ def validate_scout_range(node, **_):
     """
     takes.enable_for_current(node, "scout_valid")
     spec = node.parm("scout_frames").eval()
-    valid = sq.Sequence.is_valid_spec(spec)
+    valid = Sequence.is_valid_spec(spec)
     node.parm("scout_valid").set(valid)
     _update_sequence_stats(node)
 

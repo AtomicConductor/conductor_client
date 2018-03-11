@@ -6,7 +6,7 @@ HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
-from hda.expansion import Expander
+from conductor.hou_lib.expansion import Expander
 
 
 class ExpanderTest(unittest.TestCase):

@@ -11,9 +11,9 @@ if HDA_MODULE not in sys.path:
 
 # mocked api_client returns json fixtures
 sys.modules['conductor.lib.api_client'] = __import__(
-    'tests.mocks.api_client_mock', fromlist=['dummy'])
+    'conductor.hou_lib.mocks.api_client_mock', fromlist=['dummy'])
 
-from hda import software_data as swd
+from conductor.hou_lib import software_data as swd
 
 
 class RemoveUnreachableTest(unittest.TestCase):
@@ -285,51 +285,6 @@ class SoftwareDataGetAllPathsTest(unittest.TestCase):
         }
         paths = pt.get_all_paths_to(**keys)
         self.assertEqual(paths, [])
-
-
-# def test_replace_context(self):
-#     exp = Expander(toka="foo", tokb="bar")
-#     exp.context = {"tokc": "baz", "tokb": "bar"}
-#     self.assertEqual(exp.context, {"tokc": "baz", "tokb": "bar"})
-
-# def test_evaluate_string(self):
-#     exp = Expander(toka="foo", tokb="bar")
-#     result = exp.evaluate("Hello <toka> --<tokb>--")
-#     self.assertEqual(result, "Hello foo --bar--")
-
-# def test_multiple_occurrences(self):
-#     exp = Expander(toka="foo", tokb="bar")
-#     result = exp.evaluate("Hello <toka> --<tokb>--<toka><toka>-s")
-#     self.assertEqual(result, "Hello foo --bar--foofoo-s")
-
-# def test_evaluate_bad_string_raises(self):
-#     exp = Expander(toka="foo", tokb="bar")
-#     with self.assertRaises(ValueError):
-#         exp.evaluate("Hello <tokc> --<tokb>--")
-
-# def test_evaluate_list(self):
-#     exp = Expander(toka="foo", tokb="bar")
-#     result = exp.evaluate(["Hello <toka> --<tokb>--", "Goodbye <tokb>"])
-#     self.assertIn("Hello foo --bar--", result)
-#     self.assertEqual(len(result), 2)
-
-# def test_evaluate_bad_list_raises(self):
-#     exp = Expander(toka="foo", tokb="bar")
-#     with self.assertRaises(ValueError):
-#         exp.evaluate(["Hello <toka>", "Goodbye <tokc>"])
-
-# def test_evaluate_dict(self):
-#     exp = Expander(toka="foo", tokb="bar")
-#     result = exp.evaluate(
-#         {"a": "Hello <toka> --<tokb>--", "b": "Goodbye <tokb>"})
-#     self.assertDictContainsSubset({"a": "Hello foo --bar--"}, result)
-#     self.assertEqual(len(result.keys()), 2)
-
-# def test_evaluate_bad_dict_raises(self):
-#     exp = Expander(toka="foo", tokb="bar")
-#     with self.assertRaises(ValueError):
-#         exp.evaluate(
-#             {"a": "Hello <toka> --<tokb>--", "b": "Goodbye <tokc>"})
 
 
 if __name__ == '__main__':
