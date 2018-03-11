@@ -48,6 +48,12 @@ class ResolveStartEndStepTest(unittest.TestCase):
         self.assertEqual(end, 5)
         self.assertEqual(step, 2)
 
+    def test_create_with_start_string(self):
+        start, end, step = resolve_start_end_step("5")
+        self.assertEqual(start, 5)
+        self.assertEqual(end, 5)
+        self.assertEqual(step, 1)
+
     def test_create_with_single_string(self):
         start, end, step = resolve_start_end_step("1-5")
         self.assertEqual(start, 1)
@@ -64,11 +70,13 @@ class ResolveStartEndStepTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             resolve_start_end_step(1, 5, 0)
 
-    def test_invalid_spec(self):
+    def test_invalid_specs(self):
         with self.assertRaises(ValueError):
             resolve_start_end_step("10-3x2f")
         with self.assertRaises(ValueError):
-            resolve_start_end_step("10")
+            resolve_start_end_step("g10")
+        with self.assertRaises(ValueError):
+            resolve_start_end_step("10--30")
 
 
 class ClumpFactoryTest(unittest.TestCase):
@@ -164,7 +172,9 @@ class IrregularClumpTest(unittest.TestCase):
 
     def test_str(self):
         c = IrregularClump([1, 2, 5])
-        self.assertEqual(str(c), "1~5")
+        self.assertEqual(str(c), "1,2,5")
+        c = IrregularClump([1, 2, 5, 10, 15, 20, 45, 89, 92, 95])
+        self.assertEqual(str(c), "1,2,5-20x5,45,89-95x3")
 
     def test_repr(self):
         c = IrregularClump([1, 2, 5])

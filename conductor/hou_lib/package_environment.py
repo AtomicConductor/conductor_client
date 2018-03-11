@@ -19,21 +19,20 @@ class PackageEnvironment(object):
             self._env[name] = value
 
     def extend(self, package):
-        others = package.get("environment")
-        if others:
-            for var in others:
-                name = var["name"]
-                value = var["value"]
-                policy = var["merge_policy"]
-                if policy not in ["append", "exclusive"]:
-                    raise ValueError(
-                        "Unexpected merge policy: %s" %
-                        policy)
+        others = package.get("environment", [])
+        for var in others:
+            name = var["name"]
+            value = var["value"]
+            policy = var["merge_policy"]
+            if policy not in ["append", "exclusive"]:
+                raise ValueError(
+                    "Unexpected merge policy: %s" %
+                    policy)
 
-                if policy == "append":
-                    self._append(name, value)
-                else:
-                    self._set(name, value)
+            if policy == "append":
+                self._append(name, value)
+            else:
+                self._set(name, value)
 
     @property
     def env(self):

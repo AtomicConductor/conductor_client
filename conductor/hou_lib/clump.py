@@ -14,15 +14,20 @@ def resolve_start_end_step(*args):
 
     Args may be individual ints or strings. Start may be
     after end. Step may be None or missing. Arg may be a
-    single range string as 'start-endxstep' where step is
-    optional.
+    single range string as 'start-endxstep' where end and
+    step are optional.
 
     """
     if len(args) == 1:
+        number_match = NUMBER_RE.match(args[0])
         range_match = RANGE_RE.match(args[0])
-        if not range_match:
-            raise ValueError("Single arg must be 'start-end<xstep>")
-        start, end, step = [int(n or 1) for n in range_match.groups()]
+        if not (range_match or number_match):
+            raise ValueError("Single arg must be 'start<-end<xstep>>")
+        if range_match:
+            start, end, step = [int(n or 1) for n in range_match.groups()]
+        else:
+            start, end, step = [int(number_match.groups()[0]), int(
+                number_match.groups()[0]), 1]
     else:
         start, end = [int(n) for n in [args[0], args[1]]]
         step = int(args[2]) if len(args) == 3 else 1
@@ -149,7 +154,10 @@ class IrregularClump(Clump):
         return self._iterable[-1]
 
     def __str__(self):
-        return "%s~%s" % (self._iterable[0], self._iterable[-1])
+        progressions = prog.create(self._iterable)
+        clumps = [Clump.create(p) for p in progressions]
+        return (",").join([str(clump) for clump in clumps])
+        # return "%s~%s" % (self._iterable[0], self._iterable[-1])
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self._iterable)
