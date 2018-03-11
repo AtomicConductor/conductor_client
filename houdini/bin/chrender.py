@@ -14,14 +14,29 @@ import argparse
 #         sys.exit(1)
 
 
-def usage(msg=''):
-    print  "Usage: chrender  driver  file.hip"
+ 
 
 def parse_args():
 
     parser = argparse.ArgumentParser(add_help=False)
 
-    parser.add_argument('-d', dest='d_option')
+    # driver
+    parser.add_argument('-d', dest='driver', required=True)
+
+    # range
+    parser.add_argument('-r', dest='range', required=True)
+   
+    # range_type
+    parser.add_argument('-t', dest='type', required=True, choices=['regular', 'irregular'])
+
+    # output file
+    parser.add_argument('-o', dest='output', required=True)
+
+    # input hipfile
+    parser.add_argument('-f', dest='hipfile', required=True)
+
+
+
 
     # Option arguments
     # parser.add_argument('-c', dest='c_option')
@@ -57,5 +72,23 @@ def parse_args():
     return args
 
 
+# hrender -e  -f 1 10  -d /out/arnold1  arntest.hip
+
+
+def render():
+    hou.hipFile.load("/Users/julian/projects/conductor/arntest.hip")
+    rop_node = hou.node("/out/arnold1")
+    for f in [1, 3, 4, 8, 9]:
+        fn = "/Users/julian/projects/conductor/render/blah.%d.exr" % f
+        rop_node.render(
+            frame_range=(
+                f,
+                f),
+            output_file=fn,
+            verbose=True,
+            output_progress=True)
+
+
 args = parse_args()
 print args
+# render(args)
