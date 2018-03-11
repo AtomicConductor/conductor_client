@@ -3,8 +3,8 @@
 
 import hou
 import json
-from sequence import Clump
-from expansion import Expander
+from conductor.hou_lib.sequence import Clump
+from conductor.hou_lib.expansion import Expander
 from task import Task
 import frame_spec
 import software

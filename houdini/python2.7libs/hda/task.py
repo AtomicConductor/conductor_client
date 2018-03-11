@@ -1,4 +1,4 @@
-from expansion import Expander
+from conductor.hou_lib.expansion import Expander
 
 
 class Task(object):
@@ -26,7 +26,7 @@ class Task(object):
     def _collect_tokens(self):
         """Tokens are string kv pairs used for substitutions."""
 
-        clump_type = type(self._clump).__name__
+        clump_type = type(self._clump).__name__.lower()[:-5]
 
         tokens = {}
         tokens["clump"] = str(self._clump)
