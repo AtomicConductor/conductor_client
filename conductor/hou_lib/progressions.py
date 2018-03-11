@@ -59,28 +59,24 @@ def create(iterable, max_size=-1):
     else:
         results[p] = results[p][:-1]
 
-    singles = [pr[0] for pr in results if len(pr) == 1]
-    # results contains at least one sequence, so process the singles
-    # recursively.
-    if (len(singles) < len(results)):
-        singles = create(singles, max_size)
-        longs = [
-            progression for progression in results if len(progression) > 1]
-        results = singles + longs
-        results.sort(key=lambda v: v[0])
-
     return results
 
+# EXAMPLE RESULTS
+#  print create([1, 10, 20, 30, 34, 35, 36, 37, 38, 40, 101, 201, 301])
+#  [[1], [10, 20, 30], [34, 35, 36, 37, 38], [40], [101, 201, 301]]
 
-print create([1, 10, 20, 30, 34, 35, 36, 37, 38, 40, 101, 201, 301])
+#  print create([1, 2, 3, 5, 7, 8, 11, 13, 15, 17])
+#  [[1, 2, 3], [5], [7], [8], [11, 13, 15, 17]]
+
+#  print create([10, 20, 23, 5, 7, 8, 9, 11, 13, 15, 17])
+#  [[5], [7, 8, 9, 10, 11], [13, 15, 17], [20], [23]]
+
+#  print create(xrange(1, 50), 3)
+#  [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18], [19, 20, 21], [22, 23, 24], [25, 26, 27], [28, 29, 30], [31, 32, 33], [34, 35, 36], [37, 38, 39], [40, 41, 42], [43, 44, 45], [46, 47, 48], [49]]
 
 
-# print create([1, 2, 3, 5, 7, 8, 11, 13, 15, 17])
-
-# print create([10, 20, 23, 5, 7, 8, 9, 11, 13, 15, 17])
-
-# print create(xrange(1, 50), 3)
 
 
-# hrender -d <source> -f <clumpstart> <clumpend> -i <clumpstep> -take
-# <take> -o /tmp/render_output/ $JOB/<hipbase>_<timestamp>.hip
+
+
+

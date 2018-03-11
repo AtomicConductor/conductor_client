@@ -2,6 +2,7 @@ import sys
 import os
 import argparse
 
+from conductor.hou_lib.sequence import Sequence
 
 # def error(msg, exit=True):
 #     if msg:
@@ -25,10 +26,7 @@ def parse_args():
 
     # range
     parser.add_argument('-r', dest='range', required=True)
-   
-    # range_type
-    parser.add_argument('-t', dest='type', required=True, choices=['regular', 'irregular'])
-
+ 
     # output file
     parser.add_argument('-o', dest='output', required=True)
 
