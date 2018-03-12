@@ -8,7 +8,7 @@ Arnold say, then we can prompt the user to revisit the
 software section, or even deal with it automatically.
 
 """
-import submit
+import uistate
 
 
 def _get_nice_render_type(input_type):
@@ -41,4 +41,4 @@ def update_input_node(node):
     """Callback triggered every time a connection is made/broken."""
     render_type = _get_nice_render_type(get_render_type(node))
     node.parm('render_type').set(render_type)
-    submit.update_button_state(node)
+    uistate.update_button_state(node)

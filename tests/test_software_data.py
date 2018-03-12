@@ -11,9 +11,9 @@ if HDA_MODULE not in sys.path:
 
 # mocked api_client returns json fixtures
 sys.modules['conductor.lib.api_client'] = __import__(
-    'conductor.hou_lib.mocks.api_client_mock', fromlist=['dummy'])
+    'conductor.houdini.lib.mocks.api_client_mock', fromlist=['dummy'])
 
-from conductor.hou_lib import software_data as swd
+from conductor.houdini.lib import software_data as swd
 
 
 class RemoveUnreachableTest(unittest.TestCase):

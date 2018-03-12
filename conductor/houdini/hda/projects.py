@@ -2,7 +2,7 @@
 
 import json
 from conductor.lib import api_client
-import submit
+import uistate
 
 
 def _active_projects():
@@ -79,19 +79,6 @@ def populate_menu(node):
     return res
 
 
-def has_valid_project(node):
-    """Make sure the project is valid.
-
-    This helps determine if the submit button should be
-    enabled.
-
-    """
-    projects = json.loads(node.parm('projects').eval())
-    selected = node.parm('project').eval()
-    return not (selected == "notset" or selected not in (
-        project["id"] for project in projects))
-
-
 def select(node, **_):
     """When user chooses a new project, update the submit button."""
-    submit.update_button_state(node)
+    uistate.update_button_state(node)
