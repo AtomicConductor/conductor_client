@@ -3,25 +3,43 @@
 
 import hou
 import json
-from conductor.hou_lib.sequence import Clump
-from conductor.hou_lib.expansion import Expander
-from task import Task
-import frame_spec
-import software
-import dependency_scan as deps
+from conductor.houdini.lib.sequence import Clump
+from conductor.houdini.lib.expansion import Expander
+from conductor.houdini.hda.task import Task
+from conductor.houdini.hda import (
+    frame_spec,
+    software,
+    render_source,
+    notifications,
+    dependency_scan)
 
 
 class Job(object):
     """Prepare a Job."""
 
     def __init__(self, node):
+
+  
         self._node = node
         self._sequence = frame_spec.main_frame_sequence(node)
 
         # will be none if not doing scout frames
         self._scout_sequence = frame_spec.resolved_scout_sequence(node)
         self._instance = self._get_instance()
-        self._take = hou.takes.currentTake()
+    
+        self._project = self._node.parm('project').eval()
+     
+        # self._take = hou.takes.currentTake()
+        self._notifications = notifications.get_notifications(self._node)
+         
+        self._source_node = render_source.get_render_node(self._node)
+
+
+    
+        if not (self._source_node):
+            raise hou.InvalidInput(
+                "%s needs a connected source node." %
+                self._node)
         self._tokens = self._collect_tokens()
 
     def dry_run(self, submission_tokens):
@@ -37,10 +55,14 @@ class Job(object):
             "title": expander.evaluate(self._node.parm("job_title").eval()),
             "scene_file": expander.evaluate(
                 self._node.parm("scene_file").eval()),
-            "take_name": self._take.name(),
-            "dependencies": deps.fetch(self._sequence),
+            "node_name": self._node.name(),
+            "dependencies": dependency_scan.fetch(self._sequence),
             "package_ids": software.get_chosen_ids(self._node),
             "environment": software.get_environment(self._node),
+            "project": self._project,
+            "source": self._source_node.path(),
+            "type": self._source_node.type().name(),
+            "notifications": self._notifications,
             "tasks": [],
         }
 
@@ -49,6 +71,14 @@ class Job(object):
             job["tasks"].append(task.dry_run(tokens))
 
         return job
+
+    def _project_name(self):
+        projects = json.loads(self._node.parm('projects').eval())
+        project_names = [project["name"]
+                         for project in projects if project['id'] == self._project]
+        if not project_names:
+            raise hou.InvalidInput("%s invalid project." % self._node)
+        return project_names[0]
 
     def _get_instance(self):
         flavor, cores = self._node.parm(
@@ -66,8 +96,6 @@ class Job(object):
         sorted_frames = sorted(self._sequence._frames)
 
         tokens = {}
-        tokens["scene"] = self._take.name()
-        tokens["take"] = self._take.name()
         tokens["length"] = str(len(self._sequence))
         tokens["sequence"] = str(Clump.create(iter(self._sequence)))
         tokens["sequencemin"] = str(sorted_frames[0])
@@ -85,4 +113,8 @@ class Job(object):
         tokens["preemptible"] = "true" if self._instance.get(
             "preemptible") else "false"
         tokens["retries"] = str(self._instance.get("retries"))
+        tokens["project"] = self._project_name()
+        tokens["submitter"] = self._node.name()
+        tokens["source"] = self._source_node.path()
+        tokens["type"] = self._source_node.type().name()
         return tokens

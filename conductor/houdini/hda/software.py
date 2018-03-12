@@ -10,7 +10,7 @@ import re
 import hou
 from conductor.lib import common, api_client
 
-from conductor.hou_lib import software_data as swd
+from conductor.houdini.lib import software_data as swd
 
 import houdini_info
 

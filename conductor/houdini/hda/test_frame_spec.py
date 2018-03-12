@@ -1,4 +1,7 @@
-"""Test the frame_spec.py module."""
+"""Test the frame_spec.py module.
+
+TODO Move these tests to the top level tests folder and fix them
+"""
 
 import sys
 import os

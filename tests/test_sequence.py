@@ -6,10 +6,10 @@ HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
-from conductor.hou_lib.sequence import Sequence
+from conductor.houdini.lib.sequence import Sequence
 
 
-from conductor.hou_lib.clump import (
+from conductor.houdini.lib.clump import (
     Clump,
     RegularClump,
     IrregularClump,

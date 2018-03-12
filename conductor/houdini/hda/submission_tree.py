@@ -34,25 +34,10 @@ class SubmissionTree(QtWidgets.QWidget):
 
     def populate(self, submission):
 
-        self._appendRow(self._model, "Submitter node:", submission["submitter"])
+        self._appendRow(self._model, "Submission node:", submission["submission"])
         self._appendRow(self._model, "Hip file:", submission["filename"])
-        self._appendRow(self._model, "Source node:", submission["source"])
-        self._appendRow(self._model, "Source type:", submission["type"])
-        self._appendRow(self._model, "Project id:", submission["project"])
         self._appendRow(self._model, "Unsaved changes:", str(submission["unsaved"]))
-        self._appendRow(self._model, "Merge Takes:", str(submission["merge_takes"]))
 
-
-
- 
-
-        email_item = self._appendRow(self._model, "Email notifications:")
-        addresses_item = self._appendRow(email_item, "Addresses:")
-        for i, address in enumerate(sorted(submission["notifications"]["email"]["addresses"])):
-            self._appendRow(addresses_item,  "[%d]" % i, address)
-        hooks_item = self._appendRow(email_item, "Hooks:")
-        for hook in submission["notifications"]["email"]["hooks"]:
-            self._appendRow(hooks_item,  hook[0], str(hook[1]))
 
 
         token_item = self._appendRow(self._model, "Tokens:")
@@ -61,10 +46,24 @@ class SubmissionTree(QtWidgets.QWidget):
 
         jobs_item = self._appendRow(self._model, "Jobs:")
         for i, j in enumerate(submission["jobs"]):
-            job_item = self._appendRow( jobs_item, j["take_name"])
+            job_item = self._appendRow( jobs_item, j["node_name"])
             self._appendRow(job_item, "Title:", j["title"])
             self._appendRow(job_item, "Scene file:", j["scene_file"])
 
+            self._appendRow(job_item, "Source node:", j["source"])
+            self._appendRow(job_item, "Source type:", j["type"])
+            self._appendRow(job_item, "Project id:", j["project"])
+
+
+            if j["notifications"]:
+                email_item = self._appendRow(job_item, "Email notifications:")
+                addresses_item = self._appendRow(email_item, "Addresses:")
+                for i, address in enumerate(sorted(j["notifications"]["email"]["addresses"])):
+                    self._appendRow(addresses_item,  "[%d]" % i, address)
+                hooks_item = self._appendRow(email_item, "Hooks:")
+                for hook in j["notifications"]["email"]["hooks"]:
+                    self._appendRow(hooks_item,  hook[0], str(hook[1]))
+  
             deps_item =  self._appendRow(job_item, "Dependencies:")
             for i, d in enumerate(j["dependencies"]):
                 self._appendRow(deps_item, "[%d]" % i, d)
