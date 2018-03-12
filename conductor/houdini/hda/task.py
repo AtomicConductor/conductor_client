@@ -1,4 +1,4 @@
-from conductor.hou_lib.expansion import Expander
+from conductor.houdini.lib.expansion import Expander
 
 
 class Task(object):

@@ -1,9 +1,9 @@
 """Deal with various ways of specifying frame range."""
 
 import hou
-import render_source
-from conductor.hou_lib.sequence import Sequence
-import takes
+from conductor.houdini.hda import render_source, takes
+from conductor.houdini.lib.sequence import Sequence
+ 
 
 # Specify that Expressions are Python
 XP = hou.exprLanguage.Python
