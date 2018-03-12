@@ -49,8 +49,8 @@ GPATH
 GTAGS
 
 # houdini
-houdini/**/backup/
-houdini/notes/
+conductor/houdini/**/backup/
+conductor/houdini/notes/
 
 # sublime
 conductor_client.sublime-*

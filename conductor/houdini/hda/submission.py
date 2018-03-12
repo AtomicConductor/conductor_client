@@ -5,12 +5,10 @@ import json
 import hou
 from conductor.lib import api_client
 
- 
+
 from submission_tree import SubmissionTree
 from job import Job
-import takes
-import render_source
-import notifications
+ 
 
 
 # Catch a timestamp of the form 2018_02_27_10_59_47 with optional
@@ -22,28 +20,19 @@ class Submission(object):
 
     def __init__(self, node, **kw):
         self._node = node
-        take = kw.get('take')
-        self._takes = [take] if take else takes.active_takes(node)
-        self._source_node = render_source.get_render_node(node)
+        vendor, nodetype, version = node.type().name().split("::")
+        if nodetype == "submitter":
+            self._nodes = [node]
+        else: 
+            # get list of inputs later
+            pass
+
         self._hip_basename = hou.hipFile.basename()
         self._hip_fullname = hou.hipFile.name()
         self._hip_unsaved = hou.hipFile.hasUnsavedChanges()
-        self._project = self._node.parm('project').eval()
-        self._notifications = notifications.get_notifications(self._node)
-        self._merge_takes = bool(self._node.parm('merge_takes').eval())
-
-        if not (self._takes and self._source_node):
-            raise hou.InvalidInput(
-                """Need at least one active take and a
-                connected source_node to create a
-                submission.""")
         self._tokens = self._collect_tokens()
 
-    def _project_name(self):
-        projects = json.loads(self._node.parm('projects').eval())
-        return [project["name"]
-                for project in projects if project['id'] == self._project][0]
-
+   
     def _stripped_hip(self):
         """Strip off the extension and timestamp from start or end."""
         no_ext = re.sub('\.hip$', '', self._hip_basename)
@@ -54,24 +43,18 @@ class Submission(object):
         anything."""
 
         # expander = Expander(**self._tokens)
-
+        job = Job(self._node)
         submission = {
-            "submitter": self._node.name(),
+            "submission": self._node.name(),
             "tokens": self._tokens,
             "filename": self._hip_fullname,
-            "source": self._source_node.name(),
-            "type": self._source_node.type().name(),
-            "project": self._project,
-            "notifications": self._notifications,
             "unsaved": self._hip_unsaved,
-            "merge_takes": self._merge_takes,
             "jobs": []
         }
 
-        for take in self._takes:
-            with takes.take_context(take):
-                job = Job(self._node)
-                submission["jobs"].append(job.dry_run(self._tokens))
+        for node in self._nodes:
+            job = Job(node)
+            submission["jobs"].append(job.dry_run(self._tokens))
 
         # t = self._prepare_for_tree_view(submission)
         submission_tree = SubmissionTree()
@@ -92,11 +75,9 @@ class Submission(object):
         tokens = {}
         tokens["timestamp"] = datetime.datetime.now().strftime(
             '%Y_%m_%d_%H_%M_%S')
-        tokens["submitter"] = self._node.name()
-        tokens["project"] = self._project_name()
-        tokens["source"] = self._source_node.name()
-        tokens["type"] = self._source_node.type().name()
+        tokens["submission"] = self._node.name()
+
         tokens["hipbase"] = self._stripped_hip()
-        tokens["takes"] = (", ").join([take.name() for take in self._takes])
+
 
         return tokens

@@ -6,7 +6,7 @@ as well as populating menus, initializing state and so on.
 """
 
 import hou
-from hda import (
+from conductor.houdini.hda import (
     instances,
     projects,
     frame_spec,
@@ -14,7 +14,8 @@ from hda import (
     submit,
     software,
     notifications,
-    takes
+    takes,
+    uistate
 )
 
 
@@ -34,9 +35,8 @@ def _update_node(node, **_):
         frame_spec.set_type(node)
         notifications.validate_emails(node)
         notifications.email_hook_changed(node)
-        takes.update_takes(node)
         software.update_package_tree(node)
-        submit.update_button_state(node)
+        uistate.update_button_state(node)
 
 
 MENUS = dict(
@@ -65,7 +65,6 @@ ACTIONS = dict(
     email_on_start=notifications.email_hook_changed,
     email_on_finish=notifications.email_hook_changed,
     email_on_failure=notifications.email_hook_changed,
-    update_takes=takes.update_takes
 )
 
 AUX_BUTTON_ACTIONS = dict(
@@ -76,7 +75,6 @@ AUX_BUTTON_ACTIONS = dict(
 def populate_menu(node, parm, **_):
     """Populate a menu dynamically.
 
-    Delegate the job of constructing the list of items.
     Houdini requires the token value pairs for menu item
     creation to be a flattened list like so: [k0, v0, k1,
     v2, ... kn, vn]
@@ -119,20 +117,11 @@ def action_button_callback(**kwargs):
     """Handle actions triggered by the little buttons next to params.
 
     Uses the parmtuple kw arg provided by houdini to
-    differentiate.
+    determine the parm this button refers to.
 
     """
     try:
         AUX_BUTTON_ACTIONS[kwargs['parmtuple'].name()](**kwargs)
-    except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
-                              severity=hou.severityType.Error)
-
-
-def takes_callback(**kwargs):
-    """Handle changes in dynamic `takes` toggles."""
-    try:
-        takes.on_toggle_change(**kwargs)
     except hou.Error as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               severity=hou.severityType.Error)

@@ -1,25 +1,6 @@
 """Entry point for job submission."""
 
-import render_source
-import projects
-import submission
-import takes
-
-def _can_submit(node):
-    """TODO in CT-59 determine if everything is valid for a submission to
-    happen.
-
-    Use this to enable/disable the submit button
-
-    """
-    if not len(takes.active_takes(node)):
-        return False
-    if not render_source.get_render_node(node):
-        return False
-    if not projects.has_valid_project(node):
-        return False
-    return True
-
+from conductor.houdini.hda import submission
 
 def show_request(node, **_):
     """TODO in CT-59 generate request and open a panel.
@@ -31,9 +12,7 @@ def show_request(node, **_):
     sub =  submission.Submission(node)
     sub.dry_run()
 
-    # treeWin = qt.createWindow()
-
-
+ 
 
 def doit(node, **_):
     # print "CREATE SUBMISSION"
@@ -52,9 +31,3 @@ def doit(node, **_):
     #         hou.hipFile.save()
     # hou.ui.displayMessage(text='Job submitted')
 
-
-def update_button_state(node):
-    """Enable/disable submit button."""
-    takes.enable_for_current(node, "can_submit", "submit", "show_request", "update", "render_type")
-    can_submit = 1 if _can_submit(node) else 0
-    node.parm("can_submit").set(can_submit)
