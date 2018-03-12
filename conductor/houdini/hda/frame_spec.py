@@ -8,47 +8,26 @@ from conductor.houdini.lib.sequence import Sequence
 # Specify that Expressions are Python
 XP = hou.exprLanguage.Python
 
-
-def _replace_with_value(parm, value=None):
-    """Overwrite a controlled parm with its evaluated value or a given
-    value."""
-    val = value or parm.eval()
-    parm.deleteAllKeyframes()
-    parm.set(val)
-
-
 def _replace_with_input_expression(parm, input_path):
     """Write expression based on equivalent parm on input node."""
     parm.deleteAllKeyframes()
     parm.setExpression('ch("%s")' % input_path, XP, True)
 
 
-def _set_explicit(node):
-    """Remove expressions on all channels and replace with evaluated."""
-    for parm in ['1', '2', '3']:
-        _replace_with_value(node.parm('fs%s' % parm))
-
-
-def _set_input(node):
+def _set_input(node, rop):
     """Give all channels an expression to link the input node.
 
     If no input node, then warn the user and defer to
     explicit for now.
 
     """
-    input_node = render_source.get_render_node(node)
-    if not input_node:
-        hou.ui.displayMessage(
-            title='Missing input node',
-            text="Please connect a source node and try again.",
-            severity=hou.severityType.ImportantMessage)
-        node.parm("range_type").set('explicit')
-        _set_explicit(node)
+ 
+    if not rop:
         return
-    input_node_path = input_node.path()
+    rop_path = rop.path()
     for parm in ['1', '2', '3']:
         _replace_with_input_expression(
-            node.parm('fs%s' % parm), '%s/f%s' % (input_node_path, parm))
+            node.parm('fs%s' % parm), '%s/f%s' % (rop_path, parm))
 
 
 def _set_scene(node):
@@ -92,7 +71,7 @@ def scout_frame_sequence(node):
 
 def main_frame_sequence(node):
     """Generate Sequence containing current chosen frames."""
-    if node.parm("range_type").eval() == "custom":
+    if node.parm("use_custom").eval():
         return custom_frame_sequence(node)
     return range_frame_sequence(node)
 
@@ -179,29 +158,16 @@ def validate_scout_range(node, **_):
     valid = Sequence.is_valid_spec(spec)
     node.parm("scout_valid").set(valid)
     _update_sequence_stats(node)
-
+ 
 
 def set_type(node, **_):
-    """Switch between different types of frame specification.
-
-    * Explicit: make inputs settable directly
-    * Input: link to frame range set in render node
-    * Scene: link to frame range set in scene
-    * Custom: give a range spec
-
-    """
-
-    takes.enable_for_current(node, "fs", "custom_range")
-
-    funcs = {
-        "explicit": _set_explicit,
-        "input": _set_input,
-        "scene": _set_scene,
-        "custom": _set_custom
-    }
-    func = node.parm("range_type").eval()
-    funcs[func](node)
-
+    rop = render_source.get_render_node(node)
+    if node.parm("use_custom").eval():
+        validate_custom_range(node)
+    elif rop:
+        _set_input(node, rop)
+    else:
+        _set_scene(node)
     _update_sequence_stats(node)
 
 
