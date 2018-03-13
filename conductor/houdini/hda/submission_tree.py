@@ -9,7 +9,7 @@ class SubmissionTree(QtWidgets.QWidget):
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
         hbox = QtWidgets.QHBoxLayout()
-        self.setGeometry(500, 500, 500, 500)
+        self.setGeometry(300, 200, 1000, 600)
         self.setWindowTitle('Conductor dry run')
 
         self._view = QtWidgets.QTreeView()
@@ -43,8 +43,12 @@ class SubmissionTree(QtWidgets.QWidget):
         token_item = self._appendRow(self._model, "Tokens:")
         for t in sorted(submission["tokens"]):
             self._appendRow(token_item, t, submission["tokens"][t])
+        # index = self._model.indexFromItem(token_item)
+        self._view.expand(self._model.indexFromItem(token_item))
+ 
 
         jobs_item = self._appendRow(self._model, "Jobs:")
+        self._view.expand(self._model.indexFromItem(jobs_item))
         for i, j in enumerate(submission["jobs"]):
             job_item = self._appendRow( jobs_item, j["node_name"])
             self._appendRow(job_item, "Title:", j["title"])
@@ -54,6 +58,10 @@ class SubmissionTree(QtWidgets.QWidget):
             self._appendRow(job_item, "Source type:", j["type"])
             self._appendRow(job_item, "Project id:", j["project"])
 
+
+            if not i:
+                self._view.expand(self._model.indexFromItem(job_item))
+ 
 
             if j["notifications"]:
                 email_item = self._appendRow(job_item, "Email notifications:")
@@ -85,13 +93,20 @@ class SubmissionTree(QtWidgets.QWidget):
             job_token_item = self._appendRow(job_item, "Tokens:")
             for t in sorted(j["tokens"]):
                 self._appendRow(job_token_item, t, j["tokens"][t])
-
+            
 
             task_item = self._appendRow(job_item, "Tasks:")
-            for i, t in enumerate(j["tasks"]):
-                task_header = self._appendRow(task_item, "[%d] %s" % (i,  str(t["clump"])) )
-                self._appendRow(task_header, "Command:",  t["command"] )
-                self._appendRow(task_header, "Frames:",  str(tuple(t["clump"])) )            
+            self._view.expand(self._model.indexFromItem(task_item))
+ 
+            for ii, t in enumerate(j["tasks"]):
+                task_header = self._appendRow(task_item, "[%d] %s" % (ii,  str(t["clump"])) )
+                task_command_item = self._appendRow(task_header, "Command:",  t["command"] )
+                task_frames_item = self._appendRow(task_header, "Frames:",  str(tuple(t["clump"])) )            
                 task_token_item = self._appendRow(task_header, "Tokens:")
                 for tok in sorted(t["tokens"]):
                     self._appendRow(task_token_item, tok, t["tokens"][tok])
+
+                if not ii:
+                    self._view.expand(self._model.indexFromItem(task_header))
+
+ 

@@ -45,8 +45,10 @@ MENUS = dict(
 )
 
 ACTIONS = dict(
+    # execute=submit.doit,
+    dry_run=submit.dry_run,
+    local_test=submit.local,
     submit=submit.doit,
-    show_request=submit.show_request,
     update=_update_node,
     use_custom=frame_spec.set_type,
     fs1=frame_spec.set_frame_range,
