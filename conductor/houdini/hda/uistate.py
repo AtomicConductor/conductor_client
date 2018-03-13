@@ -39,7 +39,8 @@ def update_button_state(node):
         node,
         "can_submit",
         "submit",
-        "show_request",
+        "dry_run",
+        "local_test",
         "update",
         "render_type")
     can_submit = 1 if _can_submit(node) else 0
