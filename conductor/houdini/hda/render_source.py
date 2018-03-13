@@ -14,7 +14,7 @@ import uistate
 def _get_nice_render_type(input_type):
     """Display render type in the node header."""
     if not input_type:
-        return "Please connect a source node"
+        return "No render source"
     if input_type == 'ifd':
         return 'Mantra render'
     if input_type == 'arnold':
@@ -39,6 +39,10 @@ def get_render_type(node):
 
 def update_input_node(node):
     """Callback triggered every time a connection is made/broken."""
-    render_type = _get_nice_render_type(get_render_type(node))
-    node.parm('render_type').set(render_type)
+    render_node =  get_render_node(node)
+    path = render_node.path() if render_node else ""
+  
+    render_type = get_render_type(node)
+    node.parm('render_type').set(_get_nice_render_type(render_type))
+    node.parm('source').set(path)
     uistate.update_button_state(node)
