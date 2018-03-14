@@ -660,7 +660,7 @@ Preemption rate ~10%.  Recommended best use when renders are short, or not again
               <item>
                <widget class="QWidget" name="ui_autoretry_wgt" native="true">
                 <property name="enabled">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <property name="toolTip">
                  <string>The maximum amount of times to automatically retry preempted tasks</string>
@@ -680,6 +680,9 @@ Preemption rate ~10%.  Recommended best use when renders are short, or not again
                   <widget class="QSpinBox" name="ui_autoretry_spnbx">
                    <property name="maximum">
                     <number>5</number>
+                   </property>
+                   <property name="value">
+                    <number>2</number>
                    </property>
                    <property name="isFileUserPref" stdset="0">
                     <bool>true</bool>
