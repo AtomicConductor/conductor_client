@@ -16,18 +16,26 @@ def _should_add(element, progression, max_size):
     return progression[1] - progression[0] == element - progression[-1]
 
 
-def create(iterable, max_size=-1):
+def create(iterable, **kw):
     """Split a sequence of integers into arithmetic progressions.
 
     This is not necessarily the most compact set of
     progressions in the sequence as that would take too long
-    for large sets. This algorithm walks through the sorted
-    sequence, gathers elements with the same gap as the
-    previous element.
+    for large sets, and be really difficult to code. This
+    algorithm walks through the sorted sequence, gathers
+    elements with the same gap as the previous element.
 
     """
-    results = [[]]
+    max_size = kw.get("max_size", len(iterable))
     iterable = sorted(iterable)
+    
+    if max_size == 1:
+        return [[x] for x in  iterable]
+
+    if max_size < 1:
+        max_size = len(iterable)
+ 
+    results = [[]]
 
     if max_size == -1:
         max_size = len(iterable)
@@ -41,10 +49,12 @@ def create(iterable, max_size=-1):
             p += 1
             results.append([])
 
-            # if the last progression only has 2 elements, then steal the
-            # second of them to start this progression. Why? because we don't
-            # want any 2 element progressions. We want single digits or at
-            # least three elements. Note that the sentinel added above
+            # if the last progression only has 2 elements, then steal
+            # the second of them to start this progression. Why? because
+            # we are greedy and will have more chance of making longer
+            # progressions if we dismantle progressions of length 2 and 
+            # then pair up the straggling sigles later.
+            # Note that the sentinel added above
             # ensures this rule also works on the original last element.
             if len(results[lastp]) == 2:
                 results[p].append(results[lastp][1])
@@ -58,6 +68,17 @@ def create(iterable, max_size=-1):
         results = results[:-1]
     else:
         results[p] = results[p][:-1]
+
+    progs, singles = [], []
+    for prog in results:
+        singles.append(prog[0]) if len(prog) == 1 else progs.append(prog)
+    for i, s in enumerate(singles):
+        if i % 2 == 0:
+            progs.append([s])
+        else:
+            progs[-1].append(s)
+
+        results = sorted(progs, key=lambda v: v[0])
 
     return results
 
@@ -73,10 +94,3 @@ def create(iterable, max_size=-1):
 
 #  print create(xrange(1, 50), 3)
 #  [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18], [19, 20, 21], [22, 23, 24], [25, 26, 27], [28, 29, 30], [31, 32, 33], [34, 35, 36], [37, 38, 39], [40, 41, 42], [43, 44, 45], [46, 47, 48], [49]]
-
-
-
-
-
-
-

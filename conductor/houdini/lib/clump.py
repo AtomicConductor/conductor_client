@@ -63,7 +63,7 @@ class Clump(object):
         return IrregularClump(frames)
 
     @staticmethod
-    def regular_clumps(iterable):
+    def regular_clumps(iterable, **kw):
         """Factory makes list of regular clumps from input.
 
         The input may be irregular, so we split it into
@@ -71,7 +71,7 @@ class Clump(object):
         the results.
 
         """
-        progressions = prog.create(iterable)
+        progressions = prog.create(iterable, **kw)
         return [Clump.create(p) for p in progressions]
 
     def format(self, template):
@@ -125,6 +125,11 @@ class RegularClump(Clump):
     @property
     def end(self):
         return self._end
+
+    @property
+    def range(self):
+        return (self._start, self._end, self._step)
+
 
     def __str__(self):
         if self.start == self.end:

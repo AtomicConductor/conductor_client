@@ -12,13 +12,15 @@ define how clumps will be made: clump_size and cycle.
 
 import math
 
-from clump import (
+from conductor.houdini.lib.clump import (
     NUMBER_RE,
     RANGE_RE,
     resolve_start_end_step,
     Clump,
     RegularClump,
     IrregularClump)
+
+import conductor.houdini.lib.progressions as prog
 
 
 class Sequence(object):
@@ -45,7 +47,7 @@ class Sequence(object):
         spec consists of either numbers or ranges separated
         by commas. Ranges can have an optional step value.
         Example valid custom range spec: "120, 5,
-        26-76,19-23x4, 1000-2000, 3,9,"
+        26-76,19-23x4, 1000-2000, 3,9,".
 
         """
 
@@ -55,10 +57,11 @@ class Sequence(object):
             if number_matches:
                 vals = number_matches.groups()
                 the_set = the_set.union([int(vals[0])])
-            elif  RANGE_RE.match(part):
+            elif RANGE_RE.match(part):
                 start, end, step = resolve_start_end_step(part)
                 the_set = the_set.union(xrange(start, end + 1, step))
             elif part:
+                # There should be no other non-empty parts
                 raise ValueError("Invalid frame spec")
         frames = sorted(the_set)
         return cls(frames, **kw)
@@ -114,9 +117,6 @@ class Sequence(object):
         for i in xrange(0, len(self._frames), self._clump_size):
             result.append(Clump.create(self._frames[i:i + self._clump_size]))
         return result
- 
-    
-
 
     def clumps(self):
         """return list of clumps according to size and cycle."""
@@ -181,4 +181,3 @@ class Sequence(object):
         """Repr containes whats necessary to init."""
         return "%s(%r, clump_size=%r, cycle=%r)" % (
             self.__class__.__name__, self._frames, self._clump_size, self._cycle)
-
