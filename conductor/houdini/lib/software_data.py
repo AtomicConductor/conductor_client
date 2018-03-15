@@ -280,7 +280,7 @@ class PackageTree(object):
         for path in paths:
             package = _find_by_path(self._tree, path)
             package_env.extend(package)
-        return package_env.env
+        return package_env
 
     @property
     def tree(self):

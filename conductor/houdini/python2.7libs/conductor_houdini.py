@@ -17,6 +17,16 @@ from conductor.houdini.hda import (
     takes,
     uistate
 )
+ 
+# def on_scene_changed(event_type):
+
+#     print "scene_event_callback"
+    
+
+#     if node_type.instances():
+
+#     advanced.update
+#     # hou.ui.displayMessage("An event of type {} occured".format(event_type))
 
 
 def _update_node(node, **_):
@@ -37,6 +47,11 @@ def _update_node(node, **_):
         notifications.email_hook_changed(node)
         software.update_package_tree(node)
         uistate.update_button_state(node)
+
+        # for callback in hou.hipFile.eventCallbacks():
+        #     if callback.__name__ == "on_scene_changed":
+        #         hou.hipFile.removeEventCallback(callback)
+        # hou.hipFile.addEventCallback(on_scene_changed)
 
 
 MENUS = dict(

@@ -1,4 +1,2 @@
-#!/bin/bash
-
-exec hython $CONDUCTOR_CLIENT/houdini/bin/chrender.py "$@"
-
+#!/bin/csh -f
+exec hython $CONDUCTOR_CLIENT/bin/chrender.py $*
