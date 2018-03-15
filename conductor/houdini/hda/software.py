@@ -11,8 +11,7 @@ import hou
 from conductor.lib import common, api_client
 
 from conductor.houdini.lib import software_data as swd
-
-import houdini_info
+from conductor.houdini.hda import houdini_info, advanced
 
 FOLDER_PATH = ("Software", "Packages")
 

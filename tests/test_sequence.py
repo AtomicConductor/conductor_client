@@ -102,7 +102,22 @@ class ClumpFactoryTest(unittest.TestCase):
         s = Sequence.from_spec(spec)
         c = Clump.regular_clumps(s)
         newspec = (", ").join([str(x) for x in c])
-        self.assertEqual(newspec, spec)
+        self.assertEqual(newspec, "1-4x3, 9-18x3, 26-28x2, 46-60, 100")
+
+    def test_auto_create_regular_clumps_max_len_1(self):
+        s = Sequence.from_spec("1-100")
+        c = Clump.regular_clumps(s, max_size=1)
+        self.assertEqual(len(c), 100)
+
+    def test_auto_create_regular_clumps_max_len_2(self):
+        s = Sequence.from_spec("1-100")
+        c = Clump.regular_clumps(s, max_size=2)
+        self.assertEqual(len(c), 50)
+
+    def test_auto_create_regular_clumps_max_len_4(self):
+        s = Sequence.from_spec("12-86x3, 1, 7, 8, 2, 4-9")
+        c = Clump.regular_clumps(s, max_size=4)
+        self.assertEqual(len(c), 10)
 
 
 class RegularClumpTest(unittest.TestCase):
@@ -159,6 +174,14 @@ class RegularClumpTest(unittest.TestCase):
         self.assertEqual(c.end, 10)
         self.assertEqual(c.step, 2)
 
+    def test_range_property_type(self):
+        c = RegularClump("3-10x2")
+        self.assertIsInstance(c.range, tuple)
+
+    def test_range_property(self):
+        c = RegularClump("3-10x2")
+        self.assertEqual(c.range, (3, 10, 2))
+
 
 class IrregularClumpTest(unittest.TestCase):
 
@@ -172,9 +195,9 @@ class IrregularClumpTest(unittest.TestCase):
 
     def test_str(self):
         c = IrregularClump([1, 2, 5])
-        self.assertEqual(str(c), "1,2,5")
+        self.assertEqual(str(c), "1-2,5")
         c = IrregularClump([1, 2, 5, 10, 15, 20, 45, 89, 92, 95])
-        self.assertEqual(str(c), "1,2,5-20x5,45,89-95x3")
+        self.assertEqual(str(c), "1-2,5-20x5,45,89-95x3")
 
     def test_repr(self):
         c = IrregularClump([1, 2, 5])

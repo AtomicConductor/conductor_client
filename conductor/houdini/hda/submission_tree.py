@@ -34,79 +34,85 @@ class SubmissionTree(QtWidgets.QWidget):
 
     def populate(self, submission):
 
-        self._appendRow(self._model, "Submission node:", submission["submission"])
-        self._appendRow(self._model, "Hip file:", submission["filename"])
-        self._appendRow(self._model, "Unsaved changes:", str(submission["unsaved"]))
+        self._appendRow(self._model, "Submission node:", submission.node_name)
+        self._appendRow(self._model, "Hip file:", submission.filename)
+        self._appendRow(self._model, "Scene file:", str(submission.scene))
+        self._appendRow(self._model, "Use timestamped:", str(submission.use_timestamped_scene))
+        self._appendRow(self._model, "Force upload:", str(submission.force_upload))
+        self._appendRow(self._model, "Local upload:", str(submission.local_upload))
 
-
+        self._appendRow(
+            self._model, "Unsaved changes:", str(
+                submission.unsaved))
 
         token_item = self._appendRow(self._model, "Tokens:")
-        for t in sorted(submission["tokens"]):
-            self._appendRow(token_item, t, submission["tokens"][t])
-        # index = self._model.indexFromItem(token_item)
+        for t in sorted(submission.tokens):
+            self._appendRow(token_item, t, submission.tokens[t])
         self._view.expand(self._model.indexFromItem(token_item))
- 
 
         jobs_item = self._appendRow(self._model, "Jobs:")
         self._view.expand(self._model.indexFromItem(jobs_item))
-        for i, j in enumerate(submission["jobs"]):
-            job_item = self._appendRow( jobs_item, j["node_name"])
-            self._appendRow(job_item, "Title:", j["title"])
-            self._appendRow(job_item, "Scene file:", j["scene_file"])
 
-            self._appendRow(job_item, "Source node:", j["source"])
-            self._appendRow(job_item, "Source type:", j["type"])
-            self._appendRow(job_item, "Project id:", j["project"])
+        for i, job in enumerate(submission.jobs):
+            job_item = self._appendRow(jobs_item, job.node_name)
+            self._appendRow(job_item, "Title:", job.title)
 
+            self._appendRow(job_item, "Source path:", job.source_path)
+            self._appendRow(job_item, "Source type:", job.source_type)
+            self._appendRow(job_item, "Project id:", job.project_id)
 
-            if not i:
+            if i is 0:
                 self._view.expand(self._model.indexFromItem(job_item))
- 
 
-            if j["notifications"]:
+            if job.has_notifications():
                 email_item = self._appendRow(job_item, "Email notifications:")
                 addresses_item = self._appendRow(email_item, "Addresses:")
-                for i, address in enumerate(sorted(j["notifications"]["email"]["addresses"])):
-                    self._appendRow(addresses_item,  "[%d]" % i, address)
+                for i, address in enumerate(sorted(job.email_addresses)):
+                    self._appendRow(addresses_item, "[%d]" % i, address)
                 hooks_item = self._appendRow(email_item, "Hooks:")
-                for hook in j["notifications"]["email"]["hooks"]:
-                    self._appendRow(hooks_item,  hook[0], str(hook[1]))
-  
-            deps_item =  self._appendRow(job_item, "Dependencies:")
-            for i, d in enumerate(j["dependencies"]):
-                self._appendRow(deps_item, "[%d]" % i, d)
+                for hook in job.email_hooks:
+                    self._appendRow(hooks_item, hook[0], str(hook[1]))
+
+            deps_item = self._appendRow(job_item, "Dependencies:")
+            if job.dependencies:
+                for i, d in enumerate(job.dependencies):
+                    self._appendRow(deps_item, "[%d]" % i, d)
+            else: 
+                self._appendRow(deps_item, "No dependencies")
 
             metatdata_item = self._appendRow(job_item, "Job Metadata:")
-            for k, v in j["metadata"].iteritems():
-                self._appendRow(metatdata_item, k, v)
+            if job.metadata:
+                for k, v in job.metadata.iteritems():
+                    self._appendRow(metatdata_item, k, v)
+            else: 
+                self._appendRow(metatdata_item, "No metadata")
 
             packages_item = self._appendRow(job_item, "Package IDs:")
-            for i, p in enumerate(j["package_ids"]):
+            for i, p in enumerate(job.package_ids):
                 self._appendRow(packages_item, "[%d]" % i, p)
 
-
             environment_item = self._appendRow(job_item, "Environment:")
-            for  envkey in  sorted(j["environment"]):
-                self._appendRow(environment_item,  envkey , j["environment"][envkey])
-
+            for envkey in sorted(job.environment):
+                self._appendRow(
+                    environment_item,
+                    envkey,
+                    job.environment[envkey])
 
             job_token_item = self._appendRow(job_item, "Tokens:")
-            for t in sorted(j["tokens"]):
-                self._appendRow(job_token_item, t, j["tokens"][t])
-            
+            for t in sorted(job.tokens):
+                self._appendRow(job_token_item, t, job.tokens[t])
 
             task_item = self._appendRow(job_item, "Tasks:")
             self._view.expand(self._model.indexFromItem(task_item))
- 
-            for ii, t in enumerate(j["tasks"]):
-                task_header = self._appendRow(task_item, "[%d] %s" % (ii,  str(t["clump"])) )
-                task_command_item = self._appendRow(task_header, "Command:",  t["command"] )
-                task_frames_item = self._appendRow(task_header, "Frames:",  str(tuple(t["clump"])) )            
+
+            for j, task in enumerate(job.tasks):
+                task_header = self._appendRow(
+                    task_item, "[%d] %s" % (j, str(task.clump)))
+                self._appendRow(task_header, "Command:", task.command)
+                self._appendRow(task_header, "Frames:", str(tuple(task.clump)))
                 task_token_item = self._appendRow(task_header, "Tokens:")
-                for tok in sorted(t["tokens"]):
-                    self._appendRow(task_token_item, tok, t["tokens"][tok])
+                for tok in sorted(task.tokens):
+                    self._appendRow(task_token_item, tok, task.tokens[tok])
 
-                if not ii:
+                if j is 0:
                     self._view.expand(self._model.indexFromItem(task_header))
-
- 

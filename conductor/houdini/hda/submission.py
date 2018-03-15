@@ -1,19 +1,20 @@
 import datetime
-import re
+ 
 import json
 
 import hou
 from conductor.lib import api_client
 
 
-from submission_tree import SubmissionTree
+from conductor.houdini.hda import advanced
+
+# from submission_tree import SubmissionTree
 from job import Job
- 
 
 
-# Catch a timestamp of the form 2018_02_27_10_59_47 with optional
-# underscore delimiters at the start and/or end of a string
-TIMESTAMP_RE = re.compile(r"^[\d]{4}(_[\d]{2}){5}_*|_*[\d]{4}(_[\d]{2}){5}$")
+# # Catch a timestamp of the form 2018_02_27_10_59_47 with optional
+# # underscore delimiters at the start and/or end of a string
+# TIMESTAMP_RE = re.compile(r"^[\d]{4}(_[\d]{2}){5}_*|_*[\d]{4}(_[\d]{2}){5}$")
 
 
 class Submission(object):
@@ -23,44 +24,23 @@ class Submission(object):
         vendor, nodetype, version = node.type().name().split("::")
         if nodetype == "submitter":
             self._nodes = [node]
-        else: 
-            # get list of inputs later
+        else:
+            # get list of inputs for submission node later
             pass
 
-        self._hip_basename = hou.hipFile.basename()
-        self._hip_fullname = hou.hipFile.name()
-        self._hip_unsaved = hou.hipFile.hasUnsavedChanges()
+ 
+        self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self._hipbase = advanced.stripped_hip()
+        self._use_timestamped_scene = bool(self._node.parm("use_timestamped_scene").eval())
+        self._scene = advanced.scene_name_to_use(self._node, self._timestamp)
+        self._local_upload = bool(self._node.parm("local_upload").eval())
+        self._force_upload = bool(self._node.parm("force_upload").eval())
+        
         self._tokens = self._collect_tokens()
-
-   
-    def _stripped_hip(self):
-        """Strip off the extension and timestamp from start or end."""
-        no_ext = re.sub('\.hip$', '', self._hip_basename)
-        return re.sub(TIMESTAMP_RE, '', no_ext)
-
-    def dry_run(self):
-        """Build an object that fully describes the submission without mutating
-        anything."""
-
-        # expander = Expander(**self._tokens)
-        job = Job(self._node)
-        submission = {
-            "submission": self._node.name(),
-            "tokens": self._tokens,
-            "filename": self._hip_fullname,
-            "unsaved": self._hip_unsaved,
-            "jobs": []
-        }
+        self._jobs = []
 
         for node in self._nodes:
-            job = Job(node)
-            submission["jobs"].append(job.dry_run(self._tokens))
-
-        # t = self._prepare_for_tree_view(submission)
-        submission_tree = SubmissionTree()
-        submission_tree.populate(submission)
-        submission_tree.show()
-        hou.session.dummy = submission_tree
+            self._jobs.append(Job(node, self._tokens))
 
     def _collect_tokens(self):
         """Tokens are variables to help the user build strings.
@@ -73,11 +53,55 @@ class Submission(object):
 
         """
         tokens = {}
-        tokens["timestamp"] = datetime.datetime.now().strftime(
-            '%Y_%m_%d_%H_%M_%S')
+        tokens["timestamp"] = self._timestamp
         tokens["submission"] = self._node.name()
-
-        tokens["hipbase"] = self._stripped_hip()
-
-
+        tokens["hipbase"] = self._hipbase 
+        tokens["scene"] = self._scene 
+ 
         return tokens
+
+    def remote_args(self):
+        result = {}
+        result["local_upload"] = self._local_upload
+        result["force"] = self._force_upload
+        # result["upload_paths"] = 
+
+    @property
+    def local_upload(self):
+        return self._local_upload
+
+    @property
+    def force_upload(self):
+        return self._force_upload
+
+    @property
+    def scene(self):
+        return self._scene
+
+    @property
+    def node_name(self):
+        return self._node.name()
+
+    @property
+    def filename(self):
+        return hou.hipFile.name()
+
+    @property
+    def basename(self):
+        return hou.hipFile.basename()
+
+    @property
+    def unsaved(self):
+        return hou.hipFile.hasUnsavedChanges()
+
+    @property
+    def use_timestamped_scene(self):
+        return self._use_timestamped_scene
+
+    @property
+    def tokens(self):
+        return self._tokens
+
+    @property
+    def jobs(self):
+        return self._jobs
