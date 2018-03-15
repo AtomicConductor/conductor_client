@@ -18,8 +18,13 @@ class PackageEnvironment(object):
         else:
             self._env[name] = value
 
-    def extend(self, package):
-        others = package.get("environment", [])
+    def extend(self, env_list):
+        """"""
+        try:
+            others = env_list["environment"]
+        except TypeError:
+            others = env_list
+
         for var in others:
             name = var["name"]
             value = var["value"]

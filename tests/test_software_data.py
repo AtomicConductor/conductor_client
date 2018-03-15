@@ -287,5 +287,8 @@ class SoftwareDataGetAllPathsTest(unittest.TestCase):
         self.assertEqual(paths, [])
 
 
+# TODO Test PackageTree#get_environment()
+
+
 if __name__ == '__main__':
     unittest.main()
