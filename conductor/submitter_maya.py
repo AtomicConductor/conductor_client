@@ -2,7 +2,7 @@
 from conductor.lib import maya_utils, pyside_utils, file_utils, common, exceptions, package_utils
 from conductor import CONFIG, submitter
 from conductor.lib.lsseq import seqLister
-from maya import OpenMayaUI
+from maya import cmds, OpenMayaUI
 import os
 import imp
 import logging
@@ -192,7 +192,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         # Create a template command that be be used for each task's command
-        cmd_template = "Render %s -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
+        cmd_template = "Render %s -s %s -e %s -b %s %s -rd /tmp/render_output/ %s %s"
 
         # Retrieve the source maya file
         maya_filepath = self.getSourceFilepath()
@@ -211,6 +211,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
 
+        # Workspace/Project args
+        project_arg = "-proj %s" % file_utils.quote_path(cmds.workspace(q=True, rootDirectory=True))
+
         chunk_size = self.getChunkSize()
         frames_str = self.getFrameRangeString()
         frames = seqLister.expandSeq(frames_str.split(","), None)
@@ -225,6 +228,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                                        end_frame,
                                        step,
                                        render_layer_args,
+                                       project_arg,
                                        file_utils.quote_path(maya_filepath_nodrive))
 
             # Generate tasks data
@@ -254,6 +258,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         ocio_config = maya_utils.get_ocio_config()
         if ocio_config:
             environment.update({"OCIO": ocio_config})
+
+        if os.environ.get("XGEN_CONFIG_PATH"):
+            environment["XGEN_CONFIG_PATH"] = os.environ["XGEN_CONFIG_PATH"]
 
         return environment
 

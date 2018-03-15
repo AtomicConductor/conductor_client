@@ -242,8 +242,6 @@ maya_dependency_attrs:
     RMSPointLight: # Renderman
         - iconName
         - templatePath
-    xgmPalette: # XGen (now maya builtin?)
-        - xfn
     xgmDescription:
         - ai_batch_render_patch
     VRayMesh: # VRay

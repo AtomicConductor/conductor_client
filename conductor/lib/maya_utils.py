@@ -5,7 +5,7 @@ import yaml
 import functools
 from maya import cmds, mel
 
-from conductor.lib import package_utils, file_utils
+from conductor.lib import package_utils, file_utils, xgen_utils
 logger = logging.getLogger(__name__)
 
 
@@ -482,15 +482,6 @@ def collect_dependencies(node_attrs):
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
                     logger.debug("%s: %s", plug_name, path)
 
-                    # ---- XGEN SCRAPING -----
-                    #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
-                    if node_type == "xgmPalette":
-                        sceneFile = cmds.file(query=True, sceneName=True)
-                        path = os.path.join(os.path.dirname(sceneFile), plug_value)
-                        xgen_dependencies = parse_xgen_file(path, node)
-                        logger.debug("xgen_dependencies: %s", xgen_dependencies)
-                        dependencies += xgen_dependencies
-
                     # ---- VRAY SCRAPING -----
                     if node_type == "VRayScene":
                         vrscene_dependencies = parse_vrscene_file(path)
@@ -511,6 +502,19 @@ def collect_dependencies(node_attrs):
                             continue
 
                     dependencies.append(path)
+
+    # ---- workspace file ----
+    workspace_dirpath = cmds.workspace(q=True, rootDirectory=True)
+    workspace_filepath = os.path.join(workspace_dirpath, "workspace.mel")
+    logging.debug(workspace_filepath)
+    if os.path.isfile(workspace_filepath):
+        dependencies.append(workspace_filepath)
+
+    # ---- XGEN SCRAPING -----
+
+    xgen_paths = xgen_utils.scrape_xgen()
+    logger.debug("xgen_dependencies: %s", xgen_paths)
+    dependencies += xgen_paths
 
     #  Grab any OCIO settings that might be there...
     ocio_config_filepath = get_ocio_config()
