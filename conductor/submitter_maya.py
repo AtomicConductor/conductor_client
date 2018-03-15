@@ -398,6 +398,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             logger.debug("Renderman detected.  Setting CONDUCTOR_PATHHELPER to 0")
             environment.update({"CONDUCTOR_PATHHELPER": "0"})
 
+        # Propagate the XGEN_CONFIG_PATH to the job's environment
+        if os.environ.get("XGEN_CONFIG_PATH"):
+            environment["XGEN_CONFIG_PATH"] = os.environ["XGEN_CONFIG_PATH"]
+
         return environment
 
     # THIS IS COMMENTED OUT UNTIL WE DO DYNAMIC PACKAGE LOOKUP

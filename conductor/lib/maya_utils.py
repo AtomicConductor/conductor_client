@@ -11,7 +11,7 @@ import tempfile
 from maya import cmds, mel
 
 # Conductor libs
-from conductor.lib import common, package_utils, file_utils
+from conductor.lib import common, package_utils, file_utils, xgen_utils
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,11 @@ MAYA_RENDERER_RENDERMAN_RIS = 'renderManRIS'
 MAYA_RENDERER_RENDERMAN = 'renderman'
 MAYA_RENDERER_VRAY = 'vray'
 
-MAYA_RENDERERS = [MAYA_RENDERER_ARNOLD, 
-                  MAYA_RENDERER_RENDERMAN_RIS, 
-                  MAYA_RENDERER_RENDERMAN, 
+MAYA_RENDERERS = [MAYA_RENDERER_ARNOLD,
+                  MAYA_RENDERER_RENDERMAN_RIS,
+                  MAYA_RENDERER_RENDERMAN,
                   MAYA_RENDERER_MAYA_SW]
+
 
 def dec_undo(func):
     '''
@@ -531,18 +532,6 @@ def collect_dependencies(node_attrs):
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
                     logger.debug("%s: %s", plug_name, path)
 
-                    # ---- XGEN SCRAPING -----
-                    #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
-                    if node_type == "xgmPalette":
-                        maya_filepath = cmds.file(query=True, sceneName=True)
-                        palette_filepath = os.path.join(os.path.dirname(maya_filepath), plug_value)
-                        xgen_dependencies = scrape_palette_node(node, palette_filepath) + [palette_filepath]
-                        logger.debug("xgen_dependencies: %s", xgen_dependencies)
-                        dependencies += xgen_dependencies
-                        # continue here so that we don't append the path to dependencies later on.
-                        # (the path that would have been appended is actually not the correct path).
-                        continue
-
                     # ---- VRAY SCRAPING -----
                     if node_type == "VRayScene":
                         vrscene_dependencies = parse_vrscene_file(path)
@@ -642,6 +631,19 @@ def collect_dependencies(node_attrs):
         ass_dependencies = scrape_ass_files(ass_filepaths, ass_attrs)
         logger.debug("Arnold .ass_dependencies: %s" % ass_dependencies)
         dependencies.extend(ass_dependencies)
+
+    # ---- workspace file ----
+    workspace_dirpath = cmds.workspace(q=True, rootDirectory=True)
+    workspace_filepath = os.path.join(workspace_dirpath, "workspace.mel")
+    logging.debug(workspace_filepath)
+    if os.path.isfile(workspace_filepath):
+        dependencies.append(workspace_filepath)
+
+    # ---- XGEN SCRAPING -----
+
+    xgen_paths = xgen_utils.scrape_xgen()
+    logger.debug("xgen_dependencies: %s", xgen_paths)
+    dependencies += xgen_paths
 
     # Strip out any paths that end in "\"  or "/"    Hopefully this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
@@ -916,6 +918,7 @@ def _get_ocio_search_path(config_filepath):
         config = PyOpenColorIO.Config.CreateFromFile(config_filepath)
         return config.getSearchPath()
 
+
 def is_arnold_renderer():
     '''
     Return boolean to indicat whether arnold is the current renderer for the maya
@@ -1000,7 +1003,7 @@ def get_render_settings_node(renderer_name, strict=True):
     e.g. "defaultRenderGlobals" or "vraySettings" or "defaultArnoldRenderOptions"
     '''
     renderer_settings_gettr = {MAYA_RENDERER_VRAY: get_vray_settings_node,
-                               MAYA_RENDERER_ARNOLD : get_arnold_settings_node,
+                               MAYA_RENDERER_ARNOLD: get_arnold_settings_node,
                                MAYA_RENDERER_MAYA_SW: get_mayasoftware_settings_node}
 
     if renderer_name not in renderer_settings_gettr and strict:
@@ -1416,21 +1419,22 @@ def get_plugin_info_class(plugin_name):
     for PluginClass in PLUGIN_CLASSES:
         if plugin_name == PluginClass.plugin_name:
             return PluginClass
-        
-def constructForcedArguments(renderer):        
+
+
+def constructForcedArguments(renderer):
     '''
     Force certain flags for certain renderers. These flags are likely renderer specific and 
     might not even have an equivalent amongst the various renderers.        
     '''
-    
+
     if renderer == MAYA_RENDERER_ARNOLD:
         # Force abort on license fail
-        forced_flags ='-ai:alf true'
-        
+        forced_flags = '-ai:alf true'
+
     else:
         forced_flags = ''
-        
-    return forced_flags         
+
+    return forced_flags
 
 
 class MayaInfo(package_utils.ProductInfo):
