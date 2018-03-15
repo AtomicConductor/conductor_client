@@ -11,7 +11,7 @@ import tempfile
 from maya import cmds, mel
 
 # Conductor libs
-from conductor.lib import common, package_utils, file_utils
+from conductor.lib import common, package_utils, file_utils, xgen_utils
 
 logger = logging.getLogger(__name__)
 
@@ -508,15 +508,6 @@ def collect_dependencies(node_attrs):
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
                     logger.debug("%s: %s", plug_name, path)
 
-                    # ---- XGEN SCRAPING -----
-                    #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
-                    if node_type == "xgmPalette":
-                        maya_filepath = cmds.file(query=True, sceneName=True)
-                        palette_filepath = os.path.join(os.path.dirname(maya_filepath), plug_value)
-                        xgen_dependencies = scrape_palette_node(node, palette_filepath)
-                        logger.debug("xgen_dependencies: %s", xgen_dependencies)
-                        dependencies += xgen_dependencies
-
                     # ---- VRAY SCRAPING -----
                     if node_type == "VRayScene":
                         vrscene_dependencies = parse_vrscene_file(path)
@@ -597,6 +588,19 @@ def collect_dependencies(node_attrs):
         ass_dependencies = scrape_ass_files(ass_filepaths, ass_attrs)
         logger.debug("Arnold .ass_dependencies: %s" % ass_dependencies)
         dependencies.extend(ass_dependencies)
+
+    # ---- workspace file ----
+    workspace_dirpath = cmds.workspace(q=True, rootDirectory=True)
+    workspace_filepath = os.path.join(workspace_dirpath, "workspace.mel")
+    logging.debug(workspace_filepath)
+    if os.path.isfile(workspace_filepath):
+        dependencies.append(workspace_filepath)
+
+    # ---- XGEN SCRAPING -----
+
+    xgen_paths = xgen_utils.scrape_xgen()
+    logger.debug("xgen_dependencies: %s", xgen_paths)
+    dependencies += xgen_paths
 
     # Strip out any paths that end in "\"  or "/"    Hopefully this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
