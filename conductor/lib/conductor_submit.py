@@ -409,7 +409,7 @@ class Submit(object):
                 submit_dict['machine_flavor'] = self.machine_flavor
 
         try:
-            return post_job(client=self.api_client, use_api_key=True, **submit_dict)
+            return post_job(client=self.api_client, use_api_key=True, compress=True, **submit_dict)
         except Exception as e:
             raise Exception("Job Submission failed: Error %s" % e)
 
@@ -603,7 +603,7 @@ class Submit(object):
             raise
 
 
-def post_job(client=None, use_api_key=True, **job_args):
+def post_job(client=None, use_api_key=True, compress=True, **job_args):
     if not client:
         client = api_client.ApiClient()
     logger.debug("--- JOB ARGS ---")
@@ -613,6 +613,7 @@ def post_job(client=None, use_api_key=True, **job_args):
     logger.info("Sending Job...")
     return client.make_request(uri_path="jobs/",
                                data=json.dumps(job_args),
+                               compress=True,
                                raise_on_error=True,
                                use_api_key=use_api_key)
 
