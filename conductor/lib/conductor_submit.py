@@ -303,7 +303,6 @@ class Submit(object):
             if self.gpu_config.get("type") not in supported_gpu_types:
                 raise BadArgumentError("GPU type %s is not one of %s" % (self.gpu_config.get("type"), supported_gpu_types))
 
-
     def send_job(self, upload_files, upload_size):
         '''
         Construct args for two different cases:
@@ -378,6 +377,7 @@ class Submit(object):
         logger.info("Sending Job...")
         response, response_code = self.api_client.make_request(uri_path="jobs/",
                                                                data=json.dumps(submit_dict),
+                                                               compress=True,
                                                                raise_on_error=False,
                                                                use_api_key=True)
         if response_code not in [201, 204]:
