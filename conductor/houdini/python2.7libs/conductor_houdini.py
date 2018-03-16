@@ -62,6 +62,7 @@ MENUS = dict(
 ACTIONS = dict(
     # execute=submit.doit,
     dry_run=submit.dry_run,
+    preview=submit.preview,
     local_test=submit.local,
     submit=submit.doit,
     update=_update_node,
@@ -111,23 +112,22 @@ def action_callback(**kwargs):
     differentiate.
 
     """
-    ACTIONS[kwargs['parm_name']](**kwargs)
-    # try:
-    #     ACTIONS[kwargs['parm_name']](**kwargs)
-    # except hou.InvalidInput as err:
-    #     hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
-    #                           severity=hou.severityType.ImportantMessage)
-    # except hou.Error as err:
-    #     hou.ui.displayMessage(title='Warning', text=err.instanceMessage(),
-    #                           severity=hou.severityType.Error)
+    try:
+        ACTIONS[kwargs['parm_name']](**kwargs)
+    except hou.InvalidInput as err:
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              severity=hou.severityType.ImportantMessage)
+    except hou.Error as err:
+        hou.ui.displayMessage(title='Warning', text=err.instanceMessage(),
+                              severity=hou.severityType.Error)
 
-    # except(TypeError, ValueError) as err:
-    #     hou.ui.displayMessage(title='Error', text=str(err),
-    #                           severity=hou.severityType.Error)
+    except(TypeError, ValueError) as err:
+        hou.ui.displayMessage(title='Error', text=str(err),
+                              severity=hou.severityType.Error)
 
-    # except(Exception) as err:
-    #     hou.ui.displayMessage(title='Error', text=str(err),
-    #                           severity=hou.severityType.Error)
+    except(Exception) as err:
+        hou.ui.displayMessage(title='Error', text=str(err),
+                              severity=hou.severityType.Error)
 
 
 def action_button_callback(**kwargs):

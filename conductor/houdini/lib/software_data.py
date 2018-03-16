@@ -9,8 +9,8 @@ packages and build paths etc.
 import copy
 import json
 import re
-# from conductor.lib.api_client import request_software_packages
-from conductor.houdini.lib.mocks.api_client_mock import request_software_packages
+from conductor.lib.api_client import request_software_packages
+# from conductor.houdini.lib.mocks.api_client_mock import request_software_packages
 from package_environment import PackageEnvironment
 from conductor import CONFIG
 
