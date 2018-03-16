@@ -3,22 +3,42 @@ import sys
 import traceback
 import subprocess
 import shlex
+import json
 import hou
 
 from conductor.lib import conductor_submit
 from conductor.houdini.hda.submission import Submission
 from conductor.houdini.hda.submission_tree import SubmissionTree
+from conductor.houdini.hda.submission_dry import SubmissionDry
 
 
-def dry_run(node, **_):
+def preview(node, **_):
     submission = Submission(node)
     submission_tree = SubmissionTree()
     submission_tree.populate(submission)
     submission_tree.show()
-    hou.session.dummy = submission_tree
+    hou.session.conductor_preview = submission_tree
 
 
-def create_submission_with_save(node):
+def dry_run(node, **_):
+    args_list = []
+    submission = Submission(node)
+    submission_args = submission.remote_args()
+    for job in submission.jobs:
+        job_args = job.remote_args()
+        job_args.update(submission_args)
+        args_list.append(job_args)
+
+
+    j = json.dumps(args_list, indent=3, sort_keys=True)
+
+    submission_dry = SubmissionDry()
+    submission_dry.populate(j)
+    submission_dry.show()
+    hou.session.conductor_dry = submission_dry
+
+
+def _create_submission_with_save(node):
     if node.parm("use_timestamped_scene").eval():
         current_scene_name = hou.hipFile.basename()
         # generates the timestamp etc.
@@ -30,7 +50,9 @@ def create_submission_with_save(node):
     else:
         if hou.hipFile.hasUnsavedChanges():
             save_file_response = hou.ui.displayMessage(
-                "Unsaved changes! Save the file before submitting?",
+                """There are unsaved changes and
+                timestamped save is turned off!
+                Save the file before submitting?""",
                 buttons=(
                     "Yes",
                     "No",
@@ -50,7 +72,9 @@ def create_submission_with_save(node):
 
 def local(node, **_):
 
-    submission = create_submission_with_save(node)
+    submission = _create_submission_with_save(node)
+    if not submission:
+        return
     print "submission.scene: %s" % submission.scene
     print "submission.use_timestamped_scene: %s" % submission.use_timestamped_scene
 
@@ -62,16 +86,26 @@ def local(node, **_):
             subprocess.call(args)
 
 
+def logit(node, **_):
+    submission = Submission(node)
+    submission_args = submission.remote_args()
+    for job in submission.jobs:
+        job_args = job.remote_args()
+        job_args.update(submission_args)
+        return json.dumps(job_args, indent=4, sort_keys=True)
+
+
 def doit(node, **_):
-    submission = create_submission_with_save(node)
+    submission = _create_submission_with_save(node)
 
     submission_args = submission.remote_args()
 
     for job in submission.jobs:
-        print "Submitting job %s" % job.title
+        # print "Submitting job %s" % job.title
 
-        job_args = job.remote_args(submission_args)
-
+        job_args = job.remote_args()
+        job_args.update(submission_args)
+        print job_args
         try:
             remote_job = conductor_submit.Submit(job_args)
             response, response_code = remote_job.main()

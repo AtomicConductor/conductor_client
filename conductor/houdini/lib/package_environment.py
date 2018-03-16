@@ -8,8 +8,8 @@ class PackageEnvironment(object):
     def _set(self, name, value):
         if name in self._env and self._env[name] != value:
             raise ValueError(
-                "Failed to merge different values for an exclusive environment variable:\n%s (%s\n%s)" %
-                (name, self._env[name], value))
+                "Can't overwrite existing environment variable: %s\n New value is:\n%s\nand it is set to exclusive." %
+                (name, value))
         self._env[name] = value
 
     def _append(self, name, value):

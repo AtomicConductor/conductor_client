@@ -1,2 +1,0 @@
-#!/bin/csh -f
-exec hython $CONDUCTOR_CLIENT/bin/chrender.py $*

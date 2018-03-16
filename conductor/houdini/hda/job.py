@@ -1,5 +1,5 @@
 """Nothing expanded in __init__ No expansion in _get_tokens either."""
-
+import os
 
 import hou
 import json
@@ -14,6 +14,11 @@ from conductor.houdini.hda import (
     dependency_scan,
     advanced)
 
+OUTPUT_DIR_PARMS = {
+    "ifd": "vm_picture",
+    "arnold": "ar_picture",
+    "ris":  "ri_display"
+}
 
 class Job(object):
     """Prepare a Job."""
@@ -29,6 +34,7 @@ class Job(object):
         self._project_id = self._node.parm('project').eval()
         self._notifications = notifications.get_notifications(self._node)
         self._source_node = render_source.get_render_node(self._node)
+        self._source_type =  render_source.get_render_type(self._node)
 
         if not (self._source_node):
             raise hou.InvalidInput(
@@ -39,15 +45,16 @@ class Job(object):
         self._package_ids = software.get_chosen_ids(self._node)
         self._environment = self._get_environment()
         self._project_name = self._get_project_name()
- 
+
         self._tokens = self._collect_tokens(parent_tokens)
-        self._task_command = self._node.parm("task_command").unexpandedString()
+        self._task_command = self._node.parm("task_command").eval()
 
         expander = Expander(**self._tokens)
-        
 
         self._title = expander.evaluate(self._node.parm("job_title").eval())
-        
+
+        out_dir = self._get_output_dir()
+        self._output_directory =  expander.evaluate(out_dir) 
 
         self._metadata = expander.evaluate(
             self._node.parm("metadata").eval())
@@ -57,6 +64,24 @@ class Job(object):
         for clump in self._sequence.clumps():
             task = Task(clump, self._task_command, self._tokens)
             self._tasks.append(task)
+
+    def _get_output_dir(self):
+        result = os.path.join(  hou.getenv("JOB"), "render")
+        if self._node.parm('override_output_dir').eval():
+            ov_dir = self._node.parm('output_directory').eval()
+            if ov_dir:
+                result = ov_dir
+
+        else:
+            # try to get from the source node
+            parm_name = OUTPUT_DIR_PARMS.get(self._source_type)
+            if parm_name:
+                path = self._source_node.parm(parm_name).eval()
+                ov_dir = os.path.dirname(path)
+                if ov_dir:
+                    result = ov_dir
+        return result
+
 
 
     def _get_environment(self):
@@ -72,15 +97,15 @@ class Job(object):
         result = [machine for machine in machines if machine['cores'] ==
                   int(cores) and machine['flavor'] == flavor][0]
 
-        result["preemptible"] = self._node.parm('preemptible').eval()
+        result["preemptible"] = bool(self._node.parm('preemptible').eval())
         result["retries"] = self._node.parm("retries").eval()
         return result
 
     def _get_project_name(self):
         projects = json.loads(self._node.parm('projects').eval())
-           
+
         project_names = [project["name"]
-                             for project in projects if project['id'] == self._project_id]
+                         for project in projects if project['id'] == self._project_id]
         if not project_names:
             raise hou.InvalidInput(
                 "%s %s is an invalid project." %
@@ -93,7 +118,6 @@ class Job(object):
         tokens = parent_tokens.copy()
 
         sorted_frames = sorted(self._sequence._frames)
-
         tokens["length"] = str(len(self._sequence))
         tokens["sequence"] = str(Clump.create(iter(self._sequence)))
         tokens["sequencemin"] = str(sorted_frames[0])
@@ -110,7 +134,7 @@ class Job(object):
         tokens["instance"] = self._instance.get("description")
         tokens["preemptible"] = "true" if self._instance.get(
             "preemptible") else "false"
-        tokens["retries"] = str(self._instance.get("retries"))
+        tokens["retries"] = str(self._instance.get("retries", 0))
         tokens["project"] = self._project_name
         tokens["submitter"] = self.node_name
         tokens["source"] = self.source_path
@@ -120,7 +144,31 @@ class Job(object):
     def remote_args(self):
         result = {}
         result["project"] = self.project_name
+        result["upload_paths"] = self._dependencies
+        result["autoretry_policy"] = {'preempted': {
+            'max_retries': self._instance["retries"]}
+        } if self._instance["preemptible"] else {}
+        result["software_package_ids"] = self._package_ids
+        result["preemptible"] = self._instance["preemptible"] 
+        result["environment"] = self._environment
+        result["enforced_md5s"] = {}
+        result["scout_frames"] = ", ".join(self._scout_sequence)
+        result["output_path"] =  self._output_directory
 
+        if self.email_addresses:
+            addresses = ", ".join(self.email_addresses)
+            result["notify"] = {"emails": addresses, "slack": []}
+        else:
+            result["notify"] = None
+        result["chunk_size"] = self._sequence.clump_size
+        result["machine_type"] = self._instance.get("flavor")
+        result["cores"] = self._instance.get("cores")
+        result["tasks_data"] = [task.remote_data() for task in self._tasks]
+        result["job_title"] =  self._title
+        result["metadata"] = self._metadata
+        result["priority"] = 5
+        result["max_instances"] = 0
+        return result
 
 
     @property
@@ -136,8 +184,8 @@ class Job(object):
         return self._metadata
 
     @property
-    def source(self):
-        return self._source_node.path()
+    def output_directory(self):
+        return self._output_directory
 
     @property
     def source_path(self):
@@ -145,7 +193,7 @@ class Job(object):
 
     @property
     def source_type(self):
-        return self._source_node.path()
+        return self._source_type
 
     @property
     def project_id(self):

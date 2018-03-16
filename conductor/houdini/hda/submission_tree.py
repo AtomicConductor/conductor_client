@@ -10,7 +10,7 @@ class SubmissionTree(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self, parent)
         hbox = QtWidgets.QHBoxLayout()
         self.setGeometry(300, 200, 1000, 600)
-        self.setWindowTitle('Conductor dry run')
+        self.setWindowTitle('Conductor preview')
 
         self._view = QtWidgets.QTreeView()
         self._view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -37,9 +37,24 @@ class SubmissionTree(QtWidgets.QWidget):
         self._appendRow(self._model, "Submission node:", submission.node_name)
         self._appendRow(self._model, "Hip file:", submission.filename)
         self._appendRow(self._model, "Scene file:", str(submission.scene))
-        self._appendRow(self._model, "Use timestamped:", str(submission.use_timestamped_scene))
-        self._appendRow(self._model, "Force upload:", str(submission.force_upload))
-        self._appendRow(self._model, "Local upload:", str(submission.local_upload))
+        self._appendRow(
+            self._model, "Use timestamped:", str(
+                submission.use_timestamped_scene))
+        self._appendRow(
+            self._model, "Force upload:", str(
+                submission.force_upload))
+        self._appendRow(
+            self._model, "Local upload:", str(
+                submission.local_upload))
+        self._appendRow(
+            self._model, "Upload only:", str(
+                submission.upload_only))
+        self._appendRow(
+            self._model, "User:", str(
+                submission.user))
+
+
+
 
         self._appendRow(
             self._model, "Unsaved changes:", str(
@@ -60,7 +75,7 @@ class SubmissionTree(QtWidgets.QWidget):
             self._appendRow(job_item, "Source path:", job.source_path)
             self._appendRow(job_item, "Source type:", job.source_type)
             self._appendRow(job_item, "Project id:", job.project_id)
-
+            self._appendRow(job_item, "Output directory:", job.output_directory)
             if i is 0:
                 self._view.expand(self._model.indexFromItem(job_item))
 
@@ -77,14 +92,14 @@ class SubmissionTree(QtWidgets.QWidget):
             if job.dependencies:
                 for i, d in enumerate(job.dependencies):
                     self._appendRow(deps_item, "[%d]" % i, d)
-            else: 
+            else:
                 self._appendRow(deps_item, "No dependencies")
 
             metatdata_item = self._appendRow(job_item, "Job Metadata:")
             if job.metadata:
                 for k, v in job.metadata.iteritems():
                     self._appendRow(metatdata_item, k, v)
-            else: 
+            else:
                 self._appendRow(metatdata_item, "No metadata")
 
             packages_item = self._appendRow(job_item, "Package IDs:")
@@ -97,13 +112,10 @@ class SubmissionTree(QtWidgets.QWidget):
                 parts = value.split(":")
                 var_item = self._appendRow(
                     environment_item,
-                    envkey,
-                    job.environment[envkey])
+                    envkey, value)
                 if len(parts) > 1:
                     for pindex, part in enumerate(parts):
                         self._appendRow(var_item[0], "[%d]" % pindex, part)
-
-
 
             job_token_item = self._appendRow(job_item, "Tokens:")
             for t in sorted(job.tokens):
