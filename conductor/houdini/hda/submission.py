@@ -35,8 +35,10 @@ class Submission(object):
         self._scene = advanced.scene_name_to_use(self._node, self._timestamp)
         self._local_upload = bool(self._node.parm("local_upload").eval())
         self._force_upload = bool(self._node.parm("force_upload").eval())
-        
+        self._upload_only = bool(self._node.parm("upload_only").eval())
+
         self._tokens = self._collect_tokens()
+        self._user = hou.getenv('USER')
         self._jobs = []
 
         for node in self._nodes:
@@ -63,8 +65,14 @@ class Submission(object):
     def remote_args(self):
         result = {}
         result["local_upload"] = self._local_upload
+        result["upload_only"] = self._upload_only
         result["force"] = self._force_upload
         # result["upload_paths"] = 
+        return result
+        
+    @property
+    def user(self):
+        return self._user
 
     @property
     def local_upload(self):
@@ -73,6 +81,10 @@ class Submission(object):
     @property
     def force_upload(self):
         return self._force_upload
+
+    @property
+    def upload_only(self):
+        return self._upload_only
 
     @property
     def scene(self):

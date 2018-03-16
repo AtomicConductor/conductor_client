@@ -13,14 +13,13 @@ def stripped_hip():
 
 
 def scene_name_to_use(node, timestamp="YYYY_MM_DD_hh_mm_ss"):
-    path = os.environ["HIP"]
-    stripped = stripped_hip()
     if node.parm("use_timestamped_scene").eval():
-        scene = "%s_%s_%s.hip" % (
-            node.name(), stripped, timestamp)
+        stripped = stripped_hip()
+        path = os.path.dirname(hou.hipFile.name())
+        scene = os.path.join(path,  "%s_%s.hip" % (stripped, timestamp) )
     else:
-        scene = "%s.hip" % stripped
-    scene = os.path.join(path, scene)
+        scene = hou.hipFile.name()
+ 
     node.parm("scene_file").set(scene)
     return scene
 
@@ -40,4 +39,4 @@ def get_extra_env_vars(node):
             "merge_policy": ["append", "exclusive"][is_exclusive]
         })
     return result
-    
+
