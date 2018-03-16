@@ -1,11 +1,13 @@
+import gzip
 import json
 import logging
 import os
 import requests
+import StringIO
 import time
 import urlparse
 import jwt
-
+import zlib
 from conductor import CONFIG
 from conductor.lib import common, auth
 
@@ -57,26 +59,28 @@ class ApiClient():
 
     def make_request(self, uri_path="/", headers=None, params=None, data=None,
                      verb=None, conductor_url=None, raise_on_error=True, tries=5,
-                     use_api_key=False):
+                     compress=False, use_api_key=False):
         '''
         verb: PUT, POST, GET, DELETE, HEAD, PATCH
         '''
 
         # TODO: set Content Content-Type to json if data arg
-        if not headers:
-            headers = {'Content-Type': 'application/json',
-                       'Accept': 'application/json'}
+        if headers is None:
+            headers = self.get_default_headers()
+
+        # Convert headers dict to caseInsensitive structure
+        headers = requests.structures.CaseInsensitiveDict(data=headers)
+
 #         logger.debug('headers are: %s', headers)
 #         logger.debug('data is: %s' % data)
 #         logger.debug("params is %s" % params)
 #         logger.debug("uri path is %s" % uri_path)
 
-        # headers['Authorization'] = "Token %s" % CONFIG['conductor_token']
         bearer_token = read_conductor_credentials(use_api_key)
         if not bearer_token:
             raise Exception("Error: Could not get conductor credentials!")
 
-        headers['Authorization'] = "Bearer %s" % bearer_token
+        headers['authorization'] = "Bearer %s" % bearer_token
 
         # Construct URL
         if not conductor_url:
@@ -91,6 +95,15 @@ class ApiClient():
 
         assert verb in self.http_verbs, "Invalid http verb: %s" % verb
 
+        # GZip Compress the content of the request
+        if compress:
+            headers["x-content-encoding"] = "gzip"
+            logger.debug("gzipping content...")
+            out_file = StringIO.StringIO()
+            with gzip.GzipFile(fileobj=out_file, mode="wb") as gzipper:
+                gzipper.write(data)
+            data = out_file.getvalue()
+
         # Create a retry wrapper function
         retry_wrapper = common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS,
                                         tries=tries)
@@ -102,7 +115,19 @@ class ApiClient():
         response = wrapped_func(verb, conductor_url, headers, params, data,
                                 raise_on_error=raise_on_error)
 
+        if response.headers.get("x-content-encoding") == "gzip" and response.content:
+            logger.debug("decompressing content..")
+            response._content = zlib.decompress(response.content, 16 + zlib.MAX_WBITS)  # Indicate gzip header)
+
         return response.text, response.status_code
+
+    @classmethod
+    def get_default_headers(cls):
+        return {
+            'accept': 'application/json',
+            'x-accept-encoding': 'gzip',
+            'content-type': 'application/json',
+            }
 
 
 def read_conductor_credentials(use_api_key=False):
@@ -177,7 +202,7 @@ def get_api_key_bearer_token(creds_file=None):
             "token_type": "Bearer",
             "expiration": int(time.time()) + int(response_dict['expires_in']),
             "scope": "user admin owner"
-        }
+            }
 
         if not creds_file:
             return credentials_dict
