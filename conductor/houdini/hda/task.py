@@ -26,6 +26,12 @@ class Task(object):
 
         return tokens
 
+    def remote_data(self):
+        return {
+            "frames": str(self._clump),
+            "command": self._command
+        }
+
     @property
     def clump(self):
         return self._clump
@@ -37,6 +43,7 @@ class Task(object):
     @property
     def tokens(self):
         return self._tokens
+
 
     # def dry_run(self, job_tokens):
     #     """Build an object that fully describes the task without mutating

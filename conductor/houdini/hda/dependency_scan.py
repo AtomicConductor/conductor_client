@@ -31,8 +31,6 @@ def fetch(sequence):
         for parm, _ in refs:
             if parm:
                 file_path = parm.evalAtFrame(frame)
-                if parm.name() == "scene_file":
-                    print parm.name()
                 if file_path in result:
                     continue
                 for wildcard in wildcard_regex:
