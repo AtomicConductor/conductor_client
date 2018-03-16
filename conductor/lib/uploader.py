@@ -5,9 +5,13 @@ import logging
 import os
 import Queue
 import sys
+import tempfile
 import thread
 from threading import Thread
+import time
 import traceback
+
+import yappi # yappi is a profiler specializing in multi-threading
 
 from conductor import CONFIG
 from conductor.lib import api_client, common, worker, client_db, loggeria
@@ -587,6 +591,27 @@ class Uploader(object):
     def main(self, run_one_loop=False):
         logger.info('Uploader Started. Checking for uploads...')
 
+        # for profiling, grab the environment variable's value
+        # to determine where to put the profiling data
+
+        if "CONDUCTOR_PROFILE_DATA_PATH" not in os.environ:
+            profile_path = tempfile.gettempdir()
+        else:
+            profile_path = os.environ["CONDUCTOR_PROFILE_DATA_PATH"]
+
+            if not profile_path:
+                profile_path = tempfile.gettempdir()
+
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        func_filename = '{}_func_profile.dmp'.format(timestr)
+        thread_filename = '{}_thread_profile.txt'.format(timestr)
+
+        self.profile_func_filename = os.path.join(profile_path, func_filename)
+        self.profile_thread_filename = os.path.join(profile_path, thread_filename)
+
+        # start profiling
+        yappi.start()
+
         while not common.SIGINT_EXIT:
             try:
                 # TODO: we should pass args as url params, not http data
@@ -629,6 +654,20 @@ class Uploader(object):
 
             except KeyboardInterrupt:
                 logger.info("ctrl-c exit")
+
+                # stop profiling here
+                yappi.stop()
+
+                # There are two collections we want
+                # the function stats and the thread stats
+                func_stats = yappi.get_func_stats()
+                pstats_func = yappi.convert2pstats(func_stats)
+                pstats_func.dump_stats(self.profile_func_filename)
+
+                thread_stats = yappi.get_thread_stats()
+                thread_stats_file = open(self.profile_thread_filename, 'w')
+                thread_stats.print_all(thread_stats_file)
+                thread_stats_file.close()
                 break
             except:
                 logger.exception('Caught exception:\n')
