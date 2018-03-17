@@ -4,31 +4,21 @@ This includes handling all actions from widgets, aux buttons
 as well as populating menus, initializing state and so on.
 
 """
-
+import traceback
 import hou
 from conductor.houdini.hda import (
-    instances,
-    projects,
-    frame_spec,
-    render_source,
-    submit,
-    software,
+    instances_ui,
+    projects_ui,
+    frame_spec_ui,
+    render_source_ui,
+    action_row_ui,
+    software_ui,
     notifications,
     takes,
     uistate
 )
+
  
-# def on_scene_changed(event_type):
-
-#     print "scene_event_callback"
-    
-
-#     if node_type.instances():
-
-#     advanced.update
-#     # hou.ui.displayMessage("An event of type {} occured".format(event_type))
-
-
 def _update_node(node, **_):
     """Initialize or update.
 
@@ -37,47 +27,40 @@ def _update_node(node, **_):
 
     """
     with takes.take_context(hou.takes.rootTake()):
-        projects.fetch(node)
-        instances.fetch_types(node)
-        frame_spec.validate_custom_range(node)
-        frame_spec.validate_scout_range(node)
-        render_source.update_input_node(node)
-        frame_spec.set_type(node)
+        projects_ui.fetch(node)
+        instances_ui.fetch_types(node)
+        frame_spec_ui.validate_custom_range(node)
+        frame_spec_ui.validate_scout_range(node)
+        render_source_ui.update_input_node(node)
+        frame_spec_ui.set_type(node)
         notifications.validate_emails(node)
         notifications.email_hook_changed(node)
-        software.update_package_tree(node)
+        software_ui.update_package_tree(node)
         uistate.update_button_state(node)
 
-        # for callback in hou.hipFile.eventCallbacks():
-        #     if callback.__name__ == "on_scene_changed":
-        #         hou.hipFile.removeEventCallback(callback)
-        # hou.hipFile.addEventCallback(on_scene_changed)
-
-
 MENUS = dict(
-    machine_type=instances.populate_menu,
-    project=projects.populate_menu
+    machine_type=instances_ui.populate_menu,
+    project=projects_ui.populate_menu
 )
-
+ 
 ACTIONS = dict(
-    # execute=submit.doit,
-    dry_run=submit.dry_run,
-    preview=submit.preview,
-    local_test=submit.local,
-    submit=submit.doit,
+    dry_run=action_row_ui.dry_run,
+    preview=action_row_ui.preview,
+    local_test=action_row_ui.local,
+    submit=action_row_ui.doit,
     update=_update_node,
-    use_custom=frame_spec.set_type,
-    fs1=frame_spec.set_frame_range,
-    fs2=frame_spec.set_frame_range,
-    fs3=frame_spec.set_frame_range,
-    custom_range=frame_spec.validate_custom_range,
-    clump_size=frame_spec.set_clump_size,
-    do_scout=frame_spec.do_scout_changed,
-    scout_frames=frame_spec.validate_scout_range,
-    detect_software=software.detect,
-    choose_software=software.choose,
-    clear_software=software.clear,
-    project=projects.select,
+    use_custom=frame_spec_ui.set_type,
+    fs1=frame_spec_ui.set_frame_range,
+    fs2=frame_spec_ui.set_frame_range,
+    fs3=frame_spec_ui.set_frame_range,
+    custom_range=frame_spec_ui.validate_custom_range,
+    clump_size=frame_spec_ui.set_clump_size,
+    do_scout=frame_spec_ui.do_scout_changed,
+    scout_frames=frame_spec_ui.validate_scout_range,
+    detect_software=software_ui.detect,
+    choose_software=software_ui.choose,
+    clear_software=software_ui.clear,
+    project=projects_ui.select,
     email_addresses=notifications.validate_emails,
     email_on_submit=notifications.email_hook_changed,
     email_on_start=notifications.email_hook_changed,
@@ -86,7 +69,7 @@ ACTIONS = dict(
 )
 
 AUX_BUTTON_ACTIONS = dict(
-    clump_size=frame_spec.best_clump_size
+    clump_size=frame_spec_ui.best_clump_size
 )
 
 
@@ -102,6 +85,8 @@ def populate_menu(node, parm, **_):
         return MENUS[parm.name()](node)
     except hou.Error as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
                               severity=hou.severityType.Error)
 
 
@@ -116,17 +101,25 @@ def action_callback(**kwargs):
         ACTIONS[kwargs['parm_name']](**kwargs)
     except hou.InvalidInput as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
                               severity=hou.severityType.ImportantMessage)
     except hou.Error as err:
-        hou.ui.displayMessage(title='Warning', text=err.instanceMessage(),
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
                               severity=hou.severityType.Error)
 
     except(TypeError, ValueError) as err:
         hou.ui.displayMessage(title='Error', text=str(err),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
                               severity=hou.severityType.Error)
 
     except(Exception) as err:
         hou.ui.displayMessage(title='Error', text=str(err),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
                               severity=hou.severityType.Error)
 
 
@@ -141,15 +134,19 @@ def action_button_callback(**kwargs):
         AUX_BUTTON_ACTIONS[kwargs['parmtuple'].name()](**kwargs)
     except hou.Error as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
                               severity=hou.severityType.Error)
 
 
 def on_input_changed_callback(node, **_):
     """Make sure correct render source is displayed."""
     try:
-        render_source.update_input_node(node)
+        render_source_ui.update_input_node(node)
     except hou.Error as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
                               severity=hou.severityType.Error)
 
 
@@ -159,6 +156,8 @@ def on_created_callback(node, **_):
         _update_node(node)
     except hou.Error as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
                               severity=hou.severityType.Error)
 
 
@@ -168,4 +167,6 @@ def on_loaded_callback(node, **_):
         _update_node(node)
     except hou.Error as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
                               severity=hou.severityType.Error)

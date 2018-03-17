@@ -1,7 +1,7 @@
 """Deal with various ways of specifying frame range."""
 
 import hou
-from conductor.houdini.hda import render_source, takes
+from conductor.houdini.hda import render_source_ui, takes
 from conductor.houdini.lib.sequence import Sequence
  
 
@@ -161,7 +161,7 @@ def validate_scout_range(node, **_):
  
 
 def set_type(node, **_):
-    rop = render_source.get_render_node(node)
+    rop = render_source_ui.get_render_node(node)
     if node.parm("use_custom").eval():
         validate_custom_range(node)
     elif rop:
