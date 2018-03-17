@@ -7,12 +7,12 @@ from conductor.houdini.lib.sequence import Clump
 from conductor.houdini.lib.expansion import Expander
 from conductor.houdini.hda.task import Task
 from conductor.houdini.hda import (
-    frame_spec,
-    software,
-    render_source,
-    notifications,
+    frame_spec_ui,
+    software_ui,
+    render_source_ui,
+    notifications_ui,
     dependency_scan,
-    advanced)
+    advanced_ui)
 
 OUTPUT_DIR_PARMS = {
     "ifd": "vm_picture",
@@ -26,15 +26,15 @@ class Job(object):
     def __init__(self, node, parent_tokens):
 
         self._node = node
-        self._sequence = frame_spec.main_frame_sequence(node)
+        self._sequence = frame_spec_ui.main_frame_sequence(node)
 
         # will be none if not doing scout frames
-        self._scout_sequence = frame_spec.resolved_scout_sequence(node)
+        self._scout_sequence = frame_spec_ui.resolved_scout_sequence(node)
         self._instance = self._get_instance()
         self._project_id = self._node.parm('project').eval()
-        self._notifications = notifications.get_notifications(self._node)
-        self._source_node = render_source.get_render_node(self._node)
-        self._source_type =  render_source.get_render_type(self._node)
+        self._notifications = notifications_ui.get_notifications(self._node)
+        self._source_node = render_source_ui.get_render_node(self._node)
+        self._source_type =  render_source_ui.get_render_type(self._node)
 
         if not (self._source_node):
             raise hou.InvalidInput(
@@ -42,7 +42,7 @@ class Job(object):
                 self._node.name())
 
         self._dependencies = dependency_scan.fetch(self._sequence)
-        self._package_ids = software.get_chosen_ids(self._node)
+        self._package_ids = software_ui.get_chosen_ids(self._node)
         self._environment = self._get_environment()
         self._project_name = self._get_project_name()
 
@@ -85,8 +85,8 @@ class Job(object):
 
 
     def _get_environment(self):
-        package_environment = software.get_environment(self._node)
-        extra_vars = advanced.get_extra_env_vars(self._node)
+        package_environment = software_ui.get_environment(self._node)
+        extra_vars = advanced_ui.get_extra_env_vars(self._node)
         package_environment.extend(extra_vars)
         return package_environment.env
 
@@ -152,7 +152,7 @@ class Job(object):
         result["preemptible"] = self._instance["preemptible"] 
         result["environment"] = self._environment
         result["enforced_md5s"] = {}
-        result["scout_frames"] = ", ".join(self._scout_sequence)
+        result["scout_frames"] = ", ".join(self._scout_sequence or [])
         result["output_path"] =  self._output_directory
 
         if self.email_addresses:

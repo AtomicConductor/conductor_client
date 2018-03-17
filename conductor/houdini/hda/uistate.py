@@ -1,5 +1,5 @@
 import json
-from conductor.houdini.hda import takes, render_source
+from conductor.houdini.hda import takes, render_source_ui
 
 
 
@@ -26,7 +26,7 @@ def _can_submit(node):
     Use this to enable/disable the submit button
 
     """
-    if not render_source.get_render_node(node):
+    if not render_source_ui.get_render_node(node):
         return False
     if not has_valid_project(node):
         return False
@@ -40,6 +40,7 @@ def update_button_state(node):
         "can_submit",
         "submit",
         "dry_run",
+        "preview",
         "local_test",
         "update",
         "render_type")
