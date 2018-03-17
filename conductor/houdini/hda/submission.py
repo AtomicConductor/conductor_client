@@ -6,7 +6,7 @@ import hou
 from conductor.lib import api_client
 
 
-from conductor.houdini.hda import advanced
+from conductor.houdini.hda import submission_ui
 
 # from submission_tree import SubmissionTree
 from job import Job
@@ -30,9 +30,9 @@ class Submission(object):
 
  
         self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self._hipbase = advanced.stripped_hip()
+        self._hipbase = submission_ui.stripped_hip()
         self._use_timestamped_scene = bool(self._node.parm("use_timestamped_scene").eval())
-        self._scene = advanced.scene_name_to_use(self._node, self._timestamp)
+        self._scene = submission_ui.scene_name_to_use(self._node, self._timestamp)
         self._local_upload = bool(self._node.parm("local_upload").eval())
         self._force_upload = bool(self._node.parm("force_upload").eval())
         self._upload_only = bool(self._node.parm("upload_only").eval())
@@ -69,7 +69,7 @@ class Submission(object):
         result["force"] = self._force_upload
         # result["upload_paths"] = 
         return result
-        
+
     @property
     def user(self):
         return self._user
