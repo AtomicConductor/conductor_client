@@ -40,7 +40,7 @@ class Sequence(object):
         return valid
 
     @classmethod
-    def from_spec(cls, frame_spec, **kw):
+    def from_spec(cls, frame_spec_ui, **kw):
         """Factory method to create Sequence from spec string.
 
         Spec must be reducible to a list of frames. Valid
@@ -52,7 +52,7 @@ class Sequence(object):
         """
 
         the_set = set()
-        for part in [x.strip() for x in frame_spec.split(',')]:
+        for part in [x.strip() for x in frame_spec_ui.split(',')]:
             number_matches = NUMBER_RE.match(part)
             if number_matches:
                 vals = number_matches.groups()

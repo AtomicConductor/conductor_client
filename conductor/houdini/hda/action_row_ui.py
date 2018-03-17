@@ -29,11 +29,10 @@ def dry_run(node, **_):
         job_args.update(submission_args)
         args_list.append(job_args)
 
-
     j = json.dumps(args_list, indent=3, sort_keys=True)
 
     submission_dry = SubmissionDry()
-    submission_dry.populate(j)
+    submission_dry.populate(submission)
     submission_dry.show()
     hou.session.conductor_dry = submission_dry
 
@@ -75,24 +74,10 @@ def local(node, **_):
     submission = _create_submission_with_save(node)
     if not submission:
         return
-    print "submission.scene: %s" % submission.scene
-    print "submission.use_timestamped_scene: %s" % submission.use_timestamped_scene
-
     for job in submission.jobs:
-        print "Running job %s" % job.title
         for task in job.tasks:
-            print "Running task %s" % task.command
             args = shlex.split(task.command)
             subprocess.call(args)
-
-
-def logit(node, **_):
-    submission = Submission(node)
-    submission_args = submission.remote_args()
-    for job in submission.jobs:
-        job_args = job.remote_args()
-        job_args.update(submission_args)
-        return json.dumps(job_args, indent=4, sort_keys=True)
 
 
 def doit(node, **_):
@@ -101,11 +86,9 @@ def doit(node, **_):
     submission_args = submission.remote_args()
 
     for job in submission.jobs:
-        # print "Submitting job %s" % job.title
 
         job_args = job.remote_args()
         job_args.update(submission_args)
-        print job_args
         try:
             remote_job = conductor_submit.Submit(job_args)
             response, response_code = remote_job.main()
