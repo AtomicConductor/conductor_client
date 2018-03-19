@@ -52,13 +52,21 @@ class SubmissionTree(QtWidgets.QWidget):
         self._appendRow(
             self._model, "User:", str(
                 submission.user))
-
-
-
-
         self._appendRow(
             self._model, "Unsaved changes:", str(
                 submission.unsaved))
+
+
+        if submission.has_notifications():
+            email_item = self._appendRow(self._model, "Email notifications:")
+            addresses_item = self._appendRow(email_item, "Addresses:")
+            for i, address in enumerate(sorted(submission.email_addresses)):
+                self._appendRow(addresses_item, "[%d]" % i, address)
+            hooks_item = self._appendRow(email_item, "Hooks:")
+            for hook in submission.email_hooks:
+                self._appendRow(hooks_item, hook[0], str(hook[1]))
+        else:
+            self._appendRow(self._model, "Email notifications:", "False")
 
         token_item = self._appendRow(self._model, "Tokens:")
         for t in sorted(submission.tokens):
@@ -79,15 +87,7 @@ class SubmissionTree(QtWidgets.QWidget):
             if i is 0:
                 self._view.expand(self._model.indexFromItem(job_item))
 
-            if job.has_notifications():
-                email_item = self._appendRow(job_item, "Email notifications:")
-                addresses_item = self._appendRow(email_item, "Addresses:")
-                for i, address in enumerate(sorted(job.email_addresses)):
-                    self._appendRow(addresses_item, "[%d]" % i, address)
-                hooks_item = self._appendRow(email_item, "Hooks:")
-                for hook in job.email_hooks:
-                    self._appendRow(hooks_item, hook[0], str(hook[1]))
-
+          
             deps_item = self._appendRow(job_item, "Dependencies:")
             if job.dependencies:
                 for i, d in enumerate(job.dependencies):

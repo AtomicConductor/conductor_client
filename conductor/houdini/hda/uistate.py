@@ -1,5 +1,5 @@
 import json
-from conductor.houdini.hda import takes, render_source_ui
+from conductor.houdini.hda import takes, render_source_ui, job_source_ui
 
 
 
@@ -18,19 +18,36 @@ def has_valid_project(node):
 
 
 
-
-def _can_submit(node):
+def _submission_node_can_submit(node):
     """TODO in CT-59 determine if everything is valid for a submission to
     happen.
 
     Use this to enable/disable the submit button
 
     """
+
+
+    if not job_source_ui.get_job_nodes(node):
+        return False
+    return True
+
+
+
+def _job_node_can_submit(node):
+    """TODO in CT-59 determine if everything is valid for a submission to
+    happen.
+
+    Use this to enable/disable the submit button
+
+    """
+
+
     if not render_source_ui.get_render_node(node):
         return False
     if not has_valid_project(node):
         return False
     return True
+
 
 
 def update_button_state(node):
@@ -43,6 +60,13 @@ def update_button_state(node):
         "preview",
         "local_test",
         "update",
-        "render_type")
-    can_submit = 1 if _can_submit(node) else 0
+        "render_source",
+        "render_type",
+        "jobs")
+
+    _, nodetype, _ = node.type().name().split("::")
+    if nodetype == "job":
+        can_submit =int(_job_node_can_submit(node))
+    else:
+        can_submit =int(_submission_node_can_submit(node))
     node.parm("can_submit").set(can_submit)

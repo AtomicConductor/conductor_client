@@ -10,7 +10,6 @@ from conductor.houdini.hda import (
     frame_spec_ui,
     software_ui,
     render_source_ui,
-    notifications_ui,
     dependency_scan,
     advanced_ui)
 
@@ -32,7 +31,7 @@ class Job(object):
         self._scout_sequence = frame_spec_ui.resolved_scout_sequence(node)
         self._instance = self._get_instance()
         self._project_id = self._node.parm('project').eval()
-        self._notifications = notifications_ui.get_notifications(self._node)
+
         self._source_node = render_source_ui.get_render_node(self._node)
         self._source_type =  render_source_ui.get_render_type(self._node)
 
@@ -136,7 +135,7 @@ class Job(object):
             "preemptible") else "false"
         tokens["retries"] = str(self._instance.get("retries", 0))
         tokens["project"] = self._project_name
-        tokens["submitter"] = self.node_name
+        tokens["job"] = self.node_name
         tokens["source"] = self.source_path
         tokens["type"] = self.source_type
         return tokens
@@ -154,12 +153,6 @@ class Job(object):
         result["enforced_md5s"] = {}
         result["scout_frames"] = ", ".join(self._scout_sequence or [])
         result["output_path"] =  self._output_directory
-
-        if self.email_addresses:
-            addresses = ", ".join(self.email_addresses)
-            result["notify"] = {"emails": addresses, "slack": []}
-        else:
-            result["notify"] = None
         result["chunk_size"] = self._sequence.clump_size
         result["machine_type"] = self._instance.get("flavor")
         result["cores"] = self._instance.get("cores")
@@ -202,21 +195,6 @@ class Job(object):
     @property
     def project_name(self):
         return self._project_name
-
-    def has_notifications(self):
-        return bool(self._notifications)
-
-    @property
-    def email_addresses(self):
-        if not self.has_notifications():
-            return []
-        return self._notifications["email"]["addresses"]
-
-    @property
-    def email_hooks(self):
-        if not self.has_notifications():
-            return []
-        return self._notifications["email"]["hooks"]
 
     @property
     def dependencies(self):

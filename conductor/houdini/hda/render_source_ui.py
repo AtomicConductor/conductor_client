@@ -43,6 +43,7 @@ def update_input_node(node):
     path = render_node.path() if render_node else ""
   
     render_type = get_render_type(node)
+    print node.name()
     node.parm('render_type').set(_get_nice_render_type(render_type))
     node.parm('source').set(path)
     uistate.update_button_state(node)

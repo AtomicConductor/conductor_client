@@ -28,9 +28,9 @@ def validate_emails(node, **_):
 
 
 def _get_hook_parm_names(node):
-    template = node.type().definition().parmTemplateGroup().find('hooks')
+    template = node.type().definition().parmTemplateGroup().find('notifications')
     return [p.name() for p in template.parmTemplates()
-             if p.type().name() == "Toggle"]
+             if p.type().name() == "Toggle" and p.name().startswith("email_on")]
 
 def email_hook_changed(node, **_):
     """If no email hooks selected then dim out the email field.
