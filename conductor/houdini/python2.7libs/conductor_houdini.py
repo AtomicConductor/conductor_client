@@ -6,19 +6,36 @@ as well as populating menus, initializing state and so on.
 """
 import traceback
 import hou
+
 from conductor.houdini.hda import (
     instances_ui,
     projects_ui,
     frame_spec_ui,
     render_source_ui,
+    job_source_ui,
     action_row_ui,
     software_ui,
-    notifications,
+    notifications_ui,
+    submission_ui,
     takes,
     uistate
 )
 
- 
+def _update_submission_node(node, **_):
+    """Initialize or update.
+
+    We do this on creation/loading or manually. We do it in
+    the root take context to ensure everything is unlocked.
+
+    """
+    with takes.take_context(hou.takes.rootTake()):
+        notifications_ui.validate_emails(node)
+        notifications_ui.email_hook_changed(node)
+        submission_ui.toggle_timestamped_scene(node)
+        uistate.update_button_state(node)
+        job_source_ui.update_inputs(node)
+
+
 def _update_node(node, **_):
     """Initialize or update.
 
@@ -33,9 +50,10 @@ def _update_node(node, **_):
         frame_spec_ui.validate_scout_range(node)
         render_source_ui.update_input_node(node)
         frame_spec_ui.set_type(node)
-        notifications.validate_emails(node)
-        notifications.email_hook_changed(node)
+        notifications_ui.validate_emails(node)
+        notifications_ui.email_hook_changed(node)
         software_ui.update_package_tree(node)
+        submission_ui.toggle_timestamped_scene(node)
         uistate.update_button_state(node)
 
 MENUS = dict(
@@ -49,6 +67,7 @@ ACTIONS = dict(
     local_test=action_row_ui.local,
     submit=action_row_ui.doit,
     update=_update_node,
+    sub_update=_update_submission_node,
     use_custom=frame_spec_ui.set_type,
     fs1=frame_spec_ui.set_frame_range,
     fs2=frame_spec_ui.set_frame_range,
@@ -61,11 +80,12 @@ ACTIONS = dict(
     choose_software=software_ui.choose,
     clear_software=software_ui.clear,
     project=projects_ui.select,
-    email_addresses=notifications.validate_emails,
-    email_on_submit=notifications.email_hook_changed,
-    email_on_start=notifications.email_hook_changed,
-    email_on_finish=notifications.email_hook_changed,
-    email_on_failure=notifications.email_hook_changed,
+    email_addresses=notifications_ui.validate_emails,
+    email_on_submit=notifications_ui.email_hook_changed,
+    email_on_start=notifications_ui.email_hook_changed,
+    email_on_finish=notifications_ui.email_hook_changed,
+    email_on_failure=notifications_ui.email_hook_changed,
+    use_timestamped_scene=submission_ui.toggle_timestamped_scene
 )
 
 AUX_BUTTON_ACTIONS = dict(
@@ -97,6 +117,7 @@ def action_callback(**kwargs):
     differentiate.
 
     """
+
     try:
         ACTIONS[kwargs['parm_name']](**kwargs)
     except hou.InvalidInput as err:
@@ -141,32 +162,41 @@ def action_button_callback(**kwargs):
 
 def on_input_changed_callback(node, **_):
     """Make sure correct render source is displayed."""
+    _, nodetype, _ = node.type().name().split("::")
     try:
-        render_source_ui.update_input_node(node)
+        if nodetype == "job":
+            render_source_ui.update_input_node(node)
+        else: 
+            job_source_ui.update_inputs(node)
+
+        
     except hou.Error as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               details_label="Show stack trace",
                               details=traceback.format_exc(),
                               severity=hou.severityType.Error)
 
+
+def _on_created_or_loaded(node):
+    """Initialize state when a node is loaded."""
+    _, nodetype, _ = node.type().name().split("::")
+    try:
+        if nodetype == "job":
+            _update_node(node)
+        else: 
+            _update_submission_node(node)
+    except hou.Error as err:
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
+                              severity=hou.severityType.Error)
 
 def on_created_callback(node, **_):
     """Initialize state when a node is created."""
-    try:
-        _update_node(node)
-    except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
-                              details_label="Show stack trace",
-                              details=traceback.format_exc(),
-                              severity=hou.severityType.Error)
+    _on_created_or_loaded(node)
 
 
 def on_loaded_callback(node, **_):
     """Initialize state when a node is loaded."""
-    try:
-        _update_node(node)
-    except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
-                              details_label="Show stack trace",
-                              details=traceback.format_exc(),
-                              severity=hou.severityType.Error)
+    _on_created_or_loaded(node)
+
