@@ -6,7 +6,7 @@ import hou
 from conductor.lib import api_client
 
 
-from conductor.houdini.hda import submission_ui
+from conductor.houdini.hda import submission_ui, types, job_source_ui, notifications_ui
 
 # from submission_tree import SubmissionTree
 from job import Job
@@ -22,11 +22,11 @@ class Submission(object):
     def __init__(self, node, **kw):
         self._node = node
         vendor, nodetype, version = node.type().name().split("::")
-        if nodetype == "submitter":
+        if types.is_job_node(self._node):
             self._nodes = [node]
         else:
-            # get list of inputs for submission node later
-            pass
+            self._nodes = job_source_ui.get_job_nodes(node)
+ 
 
  
         self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -36,6 +36,7 @@ class Submission(object):
         self._local_upload = bool(self._node.parm("local_upload").eval())
         self._force_upload = bool(self._node.parm("force_upload").eval())
         self._upload_only = bool(self._node.parm("upload_only").eval())
+        self._notifications = notifications_ui.get_notifications(self._node)
 
         self._tokens = self._collect_tokens()
         self._user = hou.getenv('USER')
@@ -56,7 +57,7 @@ class Submission(object):
         """
         tokens = {}
         tokens["timestamp"] = self._timestamp
-        tokens["submission"] = self._node.name()
+        tokens["submitter"] = self._node.name()
         tokens["hipbase"] = self._hipbase 
         tokens["scene"] = self._scene 
  
@@ -67,6 +68,13 @@ class Submission(object):
         result["local_upload"] = self._local_upload
         result["upload_only"] = self._upload_only
         result["force"] = self._force_upload
+        
+        if self.email_addresses:
+            addresses = ", ".join(self.email_addresses)
+            result["notify"] = {"emails": addresses, "slack": []}
+        else:
+            result["notify"] = None
+
         # result["upload_paths"] = 
         return result
 
@@ -117,3 +125,19 @@ class Submission(object):
     @property
     def jobs(self):
         return self._jobs
+
+    def has_notifications(self):
+        return bool(self._notifications)
+
+    @property
+    def email_addresses(self):
+        if not self.has_notifications():
+            return []
+        return self._notifications["email"]["addresses"]
+
+    @property
+    def email_hooks(self):
+        if not self.has_notifications():
+            return []
+        return self._notifications["email"]["hooks"]
+

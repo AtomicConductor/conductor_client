@@ -45,7 +45,7 @@ def enable_for_current(node, *parm_tuple_names):
     names to this function first.
 
     """
-    parm_tuples = [node.parmTuple(name) for name in parm_tuple_names]
+    parm_tuples = [node.parmTuple(name) for name in parm_tuple_names if node.parmTuple(name) ]
     take = hou.takes.currentTake()
     if not take == hou.takes.rootTake():
         for parm_tuple in parm_tuples:
