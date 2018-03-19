@@ -32,7 +32,7 @@ def dry_run(node, **_):
     j = json.dumps(args_list, indent=3, sort_keys=True)
 
     submission_dry = SubmissionDry()
-    submission_dry.populate(submission)
+    submission_dry.populate(j)
     submission_dry.show()
     hou.session.conductor_dry = submission_dry
 
