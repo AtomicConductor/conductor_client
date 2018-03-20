@@ -37,6 +37,8 @@ class SubmissionTree(QtWidgets.QWidget):
         self._appendRow(self._model, "Submission node:", submission.node_name)
         self._appendRow(self._model, "Hip file:", submission.filename)
         self._appendRow(self._model, "Scene file:", str(submission.scene))
+        self._appendRow(self._model, "Project id:", submission.project_id)
+
         self._appendRow(
             self._model, "Use timestamped:", str(
                 submission.use_timestamped_scene))
@@ -82,7 +84,7 @@ class SubmissionTree(QtWidgets.QWidget):
 
             self._appendRow(job_item, "Source path:", job.source_path)
             self._appendRow(job_item, "Source type:", job.source_type)
-            self._appendRow(job_item, "Project id:", job.project_id)
+
             self._appendRow(job_item, "Output directory:", job.output_directory)
             if i is 0:
                 self._view.expand(self._model.indexFromItem(job_item))
@@ -126,7 +128,7 @@ class SubmissionTree(QtWidgets.QWidget):
 
             for j, task in enumerate(job.tasks):
                 task_header = self._appendRow(
-                    task_item, "[%d] %s" % (j, str(task.clump)))
+                    task_item, "%s" %  str(task.clump))
                 self._appendRow(task_header, "Command:", task.command)
                 self._appendRow(task_header, "Frames:", str(tuple(task.clump)))
                 task_token_item = self._appendRow(task_header, "Tokens:")

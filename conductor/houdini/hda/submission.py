@@ -25,7 +25,7 @@ class Submission(object):
         if types.is_job_node(self._node):
             self._nodes = [node]
         else:
-            self._nodes = job_source_ui.get_job_nodes(node)
+            self._nodes = node.inputs()
  
 
  
@@ -37,6 +37,8 @@ class Submission(object):
         self._force_upload = bool(self._node.parm("force_upload").eval())
         self._upload_only = bool(self._node.parm("upload_only").eval())
         self._notifications = notifications_ui.get_notifications(self._node)
+        self._project_id = self._node.parm('project').eval()
+        self._project_name = self._get_project_name()
 
         self._tokens = self._collect_tokens()
         self._user = hou.getenv('USER')
@@ -44,6 +46,17 @@ class Submission(object):
 
         for node in self._nodes:
             self._jobs.append(Job(node, self._tokens))
+    
+    def _get_project_name(self):
+        projects = json.loads(self._node.parm('projects').eval())
+
+        project_names = [project["name"]
+                         for project in projects if project['id'] == self._project_id]
+        if not project_names:
+            raise hou.InvalidInput(
+                "%s %s is an invalid project." %
+                self._node.name(), self._project_id)
+        return project_names[0]
 
     def _collect_tokens(self):
         """Tokens are variables to help the user build strings.
@@ -60,7 +73,7 @@ class Submission(object):
         tokens["submitter"] = self._node.name()
         tokens["hipbase"] = self._hipbase 
         tokens["scene"] = self._scene 
- 
+        tokens["project"] = self._project_name
         return tokens
 
     def remote_args(self):
@@ -68,7 +81,8 @@ class Submission(object):
         result["local_upload"] = self._local_upload
         result["upload_only"] = self._upload_only
         result["force"] = self._force_upload
-        
+        result["project"] = self.project_name
+
         if self.email_addresses:
             addresses = ", ".join(self.email_addresses)
             result["notify"] = {"emails": addresses, "slack": []}
@@ -101,6 +115,14 @@ class Submission(object):
     @property
     def node_name(self):
         return self._node.name()
+
+    @property
+    def project_id(self):
+        return self._project_id
+
+    @property
+    def project_name(self):
+        return self._project_name
 
     @property
     def filename(self):

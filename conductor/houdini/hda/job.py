@@ -10,8 +10,7 @@ from conductor.houdini.hda import (
     frame_spec_ui,
     software_ui,
     render_source_ui,
-    dependency_scan,
-    advanced_ui)
+    dependency_scan)
 
 OUTPUT_DIR_PARMS = {
     "ifd": "vm_picture",
@@ -30,8 +29,7 @@ class Job(object):
         # will be none if not doing scout frames
         self._scout_sequence = frame_spec_ui.resolved_scout_sequence(node)
         self._instance = self._get_instance()
-        self._project_id = self._node.parm('project').eval()
-
+ 
         self._source_node = render_source_ui.get_render_node(self._node)
         self._source_type =  render_source_ui.get_render_type(self._node)
 
@@ -43,8 +41,7 @@ class Job(object):
         self._dependencies = dependency_scan.fetch(self._sequence)
         self._package_ids = software_ui.get_chosen_ids(self._node)
         self._environment = self._get_environment()
-        self._project_name = self._get_project_name()
-
+     
         self._tokens = self._collect_tokens(parent_tokens)
         self._task_command = self._node.parm("task_command").eval()
 
@@ -85,7 +82,7 @@ class Job(object):
 
     def _get_environment(self):
         package_environment = software_ui.get_environment(self._node)
-        extra_vars = advanced_ui.get_extra_env_vars(self._node)
+        extra_vars = software_ui.get_extra_env_vars(self._node)
         package_environment.extend(extra_vars)
         return package_environment.env
 
@@ -100,16 +97,6 @@ class Job(object):
         result["retries"] = self._node.parm("retries").eval()
         return result
 
-    def _get_project_name(self):
-        projects = json.loads(self._node.parm('projects').eval())
-
-        project_names = [project["name"]
-                         for project in projects if project['id'] == self._project_id]
-        if not project_names:
-            raise hou.InvalidInput(
-                "%s %s is an invalid project." %
-                self._node.name(), self._project_id)
-        return project_names[0]
 
     def _collect_tokens(self, parent_tokens):
         """Tokens are string kv pairs used for substitutions."""
@@ -134,7 +121,7 @@ class Job(object):
         tokens["preemptible"] = "true" if self._instance.get(
             "preemptible") else "false"
         tokens["retries"] = str(self._instance.get("retries", 0))
-        tokens["project"] = self._project_name
+
         tokens["job"] = self.node_name
         tokens["source"] = self.source_path
         tokens["type"] = self.source_type
@@ -142,7 +129,7 @@ class Job(object):
 
     def remote_args(self):
         result = {}
-        result["project"] = self.project_name
+
         result["upload_paths"] = self._dependencies
         result["autoretry_policy"] = {'preempted': {
             'max_retries': self._instance["retries"]}
@@ -188,13 +175,6 @@ class Job(object):
     def source_type(self):
         return self._source_type
 
-    @property
-    def project_id(self):
-        return self._project_id
-
-    @property
-    def project_name(self):
-        return self._project_name
 
     @property
     def dependencies(self):

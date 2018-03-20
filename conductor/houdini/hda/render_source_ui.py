@@ -8,7 +8,7 @@ Arnold say, then we can prompt the user to revisit the
 software section, or even deal with it automatically.
 
 """
-import uistate
+from conductor.houdini.hda import uistate
 
 
 def _get_nice_render_type(input_type):
