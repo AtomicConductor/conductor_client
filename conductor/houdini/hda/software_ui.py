@@ -15,6 +15,18 @@ from conductor.houdini.hda import houdini_info
 
 FOLDER_PATH = ("Software", "Available packages")
 
+def get_extra_env_vars(node):
+    num = node.parm("environment_kv_pairs").eval()
+    result = []
+    for i in range(1, num + 1):
+        is_exclusive = node.parm("env_excl_%d" % i).eval()
+        result.append({
+            "name": node.parm("env_key_%d" % i).eval(),
+            "value": node.parm("env_value_%d" % i).eval(),
+            "merge_policy": ["append", "exclusive"][is_exclusive]
+        })
+    return result
+
 
 def _get_field_names(ptg):
     """Get names of existing toggles."""
@@ -165,3 +177,4 @@ def clear(node, **_):
     """Clear all entries."""
     _remove_package_entries(node)
     _check_empty(node)
+    

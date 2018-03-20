@@ -18,7 +18,8 @@ from conductor.houdini.hda import (
     notifications_ui,
     submission_ui,
     takes,
-    uistate
+    uistate,
+    types
 )
 
 def _update_submission_node(node, **_):
@@ -162,9 +163,8 @@ def action_button_callback(**kwargs):
 
 def on_input_changed_callback(node, **_):
     """Make sure correct render source is displayed."""
-    _, nodetype, _ = node.type().name().split("::")
     try:
-        if nodetype == "job":
+        if types.is_job_node(node):
             render_source_ui.update_input_node(node)
         else: 
             job_source_ui.update_inputs(node)
@@ -179,24 +179,33 @@ def on_input_changed_callback(node, **_):
 
 def _on_created_or_loaded(node):
     """Initialize state when a node is loaded."""
-    _, nodetype, _ = node.type().name().split("::")
+    if types.is_job_node(node):
+        _update_node(node)
+    else: 
+        _update_submission_node(node)
+
+
+def _on_created(node):
+    node.parm("extra_upload_paths").set(3)
+
+
+def on_created_callback(node, **_):
+    """Initialize state when a node is created."""
     try:
-        if nodetype == "job":
-            _update_node(node)
-        else: 
-            _update_submission_node(node)
+        _on_created_or_loaded(node)
+        _on_created(node)
     except hou.Error as err:
         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
                               details_label="Show stack trace",
                               details=traceback.format_exc(),
                               severity=hou.severityType.Error)
 
-def on_created_callback(node, **_):
-    """Initialize state when a node is created."""
-    _on_created_or_loaded(node)
-
-
 def on_loaded_callback(node, **_):
     """Initialize state when a node is loaded."""
-    _on_created_or_loaded(node)
-
+    try:
+       _on_created_or_loaded(node)
+    except hou.Error as err:
+        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+                              details_label="Show stack trace",
+                              details=traceback.format_exc(),
+                              severity=hou.severityType.Error)

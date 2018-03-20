@@ -17,6 +17,8 @@ def construct_scene_name(timestamp=None):
         return hou.hipFile.name()
     stripped = stripped_hip()
     path = os.path.dirname(hou.hipFile.name())
+    if not path:
+        path = hou.getenv("HIP")
     return os.path.join(path, "%s_%s.hip" % (stripped, timestamp))
 
 
