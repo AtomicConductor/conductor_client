@@ -1,5 +1,5 @@
 import json
-from conductor.houdini.hda import takes, render_source_ui, job_source_ui
+from conductor.houdini.hda import takes 
 
 
 
@@ -27,7 +27,7 @@ def _submission_node_can_submit(node):
     """
 
 
-    if not job_source_ui.get_job_nodes(node):
+    if not node.inputs():
         return False
     return True
 
@@ -42,7 +42,7 @@ def _job_node_can_submit(node):
     """
 
 
-    if not render_source_ui.get_render_node(node):
+    if not node.inputs():
         return False
     if not has_valid_project(node):
         return False

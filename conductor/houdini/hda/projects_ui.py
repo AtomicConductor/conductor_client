@@ -2,7 +2,7 @@
 
 import json
 from conductor.lib import api_client
-import uistate
+from conductor.houdini.hda import uistate
 
 
 def _active_projects():

@@ -16,8 +16,6 @@ is the parmTemplateGroup.
 from contextlib import contextmanager
 import hou
 
-FOLDER_PATH = ("Takes", "Render takes")
-
 @contextmanager
 def take_context(take):
     """Put houdini in the context of a take to run some code.
