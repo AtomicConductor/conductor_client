@@ -4,8 +4,8 @@ import sys
 import os
 import argparse
 
-from conductor.houdini.lib.sequence import Sequence
-from conductor.houdini.lib.clump import Clump
+from sequence import Sequence
+from clump import Clump
 
 OUTPUT_DIR_PARMS = {
     "ifd": "vm_picture",

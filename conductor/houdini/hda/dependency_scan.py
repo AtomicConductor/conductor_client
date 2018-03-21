@@ -57,12 +57,12 @@ def fetch(sequence):
     result = set()
     directories = set()
 
-    whitelist_parms = ["scene_file"]
-    for parm, _ in refs:
-        if parm and parm.name() in whitelist_parms:
-            file = parm.eval()
-            if file:
-                result.add(file.rstrip(os.sep))
+    # whitelist_parms = ["scene_file"]
+    # for parm, _ in refs:
+    #     if parm and parm.name() in whitelist_parms:
+    #         file = parm.eval()
+    #         if file:
+    #             result.add(file)
 
     for frame in sequence:
         for parm, _ in refs:
