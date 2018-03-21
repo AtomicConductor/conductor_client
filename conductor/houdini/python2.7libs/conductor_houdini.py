@@ -186,7 +186,9 @@ def _on_created_or_loaded(node):
 
 
 def _on_created(node):
-    node.parm("extra_upload_paths").set(3)
+    if types.is_job_node(node):
+        node.parm("extra_upload_paths").set(3)
+        
 
 
 def on_created_callback(node, **_):

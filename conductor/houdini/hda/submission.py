@@ -32,7 +32,7 @@ class Submission(object):
         self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self._hipbase = submission_ui.stripped_hip()
         self._use_timestamped_scene = bool(self._node.parm("use_timestamped_scene").eval())
-        self._scene = submission_ui.scene_name_to_use(self._node, self._timestamp)
+        self._scene = submission_ui.set_scene_name(self._node, self._timestamp)
         self._local_upload = bool(self._node.parm("local_upload").eval())
         self._force_upload = bool(self._node.parm("force_upload").eval())
         self._upload_only = bool(self._node.parm("upload_only").eval())
@@ -45,7 +45,8 @@ class Submission(object):
         self._jobs = []
 
         for node in self._nodes:
-            self._jobs.append(Job(node, self._tokens))
+            job = Job(node, self._tokens, self._scene)
+            self._jobs.append(job)
     
     def _get_project_name(self):
         projects = json.loads(self._node.parm('projects').eval())

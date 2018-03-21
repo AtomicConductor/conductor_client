@@ -12,23 +12,27 @@ def stripped_hip():
     return re.sub(TIMESTAMP_RE, '', no_ext)
 
 
-def construct_scene_name(timestamp=None):
+def _construct_scene_name(timestamp=None):
+    path =  hou.hipFile.path()
     if not timestamp:
-        return hou.hipFile.name()
+        return path
     stripped = stripped_hip()
-    path = os.path.dirname(hou.hipFile.name())
+    path = os.path.dirname(path)
     if not path:
-        path = hou.getenv("HIP")
+        path = hou.getenv("JOB")
     return os.path.join(path, "%s_%s.hip" % (stripped, timestamp))
 
 
-def scene_name_to_use(node, timestamp="YYYY_MM_DD_hh_mm_ss"):
+def set_scene_name(node, timestamp="YYYY_MM_DD_hh_mm_ss"):
+
     ts = None
     if node.parm("use_timestamped_scene").eval():
         ts = timestamp
-    return construct_scene_name(ts)
+    result = _construct_scene_name(ts)
+    node.parm("scene_file").set(result)
+    return result
 
 
 def toggle_timestamped_scene(node, **kw):
-    node.parm("scene_file").set(scene_name_to_use(node))
+    set_scene_name(node)
  

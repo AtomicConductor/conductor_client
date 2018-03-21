@@ -12,7 +12,7 @@ define how clumps will be made: clump_size and cycle.
 
 import math
 
-from conductor.houdini.lib.clump import (
+from clump import (
     NUMBER_RE,
     RANGE_RE,
     resolve_start_end_step,
@@ -20,7 +20,7 @@ from conductor.houdini.lib.clump import (
     RegularClump,
     IrregularClump)
 
-import conductor.houdini.lib.progressions as prog
+import progressions as prog
 
 
 class Sequence(object):
