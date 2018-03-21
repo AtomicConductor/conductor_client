@@ -21,7 +21,7 @@ OUTPUT_DIR_PARMS = {
 class Job(object):
     """Prepare a Job."""
 
-    def __init__(self, node, parent_tokens):
+    def __init__(self, node, parent_tokens, scene_file):
 
         self._node = node
         self._sequence = frame_spec_ui.main_frame_sequence(node)
@@ -39,6 +39,7 @@ class Job(object):
                 self._node.name())
 
         self._dependencies = dependency_scan.fetch(self._sequence)
+        self._dependencies.append(scene_file)
         self._package_ids = software_ui.get_chosen_ids(self._node)
         self._environment = self._get_environment()
      

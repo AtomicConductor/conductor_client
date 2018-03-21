@@ -15,6 +15,6 @@ def update_inputs(node):
     conns = node.inputConnections()
     for conn in conns:
         index = conn.inputIndex()
-        if not types._is_job_node(conn.inputNode()):
+        if not types.is_job_node(conn.inputNode()):
             node.setInput(index, None, 0)
     uistate.update_button_state(node)
