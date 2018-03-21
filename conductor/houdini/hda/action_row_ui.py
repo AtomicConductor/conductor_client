@@ -84,7 +84,7 @@ def doit(node, **_):
     submission = _create_submission_with_save(node)
 
     submission_args = submission.remote_args()
-
+    responses = []
     for job in submission.jobs:
 
         job_args = job.remote_args()
@@ -92,9 +92,7 @@ def doit(node, **_):
         try:
             remote_job = conductor_submit.Submit(job_args)
             response, response_code = remote_job.main()
+            responses.append({"code":response_code, "response":  response})
         except BaseException:
-            message = "".join(traceback.format_exception(*sys.exc_info()))
-            hou.ui.displayMessage(title="Job submission failure", text=message,
-                                  severity=hou.severityType.Error)
-            raise
-        return response_code, response
+            responses.append({"error": "".join(traceback.format_exception(*sys.exc_info()))})
+    return responses

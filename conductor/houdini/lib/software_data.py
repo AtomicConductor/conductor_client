@@ -9,9 +9,9 @@ packages and build paths etc.
 import copy
 import json
 import re
-# from conductor.lib.api_client import request_software_packages
+from conductor.lib.api_client import request_software_packages
 # from conductor.houdini.lib.mocks.api_client_mock import request_software_packages
-from conductor.houdini.lib.mocks.api_client_mock_no_exact_host import request_software_packages
+# from conductor.houdini.lib.mocks.api_client_mock_no_exact_host import request_software_packages
 
 
 from package_environment import PackageEnvironment
@@ -32,9 +32,8 @@ def remove_unreachable(paths):
 
     """
     results = []
-    spaths = sorted(paths)
     previous = ""
-    for path in spaths:
+    for path in sorted(paths):
         parts = path.split("/")
         valid_subpath = path == "%s/%s" % (previous, parts[-1])
         if len(parts) == 1 or valid_subpath:
