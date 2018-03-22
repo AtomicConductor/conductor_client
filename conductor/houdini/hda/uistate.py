@@ -1,7 +1,5 @@
 import json
-from conductor.houdini.hda import takes 
-
-
+from conductor.houdini.hda import takes, types
 
 
 def has_valid_project(node):
@@ -17,7 +15,6 @@ def has_valid_project(node):
         project["id"] for project in projects))
 
 
-
 def _submission_node_can_submit(node):
     """TODO in CT-59 determine if everything is valid for a submission to
     happen.
@@ -25,12 +22,15 @@ def _submission_node_can_submit(node):
     Use this to enable/disable the submit button
 
     """
-
-
+    if not has_valid_project(node):
+        return False
     if not node.inputs():
         return False
+    for job in node.inputs():
+        if job:
+            if  job.parm("use_custom").eval() and not  job.parm("custom_valid").eval():
+                return False
     return True
-
 
 
 def _job_node_can_submit(node):
@@ -40,17 +40,20 @@ def _job_node_can_submit(node):
     Use this to enable/disable the submit button
 
     """
-
-
+ 
     if not node.inputs():
         return False
     if not has_valid_project(node):
         return False
+ 
+    if  node.parm("use_custom").eval() and not  node.parm("custom_valid").eval():
+        return False
     return True
 
 
-
 def update_button_state(node):
+
+ 
     """Enable/disable submit button."""
     takes.enable_for_current(
         node,
@@ -64,9 +67,13 @@ def update_button_state(node):
         "render_type",
         "jobs")
 
-    _, nodetype, _ = node.type().name().split("::")
-    if nodetype == "job":
-        can_submit =int(_job_node_can_submit(node))
+    if types.is_job_node(node):
+        can_submit = int(_job_node_can_submit(node))
+        node.parm("can_submit").set(can_submit)
+
+        for output in node.outputs():
+            if output and types.is_submitter_node(output):
+                update_button_state(output)
     else:
-        can_submit =int(_submission_node_can_submit(node))
-    node.parm("can_submit").set(can_submit)
+        can_submit = int(_submission_node_can_submit(node))
+        node.parm("can_submit").set(can_submit)
