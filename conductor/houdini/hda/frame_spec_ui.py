@@ -1,8 +1,8 @@
 """Deal with various ways of specifying frame range."""
 
 import hou
-from conductor.houdini.hda import render_source_ui, takes
-from conductor.houdini.lib.sequence import Sequence
+from conductor.houdini.hda import render_source_ui, takes, uistate
+from conductor.houdini.lib.sequence.sequence import Sequence
  
 
 # Specify that Expressions are Python
@@ -143,6 +143,7 @@ def validate_custom_range(node, **_):
     node.parm("custom_valid").set(valid)
 
     _update_sequence_stats(node)
+    uistate.update_button_state(node)
 
 
 def validate_scout_range(node, **_):
