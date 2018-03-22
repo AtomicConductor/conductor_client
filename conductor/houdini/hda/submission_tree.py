@@ -1,7 +1,7 @@
-# from hou import qt
-
 
 from PySide2 import QtWidgets, QtGui, QtCore
+
+
 
 
 class SubmissionTree(QtWidgets.QWidget):
@@ -9,8 +9,7 @@ class SubmissionTree(QtWidgets.QWidget):
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
         hbox = QtWidgets.QHBoxLayout()
-        self.setGeometry(300, 200, 1000, 600)
-        self.setWindowTitle('Conductor preview')
+
 
         self._view = QtWidgets.QTreeView()
         self._view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -58,7 +57,6 @@ class SubmissionTree(QtWidgets.QWidget):
             self._model, "Unsaved changes:", str(
                 submission.unsaved))
 
-
         if submission.has_notifications():
             email_item = self._appendRow(self._model, "Email notifications:")
             addresses_item = self._appendRow(email_item, "Addresses:")
@@ -85,11 +83,13 @@ class SubmissionTree(QtWidgets.QWidget):
             self._appendRow(job_item, "Source path:", job.source_path)
             self._appendRow(job_item, "Source type:", job.source_type)
 
-            self._appendRow(job_item, "Output directory:", job.output_directory)
+            self._appendRow(
+                job_item,
+                "Output directory:",
+                job.output_directory)
             if i is 0:
                 self._view.expand(self._model.indexFromItem(job_item))
 
-          
             deps_item = self._appendRow(job_item, "Dependencies:")
             if job.dependencies:
                 for i, d in enumerate(job.dependencies):
@@ -128,7 +128,7 @@ class SubmissionTree(QtWidgets.QWidget):
 
             for j, task in enumerate(job.tasks):
                 task_header = self._appendRow(
-                    task_item, "%s" %  str(task.clump))
+                    task_item, "%s" % str(task.clump))
                 self._appendRow(task_header, "Command:", task.command)
                 self._appendRow(task_header, "Frames:", str(tuple(task.clump)))
                 task_token_item = self._appendRow(task_header, "Tokens:")
@@ -137,3 +137,4 @@ class SubmissionTree(QtWidgets.QWidget):
 
                 if j is 0:
                     self._view.expand(self._model.indexFromItem(task_header))
+
