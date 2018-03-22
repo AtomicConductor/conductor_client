@@ -8,6 +8,7 @@ import traceback
 import hou
 
 from conductor.houdini.hda import (
+    data_block,
     instances_ui,
     projects_ui,
     frame_spec_ui,
@@ -21,6 +22,9 @@ from conductor.houdini.hda import (
     uistate,
     types
 )
+
+
+
 
 def _update_submission_node(node, **_):
     """Initialize or update.
@@ -69,10 +73,12 @@ MENUS = dict(
     project=projects_ui.populate_menu
 )
  
+
+def tmp_test(node, **kw):
+    print kw
+
 ACTIONS = dict(
-    dry_run=action_row_ui.dry_run,
     preview=action_row_ui.preview,
-    local_test=action_row_ui.local,
     submit=action_row_ui.doit,
     update=_update_job_node,
     sub_update=_update_submission_node,
@@ -93,7 +99,8 @@ ACTIONS = dict(
     email_on_start=notifications_ui.email_hook_changed,
     email_on_finish=notifications_ui.email_hook_changed,
     email_on_failure=notifications_ui.email_hook_changed,
-    use_timestamped_scene=submission_ui.toggle_timestamped_scene
+    use_timestamped_scene=submission_ui.toggle_timestamped_scene,
+    packages=tmp_test
 )
 
 AUX_BUTTON_ACTIONS = dict(

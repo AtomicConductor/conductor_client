@@ -15,7 +15,7 @@ from conductor.houdini.hda import houdini_info
 
 FOLDER_PATH = ("Software", "Available packages")
 
-
+NO_HOST_PACKAGES = "No conductor packages have been selected"
 
 
 def _get_field_names(ptg):
@@ -30,18 +30,28 @@ def _get_existing_paths(node):
     num = node.parm("packages").eval()
     for i in range(num):
         index = i+1
-        paths.append(node.parm("package_%d" % index).eval())
+        path = node.parm("package_%d" % index).eval()
+        # if path != NO_HOST_PACKAGES:
+        #     paths.append(path)
     return paths
    
 
 def _add_package_entries(node, new_paths):
     """Create new strings to contain packages."""
     paths = sorted(list(set(_get_existing_paths(node) + new_paths)))
+    # if not len(paths):
+    #     paths.append(NO_HOST_PACKAGES)
+    node.parm("packages").set(0)
     node.parm("packages").set(len(paths))
     for i, path in enumerate(paths):
         index = i+1
         node.parm("package_%d" % index).set(path)
- 
+        node.parm("package_%d" % index).lock(True)
+
+def clear(node, **_):
+     node.parm("packages").set(0)
+     # _add_package_entries(node, [])
+
 
 def get_package_tree(node, force_fetch=False):
     """Get the software tree object."""
@@ -144,6 +154,7 @@ def detect(node, **_):
 
     _add_package_entries(node, paths)
  
+
 
 def initialize(node):
     """Default software configuration"""

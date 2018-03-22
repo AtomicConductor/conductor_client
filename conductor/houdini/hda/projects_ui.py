@@ -38,7 +38,7 @@ def _active_projects():
     return sorted(projects, key=lambda project: project["name"].lower())
 
 
-def fetch(node):
+def fetch(node, projects=None):
     """Fetch the list of projects and store on projects param.
 
     If we don't do this and instead populate from scratch
@@ -49,8 +49,8 @@ def fetch(node):
     the NotSet item.
 
     """
-
-    projects = _active_projects()
+ 
+    projects = projects or _active_projects()
     node.parm('projects').set(json.dumps(projects))
 
     selected = node.parm('project').eval()
