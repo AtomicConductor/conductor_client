@@ -8,33 +8,33 @@ import hou
 
 from conductor.lib import conductor_submit
 from conductor.houdini.hda.submission import Submission
-from conductor.houdini.hda.submission_tree import SubmissionTree
-from conductor.houdini.hda.submission_dry import SubmissionDry
+from conductor.houdini.hda.submission_preview import SubmissionPreview
+# from conductor.houdini.hda.submission_dry_run import SubmissionDryRun
+# from conductor.houdini.hda.submission_dry import SubmissionDry
 
 
 def preview(node, **_):
     submission = Submission(node)
-    submission_tree = SubmissionTree()
-    submission_tree.populate(submission)
-    submission_tree.show()
-    hou.session.conductor_preview = submission_tree
+    submission_preview = SubmissionPreview()
+    submission_preview.tree.populate(submission)
 
-
-def dry_run(node, **_):
-    args_list = []
-    submission = Submission(node)
-    submission_args = submission.remote_args()
-    for job in submission.jobs:
-        job_args = job.remote_args()
-        job_args.update(submission_args)
-        args_list.append(job_args)
-
+    args_list = submission.remote_args()
     j = json.dumps(args_list, indent=3, sort_keys=True)
 
-    submission_dry = SubmissionDry()
-    submission_dry.populate(j)
-    submission_dry.show()
-    hou.session.conductor_dry = submission_dry
+    submission_preview.dry_run.populate(j)
+
+    submission_preview.show()
+    hou.session.conductor_preview = submission_preview
+
+
+# def dry_run(node, **_):
+   
+#     args_list = submission.remote_args()
+#     j = json.dumps(args_list, indent=3, sort_keys=True)
+#     submission_dry = SubmissionDry()
+#     submission_dry.populate(j)
+#     submission_dry.show()
+#     hou.session.conductor_dry = submission_dry
 
 
 
@@ -83,14 +83,9 @@ def local(node, **_):
 
 
 def doit(node, **_):
-    submission = _create_submission_with_save(node)
-
-    submission_args = submission.remote_args()
     responses = []
-    for job in submission.jobs:
-
-        job_args = job.remote_args()
-        job_args.update(submission_args)
+    submission = _create_submission_with_save(node)
+    for job_args in submission.remote_args():
         try:
             remote_job = conductor_submit.Submit(job_args)
             response, response_code = remote_job.main()
