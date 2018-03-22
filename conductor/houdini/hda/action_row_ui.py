@@ -37,6 +37,7 @@ def dry_run(node, **_):
     hou.session.conductor_dry = submission_dry
 
 
+
 def _create_submission_with_save(node):
     if node.parm("use_timestamped_scene").eval():
         current_scene_name = hou.hipFile.basename()
@@ -68,6 +69,7 @@ def _create_submission_with_save(node):
 
     return submission
 
+ 
 
 def local(node, **_):
 

@@ -3,8 +3,7 @@ import os
 
 import hou
 import json
-from conductor.houdini.lib.sequence import Clump
-from conductor.houdini.lib.expansion import Expander
+from conductor.houdini.lib.sequence.clump import Clump
 from conductor.houdini.hda.task import Task
 from conductor.houdini.hda import (
     frame_spec_ui,
@@ -41,20 +40,24 @@ class Job(object):
         self._dependencies = dependency_scan.fetch(self._sequence)
         self._dependencies.append(scene_file)
         self._package_ids = software_ui.get_chosen_ids(self._node)
-        self._environment = self._get_environment()
+        self._environment = software_ui.get_environment(self._node).env
      
         self._tokens = self._collect_tokens(parent_tokens)
-        self._task_command = self._node.parm("task_command").eval()
+        # self._setenv()
+       
 
-        expander = Expander(**self._tokens)
 
-        self._title = expander.evaluate(self._node.parm("job_title").eval())
 
-        out_dir = self._get_output_dir()
-        self._output_directory =  expander.evaluate(out_dir) 
 
-        self._metadata = expander.evaluate(
-            self._node.parm("metadata").eval())
+        self._task_command = self._node.parm("task_command").unexpandedString()
+
+        # expander = Expander(**self._tokens)
+
+        self._title = self._node.parm("job_title").eval() 
+
+        self._output_directory = self._get_output_dir()
+
+        self._metadata = self._node.parm("metadata").eval()
 
         self._tasks = []
 
@@ -79,14 +82,7 @@ class Job(object):
                     result = ov_dir
         return result
 
-
-
-    def _get_environment(self):
-        package_environment = software_ui.get_environment(self._node)
-        extra_vars = software_ui.get_extra_env_vars(self._node)
-        package_environment.extend(extra_vars)
-        return package_environment.env
-
+ 
     def _get_instance(self):
         flavor, cores = self._node.parm(
             'machine_type').eval().split("_")
@@ -97,35 +93,34 @@ class Job(object):
         result["preemptible"] = bool(self._node.parm('preemptible').eval())
         result["retries"] = self._node.parm("retries").eval()
         return result
-
-
+ 
     def _collect_tokens(self, parent_tokens):
         """Tokens are string kv pairs used for substitutions."""
 
-        tokens = parent_tokens.copy()
-
+        # tokens = parent_tokens.copy()
+        tokens = {}
         sorted_frames = sorted(self._sequence._frames)
-        tokens["length"] = str(len(self._sequence))
-        tokens["sequence"] = str(Clump.create(iter(self._sequence)))
-        tokens["sequencemin"] = str(sorted_frames[0])
-        tokens["sequencemax"] = str(sorted_frames[-1])
-        tokens["scout"] = "false"
-        if self._scout_sequence:
-            tokens["scout"] = (
-                ",".join([str(x) for x in Clump.regular_clumps(self._scout_sequence)]))
-        tokens["clumpsize"] = str(self._sequence.clump_size)
-        tokens["clumpcount"] = str(self._sequence.clump_count())
-        tokens["scoutcount"] = str(len(self._scout_sequence or []))
-        tokens["instcores"] = str(self._instance.get("cores"))
-        tokens["instflavor"] = self._instance.get("flavor")
-        tokens["instance"] = self._instance.get("description")
-        tokens["preemptible"] = "true" if self._instance.get(
-            "preemptible") else "false"
-        tokens["retries"] = str(self._instance.get("retries", 0))
+        tokens["CT_LENGTH"] = str(len(self._sequence))
+        tokens["CT_SEQUENCE"] = str(Clump.create(iter(self._sequence)))
+        tokens["CT_SEQUENCEMIN"] = str(sorted_frames[0])
+        tokens["CT_SEQUENCEMAX"] = str(sorted_frames[-1])
+        tokens["CT_SCOUT"] =  ",".join([str(x) for x in Clump.regular_clumps(self._scout_sequence or [])] ) 
+        tokens["CT_CLUMPSIZE"] = str(self._sequence.clump_size)
+        tokens["CT_CLUMPCOUNT"] = str(self._sequence.clump_count())
+        tokens["CT_SCOUTCOUNT"] = str(len(self._scout_sequence or []))
+        tokens["CT_INSTCORES"] = str(self._instance.get("cores"))
+        tokens["CT_INSTFLAVOR"] = self._instance.get("flavor")
+        tokens["CT_INSTANCE"] = self._instance.get("description")
+        tokens["CT_PREEMPTIBLE"] = "True" if self._instance.get("preemptible") else "False"
+        tokens["CT_RETRIES"] = str(self._instance.get("retries", 0))
+        tokens["CT_JOB"] = self.node_name
+        tokens["CT_SOURCE"] = self.source_path
+        tokens["CT_TYPE"] = self.source_type
 
-        tokens["job"] = self.node_name
-        tokens["source"] = self.source_path
-        tokens["type"] = self.source_type
+        for token in tokens:
+            hou.putenv(token, tokens[token])
+        tokens.update(parent_tokens)
+
         return tokens
 
     def remote_args(self):
