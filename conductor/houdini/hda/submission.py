@@ -73,20 +73,26 @@ class Submission(object):
 
         return tokens
 
+
     def remote_args(self):
-        result = {}
-        result["local_upload"] = self._local_upload
-        result["upload_only"] = self._upload_only
-        result["force"] = self._force_upload
-        result["project"] = self.project_name
+
+        result = []
+        submission_args = {}
+        submission_args["local_upload"] = self._local_upload
+        submission_args["upload_only"] = self._upload_only
+        submission_args["force"] = self._force_upload
+        submission_args["project"] = self.project_name
 
         if self.email_addresses:
             addresses = ", ".join(self.email_addresses)
-            result["notify"] = {"emails": addresses, "slack": []}
+            submission_args["notify"] = {"emails": addresses, "slack": []}
         else:
-            result["notify"] = None
+            submission_args["notify"] = None
 
-        # result["upload_paths"] =
+        for job in self._jobs:
+            args = job.remote_args()
+            args.update(submission_args)
+            result.append(args)
         return result
 
     @property
