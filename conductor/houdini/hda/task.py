@@ -1,4 +1,5 @@
-from conductor.houdini.lib.expansion import Expander
+import hou
+# from conductor.houdini.lib.expansion import Expander
 
 
 class Task(object):
@@ -7,22 +8,25 @@ class Task(object):
     def __init__(self, clump, command, parent_tokens):
         self._clump = clump
         self._tokens = self._collect_tokens(parent_tokens)
-        expander = Expander(**self._tokens)
-        self._command = expander.evaluate(command)
+ 
+        self._command = hou.expandString(command)
 
     def _collect_tokens(self, parent_tokens):
         """Tokens are string kv pairs used for substitutions."""
-        tokens = parent_tokens.copy()
 
+        tokens = {}
         clump_type = type(self._clump).__name__.lower()[:-5]
-        tokens["clumptype"] = clump_type
-
-        tokens["clump"] = str(self._clump)
-        tokens["clumplength"] = str(len(self._clump))
-        tokens["clumpstart"] = str(self._clump.start)
-        tokens["clumpend"] = str(self._clump.end)
-        tokens["clumpstep"] = str(
+        tokens["CT_CLUMPTYPE"] = clump_type
+        tokens["CT_CLUMP"] = str(self._clump)
+        tokens["CT_CLUMPLENGTH"] = str(len(self._clump))
+        tokens["CT_CLUMPSTART"] = str(self._clump.start)
+        tokens["CT_CLUMPEND"] = str(self._clump.end)
+        tokens["CT_CLUMPSTEP"] = str(
             self._clump.step) if clump_type == "regular" else "~"
+
+        for token in tokens:
+            hou.putenv(token, tokens[token])
+        tokens.update(parent_tokens)
 
         return tokens
 
@@ -43,18 +47,4 @@ class Task(object):
     @property
     def tokens(self):
         return self._tokens
-
-
-    # def dry_run(self, job_tokens):
-    #     """Build an object that fully describes the task without mutating
-    #     anything."""
-    #     # tokens = job_tokens.copy()
-    #     # tokens.update(self._tokens)
-    #     # expander = Expander(**tokens)
-
-    #     # task = {}
-    #     # task["tokens"] = tokens
-    #     task["command"] = expander.evaluate(
-    #         self._node.parm("task_command").eval())
-    #     # task["clump"] = self._clump
-    #     return task
+ 

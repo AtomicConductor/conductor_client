@@ -1,20 +1,10 @@
 import datetime
- 
 import json
-
 import hou
-from conductor.lib import api_client
 
+from conductor.houdini.hda import submission_ui, types, notifications_ui
 
-from conductor.houdini.hda import submission_ui, types, job_source_ui, notifications_ui
-
-# from submission_tree import SubmissionTree
 from job import Job
-
-
-# # Catch a timestamp of the form 2018_02_27_10_59_47 with optional
-# # underscore delimiters at the start and/or end of a string
-# TIMESTAMP_RE = re.compile(r"^[\d]{4}(_[\d]{2}){5}_*|_*[\d]{4}(_[\d]{2}){5}$")
 
 
 class Submission(object):
@@ -26,12 +16,11 @@ class Submission(object):
             self._nodes = [node]
         else:
             self._nodes = node.inputs()
- 
 
- 
         self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self._hipbase = submission_ui.stripped_hip()
-        self._use_timestamped_scene = bool(self._node.parm("use_timestamped_scene").eval())
+        self._use_timestamped_scene = bool(
+            self._node.parm("use_timestamped_scene").eval())
         self._scene = submission_ui.set_scene_name(self._node, self._timestamp)
         self._local_upload = bool(self._node.parm("local_upload").eval())
         self._force_upload = bool(self._node.parm("force_upload").eval())
@@ -39,15 +28,18 @@ class Submission(object):
         self._notifications = notifications_ui.get_notifications(self._node)
         self._project_id = self._node.parm('project').eval()
         self._project_name = self._get_project_name()
+        
 
         self._tokens = self._collect_tokens()
+  
+
         self._user = hou.getenv('USER')
         self._jobs = []
 
         for node in self._nodes:
             job = Job(node, self._tokens, self._scene)
             self._jobs.append(job)
-    
+
     def _get_project_name(self):
         projects = json.loads(self._node.parm('projects').eval())
 
@@ -70,11 +62,15 @@ class Submission(object):
 
         """
         tokens = {}
-        tokens["timestamp"] = self._timestamp
-        tokens["submitter"] = self._node.name()
-        tokens["hipbase"] = self._hipbase 
-        tokens["scene"] = self._scene 
-        tokens["project"] = self._project_name
+        tokens["CT_TIMESTAMP"] = self._timestamp
+        tokens["CT_SUBMITTER"] = self._node.name()
+        tokens["CT_HIPBASE"] = self._hipbase
+        tokens["CT_SCENE"] = self._scene
+        tokens["CT_PROJECT"] = self._project_name
+
+        for token in tokens:
+            hou.putenv(token, tokens[token])
+
         return tokens
 
     def remote_args(self):
@@ -90,7 +86,7 @@ class Submission(object):
         else:
             result["notify"] = None
 
-        # result["upload_paths"] = 
+        # result["upload_paths"] =
         return result
 
     @property
@@ -163,4 +159,3 @@ class Submission(object):
         if not self.has_notifications():
             return []
         return self._notifications["email"]["hooks"]
-

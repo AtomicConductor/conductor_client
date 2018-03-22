@@ -15,17 +15,7 @@ from conductor.houdini.hda import houdini_info
 
 FOLDER_PATH = ("Software", "Available packages")
 
-def get_extra_env_vars(node):
-    num = node.parm("environment_kv_pairs").eval()
-    result = []
-    for i in range(1, num + 1):
-        is_exclusive = node.parm("env_excl_%d" % i).eval()
-        result.append({
-            "name": node.parm("env_key_%d" % i).eval(),
-            "value": node.parm("env_value_%d" % i).eval(),
-            "merge_policy": ["append", "exclusive"][is_exclusive]
-        })
-    return result
+
 
 
 def _get_field_names(ptg):
@@ -33,58 +23,25 @@ def _get_field_names(ptg):
     folder = ptg.findFolder(FOLDER_PATH)
     return [t.name() for t in folder.parmTemplates()]
 
-
-def _remove_package_entries(node):
-    """Remove existing entries in preparation to build new."""
-    ptg = node.parmTemplateGroup()
-    fields = _get_field_names(ptg)
-    for field in fields:
-        ptg.remove(field)
-    node.setParmTemplateGroup(ptg)
-
-
+ 
 def _get_existing_paths(node):
     """Remember a map of exiting takes that are enabled."""
-    ptg = node.parmTemplateGroup()
-    return [node.parm(name).eval() for name in _get_field_names(
-        ptg) if name != "package_path_empty"]
-
-
-def _create_label_when_empty():
-    return hou.LabelParmTemplate(
-        "package_path_empty",
-        "No software packages selected")
-
-
-def _create_entry_parm(path, index):
-    name = "package_path_%d" % index
-    return hou.StringParmTemplate(
-        name, "", 1, default_value=path, is_label_hidden=True)
-
-
-def _check_empty(node):
-    if not _get_existing_paths(node):
-        ptg = node.parmTemplateGroup()
-        ptg.appendToFolder(FOLDER_PATH, _create_label_when_empty())
-        node.setParmTemplateGroup(ptg)
-
+    paths = []
+    num = node.parm("packages").eval()
+    for i in range(num):
+        index = i+1
+        paths.append(node.parm("package_%d" % index).eval())
+    return paths
+   
 
 def _add_package_entries(node, new_paths):
     """Create new strings to contain packages."""
     paths = sorted(list(set(_get_existing_paths(node) + new_paths)))
-    _remove_package_entries(node)
-    ptg = node.parmTemplateGroup()
+    node.parm("packages").set(len(paths))
+    for i, path in enumerate(paths):
+        index = i+1
+        node.parm("package_%d" % index).set(path)
  
-    for i, path in enumerate(paths):
-        ptg.appendToFolder(FOLDER_PATH, _create_entry_parm(path, i))
-    node.setParmTemplateGroup(ptg)
-
-    for i, path in enumerate(paths):
-        parm = node.parm("package_path_%d" % i)
-        parm.set(path)
-        parm.lock(True)
-
-
 
 def get_package_tree(node, force_fetch=False):
     """Get the software tree object."""
@@ -110,11 +67,27 @@ def get_chosen_ids(node):
                 results.append(package_id)
     return results
 
+       
+def _get_extra_env_vars(node):
+    num = node.parm("environment_kv_pairs").eval()
+    result = []
+    for i in range(1, num + 1):
+        is_exclusive = node.parm("env_excl_%d" % i).eval()
+        result.append({
+            "name": node.parm("env_key_%d" % i).eval(),
+            "value": node.parm("env_value_%d" % i).eval(),
+            "merge_policy": ["append", "exclusive"][is_exclusive]
+        })
+    return result
+
 def get_environment(node):
-    
     package_tree = get_package_tree(node)
     paths = _get_existing_paths(node)
-    return package_tree.get_environment(paths)
+    package_env = package_tree.get_environment(paths)
+    extra_vars = _get_extra_env_vars(node)
+    package_env.extend(extra_vars)
+    return package_env
+
 
 def choose(node, **_):
     """Open a tree chooser with all possible software choices.
@@ -133,21 +106,20 @@ def choose(node, **_):
     results = hou.ui.selectFromTree(
         choices,
         exclusive=False,
-        message="Choose software",
-        title="Chooser",
+        message="Conductor packages",
+        title="Package chooser",
         clear_on_cancel=True)
     paths = []
     for path in results:
         paths += swd.to_all_paths(path)
     _add_package_entries(node, paths)
-    _check_empty(node)
+    # _check_empty(node)
 
 
 
 def update_package_tree(node, **kw):
     package_tree = get_package_tree(node, force_fetch=True)
-    if not _get_existing_paths(node):
-        detect(node)
+        
     
 
 def detect(node, **_):
@@ -171,10 +143,19 @@ def detect(node, **_):
     paths = swd.remove_unreachable(paths)
 
     _add_package_entries(node, paths)
-    _check_empty(node)
+ 
 
-def clear(node, **_):
-    """Clear all entries."""
-    _remove_package_entries(node)
-    _check_empty(node)
-    
+def initialize(node):
+    """Default software configuration"""
+    node.parm("extra_upload_paths").set(2)
+    node.parm("upload_1").set('$CONDUCTOR_HOUDINI/scripts/chrender.py')
+    node.parm("upload_2").set('$CONDUCTOR_HOUDINI/lib/sequence')
+
+    node.parm("environment_kv_pairs").set(1)
+    node.parm("env_key_1").set('PYTHONPATH')
+    node.parm("env_value_1").set('$CONDUCTOR_HOUDINI/lib/sequence')
+    node.parm("env_excl_1").set(0)
+
+    detect(node)
+
+

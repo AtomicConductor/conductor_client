@@ -30,14 +30,15 @@ def _update_submission_node(node, **_):
 
     """
     with takes.take_context(hou.takes.rootTake()):
+        job_source_ui.update_inputs(node)
+        
         notifications_ui.validate_emails(node)
         notifications_ui.email_hook_changed(node)
         submission_ui.toggle_timestamped_scene(node)
         uistate.update_button_state(node)
-        job_source_ui.update_inputs(node)
 
 
-def _update_node(node, **_):
+def _update_job_node(node, **_):
     """Initialize or update.
 
     We do this on creation/loading or manually. We do it in
@@ -49,13 +50,19 @@ def _update_node(node, **_):
         instances_ui.fetch_types(node)
         frame_spec_ui.validate_custom_range(node)
         frame_spec_ui.validate_scout_range(node)
-        render_source_ui.update_input_node(node)
         frame_spec_ui.set_type(node)
+        software_ui.update_package_tree(node)
+        render_source_ui.update_input_node(node)
+
+        submission_ui.toggle_timestamped_scene(node)
         notifications_ui.validate_emails(node)
         notifications_ui.email_hook_changed(node)
-        software_ui.update_package_tree(node)
-        submission_ui.toggle_timestamped_scene(node)
         uistate.update_button_state(node)
+
+def _initialize_job_node(node, **_):
+    with takes.take_context(hou.takes.rootTake()):
+        software_ui.initialize(node)
+
 
 MENUS = dict(
     machine_type=instances_ui.populate_menu,
@@ -67,7 +74,7 @@ ACTIONS = dict(
     preview=action_row_ui.preview,
     local_test=action_row_ui.local,
     submit=action_row_ui.doit,
-    update=_update_node,
+    update=_update_job_node,
     sub_update=_update_submission_node,
     use_custom=frame_spec_ui.set_type,
     fs1=frame_spec_ui.set_frame_range,
@@ -180,16 +187,14 @@ def on_input_changed_callback(node, **_):
 def _on_created_or_loaded(node):
     """Initialize state when a node is loaded."""
     if types.is_job_node(node):
-        _update_node(node)
+        _update_job_node(node)
     else: 
         _update_submission_node(node)
 
 
 def _on_created(node):
     if types.is_job_node(node):
-        node.parm("extra_upload_paths").set(3)
-        
-
+        _initialize_job_node(node)
 
 def on_created_callback(node, **_):
     """Initialize state when a node is created."""
