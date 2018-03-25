@@ -189,3 +189,46 @@ class Job(object):
     @property
     def tasks(self):
         return self._tasks
+
+
+# class SimJob(Job):
+
+#     def __init__(self, node, parent_tokens, scene_file):
+#          super(SimJob,self).__init__(node, parent_tokens, scene_file)
+
+      
+#         self._source_node = driver_ui.get_driver_node(self._node)
+#         self._source_type = driver_ui.get_driver_type(self._node)
+
+
+#         self._sequence = 
+
+#         # will be none if not doing scout frames
+#         self._scout_sequence = frame_spec_ui.resolved_scout_sequence(node)
+#         self._instance = self._get_instance()
+
+#         if not (self._source_node):
+#             raise hou.InvalidInput(
+#                 "%s needs a connected source node." %
+#                 self._node.name())
+
+#         self._dependencies = dependency_scan.fetch(self._sequence)
+#         self._dependencies.append(scene_file)
+#         self._package_ids = software_ui.get_chosen_ids(self._node)
+#         self._environment = software_ui.get_environment(self._node).env
+
+#         self._tokens = self._collect_tokens(parent_tokens)
+
+#         self._task_command = self._node.parm("task_command").unexpandedString()
+
+#         self._title = self._node.parm("job_title").eval()
+
+#         self._output_directory = self._get_output_dir()
+
+#         self._metadata = self._node.parm("metadata").eval()
+
+#         self._tasks = []
+
+#         for clump in self._sequence.clumps():
+#             task = Task(clump, self._task_command, self._tokens)
+#             self._tasks.append(task)
