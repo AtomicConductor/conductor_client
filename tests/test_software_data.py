@@ -9,11 +9,12 @@ HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
-# mocked api_client returns json fixtures
-sys.modules['conductor.lib.api_client'] = __import__(
-    'conductor.houdini.lib.mocks.api_client_mock', fromlist=['dummy'])
+# # mocked api_client returns json fixtures
+# sys.modules['conductor.lib.api_client'] = __import__(
+#     'conductor.houdini.lib.mocks.api_client_mock', fromlist=['dummy'])
 
 from conductor.houdini.lib import software_data as swd
+from conductor.houdini.lib.mocks.api_client_mock import ApiClient
 
 
 class RemoveUnreachableTest(unittest.TestCase):
@@ -103,32 +104,37 @@ class ToNameTest(unittest.TestCase):
 
 class SoftwareDataInitTest(unittest.TestCase):
 
+    def setUp(self):
+        response, _ = ApiClient().make_request(uri_path='api/v1/ee/packages')
+        self.data = json.loads(response).get("data")
+
     def test_smoke(self):
-        pt = swd.PackageTree()
+        pt = swd.PackageTree([])
         self.assertIsInstance(pt, swd.PackageTree)
 
-    def test_init_from_json(self):
-        obj = {"some": "object"}
-        tree = json.dumps(obj)
-        pt = swd.PackageTree(json=tree)
-        self.assertEqual(pt.tree, obj)
-
     def test_init_with_product(self):
-        pt = swd.PackageTree(product="houdini")
+        pt = swd.PackageTree(self.data, product="houdini")
         self.assertEqual(len(pt.tree["children"]), 2)
-        pt = swd.PackageTree(product="maya-io")
+        pt = swd.PackageTree(self.data, product="maya-io")
         self.assertEqual(len(pt.tree["children"]), 9)
 
     def test_init_with_no_product(self):
-        pt = swd.PackageTree()
+        pt = swd.PackageTree(self.data)
         self.assertEqual(len(pt.tree["children"]), 72)
 
     def test_init_with_sub_product(self):
-        pt = swd.PackageTree(product="arnold-houdini")
+        pt = swd.PackageTree(
+            self.data,
+            product="arnold-houdini")
         self.assertEqual(len(pt.tree["children"]), 4)
 
 
 class SoftwareDataFindByKeysTest(unittest.TestCase):
+
+    def setUp(self):
+        response, _ = ApiClient().make_request(uri_path='api/v1/ee/packages')
+        data = json.loads(response).get("data")
+        self.pt = swd.PackageTree(data, product="houdini")
 
     def test_find_host_by_keys(self):
         keys = {
@@ -140,8 +146,7 @@ class SoftwareDataFindByKeysTest(unittest.TestCase):
             'plugin_host_product': '',
             'plugin_host_version': ''
         }
-        pt = swd.PackageTree(product="houdini")
-        pkg = pt.find_by_keys(**keys)
+        pkg = self.pt.find_by_keys(**keys)
         self.assertEqual(pkg["product"], 'houdini')
         self.assertEqual(pkg["major_version"], '16')
         self.assertEqual(pkg["minor_version"], '5')
@@ -157,8 +162,7 @@ class SoftwareDataFindByKeysTest(unittest.TestCase):
             'plugin_host_product': '',
             'plugin_host_version': ''
         }
-        pt = swd.PackageTree(product="houdini")
-        pkg = pt.find_by_keys(**keys)
+        pkg = self.pt.find_by_keys(**keys)
         self.assertEqual(pkg["product"], 'al-shaders')
         self.assertEqual(pkg["major_version"], '1')
         self.assertEqual(pkg["minor_version"], '1')
@@ -173,75 +177,79 @@ class SoftwareDataFindByKeysTest(unittest.TestCase):
             'plugin_host_product': '',
             'plugin_host_version': ''
         }
-        pt = swd.PackageTree(product="houdini")
-        pkg = pt.find_by_keys(**keys)
+        pkg = self.pt.find_by_keys(**keys)
         self.assertEqual(pkg, None)
 
 
 class SoftwareDataFindByPathTest(unittest.TestCase):
 
+    def setUp(self):
+        response, _ = ApiClient().make_request(uri_path='api/v1/ee/packages')
+        data = json.loads(response).get("data")
+        self.pt = swd.PackageTree(data, product="houdini")
+
     def test_find_root_path(self):
-        pt = swd.PackageTree(product="houdini")
         path = "houdini 16.0.736"
-        pkg = pt.find_by_path(path)
+        pkg = self.pt.find_by_path(path)
         self.assertEqual(swd.to_name(pkg), path)
 
     def test_find_leaf_path(self):
-        pt = swd.PackageTree(product="houdini")
         path = "houdini 16.0.736/arnold-houdini 2.0.2.2/al-shaders 1.0"
-        pkg = pt.find_by_path(path)
+        pkg = self.pt.find_by_path(path)
         self.assertEqual(swd.to_name(pkg), "al-shaders 1.0")
 
     def test_find_nonexistent_path_return_none(self):
-        pt = swd.PackageTree(product="houdini")
         path = "houdini 16.0.736/arnold-houdini 9.0.2.2"
-        pkg = pt.find_by_path(path)
+        pkg = self.pt.find_by_path(path)
         self.assertEqual(pkg, None)
 
     def test_find_empty_path_return_none(self):
-        pt = swd.PackageTree(product="houdini")
         path = ""
-        pkg = pt.find_by_path(path)
+        pkg = self.pt.find_by_path(path)
         self.assertEqual(pkg, None)
 
 
 class FindByNameTest(unittest.TestCase):
+    def setUp(self):
+        response, _ = ApiClient().make_request(uri_path='api/v1/ee/packages')
+        data = json.loads(response).get("data")
+        self.pt = swd.PackageTree(data, product="houdini")
 
     def test_find_root(self):
-        pt = swd.PackageTree(product="houdini")
         name = 'houdini 16.5.323'
-        result = pt.find_by_name(name)
+        result = self.pt.find_by_name(name)
         self.assertEqual(swd.to_name(result), name)
 
     def test_find_root_when_limit_1(self):
-        pt = swd.PackageTree(product="houdini")
         name = 'houdini 16.5.323'
-        result = pt.find_by_name(name, 1)
+        result = self.pt.find_by_name(name, 1)
         self.assertEqual(swd.to_name(result), name)
 
     def test_find_plugin_level(self):
-        pt = swd.PackageTree(product="houdini")
         name = "arnold-houdini 2.0.2.2"
-        result = pt.find_by_name(name)
+        result = self.pt.find_by_name(name)
         self.assertEqual(swd.to_name(result), name)
 
     def test_find_plugin_level_high_limit(self):
-        pt = swd.PackageTree(product="houdini")
         name = "arnold-houdini 2.0.2.2"
-        result = pt.find_by_name(name, 2)
+        result = self.pt.find_by_name(name, 2)
         self.assertEqual(swd.to_name(result), name)
 
     def test_dont_find_plugin_level_when_limited(self):
-        pt = swd.PackageTree(product="houdini")
         name = "arnold-houdini 2.0.2.2"
-        result = pt.find_by_name(name, 1)
+        result = self.pt.find_by_name(name, 1)
         self.assertEqual(result, None)
 
 
 class SoftwareDataGetAllPathsTest(unittest.TestCase):
 
+    def setUp(self):
+        response, _ = ApiClient().make_request(uri_path='api/v1/ee/packages')
+        data = json.loads(response).get("data")
+        self.pt = swd.PackageTree(data, product="houdini")
+
     def test_get_all_paths_to_root(self):
-        pt = swd.PackageTree(product="houdini")
+
         keys = {
             'product': 'houdini',
             'major_version': '16',
@@ -251,13 +259,13 @@ class SoftwareDataGetAllPathsTest(unittest.TestCase):
             'plugin_host_product': '',
             'plugin_host_version': ''
         }
-        paths = pt.get_all_paths_to(**keys)
+        paths = self.pt.get_all_paths_to(**keys)
         self.assertTrue(
             'houdini 16.5.323' in paths)
         self.assertEqual(len(paths), 1)
 
     def test_get_all_paths_to_leaf(self):
-        pt = swd.PackageTree(product="houdini")
+
         keys = {
             'product': 'al-shaders',
             'major_version': '1',
@@ -267,13 +275,13 @@ class SoftwareDataGetAllPathsTest(unittest.TestCase):
             'plugin_host_product': '',
             'plugin_host_version': ''
         }
-        paths = pt.get_all_paths_to(**keys)
+        paths = self.pt.get_all_paths_to(**keys)
         self.assertTrue(
             'houdini 16.0.736/arnold-houdini 2.0.1/al-shaders 1.0' in paths)
         self.assertEqual(len(paths), 2)
 
     def test_get_all_paths_to_nonexistent(self):
-        pt = swd.PackageTree(product="houdini")
+
         keys = {
             'product': 'foo',
             'major_version': '1',
@@ -283,7 +291,7 @@ class SoftwareDataGetAllPathsTest(unittest.TestCase):
             'plugin_host_product': '',
             'plugin_host_version': ''
         }
-        paths = pt.get_all_paths_to(**keys)
+        paths = self.pt.get_all_paths_to(**keys)
         self.assertEqual(paths, [])
 
 

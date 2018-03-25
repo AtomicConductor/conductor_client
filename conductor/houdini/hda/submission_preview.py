@@ -18,5 +18,5 @@ class SubmissionPreview(QtWidgets.QTabWidget):
         self.addTab(self.dry_run, "Dry run")
 
         self.setGeometry(300, 200, 1000, 600)
- 
+
         self.setWindowTitle("Conductor submission preview")
