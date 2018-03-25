@@ -11,7 +11,10 @@ software section, or even deal with it automatically.
 from conductor.houdini.hda import uistate
 
 
-def _get_nice_render_type(input_type):
+SIMULATION_NODES = ["dop", "geometry"]
+
+
+def _get_nice_driver_type(input_type):
     """Display render type in the node header."""
     if not input_type:
         return "No render source"
@@ -19,31 +22,32 @@ def _get_nice_render_type(input_type):
         return 'Mantra render'
     if input_type == 'arnold':
         return 'Arnold render'
-    if input_type == 'rib':
+    if input_type == 'ris':
         return 'Prman render'
-    if input_type in ['output', 'filecache']:
+    if input_type in SIMULATION_NODES:
         return 'Simulation'
-    return 'Unknown'
+    return input_type
 
 
-def get_render_node(node):
-    """Get connected render node."""
+def get_driver_node(node):
+    """Get connected driver node."""
     inputs = node.inputs()
     return inputs[0] if inputs else None
 
 
-def get_render_type(node):
-    input_node = get_render_node(node)
+def get_driver_type(node):
+    input_node = get_driver_node(node)
     return input_node.type().name() if input_node else None
 
+def is_simulation(node):
+    return  get_driver_type(node) in SIMULATION_NODES
+    
 
 def update_input_node(node):
     """Callback triggered every time a connection is made/broken."""
-    render_node =  get_render_node(node)
-    path = render_node.path() if render_node else ""
-  
-    render_type = get_render_type(node)
-    print node.name()
-    node.parm('render_type').set(_get_nice_render_type(render_type))
+    driver_node =  get_driver_node(node)
+    path = driver_node.path() if driver_node else ""
+    driver_type = get_driver_type(node)
+    node.parm('driver_type').set(_get_nice_driver_type(driver_type))
     node.parm('source').set(path)
     uistate.update_button_state(node)

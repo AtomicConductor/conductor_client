@@ -1,6 +1,6 @@
 import json
 from conductor.houdini.hda import takes, types
-
+from conductor.houdini.lib import data_block
 
 def has_valid_project(node):
     """Make sure the project is valid.
@@ -9,7 +9,7 @@ def has_valid_project(node):
     enabled.
 
     """
-    projects = json.loads(node.parm('projects').eval())
+    projects = data_block.ConductorDataBlock(product="houdini").projects()
     selected = node.parm('project').eval()
     return not (selected == "notset" or selected not in (
         project["id"] for project in projects))
