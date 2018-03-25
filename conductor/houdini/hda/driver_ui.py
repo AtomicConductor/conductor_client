@@ -45,9 +45,13 @@ def is_simulation(node):
 
 def update_input_node(node):
     """Callback triggered every time a connection is made/broken."""
-    driver_node =  get_driver_node(node)
+    driver_node = get_driver_node(node)
     path = driver_node.path() if driver_node else ""
     driver_type = get_driver_type(node)
     node.parm('driver_type').set(_get_nice_driver_type(driver_type))
     node.parm('source').set(path)
+
+    show_frames = not is_simulation(node)
+    node.parm('show_frames_ui').set(show_frames)
     uistate.update_button_state(node)
+ 
