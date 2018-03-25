@@ -1,7 +1,9 @@
 """Manage instance_type menu selection."""
 
 import json
-from conductor.lib import common
+from conductor.houdini.lib import data_block
+
+
 
 def _to_menu_item(item):
     """Convert instance_type object to tuple.
@@ -13,26 +15,7 @@ def _to_menu_item(item):
     key = "%s_%s" % (item["flavor"], item["cores"])
     return (key, item["description"])
 
-
-def fetch_types(node):
-    """Fetch list of instance types.
-
-    Store them on machine_types param as json so they can be
-    accessed from the dynamic menu creation script. If we
-    don't do this, and instead fetch every time the menu is
-    accessed, there is an unacceptable delay. Also check
-    that the selected item in the menu is in the list. If it
-    is not then set it to the first item in the list.
-
-    """
-    types = common.get_conductor_instance_types()
-    node.parm('machine_types').set(json.dumps(types))
-    selected = node.parm('machine_type').eval()
-
-    if selected not in (_to_menu_item(item)[0] for item in types):
-        node.parm('machine_type').set(_to_menu_item(types[0])[0])
-    return types
-
+ 
 
 def populate_menu(node):
     """Populate instance type menu.
@@ -41,7 +24,10 @@ def populate_menu(node):
     cached. The menu needs a flat array: [k, v, k, v ....]
 
     """
-    existing = json.loads(node.parm('machine_types').eval())
-    if not bool(existing):
-        existing = fetch_types(node)
-    return [k for i in existing for k in _to_menu_item(i)]
+    instance_types = data_block.ConductorDataBlock(product="houdini").instance_types()
+    selected = node.parm('machine_type').eval()
+    if selected not in (_to_menu_item(item)[0] for item in instance_types):
+        node.parm('machine_type').set(_to_menu_item(instance_types[0])[0])
+
+ 
+    return [k for i in instance_types for k in _to_menu_item(i)]

@@ -9,9 +9,6 @@ packages and build paths etc.
 import copy
 import json
 import re
-# from conductor.lib.api_client import request_software_packages
-from conductor.houdini.lib.mocks.api_client_mock import request_software_packages
-# from conductor.houdini.lib.mocks.api_client_mock_no_exact_host import request_software_packages
 
 
 from package_environment import PackageEnvironment
@@ -217,37 +214,33 @@ def to_all_paths(path):
 
 class PackageTree(object):
 
-    def __init__(self, **kw):
-        """Build tree from cached json or from name of a product.
-
-        If json is given it is used. Otherwise build the
-        tree with branches filtered by the name of the
-        product. If the product is None then build from all
-        root level packages (host softwares)
-
-        """
-        tree_json = kw.get("json")
-        if tree_json:
-            self._tree = json.loads(tree_json)
-        else:
-            product = kw.get("product")
-            self._build_tree(product)
-
-    def _build_tree(self, product):
-        """Build from the name of the product.
-
-        If the product is None, then build starting at all
-        root level packages.
-
-        """
-        packages = request_software_packages()
+    def __init__(self, packages, **kw):
+ 
+        product = kw.get("product")
         if product:
             root_ids = [p["package_id"]
                         for p in packages if p["product"] == product]
         else:
             root_ids = [p["package_id"]
                         for p in packages if not p["plugin_host_product"]]
+
         self._tree = _build_tree(packages, {"plugins": root_ids})
+
+    # def _build_tree(self, product):
+    #     """Build from the name of the product.
+
+    #     If the product is None, then build starting at all
+    #     root level packages.
+
+    #     """
+    #     # packages = request_software_packages()
+    #     if product:
+    #         root_ids = [p["package_id"]
+    #                     for p in packages if p["product"] == product]
+    #     else:
+    #         root_ids = [p["package_id"]
+    #                     for p in packages if not p["plugin_host_product"]]
+    #     self._tree = _build_tree(packages, {"plugins": root_ids})
 
     def find_by_name(self, name, limit=None, depth=0):
         return _find_by_name(self._tree, name, limit, depth)
