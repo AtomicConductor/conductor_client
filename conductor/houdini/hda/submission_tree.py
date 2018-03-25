@@ -109,8 +109,9 @@ class SubmissionTree(QtWidgets.QWidget):
                 self._appendRow(packages_item, "[%d]" % i, p)
 
             environment_item = self._appendRow(job_item, "Environment:")
-            for envkey in sorted(job.environment):
-                value = job.environment[envkey]
+            job_env = dict(job.environment)
+            for envkey in sorted(job_env):
+                value = job_env[envkey]
                 parts = value.split(":")
                 var_item = self._appendRow(
                     environment_item,
