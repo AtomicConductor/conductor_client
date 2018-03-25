@@ -57,9 +57,7 @@ def _update_job_node(node, **_):
 
 
     with takes.take_context(hou.takes.rootTake()):
-        # projects_ui.fetch(node)
-        # instances_ui.fetch_types(node)
-        # software_ui.update_package_tree(node)
+
         frame_spec_ui.validate_custom_range(node)
         frame_spec_ui.validate_scout_range(node)
         frame_spec_ui.set_type(node)
