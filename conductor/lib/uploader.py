@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import Queue
+import signal
 import sys
 import tempfile
 import thread
@@ -586,10 +587,7 @@ class Uploader(object):
         except:
             return traceback.format_exc()
 
-
-    def main(self, run_one_loop=False):
-        logger.info('Uploader Started. Checking for uploads...')
-
+    def profiling_start(self):
         # for profiling, grab the environment variable's value
         # to determine where to put the profiling data
 
@@ -609,7 +607,39 @@ class Uploader(object):
         self.profile_thread_filename = os.path.join(profile_path, thread_filename)
 
         # start profiling
+        logger.info('starting profiling')
         yappi.start()
+        return True
+
+    def profiling_stop(self):
+        logger.info('stopping profiling')
+        yappi.stop()
+
+        # There are two collections we want
+        # the function stats and the thread stats
+        func_stats = yappi.get_func_stats()
+        pstats_func = yappi.convert2pstats(func_stats)
+        pstats_func.dump_stats(self.profile_func_filename)
+
+        thread_stats = yappi.get_thread_stats()
+        thread_stats_file = open(self.profile_thread_filename, 'w')
+        thread_stats.print_all(thread_stats_file)
+        thread_stats_file.close()
+
+    def sigterm_handler(self, signal, frame):
+        logger.info("Caught SIGTERM, exiting...")
+        self.profiling_stop()
+        sys.exit(0)
+
+    def main(self, run_one_loop=False):
+        logger.info('Uploader Started. Checking for uploads...')
+
+        # in some cases, this uploader will be terminated with a SIGTERM
+        # in which case, we need to exit gracefully via a handler
+        signal.signal(signal.SIGTERM, self.sigterm_handler)
+
+        # begin profiling
+        self.profiling_start()
 
         while not common.SIGINT_EXIT:
             try:
@@ -655,18 +685,7 @@ class Uploader(object):
                 logger.info("ctrl-c exit")
 
                 # stop profiling here
-                yappi.stop()
-
-                # There are two collections we want
-                # the function stats and the thread stats
-                func_stats = yappi.get_func_stats()
-                pstats_func = yappi.convert2pstats(func_stats)
-                pstats_func.dump_stats(self.profile_func_filename)
-
-                thread_stats = yappi.get_thread_stats()
-                thread_stats_file = open(self.profile_thread_filename, 'w')
-                thread_stats.print_all(thread_stats_file)
-                thread_stats_file.close()
+                self.profiling_stop()
                 break
             except:
                 logger.exception('Caught exception:\n')
