@@ -5,11 +5,10 @@ deals with the software tree should happen in the
 software_data module
 
 """
-
-import re
+ 
 import hou
-from conductor.lib import common, api_client
 
+from conductor.houdini.lib import data_block
 from conductor.houdini.lib import software_data as swd
 from conductor.houdini.hda import houdini_info
 
@@ -30,7 +29,7 @@ def _get_existing_paths(node):
     num = node.parm("packages").eval()
     for i in range(num):
         index = i+1
-        path = node.parm("package_%d" % index).eval()
+        paths.append(node.parm("package_%d" % index).eval())
         # if path != NO_HOST_PACKAGES:
         #     paths.append(path)
     return paths
@@ -53,20 +52,15 @@ def clear(node, **_):
      # _add_package_entries(node, [])
 
 
-def get_package_tree(node, force_fetch=False):
-    """Get the software tree object."""
-    cached_json = node.parm("softwares").eval()
-    if cached_json and not force_fetch:
-        sw = swd.PackageTree(json=cached_json)
-    else:
-        sw = swd.PackageTree(product="houdini")
-        node.parm("softwares").set(sw.json())
-    return sw
+def get_package_tree(node):
+    return data_block.ConductorDataBlock(product="houdini").package_tree()
+ 
 
 
 def get_chosen_ids(node):
     paths = _get_existing_paths(node)
     package_tree = get_package_tree(node)
+
     results = []
     for path in paths:
         name = path.split("/")[-1]
@@ -127,8 +121,8 @@ def choose(node, **_):
 
 
 
-def update_package_tree(node, **kw):
-    package_tree = get_package_tree(node, force_fetch=True)
+# def update_package_tree(node, **kw):
+#     package_tree = get_package_tree(node, force_fetch=True)
         
     
 
@@ -158,9 +152,12 @@ def detect(node, **_):
 
 def initialize(node):
     """Default software configuration"""
-    node.parm("extra_upload_paths").set(2)
+    node.parm("extra_upload_paths").set(5)
     node.parm("upload_1").set('$CONDUCTOR_HOUDINI/scripts/chrender.py')
-    node.parm("upload_2").set('$CONDUCTOR_HOUDINI/lib/sequence')
+    node.parm("upload_2").set('$CONDUCTOR_HOUDINI/lib/sequence.sequence.py')
+    node.parm("upload_3").set('$CONDUCTOR_HOUDINI/lib/sequence.clump.py')
+    node.parm("upload_4").set('$CONDUCTOR_HOUDINI/lib/sequence.progressions.py')
+    node.parm("upload_5").set('$CONDUCTOR_HOUDINI/lib/sequence.__init__.py')
 
     node.parm("environment_kv_pairs").set(1)
     node.parm("env_key_1").set('PYTHONPATH')

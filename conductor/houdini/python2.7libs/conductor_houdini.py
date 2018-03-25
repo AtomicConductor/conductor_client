@@ -7,12 +7,12 @@ as well as populating menus, initializing state and so on.
 import traceback
 import hou
 
+from conductor.houdini.lib import data_block
 from conductor.houdini.hda import (
-    data_block,
     instances_ui,
     projects_ui,
     frame_spec_ui,
-    render_source_ui,
+    driver_ui,
     job_source_ui,
     action_row_ui,
     software_ui,
@@ -23,7 +23,13 @@ from conductor.houdini.hda import (
     types
 )
 
+def force_job_update(node, **_):
+    db = data_block.ConductorDataBlock(force=True, product="houdini")
+    _update_job_node(node)
 
+def force_submission_update(node, **_):
+    db = data_block.ConductorDataBlock(force=True, product="houdini")
+    _update_submission_node(node)
 
 
 def _update_submission_node(node, **_):
@@ -35,7 +41,6 @@ def _update_submission_node(node, **_):
     """
     with takes.take_context(hou.takes.rootTake()):
         job_source_ui.update_inputs(node)
-        
         notifications_ui.validate_emails(node)
         notifications_ui.email_hook_changed(node)
         submission_ui.toggle_timestamped_scene(node)
@@ -49,14 +54,16 @@ def _update_job_node(node, **_):
     the root take context to ensure everything is unlocked.
 
     """
+
+
     with takes.take_context(hou.takes.rootTake()):
-        projects_ui.fetch(node)
-        instances_ui.fetch_types(node)
+        # projects_ui.fetch(node)
+        # instances_ui.fetch_types(node)
+        # software_ui.update_package_tree(node)
         frame_spec_ui.validate_custom_range(node)
         frame_spec_ui.validate_scout_range(node)
         frame_spec_ui.set_type(node)
-        software_ui.update_package_tree(node)
-        render_source_ui.update_input_node(node)
+        driver_ui.update_input_node(node)
 
         submission_ui.toggle_timestamped_scene(node)
         notifications_ui.validate_emails(node)
@@ -74,14 +81,11 @@ MENUS = dict(
 )
  
 
-def tmp_test(node, **kw):
-    print kw
-
 ACTIONS = dict(
     preview=action_row_ui.preview,
     submit=action_row_ui.doit,
-    update=_update_job_node,
-    sub_update=_update_submission_node,
+    update=force_job_update,
+    sub_update=force_submission_update,
     use_custom=frame_spec_ui.set_type,
     fs1=frame_spec_ui.set_frame_range,
     fs2=frame_spec_ui.set_frame_range,
@@ -99,8 +103,7 @@ ACTIONS = dict(
     email_on_start=notifications_ui.email_hook_changed,
     email_on_finish=notifications_ui.email_hook_changed,
     email_on_failure=notifications_ui.email_hook_changed,
-    use_timestamped_scene=submission_ui.toggle_timestamped_scene,
-    packages=tmp_test
+    use_timestamped_scene=submission_ui.toggle_timestamped_scene
 )
 
 AUX_BUTTON_ACTIONS = dict(
@@ -179,7 +182,7 @@ def on_input_changed_callback(node, **_):
     """Make sure correct render source is displayed."""
     try:
         if types.is_job_node(node):
-            render_source_ui.update_input_node(node)
+            driver_ui.update_input_node(node)
         else: 
             job_source_ui.update_inputs(node)
 

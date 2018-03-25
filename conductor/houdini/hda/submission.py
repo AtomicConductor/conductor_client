@@ -2,9 +2,9 @@ import datetime
 import json
 import hou
 
+from conductor.houdini.lib import data_block
 from conductor.houdini.hda import submission_ui, types, notifications_ui
-
-from job import Job
+from conductor.houdini.hda.job import Job
 
 
 class Submission(object):
@@ -41,7 +41,7 @@ class Submission(object):
             self._jobs.append(job)
 
     def _get_project_name(self):
-        projects = json.loads(self._node.parm('projects').eval())
+        projects = data_block.ConductorDataBlock(product="houdini").projects()
 
         project_names = [project["name"]
                          for project in projects if project['id'] == self._project_id]
