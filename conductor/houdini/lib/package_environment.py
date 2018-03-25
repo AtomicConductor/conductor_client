@@ -8,7 +8,10 @@ class PackageEnvironment(object):
     def _set(self, name, value):
         if name in self._env and self._env[name] != value:
             raise ValueError(
-                "Can't overwrite existing environment variable: %s\n New value is:\n%s\nand it is set to exclusive." %
+                """Can't overwrite environment variable: %s
+                New value is:
+                %s
+                and it is set to exclusive. """ %
                 (name, value))
         self._env[name] = value
 
@@ -39,10 +42,9 @@ class PackageEnvironment(object):
             else:
                 self._set(name, value)
 
-    @property
-    def env(self):
-        return self._env
+    def __iter__(self):
+        for k, v in self._env.iteritems():
+            yield k, v
 
-    @env.setter
-    def env(self, value):
-        self._env = dict(value)
+    def __getitem__(self, k):
+        return self._env.__getitem__(k)
