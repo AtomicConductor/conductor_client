@@ -3,7 +3,7 @@ import json
 import hou
 
 from conductor.houdini.lib import data_block
-from conductor.houdini.hda import submission_ui, types, notifications_ui
+from conductor.houdini.hda import submission_ui, types, notifications_ui, driver_ui
 from conductor.houdini.hda.job import Job
 
 
@@ -35,9 +35,8 @@ class Submission(object):
 
         self._user = hou.getenv('USER')
         self._jobs = []
-
         for node in self._nodes:
-            job = Job(node, self._tokens, self._scene)
+            job = Job.create(node, self._tokens, self._scene)
             self._jobs.append(job)
 
     def _get_project_name(self):
