@@ -1,11 +1,10 @@
 """Build an object to represent a Conductor submission."""
 
 import datetime
-import json
 import hou
 
 from conductor.houdini.lib import data_block
-from conductor.houdini.hda import submission_ui, types, notifications_ui, driver_ui
+from conductor.houdini.hda import submission_ui, types, notifications_ui
 from conductor.houdini.hda.job import Job
 
 
@@ -47,7 +46,6 @@ class Submission(object):
         why we eval jobs after the call to _setenv()
         """
         self._node = node
-        vendor, nodetype, version = node.type().name().split("::")
         if types.is_job_node(self._node):
             self._nodes = [node]
         else:

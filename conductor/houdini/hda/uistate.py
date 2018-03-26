@@ -5,7 +5,6 @@ if the custom frame range is valid. A Submission is valid if
 it has a project selected and all its input jobs are valid.
 """
 
-import json
 from conductor.houdini.hda import takes, types
 from conductor.houdini.lib import data_block
 

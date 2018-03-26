@@ -12,11 +12,6 @@ from conductor.houdini.lib.package_environment import PackageEnvironment
 class InitEnvTest(unittest.TestCase):
 
     def test_init_empty_env(self):
-        p = PackageEnvironment()
-        self.assertEqual(dict(p), {})
-        p = PackageEnvironment()
-
-    def test_init_empty_env(self):
         p = PackageEnvironment({})
         self.assertEqual(dict(p), {})
 

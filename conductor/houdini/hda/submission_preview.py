@@ -1,4 +1,4 @@
-from PySide2 import QtWidgets, QtGui, QtCore
+from PySide2 import QtWidgets
 from conductor.houdini.hda.submission_tree import SubmissionTree
 from conductor.houdini.hda.submission_dry_run import SubmissionDryRun
 
