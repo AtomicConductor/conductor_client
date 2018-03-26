@@ -3,6 +3,7 @@
 It has methods and functions to traverse the tree to find
 packages and build paths etc.
 
+See tests in /tests/test_software_data.py for additional usage info.
 """
 
 
@@ -26,7 +27,6 @@ def remove_unreachable(paths):
     versions of a renderer, but only one of those renderers
     is compatible with this host. We need to remove the
     entry that references a different host.
-
     """
     results = []
     previous = ""
@@ -43,12 +43,11 @@ def to_name(pkg):
     """Name like `houdini 16.5.323` or `maya 2016.SP3`.
 
     This name is derived from the product and version fields
-    in a package. It's purpose is to enable path
-    construction to uniquely identify a package. For
-    example: `houdini 16.0.736/arnold-houdini 2.0.2.2/al-
-    shaders 1.0` Note: It is not necessarily possible to go
-    the other way and extract those fields from the name.
-
+    in a package. Note: It is not necessarily possible to go
+    the other way and extract version fields from the name.
+    It's purpose is to enable path construction to uniquely
+    identify a package. For example, houdini 16.0.736
+    /arnold-houdini 2.0.2.2/al-shaders 1.0
     """
     version_parts = [
         pkg["major_version"],
@@ -62,10 +61,9 @@ def to_name(pkg):
 def _build_tree(packages, package):
     """Build a tree of dependent software plugins.
 
-    For each ID in the `plugins` key, replace it with the
-    package it refers to. Recurse until no more plugins are
-    left.
-
+    Add a children key, and For each ID in the `plugins`
+    key, add the package it refers to to children. Recurse
+    until no more plugins are left.
     """
     pkg = _light_copy(package)
     pkg["children"] = {}
@@ -83,7 +81,6 @@ def _light_copy(package):
     """Remove some unwanted keys.
 
     TODO - Some of these may turn out to be wanted after all.
-
     """
     pkg = copy.deepcopy(package)
     for att in [
@@ -108,7 +105,6 @@ def _is_product(pkg, **kw):
     minor_version, release_version, build_version). The root
     node has no `product` key because it is a collection of
     host packages.
-
     """
     if not pkg.get("product"):
         return False
@@ -142,8 +138,9 @@ def _find_by_keys(tree, **kw):
 def _find_by_name(branch, name, limit=None, depth=0):
     """Given a name made by `to_name` find the package.
 
-    Name is typically part of a path.
-
+    Name is typically part of a path. Limit will limit the
+    search depth and is useful when you know the package
+    should be a direct child and not any descndent.
     """
     if not branch:
         return None
@@ -167,7 +164,6 @@ def _find_by_path(tree, path):
     tree for the next search. As we are searching for an
     exact path match, we limit the search to one level deep
     each time.
-
     """
 
     result = None
@@ -178,12 +174,15 @@ def _find_by_path(tree, path):
 
 
 def _to_path_list(tree, **kw):
-    """Get paths to all nodes including roots.
+    """Get paths to all nodes.
 
+    This means starting at the level of the given tree, get
+    all the paths to intermediate and leaf nodes. This is
+    useful for populating a chooser to choose packages fully
+    qualified by path.
     * 'houdini 16.0.736'
     * 'houdini 16.0.736/arnold-houdini 2.0.1'
     * 'houdini 16.0.736/arnold-houdini 2.0.1/al-shaders 1.0'
-
     """
     parent_name = kw.get("parent_name", "")
     paths = kw.get("paths", [])
@@ -201,7 +200,7 @@ def to_all_paths(path):
 
     This can be useful if the user selects a plugin from a
     chooser, because we know we'll want its host ancestors.
-
+    Just split the string and work up the parts.
     """
     result = []
     parts = path.split("/")
@@ -213,9 +212,19 @@ def to_all_paths(path):
 
 
 class PackageTree(object):
+    """Class to represent available packages as a tree.
+
+    Data structure is really a DAG because a tool may be
+    compatible with moore than one host product.
+    """
 
     def __init__(self, packages, **kw):
- 
+        """Initialize based on a product.
+
+        If product kw given then build the tree containing
+        packages below versions of that product only. e.g.
+        "houdini" or "maya-io"
+        """
         product = kw.get("product")
         if product:
             root_ids = [p["package_id"]
@@ -226,26 +235,21 @@ class PackageTree(object):
 
         self._tree = _build_tree(packages, {"plugins": root_ids})
 
-    # def _build_tree(self, product):
-    #     """Build from the name of the product.
-
-    #     If the product is None, then build starting at all
-    #     root level packages.
-
-    #     """
-    #     # packages = request_software_packages()
-    #     if product:
-    #         root_ids = [p["package_id"]
-    #                     for p in packages if p["product"] == product]
-    #     else:
-    #         root_ids = [p["package_id"]
-    #                     for p in packages if not p["plugin_host_product"]]
-    #     self._tree = _build_tree(packages, {"plugins": root_ids})
-
     def find_by_name(self, name, limit=None, depth=0):
+        """Search the tree for a product with the given name.
+
+        This name is the name originally constructed from
+        the package using to_name.
+        """
         return _find_by_name(self._tree, name, limit, depth)
 
     def find_by_keys(self, **kw):
+        """Search the tree for a product with the given keys.
+
+        Whichever keys from the following are given, must
+        match, product, major_version, minor_version,
+        release_version, build_version
+        """
         return _find_by_keys(self._tree, **kw)
 
     def find_by_path(self, path):
@@ -253,7 +257,7 @@ class PackageTree(object):
         return _find_by_path(self._tree, path)
 
     def to_path_list(self):
-        """Get paths to all nodes."""
+        """Get paths to all nodes below and including the top level nodes."""
         return _to_path_list(self._tree)
 
     def get_all_paths_to(self, **kw):
@@ -262,7 +266,6 @@ class PackageTree(object):
         Its possible there is more than one path to a given
         node. For now we just get all paths through the tree
         and then select the ones whose leaf matches.
-
         """
         all_paths = _to_path_list(self._tree)
         name = to_name(kw)
@@ -282,4 +285,5 @@ class PackageTree(object):
         return self._tree
 
     def json(self):
+        """The whole tree as json"""
         return json.dumps(self._tree)

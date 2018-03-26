@@ -1,17 +1,13 @@
-"""Manage change of input node.
-
-Currently only sets the label to indicate what type of
-input, but later it may adjust other parts of the UI. For
-example, We allow the user to select different renderers in
-the software section, but if the input type changes here, to
-Arnold say, then we can prompt the user to revisit the
-software section, or even deal with it automatically.
-
-"""
+"""Manage change of input jobs for a submitter node."""
 from conductor.houdini.hda import uistate, types
 
+
 def update_inputs(node):
-    """Callback triggered every time a connection is made/broken."""
+    """Callback triggered every time a connection is made/broken.
+
+    When a node is added or removed, check it is a
+    Conductor::job node and disconnect if not.
+    """
     conns = node.inputConnections()
     for conn in conns:
         index = conn.inputIndex()

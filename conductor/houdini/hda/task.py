@@ -1,18 +1,34 @@
 import hou
-# from conductor.houdini.lib.expansion import Expander
 
 
 class Task(object):
-    """Prepare a Task."""
+    """A Task is a command and the list of frames it relates to.
+
+    It provides a handful of tokens that can be used to
+    construct the command.
+    """
 
     def __init__(self, clump, command, parent_tokens):
+        """Resolve the tokens and the command.
+
+        After calling setenv, tokens such as start end step
+        and so on are valid. So when we expand the command
+        any tokens that were used are correctly resolved.
+        """
         self._clump = clump
-        self._tokens = self._collect_tokens(parent_tokens)
- 
+        self._tokens = self._setenv(parent_tokens)
         self._command = hou.expandString(command)
 
-    def _collect_tokens(self, parent_tokens):
-        """Tokens are string kv pairs used for substitutions."""
+    def _setenv(self, parent_tokens):
+        """Env tokens at the task level.
+
+        Task level tokens are joined with Job and submission
+        level tokens so that all tokens are available when
+        constructing the task command.
+
+        Example:
+        python myCmd.py -s $CT_CLUMPSTART -e $CT_CLUMPEND -n $CT_SOURCE -f $CT_SCENE
+        """
 
         tokens = {}
         clump_type = type(self._clump).__name__.lower()[:-5]
@@ -30,9 +46,9 @@ class Task(object):
 
         return tokens
 
-    def remote_data(self):
+    def data(self):
         return {
-            "frames": str(self._clump),
+            "frames": str(tuple(self._clump)),
             "command": self._command
         }
 
@@ -47,4 +63,3 @@ class Task(object):
     @property
     def tokens(self):
         return self._tokens
- 
