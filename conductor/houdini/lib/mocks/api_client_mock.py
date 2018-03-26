@@ -26,18 +26,22 @@ class ApiClient():
     def make_request(self, **kw):
 
         path = kw.get("uri_path", "")
-        if kw.get("uri_path", "").startswith("api/v1/projects"):
+        print "%s %s" % (self.__class__.__name__, path)
+
+        if path.startswith("api/v1/projects"):
             return [json.dumps(PROJECTS_RESPONSE), 200]
 
-        if kw.get("uri_path", "").startswith("api/v1/ee/packages"):
+        if path.startswith("api/v1/ee/packages"):
             return _read("sw_packages.json")
 
 
 class ApiClientNoHost():
     def make_request(self, **kw):
+        path = kw.get("uri_path", "")
+        print "%s %s" % (self.__class__.__name__, path)
 
-        if kw.get("uri_path", "").startswith("api/v1/projects"):
+        if path.startswith("api/v1/projects"):
             return [json.dumps(PROJECTS_RESPONSE), 200]
 
-        if kw.get("uri_path", "").startswith("api/v1/ee/packages"):
+        if path.startswith("api/v1/ee/packages"):
             return _read("sw_packages_no_exact_host.json")

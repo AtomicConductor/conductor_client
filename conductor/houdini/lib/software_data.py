@@ -9,7 +9,6 @@ See tests in /tests/test_software_data.py for additional usage info.
 
 import copy
 import json
-import re
 
 
 from package_environment import PackageEnvironment

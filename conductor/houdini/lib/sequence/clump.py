@@ -158,7 +158,6 @@ class IrregularClump(Clump):
         progressions = prog.create(self._iterable)
         clumps = [Clump.create(p) for p in progressions]
         return (",").join([str(clump) for clump in clumps])
-     
+
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self._iterable)
-

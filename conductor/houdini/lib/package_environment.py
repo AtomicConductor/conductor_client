@@ -6,12 +6,12 @@ class PackageEnvironment(object):
     extend()
     """
 
-    def __init__(self, base={}):
+    def __init__(self, base=None):
         """Make the underlying dict.
 
         Use initial value, maybe from CONFIG, if given
         """
-        self._env = dict(base)
+        self._env = dict(base or {})
 
     def _set(self, name, value):
         """Set the value of an exclusive variable.
