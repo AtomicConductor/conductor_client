@@ -16,11 +16,7 @@ from clump import (
     NUMBER_RE,
     RANGE_RE,
     resolve_start_end_step,
-    Clump,
-    RegularClump,
-    IrregularClump)
-
-import progressions as prog
+    Clump)
 
 
 class Sequence(object):

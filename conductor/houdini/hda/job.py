@@ -9,7 +9,6 @@ different for each kind of node.
 import os
 
 import hou
-import json
 from conductor.houdini.lib import data_block
 from conductor.houdini.lib.sequence.clump import Clump
 from conductor.houdini.lib.sequence.sequence import Sequence

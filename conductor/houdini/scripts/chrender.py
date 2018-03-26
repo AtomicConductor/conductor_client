@@ -7,7 +7,6 @@ Currently it is designed for images, but can be extended to
 produce output for other ROPs
 """
 import sys
-import os
 import argparse
 import hou
 
@@ -49,9 +48,9 @@ def validate_args(args):
     """Check arg values such as range, hip and rop existence etc.
 
     TODO: Implement these validations and remove inline checks
-    from render method.    
+    from render method.
     """
-    pass
+    return ""
 
 
 def parse_args():
@@ -105,7 +104,6 @@ def render(args):
         usage('Rop does not exist: %s' % args.driver)
 
     for clump in clumps:
-        cmd = "render "
         rop.render(
             frame_range=clump.range,
             verbose=True,
