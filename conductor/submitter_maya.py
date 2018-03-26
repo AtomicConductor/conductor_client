@@ -148,8 +148,16 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         super(MayaConductorSubmitter, self).applyDefaultSettings()
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
+        self.setGpuWidgetVisibility()
         self.extended_widget.refreshUi()
         self.setOutputDir(maya_utils.get_image_dirpath())
+
+    def setGpuWidgetVisibility(self):
+        '''
+        Show the Gpu combobox if V-Ray is the current renderer and its set to a GPU mode.
+        '''
+        show = maya_utils.is_vray_renderer() and maya_utils.is_vray_gpu_enabled()
+        self.ui_gpu_widget.setVisible(show)
 
     def getExtendedWidget(self):
         return MayaWidget()
@@ -280,7 +288,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             plugins_info.append(plugin_info)
         return plugins_info
 
-
     def checkSaveBeforeSubmission(self):
         '''
         Check if scene has unsaved changes and prompt user if they'd like to
@@ -290,10 +297,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         if file_unsaved:
             title = "Unsaved Maya Scene Data"
             message = "Save Maya file before submitting?"
-            answer, _ = pyside_utils.launch_yes_no_dialog(title, message, show_not_again_checkbox=False, parent=self)
+            answer, _ = pyside_utils.launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=False, parent=self)
             return answer
         return True
-
 
     def runPreSubmission(self):
         '''
@@ -311,9 +317,13 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         # Check if scene has unsaved changes and ask user if they'd like to
         # save their scene before continuing with submission
-        if not self.checkSaveBeforeSubmission():
+        # NOTE: The option of 'No' has a value of 2, and would
+        # be the fall-through value here (i.e. continue without
+        # doing anything).
+        save_dialog_result = self.checkSaveBeforeSubmission()
+        if not save_dialog_result:
             raise exceptions.UserCanceledError()
-        else:
+        elif save_dialog_result == 1:
             maya_utils.save_current_maya_scene()
 
         # TODO(lws): This try/except should be moved up to the parent-class so
