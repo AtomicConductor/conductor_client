@@ -4,10 +4,10 @@ It can emit clumps according to a specified policy, for
 example, linearly or cycle. Where cycle will distrtibute
 frames across clumps such that the first frame completed by
 each clump will together form a continuous sequence. For
-rationale see _cycle_clumps. It can be initialized with a
-range or with a list of numbers. It has two properties that
-define how clumps will be made: clump_size and cycle.
-
+rationale see _cycle_clumps. Sequence can be initialized
+with a range or with a list of numbers. It has two
+properties that define how clumps will be made: clump_size
+and cycle.
 """
 
 import math
@@ -48,7 +48,6 @@ class Sequence(object):
         by commas. Ranges can have an optional step value.
         Example valid custom range spec: "120, 5,
         26-76,19-23x4, 1000-2000, 3,9,".
-
         """
 
         the_set = set()
@@ -72,7 +71,6 @@ class Sequence(object):
 
         Range must have start and end. Step, clump-size and
         cycle method may be specified in keyword args
-
         """
         start, end, step = resolve_start_end_step(
             start, end, kw.get('step', 1))
@@ -83,7 +81,6 @@ class Sequence(object):
         """Instantiate from iterable.
 
         If frames is given as a set, convert to a list
-
         """
         self._frames = frames
         if not hasattr(frames, '__getitem__'):
@@ -102,7 +99,6 @@ class Sequence(object):
         may be useful to check for frame coherence artifacts
         without waiting for a whole clump to render on one
         machine.
-
         """
         num_clumps = self.clump_count()
         result = [[] for i in range(num_clumps)]
@@ -137,7 +133,6 @@ class Sequence(object):
 
         The result is the smallest clumpsize that maintains
         the current clump_count.
-
         """
         if not self._frames:
             return
@@ -164,8 +159,8 @@ class Sequence(object):
     def __iter__(self):
         """Frames in the order computed using clump_size and cycle.
 
-        WHY?
-
+        WHY? Because its the order they wil be rendered. To
+        get frames sorted numerically, just get _frames.
         """
         return iter([item for sublist in self.clumps() for item in sublist])
 

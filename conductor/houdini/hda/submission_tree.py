@@ -1,15 +1,20 @@
-
 from PySide2 import QtWidgets, QtGui, QtCore
 
 
-
-
 class SubmissionTree(QtWidgets.QWidget):
+    """A Window to display the submission object.
+
+    Shows a tree view with expandable sections to view the
+    whole state of the submission. The user can use this
+    view to:
+    1. Check or debug issues with the submission structure.
+    2. check find out what tokens are available and
+    what their values look like.
+    """
 
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
         hbox = QtWidgets.QHBoxLayout()
-
 
         self._view = QtWidgets.QTreeView()
         self._view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -35,7 +40,9 @@ class SubmissionTree(QtWidgets.QWidget):
 
         self._appendRow(self._model, "Submission node:", submission.node_name)
         self._appendRow(self._model, "Hip file:", submission.filename)
-        self._appendRow(self._model, "Scene file:", str(submission.scene))
+        self._appendRow(
+            self._model, "Submission scene:", str(
+                submission.scene))
         self._appendRow(self._model, "Project id:", submission.project_id)
 
         self._appendRow(
@@ -131,11 +138,10 @@ class SubmissionTree(QtWidgets.QWidget):
                 task_header = self._appendRow(
                     task_item, "%s" % str(task.clump))
                 self._appendRow(task_header, "Command:", task.command)
-                self._appendRow(task_header, "Frames:", str(tuple(task.clump)))
+                self._appendRow(task_header, "Frames:", str(task.clump))
                 task_token_item = self._appendRow(task_header, "Tokens:")
                 for tok in sorted(task.tokens):
                     self._appendRow(task_token_item, tok, task.tokens[tok])
 
                 if j is 0:
                     self._view.expand(self._model.indexFromItem(task_header))
-

@@ -30,15 +30,13 @@ def create(iterable, **kw):
     iterable = sorted(iterable)
     
     if max_size == 1:
-        return [[x] for x in  iterable]
+        return [[x] for x in iterable]
 
     if max_size < 1:
         max_size = len(iterable)
  
     results = [[]]
 
-    if max_size == -1:
-        max_size = len(iterable)
     # add a sentinel to the end - see below
     iterable.append(-1)
     p = 0
@@ -53,9 +51,9 @@ def create(iterable, **kw):
             # the second of them to start this progression. Why? because
             # we are greedy and will have more chance of making longer
             # progressions if we dismantle progressions of length 2 and 
-            # then pair up the straggling sigles later.
-            # Note that the sentinel added above
-            # ensures this rule also works on the original last element.
+            # then pair up the straggling singles later.
+            # Note that the sentinel added above ensures this rule also
+            # works on the original last element.
             if len(results[lastp]) == 2:
                 results[p].append(results[lastp][1])
                 results[lastp] = results[lastp][:1]
@@ -69,6 +67,10 @@ def create(iterable, **kw):
     else:
         results[p] = results[p][:-1]
 
+    # Now join straggling singles into pairs if possible. Loop
+    # through the singles, joining every other one to the one
+    # before. In theory we could recurse here and look for
+    # even longer progressions in the stragglers.
     progs, singles = [], []
     for prog in results:
         singles.append(prog[0]) if len(prog) == 1 else progs.append(prog)

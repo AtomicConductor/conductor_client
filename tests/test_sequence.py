@@ -161,13 +161,6 @@ class RegularClumpTest(unittest.TestCase):
         with self.assertRaises(IndexError):
             RegularClump()
 
-    def test_format(self):
-        c = RegularClump(1, 10, 3)
-        template = "root/%02d/name.%04d.ext"
-        result = c.format(template)
-        self.assertEqual(result[1], "root/04/name.0004.ext")
-        self.assertEqual(len(result), 4)
-
     def test_start_end_step_properties_spec_args(self):
         c = RegularClump("3-10x2")
         self.assertEqual(c.start, 3)
