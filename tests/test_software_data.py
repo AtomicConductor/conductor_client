@@ -9,10 +9,6 @@ HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
-# # mocked api_client returns json fixtures
-# sys.modules['conductor.lib.api_client'] = __import__(
-#     'conductor.houdini.lib.mocks.api_client_mock', fromlist=['dummy'])
-
 from conductor.houdini.lib import software_data as swd
 from conductor.houdini.lib.mocks.api_client_mock import ApiClient
 

@@ -67,18 +67,23 @@ def create(iterable, **kw):
 
     # Now join straggling singles into pairs if possible. Loop
     # through the singles, joining every other one to the one
-    # before. In theory we could recurse here and look for
-    # even longer progressions in the stragglers.
-    progs, singles = [], []
-    for prog in results:
-        singles.append(prog[0]) if len(prog) == 1 else progs.append(prog)
+    # before. In theory we could recurse here - looking for
+    # longer progressions in the stragglers.
+    singles = []
+    j = 0
+    for i in range(len(results)):
+        if len(results[j]) == 1:
+            singles.append(results.pop(j)[0])
+        else:
+            j += 1
+
     for i, s in enumerate(singles):
         if i % 2 == 0:
-            progs.append([s])
+            results.append([s])
         else:
-            progs[-1].append(s)
+            results[-1].append(s)
 
-        results = sorted(progs, key=lambda v: v[0])
+    results.sort(key=lambda v: v[0])
 
     return results
 
