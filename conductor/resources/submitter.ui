@@ -28,16 +28,7 @@
        <property name="spacing">
         <number>0</number>
        </property>
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>0</number>
        </property>
        <item>
@@ -107,16 +98,7 @@
           <property name="spacing">
            <number>0</number>
           </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
+          <property name="margin">
            <number>0</number>
           </property>
           <item>
@@ -213,16 +195,7 @@
            <property name="spacing">
             <number>20</number>
            </property>
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
+           <property name="margin">
             <number>0</number>
            </property>
            <item>
@@ -266,31 +239,13 @@
            <item>
             <widget class="QWidget" name="widget_17" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_17">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>0</number>
               </property>
               <item>
                <widget class="QWidget" name="widget_18" native="true">
                 <layout class="QVBoxLayout" name="verticalLayout_18">
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="bottomMargin">
+                 <property name="margin">
                   <number>0</number>
                  </property>
                  <item>
@@ -341,16 +296,7 @@
               <item>
                <widget class="QWidget" name="widget_19" native="true">
                 <layout class="QVBoxLayout" name="verticalLayout_19">
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="bottomMargin">
+                 <property name="margin">
                   <number>0</number>
                  </property>
                  <item>
@@ -359,31 +305,13 @@
                     <enum>Qt::RightToLeft</enum>
                    </property>
                    <layout class="QHBoxLayout" name="horizontalLayout_18">
-                    <property name="leftMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="rightMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="bottomMargin">
+                    <property name="margin">
                      <number>0</number>
                     </property>
                     <item>
                      <widget class="QWidget" name="widget_7" native="true">
                       <layout class="QHBoxLayout" name="horizontalLayout_8">
-                       <property name="leftMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="bottomMargin">
+                       <property name="margin">
                         <number>0</number>
                        </property>
                        <item>
@@ -515,16 +443,7 @@
                     <property name="spacing">
                      <number>0</number>
                     </property>
-                    <property name="leftMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="rightMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="bottomMargin">
+                    <property name="margin">
                      <number>0</number>
                     </property>
                     <item>
@@ -553,31 +472,13 @@
            <item>
             <widget class="QWidget" name="widget_12" native="true">
              <layout class="QVBoxLayout" name="verticalLayout_15">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>0</number>
               </property>
               <item>
                <widget class="QWidget" name="widget_13" native="true">
                 <layout class="QHBoxLayout" name="horizontalLayout_9">
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="bottomMargin">
+                 <property name="margin">
                   <number>0</number>
                  </property>
                  <item>
@@ -645,23 +546,14 @@
           <property name="title">
            <string>Instance Options</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_16">
-           <item>
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="0">
             <widget class="QWidget" name="ui_instance_type_wgt" native="true">
              <property name="toolTip">
               <string>Choose the type of machine to launch the job on</string>
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout_11">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>0</number>
               </property>
               <item>
@@ -690,23 +582,43 @@
              </layout>
             </widget>
            </item>
-           <item>
+           <item row="1" column="0">
+            <widget class="QWidget" name="ui_gpu_widget" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <property name="margin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="ui_gpu_label">
+                <property name="text">
+                 <string>GPU Acceleration</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="ui_gpu_cmbx">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="isFileUserPref" stdset="0">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="2" column="0">
             <widget class="QWidget" name="ui_preemptible_wgt" native="true">
              <property name="toolTip">
               <string>A preemptible instance can be up to 50% less expensive, but could be terminated before it completes a task.
 Preemption rate ~10%.  Recommended best use when renders are short, or not against a mission critical deadline.</string>
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout_4">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>0</number>
               </property>
               <item>
@@ -716,6 +628,9 @@ Preemption rate ~10%.  Recommended best use when renders are short, or not again
                 </property>
                 <property name="text">
                  <string/>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
                 </property>
                 <property name="isFileUserPref" stdset="0">
                  <bool>true</bool>
@@ -745,22 +660,13 @@ Preemption rate ~10%.  Recommended best use when renders are short, or not again
               <item>
                <widget class="QWidget" name="ui_autoretry_wgt" native="true">
                 <property name="enabled">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <property name="toolTip">
                  <string>The maximum amount of times to automatically retry preempted tasks</string>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_7">
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="bottomMargin">
+                 <property name="margin">
                   <number>0</number>
                  </property>
                  <item>
@@ -774,6 +680,9 @@ Preemption rate ~10%.  Recommended best use when renders are short, or not again
                   <widget class="QSpinBox" name="ui_autoretry_spnbx">
                    <property name="maximum">
                     <number>5</number>
+                   </property>
+                   <property name="value">
+                    <number>2</number>
                    </property>
                    <property name="isFileUserPref" stdset="0">
                     <bool>true</bool>
@@ -808,16 +717,7 @@ Preemption rate ~10%.  Recommended best use when renders are short, or not again
            <item>
             <widget class="QWidget" name="widget_8" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_6">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>0</number>
               </property>
               <item>
@@ -844,16 +744,7 @@ Preemption rate ~10%.  Recommended best use when renders are short, or not again
            <property name="spacing">
             <number>0</number>
            </property>
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
+           <property name="margin">
             <number>0</number>
            </property>
           </layout>
@@ -890,16 +781,7 @@ Preemption rate ~10%.  Recommended best use when renders are short, or not again
            <item>
             <widget class="QWidget" name="widget_2" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>0</number>
               </property>
               <item>
@@ -1013,16 +895,7 @@ You will likely need to have a package for your host software (Maya, Nuke, etc),
              </property>
              <widget class="QWidget" name="widget_3" native="true">
               <layout class="QVBoxLayout" name="verticalLayout_14">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
+               <property name="margin">
                 <number>0</number>
                </property>
                <item>
@@ -1084,16 +957,7 @@ You will likely need to have a package for your host software (Maya, Nuke, etc),
                   <item>
                    <widget class="QWidget" name="widget_11" native="true">
                     <layout class="QHBoxLayout" name="horizontalLayout_2">
-                     <property name="leftMargin">
-                      <number>0</number>
-                     </property>
-                     <property name="topMargin">
-                      <number>0</number>
-                     </property>
-                     <property name="rightMargin">
-                      <number>0</number>
-                     </property>
-                     <property name="bottomMargin">
+                     <property name="margin">
                       <number>0</number>
                      </property>
                      <item>
@@ -1131,16 +995,7 @@ A list of software packages that can be made available for your job.
 Select desired packages from this list and add them to your Job (on the left).</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_11">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
+               <property name="margin">
                 <number>0</number>
                </property>
                <item>
@@ -1211,16 +1066,7 @@ When this is off, only software packages of a detected version are displayed.</s
     <item>
      <widget class="QWidget" name="widget_6" native="true">
       <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>0</number>
        </property>
        <item>
@@ -1281,7 +1127,7 @@ tasks before deciding to execute the job's remaining tasks.
      <x>0</x>
      <y>0</y>
      <width>411</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="ui_options_qmenu">
