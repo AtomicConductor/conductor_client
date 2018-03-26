@@ -54,6 +54,8 @@ class Job(object):
         ClumpedJob makes a task per clump. SingleTaskJob
         makes one task representing the whole time range.
         """
+        print "CREATE !!!!!!!"
+        print node
         if driver_ui.is_simulation(node):
             return SingleTaskJob(node, tokens, scene)
         return ClumpedJob(node, tokens, scene)
