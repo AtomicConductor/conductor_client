@@ -1,13 +1,15 @@
-"""A window to preview a submission."""
-
-
 from PySide2 import QtWidgets, QtGui, QtCore
-
 from conductor.houdini.hda.submission_tree import SubmissionTree
 from conductor.houdini.hda.submission_dry_run import SubmissionDryRun
 
 
 class SubmissionPreview(QtWidgets.QTabWidget):
+    """A Window to display views into the submission.
+
+    There are 2 tabs. One to show the whole object tree
+    including variables available to the user. The other to
+    show the JSON objects that will be submitted.
+    """
 
     def __init__(self, parent=None):
         QtWidgets.QTabWidget.__init__(self, parent)

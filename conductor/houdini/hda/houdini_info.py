@@ -1,3 +1,9 @@
+"""Summary.
+
+Attributes:     HANDLER_MAP (dict): Mapping from a Houdini
+definition description (such as Arnold) to a class to provide info for
+the defined asset (such as ArnoldInfo).
+"""
 from conductor.lib import package_utils
 import os
 import re
@@ -42,7 +48,7 @@ class HoudiniInfo(package_utils.ProductInfo):
 
 
 class HoudiniPluginInfo(package_utils.ProductInfo):
-    """A class for retrieving version information about a plugin in hou.
+    """A class for retrieving version information about a plugin in houdini.
 
     Will ultimately produce something like this
 
@@ -51,9 +57,8 @@ class HoudiniPluginInfo(package_utils.ProductInfo):
       'minor_version': u'00',
       'release_version': u'01',
       'build_version': '',
-      'plugin_host_product': 'maya',
-      'plugin_host_version': u'2015'}
-
+      'plugin_host_product': 'houdini',
+      'plugin_host_version': u'16.5'}
     """
 
     plugin_name = None
@@ -101,7 +106,7 @@ class HoudiniPluginInfo(package_utils.ProductInfo):
 
 class ArnoldInfo(HoudiniPluginInfo):
     """A class for retrieving version information about the arnold plugin in
-    maya.
+    Houdini.
 
     Will ultimately produce something like this
 
@@ -112,7 +117,6 @@ class ArnoldInfo(HoudiniPluginInfo):
       'build_version': u'1',
       'plugin_host_product': 'houdini',
       'plugin_host_version': u'16.5.323'}
-
     """
     plugin_name = "arnold_rop"
 
@@ -128,18 +132,17 @@ class ArnoldInfo(HoudiniPluginInfo):
 
     @classmethod
     def get_regex(cls):
-        """'htoa-1.2.6.1' where build version is optional.
+        """'htoa-1.2.6.1' where build is optional.
 
         Note, this regex doubles up. It can extract the full
         versioned name from the library path (see
         get_version above), or it can extract individual
         version number parts from the versioned name
-
         """
 
         return re.compile(
             r"(?P<version>htoa-(?P<major_version>\d+)(?:\.(?P<minor_version>\d+))?(?:\.(?P<release_version>\d+))?(?:\.(?P<build_version>\d+))?)")
- 
+
 
 HANDLER_MAP = {
     "Arnold": ArnoldInfo
@@ -151,8 +154,8 @@ def get_plugin_definitions():
 
     Uses node_type.instances() to check that node is used in
     the scene, and path.startswith(os.environ["HFS"]) to
-    filter out stuff that comes wit Houdini.
-
+    filter out stuff that comes with Houdini. The return
+    value is a list of houdini definitions.
     """
     result = []
     for category in hou.nodeTypeCategories().values():
@@ -167,6 +170,14 @@ def get_plugin_definitions():
 
 
 def get_used_plugin_info():
+    """Convert houdini definitions to Conductor info dicts.
+
+    We use a mapping from the definition description (see
+    HANDLER_MAP) in order to select the correct class to use
+    to extract the name and version info so it interfaces
+    with Conductor's package routines. The result is a list
+    of dicts for used plugins.
+    """
     result = []
     for definition in get_plugin_definitions():
         handler = HANDLER_MAP.get(definition.description())

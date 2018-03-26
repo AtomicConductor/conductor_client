@@ -1,3 +1,9 @@
+"""Mock ApiClient for requests to get packages and projects.
+
+ApiClientNoHost includes an incompatible version of Houdini
+(to my curret setup) and is useful for testing behaviour of
+software / autodetect etc.
+"""
 import os
 import json
 
@@ -13,7 +19,7 @@ PROJECTS_RESPONSE = {"data": [
 def _read(fixture):
     fn = os.path.join(os.path.dirname(__file__), "..", "fixtures", fixture)
     with open(fn, 'r') as content:
-        return [ content.read() , 200]
+        return [content.read(), 200]
 
 
 class ApiClient():
@@ -30,7 +36,7 @@ class ApiClient():
 class ApiClientNoHost():
     def make_request(self, **kw):
 
-        if kw.get("uri_path", "").startswith == "api/v1/projects":
+        if kw.get("uri_path", "").startswith("api/v1/projects"):
             return [json.dumps(PROJECTS_RESPONSE), 200]
 
         if kw.get("uri_path", "").startswith("api/v1/ee/packages"):
