@@ -1,3 +1,5 @@
+"""Build an object to represent a Conductor submission."""
+
 import datetime
 import json
 import hou
@@ -8,14 +10,48 @@ from conductor.houdini.hda.job import Job
 
 
 class Submission(object):
+    """class Submission holds all data needed for a submission.
 
-    def __init__(self, node, **kw):
+    A Submission contains many Jobs, and those Jobs contain
+    many Tasks. A Submission can provide the correct args to
+    send to Coductor, or it can be used to create a dry run
+    to show the user what will happen. A Submission also
+    manages a list of environment tokens that the user can
+    access as $ variables, similar to Houdini Local
+    variables, in order to build strings in the UI such as
+    commands and job titles.
+    """
+
+    def __init__(self, node):
+        """Collect member data from the Houdini UI.
+
+        If the submission has been instantiated from a
+        conductor::job node, then the submission data will
+        be pulled from the submission tab, and the same node
+        will be used as the only Job. Both self._node and
+        self._jobs will point to the same node. If instead
+        it is instantiated from a conductor::submitter
+        node, then it will provide top level submission data
+        and the Jobs (self._jobs) will built from the
+        conductor::submitter's input nodes.
+
+        * Generate a timestamp which will be common to all jobs.
+        * Get the basename of the file in case its needed as a token.
+        * Scene name - see notes on scene name in the Job.
+        * Get upload flags and notification data.
+        * Get the project.
+
+        After _setenv has been called, the Submission level token
+        variables are valid and calls to eval string attributes will
+        correctly resolve where those tokens have been used.  This is
+        why we eval jobs after the call to _setenv()
+        """
         self._node = node
         vendor, nodetype, version = node.type().name().split("::")
         if types.is_job_node(self._node):
-            self._nodes = [node]
+            self._jobs = [node]
         else:
-            self._nodes = node.inputs()
+            self._jobs = node.inputs()
 
         self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self._hipbase = submission_ui.stripped_hip()
@@ -28,18 +64,21 @@ class Submission(object):
         self._notifications = notifications_ui.get_notifications(self._node)
         self._project_id = self._node.parm('project').eval()
         self._project_name = self._get_project_name()
-        
 
-        self._tokens = self._collect_tokens()
-  
+        self._tokens = self._setenv()
 
-        self._user = hou.getenv('USER')
         self._jobs = []
-        for node in self._nodes:
+        for node in self._jobs:
             job = Job.create(node, self._tokens, self._scene)
             self._jobs.append(job)
 
     def _get_project_name(self):
+        """Get the project name by looking up its ID.
+
+        Just in case the current project is no longer in the
+        list of shared projects, we throw an error if its
+        not found.
+        """
         projects = data_block.ConductorDataBlock(product="houdini").projects()
 
         project_names = [project["name"]
@@ -50,15 +89,27 @@ class Submission(object):
                 self._node.name(), self._project_id)
         return project_names[0]
 
-    def _collect_tokens(self):
-        """Tokens are variables to help the user build strings.
+    def _setenv(self):
+        """Env tokens are variables to help the user build strings.
 
         The user interface has fields for strings such as
-        job title, render command, and various paths. The
-        user can enclose any of these tokens in angle
-        brackets and they will be resolved for the
-        submission.
+        job title, task command, metadata. The user can use
+        these tokens, prefixed with a $ symbol, to build
+        those strings. Tokens at the Submission level are
+        also available in Job level fields, and likewise
+        tokens at the Job level are available in Task level
+        fields. However, it makes no sense the other way,
+        for example you can't use a clump token (available
+        at Task level) in a Job title because a clump
+        changes for every task.
 
+        We use hou.putenv() which basically sets these as
+        global env vars in the scene. Once this is done,
+        strings using these tokens are expanded correctly. In
+        fact we don't need these tokens to be stored on the
+        Submission object (or Job or Task) for the submission
+        to succeed. The only reason we store them is to
+        display them in a dry-run scenario.
         """
         tokens = {}
         tokens["CT_TIMESTAMP"] = self._timestamp
@@ -72,9 +123,16 @@ class Submission(object):
 
         return tokens
 
+    def get_args(self):
+        """Prepare the args for submission to conductor.
 
-    def remote_args(self):
-
+        This is a list where there is one args object for
+        each Conductor job. The project, notifications, and
+        upload args are the same for all jobs, so they are
+        set here. Other args are provided by Job objects and
+        updated with these submission level args to form
+        complete jobs.
+        """
         result = []
         submission_args = {}
         submission_args["local_upload"] = self._local_upload
@@ -89,14 +147,14 @@ class Submission(object):
             submission_args["notify"] = None
 
         for job in self._jobs:
-            args = job.remote_args()
+            args = job.get_args()
             args.update(submission_args)
             result.append(args)
         return result
 
     @property
     def user(self):
-        return self._user
+        return hou.getenv('USER')
 
     @property
     def local_upload(self):

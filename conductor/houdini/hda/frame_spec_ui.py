@@ -1,12 +1,12 @@
-"""Deal with various ways of specifying frame range."""
+"""frame range section in the UI."""
 
 import hou
 from conductor.houdini.hda import driver_ui, takes, uistate
 from conductor.houdini.lib.sequence.sequence import Sequence
- 
 
 # Specify that Expressions are Python
 XP = hou.exprLanguage.Python
+
 
 def _replace_with_input_expression(parm, input_path):
     """Write expression based on equivalent parm on input node."""
@@ -14,14 +14,9 @@ def _replace_with_input_expression(parm, input_path):
     parm.setExpression('ch("%s")' % input_path, XP, True)
 
 
-def _set_input(node, rop):
-    """Give all channels an expression to link the input node.
+def _set_to_input(node, rop):
+    """Give all channels an expression to link the input node."""
 
-    If no input node, then warn the user and defer to
-    explicit for now.
-
-    """
- 
     if not rop:
         return
     rop_path = rop.path()
@@ -30,19 +25,14 @@ def _set_input(node, rop):
             node.parm('fs%s' % parm), '%s/f%s' % (rop_path, parm))
 
 
-def _set_scene(node):
-    """Give all channels an expression to link the scene settings."""
+def _set_to_scene(node):
+    """Give all channels an expression to link the global settings."""
     node.parm('fs1').setExpression(
         'hou.playbar.timelineRange()[0]', XP, True)
     node.parm('fs2').setExpression(
         'hou.playbar.timelineRange()[1]', XP, True)
     node.parm('fs3').setExpression(
         'hou.playbar.frameIncrement()', XP, True)
-
-
-def _set_custom(node):
-    """When switching to custom, just validate existing input."""
-    validate_custom_range(node)
 
 
 def custom_frame_sequence(node):
@@ -58,7 +48,7 @@ def range_frame_sequence(node):
     """Generate Sequence from value in standard range parm."""
     clump_size = node.parm("clump_size").eval()
     start, end, step = [
-        node.parm('fs%s' % parm).eval() for parm in ['1', '2', '3']
+        node.parm(parm).eval() for parm in ['fs1', 'fs2', 'fs3']
     ]
     return Sequence.from_range(start, end, step=step, clump_size=clump_size)
 
@@ -85,9 +75,7 @@ def resolved_scout_sequence(node):
     start those frames. If scout frames does not intersect
     the main frames, then the user intended to scout but
     ended up with no frames. This produces an empty
-    sequence. Its up to the calling function to handle the
-    difference between None and empty Sequence.
-
+    sequence.
     """
     main_seq = main_frame_sequence(node)
     if not node.parm("do_scout").eval():
@@ -103,11 +91,13 @@ def _update_sequence_stats(node):
     spec is set to custom. Additionally, if scout frames are
     set, display the frame info as the num_scout_frames /
     num_frames. The only scout frames counted are those that
-    intersect the set of total frames.
-
+    intersect the set of total frames. If we happen to be in
+    a different take, then the user has enabled frames or
+    clumps or something, and this will affect the
+    frame_stats, so they have to be unlocked.
     """
     takes.enable_for_current(node, "frame_stats")
-    
+
     try:
         main_seq = main_frame_sequence(node)
         num_frames = len(main_seq)
@@ -126,7 +116,6 @@ def _update_sequence_stats(node):
     except ValueError:
         scout_seq = None
 
-
     if scout_seq is not None:
         frame_info = "%d/%d Frames" % (len(scout_seq), num_frames)
 
@@ -136,7 +125,16 @@ def _update_sequence_stats(node):
 
 
 def validate_custom_range(node, **_):
-    """Set valid tickmark for custom range spec."""
+    """Set valid tickmark for custom range spec.
+
+    A custom range is valid when it is a comma separated
+    list of arithmetic progressions. These can can be
+    formatted as single numbers or ranges with a hyphen and
+    optionally a step value delimited by an x. Example,
+    1,7,10-20,30-60x3,1001, Spaces and trailing commas are
+    allowed, but not letters or other non numeric
+    characters.
+    """
     takes.enable_for_current(node, "custom_valid")
     spec = node.parm("custom_range").eval()
     valid = Sequence.is_valid_spec(spec)
@@ -152,32 +150,38 @@ def validate_scout_range(node, **_):
     TODO Currently we only validate that the spec produces
     valid frames. We should also validate that at least one
     scout frame exist in the main frame range.
-
     """
     takes.enable_for_current(node, "scout_valid")
     spec = node.parm("scout_frames").eval()
     valid = Sequence.is_valid_spec(spec)
     node.parm("scout_valid").set(valid)
     _update_sequence_stats(node)
- 
+
 
 def set_type(node, **_):
+    """Set the appropriate expressions in frames UI.
+
+    If user selected custom, just validate the input,
+    otherwise make sure the expressions are hooked up to the
+    input node, or if it doesn't exist, to the scene
+    settings
+    """
     rop = driver_ui.get_driver_node(node)
     if node.parm("use_custom").eval():
         validate_custom_range(node)
     elif rop:
-        _set_input(node, rop)
+        _set_to_input(node, rop)
     else:
-        _set_scene(node)
+        _set_to_scene(node)
     _update_sequence_stats(node)
 
 
-def set_frame_range(node, **_):
+def on_frame_range_changed(node, **_):
     """When frame range changes, update stats."""
     _update_sequence_stats(node)
 
 
-def set_clump_size(node, **_):
+def on_clump_size_changed(node, **_):
     """When clump size changes, update stats."""
     _update_sequence_stats(node)
 
@@ -188,7 +192,6 @@ def best_clump_size(node, **_):
     If for example there are 120 frames and clump size is
     100, then 2 clumps are needed, so better to adjust clump
     size to 60
-
     """
     main_seq = main_frame_sequence(node)
     best_clump_size = main_seq.best_clump_size()
@@ -196,6 +199,6 @@ def best_clump_size(node, **_):
     _update_sequence_stats(node)
 
 
-def do_scout_changed(node, **_):
+def on_do_scout_changed(node, **_):
     """Update stats when scout_frames toggle on or off."""
     _update_sequence_stats(node)

@@ -7,14 +7,9 @@ from conductor.houdini.lib import data_block
 def populate_menu(node):
     """Populate project menu.
 
-    Get list from the projects param where they are cached.
-    If there are none, which can only happen on create, then
-    fetch them from the server. If a previous fetch failed,
-    there will at least be a NotSet menu item. If we didn't
-    implement a NotSet menu item, then there would be
-    repeated attempts to hit the server to login which would
-    get very annoying.
-
+    Get list of items from the shared data_block where they
+    have been cached. The menu needs a flat array: [k, v, k,
+    v ....]
     """
     projects = data_block.ConductorDataBlock(product="houdini").projects()
     selected = node.parm('project').eval()
@@ -25,5 +20,5 @@ def populate_menu(node):
 
 
 def select(node, **_):
-    """When user chooses a new project, update the submit button."""
+    """When user chooses a new project, update button states."""
     uistate.update_button_state(node)

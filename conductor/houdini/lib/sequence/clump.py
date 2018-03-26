@@ -1,11 +1,24 @@
+"""Clump is a part of a Sequence.
+
+RegularClump is an arithmetic progression. a-bxc.
+IrregularClump is not, and therefore cannot be represented by
+one RegularClump.
+
+For expected behavior see: /tests/test_sequence.py
+
+It may make sense to merge functionality of a sequence and a
+clump, so that a clump is simply a part of a bigger clump.
+
+Attributes:
+    NUMBER_RE (Regex): # Catch a number
+    RANGE_RE (Regex): # Catch a frame range with optional step
+"""
+
 import re
 
 import progressions as prog
 
-# Catch a number
 NUMBER_RE = re.compile(r"^(\d+)$")
-
-# Catch a frame range with optional step
 RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
 
 
@@ -16,7 +29,6 @@ def resolve_start_end_step(*args):
     after end. Step may be None or missing. Arg may be a
     single range string as 'start-endxstep' where end and
     step are optional.
-
     """
     if len(args) == 1:
         number_match = NUMBER_RE.match(args[0])
@@ -51,7 +63,6 @@ class Clump(object):
         means it is in ascending order and has the same gap
         between consecutive elements. Otherwise it is
         irregular.
-
         """
         frames = sorted(set(iterable))
         if len(frames) == 1:
@@ -69,22 +80,9 @@ class Clump(object):
         The input may be irregular, so we split it into
         arithmetic progressions and then make clumps from
         the results.
-
         """
         progressions = prog.create(iterable, **kw)
         return [Clump.create(p) for p in progressions]
-
-    def format(self, template):
-        """Insert each number in a template.
-
-        For example if format string is
-        "foo/%02d/fn.%04d.ass" Then the result array will
-        contain: "foo/01/fn.0001.ass" "foo/02/fn.0002.ass"
-        and so on
-
-        """
-        num_tokens = template.count('%')
-        return [template % ((i,) * num_tokens) for i in self._iterable]
 
     def __init__(self):
         self._iterable = None
@@ -105,11 +103,10 @@ class RegularClump(Clump):
     It can be initialized with two or three numbers start,
     end, <step> or a "string start-endxstep" where step is
     optional It has inclusive upper bound.
-
     """
 
     def __init__(self, *args):
-        """one_line_doc_string."""
+        """Initialize the iterable as an xrange."""
         Clump.__init__(self)
         self._start, self._end, self._step = resolve_start_end_step(*args)
         self._iterable = xrange(self._start, self._end + 1, self._step)
@@ -130,7 +127,6 @@ class RegularClump(Clump):
     def range(self):
         return (self._start, self._end, self._step)
 
-
     def __str__(self):
         if self.start == self.end:
             return str(self.start)
@@ -144,7 +140,7 @@ class RegularClump(Clump):
 
 
 class IrregularClump(Clump):
-    """A sorted list of frames that cannot be represented by a range."""
+    """List of frames that cannot be represented by a range."""
 
     def __init__(self, iterable):
         Clump.__init__(self)
@@ -162,10 +158,7 @@ class IrregularClump(Clump):
         progressions = prog.create(self._iterable)
         clumps = [Clump.create(p) for p in progressions]
         return (",").join([str(clump) for clump in clumps])
-        # return "%s~%s" % (self._iterable[0], self._iterable[-1])
-
+     
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self._iterable)
 
-    def as_regular_clumps(self):
-        pass
