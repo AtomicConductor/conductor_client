@@ -40,6 +40,7 @@ def _get_nice_driver_type(input_type):
 def get_driver_node(node):
     """Get connected driver node."""
     inputs = node.inputs()
+    print inputs
     return inputs[0] if inputs else None
 
 
