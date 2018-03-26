@@ -38,11 +38,11 @@ def _directory_exists(directory):
 def _remove_redundant_entries(entries):
     """Remove file entries where containing directory is an entry.
 
-    Giver a list containing both /u/fred/myfile and /u/fred,
+    Given a list containing both /u/fred/myfile and /u/fred,
     remove /u/fred/myfile as its not necessary. By sorting
     the entries first on depth, then a secondary sort on
     name length reversed, we can move through the list
-    linearly testing previously seen directories with
+    linearly, testing previously seen directories with
     startswith() (as opposed to climbing up the path with
     dirname() in a loop). The secondary sort criteria
     ensures that a regular filename that prefixes another,

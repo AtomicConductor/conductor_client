@@ -1,4 +1,11 @@
-"""Handle callbacks and other actions from the node.
+"""Entry point for conductor nodes.
+
+There are 2 types of node conductor node in the HDA (Houdini digital Asset)
+
+conductor::job
+conductor::submitter
+
+This module handles callbacks and other actions from those nodes.
 
 This includes handling all actions from widgets, aux buttons
 as well as populating menus, initializing state and so on.
@@ -8,6 +15,7 @@ Attributes:
     AUX_BUTTON_ACTIONS (dict): Mapping of auxilary buttons to callbacks
     MENUS (dict): Mapping of callbacks to populate menus dynamically
 """
+
 import traceback
 import hou
 
