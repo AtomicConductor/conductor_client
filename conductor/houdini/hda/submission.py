@@ -49,9 +49,9 @@ class Submission(object):
         self._node = node
         vendor, nodetype, version = node.type().name().split("::")
         if types.is_job_node(self._node):
-            self._jobs = [node]
+            self._nodes = [node]
         else:
-            self._jobs = node.inputs()
+            self._nodes = node.inputs()
 
         self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self._hipbase = submission_ui.stripped_hip()
@@ -68,7 +68,7 @@ class Submission(object):
         self._tokens = self._setenv()
 
         self._jobs = []
-        for node in self._jobs:
+        for node in self._nodes:
             job = Job.create(node, self._tokens, self._scene)
             self._jobs.append(job)
 
@@ -104,12 +104,14 @@ class Submission(object):
         changes for every task.
 
         We use hou.putenv() which basically sets these as
-        global env vars in the scene. Once this is done,
-        strings using these tokens are expanded correctly. In
-        fact we don't need these tokens to be stored on the
-        Submission object (or Job or Task) for the submission
-        to succeed. The only reason we store them is to
-        display them in a dry-run scenario.
+        global env vars in the scene. (Unfortunately thats the
+        only way because you can only attach variables local
+        to nodes therough the HDK.) Once tokens are set,
+        strings using them are expanded correctly. In fact we
+        don't need these tokens to be stored on the Submission
+        object (or Job or Task) for the submission to succeed.
+        The only reason we store them is to display them in a
+        dry-run scenario.
         """
         tokens = {}
         tokens["CT_TIMESTAMP"] = self._timestamp
