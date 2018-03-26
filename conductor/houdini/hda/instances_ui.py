@@ -1,6 +1,5 @@
 """Manage instance_type menu."""
 
-import json
 from conductor.houdini.lib import data_block
 
 

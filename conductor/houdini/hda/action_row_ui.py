@@ -3,15 +3,10 @@
 preview: Open a window displaying the structure of the submission and
 the JSON objects that will be sent to Conductor.
 
-local: Run the submission tasks on the local machine. This is for debugging
-purposes and will be removed.
-
 submit: Send jobs to Conductor
 """
 import sys
 import traceback
-import subprocess
-import shlex
 import json
 import hou
 
@@ -72,21 +67,6 @@ def preview(node, **_):
     submission_preview.dry_run.populate(jobs)
     submission_preview.show()
     hou.session.conductor_preview = submission_preview
-
-
-def local(node, **_):
-    """Make a submission and run its tasks locally.
-
-    This is only for testing / debugging and will be
-    removed.
-    """
-    submission = _create_submission_with_save(node)
-    if not submission:
-        return
-    for job in submission.jobs:
-        for task in job.tasks:
-            args = shlex.split(task.command)
-            subprocess.call(args)
 
 
 def submit(node, **_):

@@ -1,7 +1,7 @@
 """Access information about the connected driver inputs.
 
-This module is only applicable to the Conductor::job 
-node, not the Conductor::submitter node, whose inputs are 
+This module is only applicable to the Conductor::job
+node, not the Conductor::submitter node, whose inputs are
 jobs
 
 Attributes:     SIMULATION_NODES (list): Node types to be
@@ -14,7 +14,6 @@ get_driver_type: get the input driver type
 is_simulation: is it a simuation
 
 update_input_node: update UI when input connection changes
-
 """
 from conductor.houdini.hda import uistate
 

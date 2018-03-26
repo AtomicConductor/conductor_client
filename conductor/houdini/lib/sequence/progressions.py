@@ -7,7 +7,6 @@ def _should_add(element, progression, max_size):
     check if the gap between the element and the last in the
     progression is the same as the gap in the rest of the
     progression.
-
     """
     if len(progression) < 2:
         return True
@@ -24,17 +23,16 @@ def create(iterable, **kw):
     for large sets, and be really difficult to code. This
     algorithm walks through the sorted sequence, gathers
     elements with the same gap as the previous element.
-
     """
     max_size = kw.get("max_size", len(iterable))
     iterable = sorted(iterable)
-    
+
     if max_size == 1:
         return [[x] for x in iterable]
 
     if max_size < 1:
         max_size = len(iterable)
- 
+
     results = [[]]
 
     # add a sentinel to the end - see below
@@ -50,7 +48,7 @@ def create(iterable, **kw):
             # if the last progression only has 2 elements, then steal
             # the second of them to start this progression. Why? because
             # we are greedy and will have more chance of making longer
-            # progressions if we dismantle progressions of length 2 and 
+            # progressions if we dismantle progressions of length 2 and
             # then pair up the straggling singles later.
             # Note that the sentinel added above ensures this rule also
             # works on the original last element.
