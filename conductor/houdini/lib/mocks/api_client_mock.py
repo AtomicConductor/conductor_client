@@ -22,26 +22,23 @@ def _read(fixture):
         return [content.read(), 200]
 
 
-class ApiClient():
-    def make_request(self, **kw):
+class ApiClientMock(object):
 
+    def make_request(self, **kw):
         path = kw.get("uri_path", "")
-        print "%s %s" % (self.__class__.__name__, path)
+
+        print "Using mock %s call to %s" % (self.__class__.__name__, path)
 
         if path.startswith("api/v1/projects"):
             return [json.dumps(PROJECTS_RESPONSE), 200]
 
         if path.startswith("api/v1/ee/packages"):
-            return _read("sw_packages.json")
+            return _read(self.JSON)
 
 
-class ApiClientNoHost():
-    def make_request(self, **kw):
-        path = kw.get("uri_path", "")
-        print "%s %s" % (self.__class__.__name__, path)
+class ApiClient(ApiClientMock):
+    JSON = "sw_packages.json"
 
-        if path.startswith("api/v1/projects"):
-            return [json.dumps(PROJECTS_RESPONSE), 200]
 
-        if path.startswith("api/v1/ee/packages"):
-            return _read("sw_packages_no_exact_host.json")
+class ApiClientNoHost(ApiClientMock):
+    JSON = "sw_packages_no_exact_host.json"
