@@ -1,17 +1,18 @@
 #!/usr/bin/env hython
 
+
+"""Script to render a ROP.
+
+Currently it is designed for images, but can be extended to
+produce output for other ROPs
+"""
 import sys
 import os
 import argparse
+import hou
 
-from sequence import Sequence
-from clump import Clump
-
-OUTPUT_DIR_PARMS = {
-    "ifd": "vm_picture",
-    "arnold": "ar_picture",
-    "ris":  "ri_display"
-}
+from sequence.sequence import Sequence
+from sequence.clump import Clump
 
 
 def error(msg):
@@ -23,73 +24,85 @@ def error(msg):
 
 
 def usage(msg=""):
-    print "USAGE"
+    print """Usage:
+
+    All flags are required
+
+    -d driver:          Path to the output driver that will be rendered
+    -r range:           The frame range specification (see below)
+    -f file             The hipfile containing the driver to render
+
+    Frame range specification is a string which may be any number
+    of ranges or single frame numbers separated by commas. A range
+    may have an optional step parameter prefixed by "x" Examples:
+    "1"
+    "1,2,3,5,8"
+    "3-7"
+    "10-20x2"
+    "3,6,7,10-20,30-60x3,9,34-40x2"
+
+    """
     error(msg)
 
 
+def validate_args(args):
+    """Check arg values such as range, hip and rop existence etc.
+
+    TODO: Implement these validations and remove inline checks
+    from render method.    
+    """
+    pass
+
+
 def parse_args():
+    """Parse args and error if any are missing or extra."""
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('-d', dest='driver', required=True)
     parser.add_argument('-r', dest='range', required=True)
-    # parser.add_argument('-o', dest='output')
     parser.add_argument('-f', dest='hipfile', required=True)
 
     args, unknown = parser.parse_known_args()
 
     if unknown:
         usage('Unknown argument(s): %s' % (' '.join(unknown)))
+
+    err = validate_args(args)
+    if err:
+        usage(err)
+
     return args
 
 
-def make_output_directory(rop):
-    print "making output directory"
-    directory = os.path.join( hou.getenv("JOB"), "render")
-
-    rop_type =rop.type().name() 
-    parm_name = OUTPUT_DIR_PARMS.get(rop_type)
-    if parm_name:
-        path = rop.parm(parm_name).eval()
-        ov_dir = os.path.dirname(path)
-        if ov_dir:
-            directory = ov_dir
-
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
 def render(args):
+    """Render the specified ROP.
 
-    sys.stderr.write('render\n')
+    If there's anything drastically wrong with the args or
+    the scene, exit. However, if there are only load
+    warnings, print them and carry on. For example, the
+    scene is likely to contain unknown assets such as the
+    conductor job and submitter nodes, which were used to
+    submit but are not needed to render.
 
-    print "args.hipfile: %s" % args.hipfile
-    print "args.driver: %s" % args.driver
-    print "args.range: %s" % args.range
-    # print "args.output: %s" % args.output
-    sys.stderr.write('Here 1\n')
-    
+    The rop render method taks a range (start, end, step).
+    However, our range args are an irregular set of frames.
+    Therefore we convert the spec into arithmetic progressions
+    in order call the render command fewer times ideally.
+    """
     try:
         seq = Sequence.from_spec(args.range)
     except ValueError as err:
         usage(str(err))
-    
-    clumps = Clump.regular_clumps(seq)
 
-    sys.stderr.write('Here 2\n')
+    clumps = Clump.regular_clumps(seq)
 
     try:
         hou.hipFile.load(args.hipfile)
     except hou.LoadWarning as e:
         print e
-    sys.stderr.write('Here 3\n')
 
     rop = hou.node(args.driver)
     if not rop:
         usage('Rop does not exist: %s' % args.driver)
-    
-    sys.stderr.write('Here 4\n')
-
-    make_output_directory(rop)
-
-    sys.stderr.write('Here 5\n')
 
     for clump in clumps:
         cmd = "render "
@@ -100,13 +113,5 @@ def render(args):
             method=hou.renderMethod.FrameByFrame
         )
 
-    sys.stderr.write('Here 6 FIN\n')
 
-
-sys.stderr.write('****************************\n')
-sys.stderr.write('START\n')
- 
-args = parse_args()
-render(args)
-sys.stderr.write('DONE\n')
-sys.stderr.write('*-------------------------*\n')
+render(parse_args())
