@@ -194,8 +194,7 @@ def best_clump_size(node, **_):
     size to 60
     """
     main_seq = main_frame_sequence(node)
-    best_clump_size = main_seq.best_clump_size()
-    node.parm("clump_size").set(best_clump_size)
+    node.parm("clump_size").set(main_seq.best_clump_size())
     _update_sequence_stats(node)
 
 

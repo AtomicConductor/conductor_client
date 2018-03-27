@@ -58,7 +58,7 @@ class Job(object):
         return ClumpedJob(node, tokens, scene)
 
     def __init__(self, node, parent_tokens, scene_file):
-        """Build the common jpb member data in this base class.
+        """Build the common job member data in this base class.
 
         * Get the driver node and type.
         * Get the instance type, retries, and preemptible flag.
@@ -83,26 +83,41 @@ class Job(object):
         """
 
         self._node = node
-        self._source_node = driver_ui.get_driver_node(self._node)
-        self._source_type = driver_ui.get_driver_type(self._node)
-        self._get_instance()
-        self._get_sequence()
-        self._dependencies = dependency_scan.fetch(self._sequence)
-        self._dependencies.append(scene_file)
-        self._package_ids = software_ui.get_chosen_ids(self._node)
-        self._environment = software_ui.get_environment(self._node)
-        self._task_command = self._node.parm("task_command").unexpandedString()
+        self._job_data = {}
+        self._expanded = {}
+        self._tasks = []
+
+        task_command = self._node.parm("task_command").unexpandedString()
+
+        self._job_data["source"] = {
+            "node": driver_ui.get_driver_node(self._node),
+            "type": driver_ui.get_driver_type(self._node)
+        }
+        self._job_data["instance"] = self._get_instance()
+        self._job_data["sequence"] = self._get_sequence()
+        self._job_data["resources"] = self._get_resources(scene_file)
 
         self._tokens = self._setenv(parent_tokens)
 
-        self._title = self._node.parm("job_title").eval()
-        self._output_directory = self._get_output_dir()
-        self._metadata = self._node.parm("metadata").eval()
+        self._expanded["title"] = self._node.parm("job_title").eval()
+        self._expanded["output_directory"] = self._get_output_dir()
+        self._expanded["metadata"] = self._node.parm("metadata").eval()
 
-        self._tasks = []
-        for clump in self._sequence.clumps():
-            task = Task(clump, self._task_command, self._tokens)
+        for clump in self._job_data["sequence"]["main"].clumps():
+            task = Task(clump, task_command, self._tokens)
             self._tasks.append(task)
+
+    def _get_resources(self, scene_file):
+
+        dependencies = dependency_scan.fetch(
+            self._node, self._job_data["sequence"]["main"])
+        dependencies.append(scene_file)
+
+        return {
+            "package_ids": software_ui.get_chosen_ids(self._node),
+            "environment": software_ui.get_environment(self._node),
+            "dependencies": dependencies
+        }
 
     def _get_output_dir(self):
         """Get the directory that will be made available for download.
@@ -122,9 +137,9 @@ class Job(object):
             if ov_dir:
                 result = ov_dir
         else:
-            parm_name = OUTPUT_DIR_PARMS.get(self._source_type)
+            parm_name = OUTPUT_DIR_PARMS.get(self._job_data["source"]["type"])
             if parm_name:
-                path = self._source_node.parm(parm_name).eval()
+                path = self._job_data["source"]["node"].parm(parm_name).eval()
                 ov_dir = os.path.dirname(path)
                 if ov_dir:
                     result = ov_dir
@@ -146,7 +161,7 @@ class Job(object):
                   int(cores) and it['flavor'] == flavor][0]
         result["preemptible"] = bool(self._node.parm('preemptible').eval())
         result["retries"] = self._node.parm("retries").eval()
-        self._instance = result
+        return result
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -158,22 +173,24 @@ class Job(object):
         """
         result = {}
 
-        result["upload_paths"] = self._dependencies
+        result["upload_paths"] = self._job_data["resources"]["dependencies"]
         result["autoretry_policy"] = {'preempted': {
-            'max_retries': self._instance["retries"]}
-        } if self._instance["preemptible"] else {}
-        result["software_package_ids"] = self._package_ids
-        result["preemptible"] = self._instance["preemptible"]
-        result["environment"] = dict(self._environment)
+            'max_retries': self._job_data["instance"]["retries"]}
+        } if self._job_data["instance"]["preemptible"] else {}
+        result["software_package_ids"] = self._job_data["resources"]["package_ids"]
+        result["preemptible"] = self._job_data["instance"]["preemptible"]
+        result["environment"] = dict(
+            self._job_data["resources"]["environment"])
         result["enforced_md5s"] = {}
-        result["scout_frames"] = ", ".join(self._scout_sequence or [])
-        result["output_path"] = self._output_directory
-        result["chunk_size"] = self._sequence.clump_size
-        result["machine_type"] = self._instance.get("flavor")
-        result["cores"] = self._instance.get("cores")
+        result["scout_frames"] = ", ".join(
+            self._job_data["sequence"]["scout"] or [])
+        result["output_path"] = self._expanded["output_directory"]
+        result["chunk_size"] = self._job_data["sequence"]["main"].clump_size
+        result["machine_type"] = self._job_data["instance"]["flavor"]
+        result["cores"] = self._job_data["instance"]["cores"]
         result["tasks_data"] = [task.data() for task in self._tasks]
-        result["job_title"] = self._title
-        result["metadata"] = self._metadata
+        result["job_title"] = self._expanded["title"]
+        result["metadata"] = self._expanded["metadata"]
         result["priority"] = 5
         result["max_instances"] = 0
         return result
@@ -184,35 +201,35 @@ class Job(object):
 
     @property
     def title(self):
-        return self._title
+        return self._expanded["title"]
 
     @property
     def metadata(self):
-        return self._metadata
+        return self._expanded["metadata"]
 
     @property
     def output_directory(self):
-        return self._output_directory
+        return self._expanded["output_directory"]
 
     @property
     def source_path(self):
-        return self._source_node.path()
+        return self._job_data["source"]["node"].path()
 
     @property
     def source_type(self):
-        return self._source_type
+        return self._job_data["source"]["type"]
 
     @property
     def dependencies(self):
-        return self._dependencies
+        return self._job_data["resources"]["dependencies"]
 
     @property
     def package_ids(self):
-        return self._package_ids
+        return self._job_data["resources"]["package_ids"]
 
     @property
     def environment(self):
-        return self._environment
+        return self._job_data["resources"]["environment"]
 
     @property
     def tokens(self):
@@ -265,9 +282,10 @@ class ClumpedJob(Job):
         information, and we also get a sequence describing
         the scout frames.
         """
-        self._sequence = frame_spec_ui.main_frame_sequence(self._node)
-        self._scout_sequence = frame_spec_ui.resolved_scout_sequence(
-            self._node)
+        return {
+            "main": frame_spec_ui.main_frame_sequence(self._node),
+            "scout": frame_spec_ui.resolved_scout_sequence(self._node)
+        }
 
     def _setenv(self, parent_tokens):
         """Env tokens available to the user for a ClumpedJob.
@@ -277,22 +295,25 @@ class ClumpedJob(Job):
         construct strings.
         """
         tokens = {}
-        sorted_frames = sorted(self._sequence._frames)
-        tokens["CT_LENGTH"] = str(len(self._sequence))
-        tokens["CT_SEQUENCE"] = str(Clump.create(iter(self._sequence)))
+        sorted_frames = sorted(self._job_data["sequence"]["main"])
+        tokens["CT_SEQLENGTH"] = str(len(self._job_data["sequence"]["main"]))
+        tokens["CT_SEQUENCE"] = str(Clump.create(
+            iter(self._job_data["sequence"]["main"])))
         tokens["CT_SEQUENCEMIN"] = str(sorted_frames[0])
         tokens["CT_SEQUENCEMAX"] = str(sorted_frames[-1])
-        tokens["CT_SCOUT"] = ",".join(
-            [str(x) for x in Clump.regular_clumps(self._scout_sequence or [])])
-        tokens["CT_CLUMPSIZE"] = str(self._sequence.clump_size)
-        tokens["CT_CLUMPCOUNT"] = str(self._sequence.clump_count())
-        tokens["CT_SCOUTCOUNT"] = str(len(self._scout_sequence or []))
-        tokens["CT_CORES"] = str(self._instance.get("cores"))
-        tokens["CT_FLAVOR"] = self._instance.get("flavor")
-        tokens["CT_INSTANCE"] = self._instance.get("description")
-        tokens["CT_PREEMPTIBLE"] = "0" if self._instance.get(
-            "preemptible") else "1"
-        tokens["CT_RETRIES"] = str(self._instance.get("retries", 0))
+        tokens["CT_SCOUT"] = ",".join([str(x) for x in Clump.regular_clumps(
+            self._job_data["sequence"]["scout"] or [])])
+        tokens["CT_CLUMPSIZE"] = str(
+            self._job_data["sequence"]["main"].clump_size)
+        tokens["CT_CLUMPCOUNT"] = str(
+            self._job_data["sequence"]["main"].clump_count())
+        tokens["CT_SCOUTCOUNT"] = str(
+            len(self._job_data["sequence"]["scout"] or []))
+        tokens["CT_CORES"] = str(self._job_data["instance"]["cores"])
+        tokens["CT_FLAVOR"] = self._job_data["instance"]["flavor"]
+        tokens["CT_INSTANCE"] = self._job_data["instance"]["description"]
+        tokens["CT_PREEMPTIBLE"] = "preemptible" if self._job_data["instance"]["preemptible"] else "non-preemptible"
+        tokens["CT_RETRIES"] = str(self._job_data["instance"]["retries"])
         tokens["CT_JOB"] = self.node_name
         tokens["CT_SOURCE"] = self.source_path
         tokens["CT_TYPE"] = self.source_type
@@ -331,12 +352,16 @@ class SingleTaskJob(Job):
         None.
         """
         start, end, step = [
-            self._source_node.parm(parm).eval() for parm in [
+            self._job_data["source"]["node"].parm(parm).eval() for parm in [
                 'f1', 'f2', 'f3']
         ]
-        self._sequence = Sequence.from_range(start, end, step=step)
-        self._sequence.clump_size = len(self._sequence)
-        self._scout_sequence = None
+        sequence = Sequence.from_range(start, end, step=step)
+        sequence.clump_size = len(self._job_data["sequence"]["main"])
+
+        return {
+            "main": sequence,
+            "scout": None
+        }
 
     def _setenv(self, parent_tokens):
         """Env tokens for a SingleTaskJob.
@@ -346,17 +371,18 @@ class SingleTaskJob(Job):
         size or clump count.
         """
         tokens = {}
-        sorted_frames = sorted(self._sequence._frames)
-        tokens["CT_LENGTH"] = str(len(self._sequence))
-        tokens["CT_SEQUENCE"] = str(Clump.create(iter(self._sequence)))
+        sorted_frames = sorted(self._job_data["sequence"]["main"])
+        tokens["CT_SEQLENGTH"] = str(len(self._job_data["sequence"]["main"]))
+        tokens["CT_SEQUENCE"] = str(Clump.create(
+            iter(self._job_data["sequence"]["main"])))
         tokens["CT_SEQUENCEMIN"] = str(sorted_frames[0])
         tokens["CT_SEQUENCEMAX"] = str(sorted_frames[-1])
-        tokens["CT_CORES"] = str(self._instance.get("cores"))
-        tokens["CT_FLAVOR"] = self._instance.get("flavor")
-        tokens["CT_INSTANCE"] = self._instance.get("description")
-        tokens["CT_PREEMPTIBLE"] = "0" if self._instance.get(
+        tokens["CT_CORES"] = str(self._job_data["instance"]["cores"])
+        tokens["CT_FLAVOR"] = self._job_data["instance"]["flavor"]
+        tokens["CT_INSTANCE"] = self._job_data["instance"]["description"]
+        tokens["CT_PREEMPTIBLE"] = "0" if self._job_data["instance"](
             "preemptible") else "1"
-        tokens["CT_RETRIES"] = str(self._instance.get("retries", 0))
+        tokens["CT_RETRIES"] = str(self._job_data["instance"]["retries"])
         tokens["CT_JOB"] = self.node_name
         tokens["CT_SOURCE"] = self.source_path
         tokens["CT_TYPE"] = self.source_type

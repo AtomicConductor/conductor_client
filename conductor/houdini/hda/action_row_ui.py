@@ -43,7 +43,7 @@ def _create_submission_with_save(node):
                     "Cancel"),
                 close_choice=2)
             if save_file_response == 2:
-                return
+                return None
             if save_file_response == 0:
                 hou.hipFile.save()
         submission = Submission(node)
@@ -86,4 +86,5 @@ def submit(node, **_):
         except BaseException:
             responses.append(
                 {"error": "".join(traceback.format_exception(*sys.exc_info()))})
+
     return responses
