@@ -4,10 +4,10 @@ Attributes:     HANDLER_MAP (dict): Mapping from a Houdini
 definition description (such as Arnold) to a class to provide info for
 the defined asset (such as ArnoldInfo).
 """
-from conductor.lib import package_utils
 import os
 import re
 import hou
+from conductor.lib import package_utils
 
 
 class HoudiniInfo(package_utils.ProductInfo):
@@ -44,6 +44,7 @@ class HoudiniInfo(package_utils.ProductInfo):
 
     @classmethod
     def get_vendor(cls):
+        """sidefx make Houdini"""
         return "sidefx"
 
 
@@ -65,6 +66,12 @@ class HoudiniPluginInfo(package_utils.ProductInfo):
 
     @classmethod
     def find_definition(cls):
+        """Find the houdini definition for a plugin.
+
+        Look at all node types that have instances in the
+        scene and check the name of the otl against the name
+        of this plugin, defined in the derived class.
+        """
         otl = "/%s.otl" % cls.plugin_name
         for category in hou.nodeTypeCategories().values():
             for node_type in category.nodeTypes().values():
@@ -74,33 +81,53 @@ class HoudiniPluginInfo(package_utils.ProductInfo):
                         path = definition.libraryFilePath()
                         if path.endswith(otl):
                             return definition.libraryFilePath()
+        return None
 
     @classmethod
     def get_product(cls):
+        """Subclass must return product name."""
         raise NotImplementedError
 
     @classmethod
     def get_plugin_host_product(cls):
-        """Return the name of the host software package, e.g. "Maya" or
-        "Katana"."""
+        """Return the name of the host software package.
+
+        Example: "Houdini".
+        """
         return HoudiniInfo.get_product()
 
     @classmethod
     def get_plugin_host_version(cls):
-        """Return the name of the host software package, e.g. "Autodesk Maya
-        2015 SP4"."""
+        """Return the version of the host software package.
+
+        Example: "Houdini 16.5.323".
+        """
         return HoudiniInfo.get_version()
 
     @classmethod
     def get_version(cls):
+        """Return fully qualified name of the plugin.
+
+        Derived class must override.
+        """
         raise NotImplementedError
 
     @classmethod
     def exists(cls):
-        return cls.find_definition()
+        """Return true if the plugin has a definition.
+
+        Note this will be False if the definition exists but
+        no instances exist.
+        """
+        return bool(cls.find_definition())
 
     @classmethod
     def get_regex(cls):
+        """Derived class must provide a regex.
+
+        The regex should extract the product and version
+        parts
+        """
         raise NotImplementedError
 
 
@@ -122,26 +149,41 @@ class ArnoldInfo(HoudiniPluginInfo):
 
     @classmethod
     def get_product(cls):
+        """The name that Conductor calls this plugin."""
         return "arnold-houdini"
 
     @classmethod
     def get_version(cls):
+        """Get the full name and version of the plugin.
+
+        This method name is a bit confusing. Its not just a
+        version. It will return something like:
+        'htoa-1.2.6.1'
+        """
         path = cls.find_definition() or ""
         match = cls.get_regex().search(path)
         return match.group("version") if match else ""
 
     @classmethod
     def get_regex(cls):
-        """'htoa-1.2.6.1' where build is optional.
+        """Regex to extract parts form arnold plugin name.
 
-        Note, this regex doubles up. It can extract the full
-        versioned name from the library path (see
-        get_version above), or it can extract individual
-        version number parts from the versioned name
+        It is something like like 'htoa-1.2.6.1' where the
+        last number (build version) is optional.  Note, this
+        regex doubles up. It can extract the full versioned
+        name from the library path (see get_version above),
+        or it can extract individual version number parts
+        from the versioned name
         """
+        reg_parts = [
+            r"(?P<version>htoa-",
+            r"(?P<major_version>\d+)",
+            r"(?:\.(?P<minor_version>\d+))?",
+            r"(?:\.(?P<release_version>\d+))?",
+            r"(?:\.(?P<build_version>\d+))?)"
+        ]
 
-        return re.compile(
-            r"(?P<version>htoa-(?P<major_version>\d+)(?:\.(?P<minor_version>\d+))?(?:\.(?P<release_version>\d+))?(?:\.(?P<build_version>\d+))?)")
+        return re.compile("".join(reg_parts))
 
 
 HANDLER_MAP = {
