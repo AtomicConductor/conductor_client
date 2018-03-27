@@ -10,7 +10,10 @@ import glob
 import re
 import hou
 
-PARAMETRISED_RE = re.compile("<udim>|\$SF")
+from conductor.houdini.hda import types
+
+
+PARAMETRISED_RE = re.compile(r"<udim>|\$SF")
 
 
 def _file_exists(file):
@@ -61,7 +64,37 @@ def _remove_redundant_entries(entries):
     return valid_entries
 
 
-def fetch(sequence):
+def _is_wanted(parm, node):
+    """Some parameters should not be be evaluated for dependencies."""
+    other_node = parm.node()
+    if not (types.is_job_node(other_node) or
+            types.is_submitter_node(other_node)):
+        return True
+    # at this stage we know the other node is a job or submitter
+    if other_node !=  node:
+        return False
+    # at this stage we know the other node is this node
+    return parm.name() != "output_directory"
+
+
+def _ref_parms(node):
+    """All file parms except those on other job nodes.
+
+    When submitting a job and there are other jobs in the
+    scene, we don't want files referenced on those other
+    nodes because they are not needed for this job. They are
+    likely to be scripts or tools needed to make that other
+    job run.
+    """
+    result = []
+    refs = hou.fileReferences()
+    for parm, _ in refs:
+        if parm and _is_wanted(parm, node):
+            result.append(parm)
+    return result
+
+
+def fetch(node, sequence):
     """Finds all file dependencies in the project.
 
     The results contain files and directories that exist and
@@ -70,17 +103,17 @@ def fetch(sequence):
     is present.
     """
 
-    refs = hou.fileReferences()
+    parms = _ref_parms(node)
     result = set()
 
     for frame in sequence:
-        for parm, _ in refs:
-            if parm:
-                path = os.path.abspath(parm.evalAtFrame(frame))
-                path = PARAMETRISED_RE.sub('*', path)
-                for file in glob.glob(path):
-                    if _file_exists(file) or _directory_exists(file):
-                        result.add(file)
+        for parm in parms:
+            path = PARAMETRISED_RE.sub(
+                '*', os.path.abspath(parm.evalAtFrame(frame)))
+            for file in glob.glob(path):
+                if file not in result and _file_exists(
+                        file) or _directory_exists(file):
+                    result.add(file)
 
     result = _remove_redundant_entries(result)
 
