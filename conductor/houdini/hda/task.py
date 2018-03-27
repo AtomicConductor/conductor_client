@@ -48,7 +48,7 @@ class Task(object):
 
     def data(self):
         return {
-            "frames": str(tuple(self._clump)),
+            "frames": str(self._clump),
             "command": self._command
         }
 
