@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import yaml
+import sys
 import functools
 from maya import cmds, mel
 
@@ -576,6 +577,8 @@ def scrape_yeti_graph(yeti_node):
             logger.debug("Yeti graph node: %s.%s: %s", node, attr_name, filepath)
             if filepath:
                 # if the filepath is absolute, then great; record it.
+                if not sys.platform.startswith('win'):
+                    filepath = filepath.replace('\\', '/')
                 if os.path.isabs(filepath):
                     filepaths.append(filepath)
                     continue
