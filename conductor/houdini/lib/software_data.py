@@ -64,36 +64,17 @@ def _build_tree(packages, package):
     key, add the package it refers to to children. Recurse
     until no more plugins are left.
     """
-    pkg = _light_copy(package)
-    pkg["children"] = {}
+    # pkg = _light_copy(package)
+    # pkg["children"] = {}
     for child_id in package.get("plugins", []):
         child_package = next(
             (c for c in packages if c["package_id"] == child_id), None)
         if child_package:
-            child_package = _build_tree(
-                packages, child_package)
-            pkg["children"][child_package["package_id"]] = child_package
-    return pkg
+            child_package = _build_tree( packages, child_package)
+            package["children"].append(child_package)
+    package.pop("plugins", None)
+    return package
 
-
-def _light_copy(package):
-    """Remove some unwanted keys.
-
-    TODO - Some of these may turn out to be wanted after all.
-    """
-    pkg = copy.deepcopy(package)
-    for att in [
-        "build_id",
-        "time_updated",
-        "description",
-        "plugin_hosts",
-        "updated_at",
-        "time_created",
-        "relative_path",
-            "plugins"]:
-        pkg.pop(att, None)
-
-    return pkg
 
 
 def _is_product(pkg, **kw):
@@ -127,7 +108,7 @@ def _find_by_keys(tree, **kw):
         return None
     if _is_product(tree, **kw):
         return tree
-    for child_tree in tree["children"].values():
+    for child_tree in tree["children"]:
         result = _find_by_keys(child_tree, **kw)
         if result:
             return result
@@ -147,7 +128,7 @@ def _find_by_name(branch, name, limit=None, depth=0):
         return branch
     depth += 1
     if depth <= limit or not limit:
-        for child_branch in branch["children"].values():
+        for child_branch in branch["children"]:
             result = _find_by_name(child_branch, name, limit, depth)
             if result:
                 return result
@@ -186,7 +167,7 @@ def _to_path_list(tree, **kw):
     parent_name = kw.get("parent_name", "")
     paths = kw.get("paths", [])
 
-    for child_tree in tree.get("children").values():
+    for child_tree in tree["children"]:
         name = ("/").join([n for n in [parent_name,
                                        to_name(child_tree)] if n])
         paths.append(name)
@@ -209,7 +190,25 @@ def to_all_paths(path):
     result.reverse()
     return result
 
+def _clean_package(package):
+    """Remove some unwanted keys.
 
+    TODO - Some of these may turn out to be wanted after all.
+    """
+    pkg = copy.deepcopy(package)
+    for att in [
+        "build_id",
+        "time_updated",
+        "description",
+        "updated_at",
+        "time_created",
+        "plugin_hosts",
+        "relative_path"]:
+        pkg.pop(att, None)
+    
+    pkg["children"] = []
+    return pkg
+ 
 class PackageTree(object):
     """Class to represent available packages as a tree.
     
@@ -227,6 +226,8 @@ class PackageTree(object):
         "houdini" or "maya-io"
         """
         product = kw.get("product")
+        packages = [_clean_package(p) for p in packages] 
+
         if product:
             root_ids = [p["package_id"]
                         for p in packages if p["product"] == product]
@@ -234,7 +235,7 @@ class PackageTree(object):
             root_ids = [p["package_id"]
                         for p in packages if not p["plugin_host_product"]]
 
-        self._tree = _build_tree(packages, {"plugins": root_ids})
+        self._tree = _build_tree(packages, {"children":[], "plugins": root_ids})
 
     def find_by_name(self, name, limit=None, depth=0):
         """Search the tree for a product with the given name.
