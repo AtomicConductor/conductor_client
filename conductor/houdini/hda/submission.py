@@ -51,41 +51,51 @@ class Submission(object):
         else:
             self._nodes = node.inputs()
 
-        self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self._hipbase = submission_ui.stripped_hip()
-        self._use_timestamped_scene = bool(
-            self._node.parm("use_timestamped_scene").eval())
-        self._scene = submission_ui.set_scene_name(self._node, self._timestamp)
-        self._local_upload = bool(self._node.parm("local_upload").eval())
-        self._force_upload = bool(self._node.parm("force_upload").eval())
-        self._upload_only = bool(self._node.parm("upload_only").eval())
-        self._notifications = notifications_ui.get_notifications(self._node)
-        self._project_id = self._node.parm('project').eval()
-        self._project_name = self._get_project_name()
+        timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self._file = {
+            "timestamp": timestamp,
+            "hipbase": submission_ui.stripped_hip(),
+            "use_timestamped_scene": bool(
+                self._node.parm("use_timestamped_scene").eval()),
+            "scene": submission_ui.set_scene_name(
+                self._node,
+                timestamp)}
+
+        self._upload = {
+            "local": bool(self._node.parm("local_upload").eval()),
+            "force": bool(self._node.parm("force_upload").eval()),
+            "only": bool(self._node.parm("upload_only").eval())
+        }
+
+        self._project = self._get_project()
 
         self._tokens = self._setenv()
 
+        self._notifications = notifications_ui.get_notifications(self._node)
+
         self._jobs = []
         for node in self._nodes:
-            job = Job.create(node, self._tokens, self._scene)
+            job = Job.create(node, self._tokens, self._file["scene"])
             self._jobs.append(job)
 
-    def _get_project_name(self):
+    def _get_project(self):
         """Get the project name by looking up its ID.
 
-        Just in case the current project is no longer in the
-        list of shared projects, we throw an error if its
-        not found.
+        In case the current project is no longer in the
+        list of projects, throw an error.
         """
-        projects = data_block.ConductorDataBlock(product="houdini").projects()
-
+        project_id = self._node.parm('project').eval()
+        projects = data_block.for_houdini().projects()
         project_names = [project["name"]
-                         for project in projects if project['id'] == self._project_id]
+                         for project in projects if project['id'] == project_id]
         if not project_names:
             raise hou.InvalidInput(
                 "%s %s is an invalid project." %
-                self._node.name(), self._project_id)
-        return project_names[0]
+                self._node.name(), project_id)
+        return {
+            "id": project_id,
+            "name": project_names[0]
+        }
 
     def _setenv(self):
         """Env tokens are variables to help the user build strings.
@@ -102,21 +112,22 @@ class Submission(object):
         changes for every task.
 
         We use hou.putenv() which basically sets these as
-        global env vars in the scene. (Unfortunately thats the
+        global env vars in the scene. Unfortunately thats the
         only way because you can only attach variables local
-        to nodes therough the HDK.) Once tokens are set,
-        strings using them are expanded correctly. In fact we
-        don't need these tokens to be stored on the Submission
-        object (or Job or Task) for the submission to succeed.
-        The only reason we store them is to display them in a
-        dry-run scenario.
+        to nodes through the Houdini devkit. 
+
+        Once tokens are set, strings using them are expanded
+        correctly. In fact we don't need these tokens to be
+        stored on the Submission object (or Job or Task) for
+        the submission to succeed. The only reason we store
+        them is to display them in a dry-run scenario.
         """
         tokens = {}
-        tokens["CT_TIMESTAMP"] = self._timestamp
         tokens["CT_SUBMITTER"] = self._node.name()
-        tokens["CT_HIPBASE"] = self._hipbase
-        tokens["CT_SCENE"] = self._scene
-        tokens["CT_PROJECT"] = self._project_name
+        tokens["CT_TIMESTAMP"] = self._file["timestamp"]
+        tokens["CT_HIPBASE"] = self._file["hipbase"]
+        tokens["CT_SCENE"] = self._file["scene"]
+        tokens["CT_PROJECT"] = self._project["name"]
 
         for token in tokens:
             hou.putenv(token, tokens[token])
@@ -135,9 +146,10 @@ class Submission(object):
         """
         result = []
         submission_args = {}
-        submission_args["local_upload"] = self._local_upload
-        submission_args["upload_only"] = self._upload_only
-        submission_args["force"] = self._force_upload
+
+        submission_args["local_upload"] = self._upload["local"]
+        submission_args["upload_only"] = self._upload["only"]
+        submission_args["force"] = self._upload["force"]
         submission_args["project"] = self.project_name
 
         if self.email_addresses:
@@ -153,72 +165,84 @@ class Submission(object):
         return result
 
     @property
-    def user(self):
-        return hou.getenv('USER')
-
-    @property
     def local_upload(self):
-        return self._local_upload
+        """local_upload."""
+        return self._upload["local"]
 
     @property
     def force_upload(self):
-        return self._force_upload
+        """force_upload."""
+        return self._upload["force"]
 
     @property
     def upload_only(self):
-        return self._upload_only
+        """upload_only."""
+        return self._upload["only"]
 
     @property
     def scene(self):
-        return self._scene
+        """scene."""
+        return self._file["scene"]
 
     @property
     def node_name(self):
+        """node_name."""
         return self._node.name()
 
     @property
     def project_id(self):
-        return self._project_id
+        """project_id."""
+        return self._project["id"]
 
     @property
     def project_name(self):
-        return self._project_name
+        """project_name."""
+        return self._project["name"]
 
     @property
     def filename(self):
+        """filename."""
         return hou.hipFile.name()
 
     @property
     def basename(self):
+        """basename."""
         return hou.hipFile.basename()
 
     @property
     def unsaved(self):
+        """unsaved."""
         return hou.hipFile.hasUnsavedChanges()
 
     @property
     def use_timestamped_scene(self):
-        return self._use_timestamped_scene
+        """use_timestamped_scene."""
+        return self._file["use_timestamped_scene"]
 
     @property
     def tokens(self):
+        """tokens."""
         return self._tokens
 
     @property
     def jobs(self):
+        """jobs."""
         return self._jobs
 
     def has_notifications(self):
+        """has_notifications."""
         return bool(self._notifications)
 
     @property
     def email_addresses(self):
+        """email_addresses."""
         if not self.has_notifications():
             return []
         return self._notifications["email"]["addresses"]
 
     @property
     def email_hooks(self):
+        """email_hooks."""
         if not self.has_notifications():
             return []
         return self._notifications["email"]["hooks"]

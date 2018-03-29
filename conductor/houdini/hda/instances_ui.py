@@ -20,8 +20,7 @@ def populate_menu(node):
     have been cached. The menu needs a flat array: [k, v, k,
     v ....]
     """
-    instance_types = data_block.ConductorDataBlock(
-        product="houdini").instance_types()
+    instance_types = data_block.for_houdini().instance_types()
     selected = node.parm('machine_type').eval()
     if selected not in (_to_menu_item(item)[0] for item in instance_types):
         node.parm('machine_type').set(_to_menu_item(instance_types[0])[0])

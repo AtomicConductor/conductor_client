@@ -11,7 +11,7 @@ def populate_menu(node):
     have been cached. The menu needs a flat array: [k, v, k,
     v ....]
     """
-    projects = data_block.ConductorDataBlock(product="houdini").projects()
+    projects = data_block.for_houdini().projects()
     selected = node.parm('project').eval()
     if selected not in (project["id"] for project in projects):
         node.parm('project').set(projects[0]["id"])

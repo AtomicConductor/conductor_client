@@ -82,7 +82,7 @@ def get_package_tree():
     singleton is first instantiated. Its probably redundant
     here.
     """
-    return data_block.ConductorDataBlock(product="houdini").package_tree()
+    return data_block.for_houdini().package_tree()
 
 
 def get_chosen_ids(node):

@@ -17,7 +17,7 @@ def has_valid_project(node):
     no longer in the list from Conductor, which could occur
     if a project has been deleted.
     """
-    projects = data_block.ConductorDataBlock(product="houdini").projects()
+    projects = data_block.for_houdini().projects()
     selected = node.parm('project').eval()
     return not (selected == "notset" or selected not in (
         project["id"] for project in projects))

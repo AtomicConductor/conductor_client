@@ -123,7 +123,7 @@ class Job(object):
         """Get the directory that will be made available for download.
 
         By default, try to derive the output directory from
-        the output path in the driver node. We do this by
+        the output path in the driver node. Do this by
         looking up the parm name based on the driver node
         type in OUTPUT_DIR_PARMS. If its not a node we know
         about (or even if it is), the user can select to
@@ -154,8 +154,7 @@ class Job(object):
         flavor, cores = self._node.parm(
             'machine_type').eval().split("_")
 
-        instance_types = data_block.ConductorDataBlock(
-            product="houdini").instance_types()
+        instance_types = data_block.for_houdini().instance_types()
 
         result = [it for it in instance_types if it['cores'] ==
                   int(cores) and it['flavor'] == flavor][0]
@@ -173,6 +172,8 @@ class Job(object):
         """
         result = {}
 
+        # print   self._job_data["sequence"]["scout"] 
+
         result["upload_paths"] = self._job_data["resources"]["dependencies"]
         result["autoretry_policy"] = {'preempted': {
             'max_retries': self._job_data["instance"]["retries"]}
@@ -182,8 +183,8 @@ class Job(object):
         result["environment"] = dict(
             self._job_data["resources"]["environment"])
         result["enforced_md5s"] = {}
-        result["scout_frames"] = ", ".join(
-            self._job_data["sequence"]["scout"] or [])
+        result["scout_frames"] = ", ".join( [str(s) for s in
+            self._job_data["sequence"]["scout"] or []])
         result["output_path"] = self._expanded["output_directory"]
         result["chunk_size"] = self._job_data["sequence"]["main"].clump_size
         result["machine_type"] = self._job_data["instance"]["flavor"]
@@ -356,7 +357,7 @@ class SingleTaskJob(Job):
                 'f1', 'f2', 'f3']
         ]
         sequence = Sequence.from_range(start, end, step=step)
-        sequence.clump_size = len(self._job_data["sequence"]["main"])
+        sequence.clump_size = len(sequence)
 
         return {
             "main": sequence,
@@ -380,8 +381,7 @@ class SingleTaskJob(Job):
         tokens["CT_CORES"] = str(self._job_data["instance"]["cores"])
         tokens["CT_FLAVOR"] = self._job_data["instance"]["flavor"]
         tokens["CT_INSTANCE"] = self._job_data["instance"]["description"]
-        tokens["CT_PREEMPTIBLE"] = "0" if self._job_data["instance"](
-            "preemptible") else "1"
+        tokens["CT_PREEMPTIBLE"] = "preemptible" if self._job_data["instance"]["preemptible"] else "non-preemptible"
         tokens["CT_RETRIES"] = str(self._job_data["instance"]["retries"])
         tokens["CT_JOB"] = self.node_name
         tokens["CT_SOURCE"] = self.source_path
