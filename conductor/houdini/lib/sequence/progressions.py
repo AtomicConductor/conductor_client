@@ -22,7 +22,9 @@ def create(iterable, **kw):
     progressions in the sequence as that would take too long
     for large sets, and be really difficult to code. This
     algorithm walks through the sorted sequence, gathers
-    elements with the same gap as the previous element.
+    elements with the same gap as the previous element. The
+    max size keyword arg will limit the length of
+    progressions.
     """
     max_size = kw.get("max_size", len(iterable))
     iterable = sorted(iterable)

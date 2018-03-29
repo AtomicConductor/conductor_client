@@ -1,3 +1,13 @@
+"""This module's purpose is to make API requests once only.
+
+There are currently 3 pieces of data we get from api calls.
+1. Projects.
+2. Packages.
+3. Instance types.
+
+Instance types doesn't yet come from an api call but maybe it will in future
+"""
+
 import json
 from conductor.lib import common
 from conductor.houdini.lib import software_data as swd
@@ -9,7 +19,7 @@ from conductor.houdini.lib import software_data as swd
 # from conductor.houdini.lib.mocks.api_client_mock import ApiClientNoHost as ApiClient
 
 # Uncomment next line to use the real version of ApiClient
-from conductor.lib.api_client  import ApiClient
+from conductor.lib.api_client import ApiClient
 
 
 def _projects():
@@ -61,26 +71,25 @@ class ConductorDataBlock:
 
     We store the list of instance types, projects, and the
     package tree here. In theory, this data is fetched once
-    and then all the job & submitter nodes have access to it.
-    User can force an update, which might be handy if they
-    started working when offline, and then need to get real
-    before submitting.
-
-    The **kw args are:
-    force = fetch from conductor again
-    product = the product filter to pass onto the package_tree.
+    and then all the job & submitter nodes have access to
+    it. User can force an update, which might be handy if
+    they started working when offline, and then need to get
+    real before submitting.
     """
     instance = None
 
+    @classmethod
+    def clear(cls):
+        cls.instance = None
+    
     class __ConductorDataBlock:
         def __init__(self, **kw):
-            self.force_update(**kw)
-
-        def force_update(self, **kw):
+            print "Making a new Data block **********************************"
             self._projects = _projects()
             self._instance_types = common.get_conductor_instance_types()
             self._package_tree = swd.PackageTree(_packages(), **kw)
 
+   
         def __str__(self):
             return repr(self)
 
@@ -94,15 +103,34 @@ class ConductorDataBlock:
             return self._package_tree
 
     def __init__(self, **kw):
-        """Create a new datablock the first time only."""
+        """Create a new datablock the first time only.
+
+        The **kw args are:
+        force = fetch from conductor again
+        product = the product filter to pass onto the
+        package_tree constructor to filter it.
+
+        TODO: product is only actually used when making a new instance.
+        """
+        if kw.get("force"):
+            ConductorDataBlock.clear()
 
         if not ConductorDataBlock.instance:
             ConductorDataBlock.instance = ConductorDataBlock.__ConductorDataBlock(
                 **kw)
 
-        if kw.get("force"):
-            ConductorDataBlock.instance.force_update(**kw)
-
+    
     def __getattr__(self, name):
         """Delegate method calls to the singleton."""
         return getattr(self.instance, name)
+
+
+def for_houdini(force=False):
+    """Factory to create or get data required by Houdini.
+
+    By specifying the product, we filter the list of
+    packages that are stored. This factory means the code
+    base does not need to be littered with calls that
+    specify the product keyword.
+    """
+    return ConductorDataBlock(product="houdini", force=force)
