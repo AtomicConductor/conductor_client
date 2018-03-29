@@ -38,13 +38,13 @@ from conductor.houdini.hda import (
 
 def force_job_update(node, **_):
     """Update was called from the job node UI."""
-    db = data_block.ConductorDataBlock(force=True, product="houdini")
+    db = data_block.for_houdini(force=True)
     _update_job_node(node)
 
 
 def force_submission_update(node, **_):
     """Update was called from the submission node UI."""
-    db = data_block.ConductorDataBlock(force=True, product="houdini")
+    db = data_block.for_houdini(force=True)
     _update_submission_node(node)
 
 

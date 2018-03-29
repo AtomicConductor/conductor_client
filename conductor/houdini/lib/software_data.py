@@ -212,9 +212,11 @@ def to_all_paths(path):
 
 class PackageTree(object):
     """Class to represent available packages as a tree.
-
+    
     Data structure is really a DAG because a tool may be
-    compatible with moore than one host product.
+    compatible with more than one host product. TODO: Make
+    parents that point to the same child use the actual same
+    instance in memory, not a copy.  
     """
 
     def __init__(self, packages, **kw):
@@ -284,5 +286,5 @@ class PackageTree(object):
         return self._tree
 
     def json(self):
-        """The whole tree as json"""
+        """The whole tree as json."""
         return json.dumps(self._tree)
