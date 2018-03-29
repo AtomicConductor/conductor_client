@@ -20,11 +20,11 @@ def _create_submission_with_save(node):
 
     If user has selected to automatically save a timestamped
     scene, build the submission object first and use the
-    scene name it provides. Otherwise use the current scene
-    name, and in the case there are unsaved changes, present
-    the save-scene flow. In the latter case, build the
-    submission object after save so it has the name chosen
-    by the user.
+    timestamped scene name it provides. Otherwise use the
+    current scene name, and in the case there are unsaved
+    changes, present the save-scene flow. In the latter case,
+    build the submission object after save so it has the name
+    chosen by the user.
     """
     if node.parm("use_timestamped_scene").eval():
         current_scene_name = hou.hipFile.basename()

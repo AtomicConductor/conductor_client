@@ -60,9 +60,6 @@ class SubmissionTree(QtWidgets.QWidget):
             self._model, "Upload only:", str(
                 submission.upload_only))
         appendRow(
-            self._model, "User:", str(
-                submission.user))
-        appendRow(
             self._model, "Unsaved changes:", str(
                 submission.unsaved))
 
