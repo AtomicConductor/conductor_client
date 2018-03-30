@@ -251,7 +251,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         environment
         '''
         environment = super(MayaConductorSubmitter, self).getEnvironment()
-        ocio_config = maya_utils.get_ocio_config()
+        ocio_config = maya_utils.get_ocio_config_filepath()
         if ocio_config:
             environment.update({"OCIO": ocio_config})
 
