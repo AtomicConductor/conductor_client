@@ -10,7 +10,7 @@ Instance types doesn't yet come from an api call but maybe it will in future
 
 import json
 from conductor.lib import common
-from conductor.houdini.lib import software_data as swd
+from conductor.houdini.lib import package_tree as ptree
 
 # Below are 2 mock versions of ApiClient - I made because my account was deleted
 # on the weekend and I couldn't access Conductor. Also handy to have fast
@@ -87,7 +87,7 @@ class ConductorDataBlock:
             print "Making a new Data block **********************************"
             self._projects = _projects()
             self._instance_types = common.get_conductor_instance_types()
-            self._package_tree = swd.PackageTree(_packages(), **kw)
+            self._package_tree = ptree.PackageTree(_packages(), **kw)
 
    
         def __str__(self):

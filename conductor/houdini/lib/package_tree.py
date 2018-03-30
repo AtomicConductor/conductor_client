@@ -3,7 +3,7 @@
 It has methods and functions to traverse the tree to find
 packages and build paths etc.
 
-See tests in /tests/test_software_data.py for additional usage info.
+See tests in /tests/test_package_tree.py for additional usage info.
 """
 
 
