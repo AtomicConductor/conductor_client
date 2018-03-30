@@ -1,11 +1,10 @@
 import logging
 import os
 import re
-import yaml
 import functools
 from maya import cmds, mel
 
-from conductor.lib import package_utils, file_utils
+from conductor.lib import common, package_utils, file_utils
 logger = logging.getLogger(__name__)
 
 
@@ -512,24 +511,13 @@ def collect_dependencies(node_attrs):
 
                     dependencies.append(path)
 
-    #  Grab any OCIO settings that might be there...
-    ocio_config_filepath = get_ocio_config()
-    if ocio_config_filepath:
-        logger.info("OCIO config detected -- %s" % ocio_config_filepath)
-        logger.debug("OCIO file: %s", ocio_config_filepath)
-        dependencies.append(ocio_config_filepath)
-        ocio_config_dependencies = parse_ocio_config(ocio_config_filepath)
-        logger.debug("OCIO config dependencies: %s", ocio_config_dependencies)
-        dependencies.append(ocio_config_dependencies)
+    # ---- OCIO SCRAPING -----
+    ocio_dependencies = scrape_ocio_dependencies()
+    logger.debug("ocio_dependencies: %s", ocio_dependencies)
+    dependencies.extend(ocio_dependencies)
 
-    # Strip out any paths that end in "\"  or "/"    Hopefull this doesn't break anything.
+    # Strip out any paths that end in "\"  or "/"    Hopefully this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
-
-
-def get_ocio_config():
-    plug_name = "defaultColorMgtGlobals.cfp"
-    if cmds.objExists(plug_name):
-        return cmds.getAttr(plug_name)
 
 
 def scrape_yeti_graph(yeti_node):
@@ -684,23 +672,83 @@ def parse_xgen_file(path, node):
 
     return file_paths
 
-#  Parse the OCIO config file to get the location of the associated LUT files
+
+def scrape_ocio_dependencies():
+    '''
+    Find the ocio config file (if it exists) and scrape it for external file dependencies
+    '''
+    config_filepath = get_ocio_config_filepath()
+    if config_filepath:
+        return parse_ocio_config_paths(config_filepath)
+    return []
 
 
-def parse_ocio_config(config_file):
+def get_ocio_config_filepath():
+    '''
+    Return the OCIO config filepath from maya settings.
 
-    def bunk_constructor(loader, node):
-        pass
+    Only return the filepath if color managment is enabled and OCIO config is enabled.
+    '''
+    if (cmds.colorManagementPrefs(q=True, cmEnabled=True) and
 
-    yaml.add_constructor(u"ColorSpace", bunk_constructor)
-    yaml.add_constructor(u"View", bunk_constructor)
+            cmds.colorManagementPrefs(q=True, cmConfigFileEnabled=True)):
+        return cmds.colorManagementPrefs(q=True, configFilePath=True)
 
-    with open(config_file, 'r') as f:
-        contents = yaml.safe_load(f)
 
-    config_path = os.path.dirname(config_file)
-    print("Adding LUT config path %s" % config_path + "/" + contents['search_path'])
-    return config_path + "/" + contents['search_path']
+def parse_ocio_config_paths(config_filepath):
+    '''
+    Parse the given OCIO config file for any paths that we may be interested in (for uploads)
+
+    For now, we'll keep this simple and simply scrape the "search_path" value in the config file.
+    However, it's possible that additional attributes in the config will need to be queried.
+    '''
+
+    if not os.path.isfile(config_filepath):
+        raise Exception("OCIO config file does not exist: %s" % config_filepath)
+
+    paths = []
+
+    search_path_str = _get_ocio_search_path(config_filepath)
+    logger.warning("Could not find PyOpenColorIO library.  Resorting to basic yaml loading")
+    config_dirpath = os.path.dirname(config_filepath)
+    search_paths = search_path_str.split(os.pathsep)
+    logger.debug("Resolving config seach paths: %s", search_paths)
+    for path in search_paths:
+        # If the path is relative, resolve it
+        if not os.path.isabs(path):
+            path = os.path.join(config_dirpath, path)
+            logging.debug("Resolved relative path '%s' to '%s'", )
+
+        if not os.path.isdir(path):
+            logger.warning("OCIO search path does not exist: %s", path)
+            continue
+        logger.debug("adding directory: %s", path)
+        paths.append(path)
+
+    return paths + [config_filepath]
+
+
+def _get_ocio_search_path(config_filepath):
+    '''
+    Get the "search_path" value in the config file.
+    Though an OCIO config file is yaml, it may have custom data types (yaml tags) defined within it
+    which can prevent a succesful reading when using a simple yaml.load call. So we try two
+    different approaches for reading the file:
+        1. Use OpenColorIO api.  This library/tools may not be available on a client's machine.
+        2. Use pyyaml to load the yaml file and use a custom yaml constructor to omit the yaml tags
+           from being read.
+    '''
+    logger.debug("Reading OCIO config from: %s", config_filepath)
+    try:
+        import PyOpenColorIO
+    except ImportError as e:
+        logger.warning(e)
+        logger.warning("Could not find PyOpenColorIO library.  Loading OCIO config via yaml loader")
+        config = common.load_yaml(config_filepath, safe=True, omit_tags=True)
+        return config.get("search_path")
+    else:
+        config = PyOpenColorIO.Config.CreateFromFile(config_filepath)
+        return config.getSearchPath()
 
 
 def get_current_renderer():
