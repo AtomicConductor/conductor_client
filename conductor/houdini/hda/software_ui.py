@@ -7,7 +7,7 @@ There are 3 sections in the software tab in the UI:
 
 Conductor packages are represented as paths, based on a DAG. e.g.
 houdini `16.0.736/arnold-houdini 2.0.2.2/al-shaders 1.1`
-See lib/software_data module for more info
+See lib/package_tree module for more info
 
 Attributes:
      NO_HOST_PACKAGES (str): Filler text when package list empty
@@ -16,7 +16,7 @@ Attributes:
 import hou
 
 from conductor.houdini.lib import data_block
-from conductor.houdini.lib import software_data as swd
+from conductor.houdini.lib import package_tree as ptree
 from conductor.houdini.hda import houdini_info
 
 
@@ -142,7 +142,7 @@ def choose(node, **_):
         clear_on_cancel=True)
     paths = []
     for path in results:
-        paths += swd.to_all_paths(path)
+        paths += ptree.to_all_paths(path)
     _add_package_entries(node, paths)
 
 
@@ -170,7 +170,7 @@ def detect(node, **_):
         plugin_paths = package_tree.get_all_paths_to(**info)
         paths += plugin_paths
 
-    paths = swd.remove_unreachable(paths)
+    paths = ptree.remove_unreachable(paths)
     _add_package_entries(node, paths)
 
 
