@@ -568,8 +568,18 @@ def scrape_yeti_graph(yeti_node):
                                         node=node,
                                         getParamValue=True,
                                         param=attr_name)
+
             logger.debug("Yeti graph node: %s.%s: %s", node, attr_name, filepath)
             if filepath:
+                #  Yeti nodes may store the filepath in either forward slash or backslash format (ugh).
+                # This is problematic if the content is initially created on one platform (like Windows)
+                # but is now currently opened on a different platform (like linux), which doesn't acknowledge
+                # backslashes as path separators (since a backslash is a valid character in unix path).
+                # So we must choose between two evils and simply assume that all backslashes are intended
+                # to be directory separators, and so we convert them to forward slashes (which Windows
+                # will handle just fine as well).
+                filepath = os.path.normpath(filepath).replace('\\', "/")
+                logger.debug("Conformed path: %s", filepath)
                 # if the filepath is absolute, then great; record it.
                 if os.path.isabs(filepath):
                     filepaths.append(filepath)
