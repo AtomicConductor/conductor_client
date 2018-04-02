@@ -15,6 +15,8 @@ is_simulation: is it a simuation
 
 update_input_node: update UI when input connection changes
 """
+import hou
+
 from conductor.houdini.hda import uistate
 
 
@@ -37,15 +39,14 @@ def _get_nice_driver_type(input_type):
 
 
 def get_driver_node(node):
-    """Get connected driver node."""
-    inputs = node.inputs()
-    return inputs[0] if inputs else None
-
+    """Get connected driver node or None."""
+    return hou.node(node.parm('source').evalAsString())
+ 
 
 def get_driver_type(node):
     """Get the connected type name."""
-    input_node = get_driver_node(node)
-    return input_node.type().name() if input_node else None
+    driver_node = get_driver_node(node)
+    return driver_node.type().name() if driver_node else None
 
 
 def is_simulation(node):
@@ -55,7 +56,13 @@ def is_simulation(node):
     and no frame spec UI will be shown.
     """
     return get_driver_type(node) in SIMULATION_NODES
-
+ 
+def update_input_type(node, **_):
+    driver_type = get_driver_type(node)
+    node.parm('driver_type').set(_get_nice_driver_type(driver_type))
+    show_frames = not is_simulation(node)
+    node.parm('show_frames_ui').set(show_frames)
+    uistate.update_button_state(node)
 
 def update_input_node(node):
     """Callback triggered every time a connection is made/broken.
@@ -67,12 +74,9 @@ def update_input_node(node):
     frames, it is very unlikely and only serves to clutter
     the UI.
     """
-    driver_node = get_driver_node(node)
-    path = driver_node.path() if driver_node else ""
-    driver_type = get_driver_type(node)
-    node.parm('driver_type').set(_get_nice_driver_type(driver_type))
-    node.parm('source').set(path)
 
-    show_frames = not is_simulation(node)
-    node.parm('show_frames_ui').set(show_frames)
-    uistate.update_button_state(node)
+    inputs = node.inputs()
+    connected = inputs and inputs[0]
+    node.parm('source').set(inputs[0].path() if connected else "" )
+    update_input_type(node)
+

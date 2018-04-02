@@ -47,6 +47,7 @@ class PackageEnvironment(object):
         according to their merge policy. See set and append
         above.
         """
+
         try:
             others = env_list["environment"]
         except TypeError:

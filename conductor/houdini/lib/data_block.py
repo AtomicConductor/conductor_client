@@ -15,11 +15,11 @@ from conductor.houdini.lib import package_tree as ptree
 # Below are 2 mock versions of ApiClient - I made because my account was deleted
 # on the weekend and I couldn't access Conductor. Also handy to have fast
 # updates.
-# from conductor.houdini.lib.mocks.api_client_mock import ApiClient
+from conductor.houdini.lib.mocks.api_client_mock import ApiClient
 # from conductor.houdini.lib.mocks.api_client_mock import ApiClientNoHost as ApiClient
 
 # Uncomment next line to use the real version of ApiClient
-from conductor.lib.api_client import ApiClient
+# from conductor.lib.api_client import ApiClient
 
 
 def _projects():
