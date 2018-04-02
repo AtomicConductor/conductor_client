@@ -35,26 +35,29 @@ from conductor.houdini.hda import (
     types
 )
 
+def _all_job_nodes():
+    return hou.nodeType(hou.ropNodeTypeCategory(), "conductor::job::0.1").instances()
 
-def force_job_update(node, **_):
+def _all_submitter_nodes():
+    return hou.nodeType(hou.ropNodeTypeCategory(), "conductor::submitter::0.1").instances()
+
+def force_update(node, **_):
     """Update was called from the job node UI."""
     db = data_block.for_houdini(force=True)
-    _update_job_node(node)
 
+    for job in _all_job_nodes():
+        _update_job_node(job)
 
-def force_submission_update(node, **_):
-    """Update was called from the submission node UI."""
-    db = data_block.for_houdini(force=True)
-    _update_submission_node(node)
+    for submitter in _all_submitter_nodes():
+        _update_submitter_node(submitter)
 
-
-def _update_submission_node(node, **_):
+def _update_submitter_node(node, **_):
     """Initialize or update.
 
     We do this on creation/loading or manually. We do it in
     the root take context to ensure everything is unlocked.
     This can be called without the expensive
-    force_submission_update, but still update widgets
+    force_update, but still update widgets
     """
     with takes.take_context(hou.takes.rootTake()):
         job_source_ui.update_inputs(node)
@@ -71,7 +74,7 @@ def _update_job_node(node, **_):
     the root take context to ensure everything is unlocked.
 
     This can be called without the expensive
-    force_job_update, but still update widgets
+    force_update, but still update widgets
     """
 
     with takes.take_context(hou.takes.rootTake()):
@@ -99,10 +102,10 @@ MENUS = dict(
 
 
 ACTIONS = dict(
+    source=driver_ui.update_input_type,
     preview=action_row_ui.preview,
     submit=action_row_ui.submit,
-    update=force_job_update,
-    sub_update=force_submission_update,
+    update=force_update,
     use_custom=frame_spec_ui.set_type,
     fs1=frame_spec_ui.on_frame_range_changed,
     fs2=frame_spec_ui.on_frame_range_changed,
@@ -212,7 +215,7 @@ def _on_created_or_loaded(node):
     if types.is_job_node(node):
         _update_job_node(node)
     else:
-        _update_submission_node(node)
+        _update_submitter_node(node)
 
 
 def _on_created(node):

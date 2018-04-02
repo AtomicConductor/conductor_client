@@ -10,9 +10,7 @@ import sys
 import argparse
 import hou
 
-from sequence.sequence import Sequence
-from sequence.clump import Clump
-
+from sequence import Sequence
 
 def error(msg):
     if msg:
@@ -83,16 +81,17 @@ def render(args):
     submit but are not needed to render.
 
     The rop render method taks a range (start, end, step).
-    However, our range args are an irregular set of frames.
-    Therefore we convert the spec into arithmetic progressions
-    in order call the render command fewer times ideally.
+    However, our range args are potentially an irregular set
+    of frames. Therefore we convert the spec into arithmetic
+    progressions ad call the render command once for each
+    progression.
     """
     try:
-        seq = Sequence.from_spec(args.range)
+        seq = Sequence.create(args.range)
     except ValueError as err:
         usage(str(err))
 
-    clumps = Clump.regular_clumps(seq)
+    clumps = seq.progressions()
 
     try:
         hou.hipFile.load(args.hipfile)
