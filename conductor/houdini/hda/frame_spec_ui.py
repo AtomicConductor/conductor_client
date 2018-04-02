@@ -2,11 +2,10 @@
 
 import hou
 from conductor.houdini.hda import driver_ui, takes, uistate
-from conductor.houdini.lib.sequence.sequence import Sequence
+from conductor.houdini.lib.sequence import Sequence
 
 # Specify that Expressions are Python
 XP = hou.exprLanguage.Python
-
 
 def _replace_with_input_expression(parm, input_path):
     """Write expression based on equivalent parm on input node."""
@@ -39,9 +38,10 @@ def custom_frame_sequence(node):
     """Generate Sequence from value in custom_range parm."""
     spec = node.parm("custom_range").eval()
     clump_size = node.parm("clump_size").eval()
-    if Sequence.is_valid_spec(spec):
-        return Sequence.from_spec(spec, clump_size=clump_size)
-    return Sequence([])
+    try:
+        return Sequence.create(spec, clump_size=clump_size)
+    except ValueError:
+        return None
 
 
 def range_frame_sequence(node):
@@ -50,14 +50,16 @@ def range_frame_sequence(node):
     start, end, step = [
         node.parm(parm).eval() for parm in ['fs1', 'fs2', 'fs3']
     ]
-    return Sequence.from_range(start, end, step=step, clump_size=clump_size)
+    return Sequence.create(start, end, step, clump_size=clump_size)
 
 
 def scout_frame_sequence(node):
     """Generate Sequence from value in scout_frames parm."""
     spec = node.parm("scout_frames").eval()
-    return Sequence.from_spec(spec)
-
+    try:
+        return Sequence.create(spec)
+    except ValueError:
+        return None
 
 def main_frame_sequence(node):
     """Generate Sequence containing current chosen frames."""
@@ -78,11 +80,11 @@ def resolved_scout_sequence(node):
     sequence.
     """
     main_seq = main_frame_sequence(node)
-    if not node.parm("do_scout").eval():
-        return None
-    scout_seq = scout_frame_sequence(node)
-    return main_seq.intersection(scout_seq)
-
+    if main_seq and node.parm("do_scout").eval():
+        scout_seq = scout_frame_sequence(node)
+        if scout_seq:
+            return main_seq.intersection(scout_seq)
+    return None
 
 def _update_sequence_stats(node):
     """Generate frame stats message.
@@ -98,25 +100,18 @@ def _update_sequence_stats(node):
     """
     takes.enable_for_current(node, "frame_stats")
 
-    try:
-        main_seq = main_frame_sequence(node)
-        num_frames = len(main_seq)
-    except ValueError:
-        num_frames = None
 
-    if not num_frames:
+    main_seq = main_frame_sequence(node)
+    if main_seq:
+        num_frames = len(main_seq)
+    else:
         node.parm("frame_stats1").set("-")
         node.parm("frame_stats2").set("-")
         return
 
     frame_info = "%d Frames" % num_frames
-
-    try:
-        scout_seq = resolved_scout_sequence(node)
-    except ValueError:
-        scout_seq = None
-
-    if scout_seq is not None:
+    scout_seq = resolved_scout_sequence(node)
+    if scout_seq:
         frame_info = "%d/%d Frames" % (len(scout_seq), num_frames)
 
     node.parm("frame_stats1").set(frame_info)

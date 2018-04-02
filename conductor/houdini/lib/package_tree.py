@@ -11,7 +11,7 @@ import copy
 import json
 
 
-from package_environment import PackageEnvironment
+from conductor.houdini.lib.package_environment import PackageEnvironment
 from conductor import CONFIG
 
 
@@ -275,11 +275,13 @@ class PackageTree(object):
 
     def get_environment(self, paths):
         """Get merged environment from paths."""
+
         config_environment = CONFIG.get("environment") or {}
         package_env = PackageEnvironment(config_environment)
         for path in paths:
             package = _find_by_path(self._tree, path)
-            package_env.extend(package)
+            if package:
+                package_env.extend(package)
         return package_env
 
     @property
