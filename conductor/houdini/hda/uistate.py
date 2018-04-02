@@ -48,7 +48,7 @@ def _job_node_can_submit(node):
     frame range can only be invalid if it is set to custom.
     """
 
-    if not node.inputs():
+    if not node.parm('source').evalAsString():
         return False
     if not has_valid_project(node):
         return False

@@ -14,6 +14,8 @@ class Task(object):
         After calling setenv, tokens such as start end step
         and so on are valid. So when we expand the command
         any tokens that were used are correctly resolved.
+
+        The clump arg is an instance of Sequence.
         """
         self._clump = clump
         self._tokens = self._setenv(parent_tokens)
@@ -31,7 +33,7 @@ class Task(object):
         """
 
         tokens = {}
-        clump_type = type(self._clump).__name__.lower()[:-5]
+        clump_type = "regular" if self._clump.is_progression() else "irregular"
         tokens["CT_CLUMPTYPE"] = clump_type
         tokens["CT_CLUMP"] = str(self._clump)
         tokens["CT_CLUMPLENGTH"] = str(len(self._clump))
@@ -47,6 +49,7 @@ class Task(object):
         return tokens
 
     def data(self):
+        """The command and frame spec."""
         return {
             "frames": str(self._clump),
             "command": self._command
