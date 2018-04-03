@@ -65,7 +65,8 @@ def render(args):
     warnings, print them and carry on. For example, the
     scene is likely to contain unknown assets such as the
     conductor job and submitter nodes, which were used to
-    submit but are not needed to render.
+    submit but are not needed to render. Set to frame range,
+    in case user had left it set to single frame.
     """
 
     try:
