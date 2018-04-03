@@ -84,7 +84,6 @@ class ConductorDataBlock:
     
     class __ConductorDataBlock:
         def __init__(self, **kw):
-            print "Making a new Data block **********************************"
             self._projects = _projects()
             self._instance_types = common.get_conductor_instance_types()
             self._package_tree = ptree.PackageTree(_packages(), **kw)
@@ -110,7 +109,7 @@ class ConductorDataBlock:
         product = the product filter to pass onto the
         package_tree constructor to filter it.
 
-        TODO: product is only actually used when making a new instance.
+        product is only actually used when making a new instance.
         """
         if kw.get("force"):
             ConductorDataBlock.clear()
