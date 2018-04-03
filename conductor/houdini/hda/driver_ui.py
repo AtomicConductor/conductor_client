@@ -17,10 +17,29 @@ update_input_node: update UI when input connection changes
 """
 import hou
 
-from conductor.houdini.hda import uistate
+from conductor.houdini.hda import uistate, frame_spec_ui
 
 
-SIMULATION_NODES = ["dop", "geometry"]
+SIMULATION_NODES = ["output", "dop", "geometry"]
+
+# Mantra ROP
+# Geometry ROP (and SOP version)
+# Alembic ROP
+# IFD Archive ROP
+# Comp ROP
+# Channel ROP
+# BakeTexture ROP
+# OpenGL ROP
+# DOP ROP
+
+def _valid_driver(node):
+    driver = get_driver_node(node)
+    if not driver:
+        return False
+    for parm in ["f1", "f2", "f3"]:
+        if not driver.parm(parm):
+            return False
+    return True
 
 
 def _get_nice_driver_type(input_type):
@@ -62,7 +81,10 @@ def update_input_type(node, **_):
     node.parm('driver_type').set(_get_nice_driver_type(driver_type))
     show_frames = not is_simulation(node)
     node.parm('show_frames_ui').set(show_frames)
+    frame_spec_ui.set_type(node)
     uistate.update_button_state(node)
+
+
 
 def update_input_node(node):
     """Callback triggered every time a connection is made/broken.

@@ -1,11 +1,12 @@
 """frame range section in the UI."""
 
 import hou
-from conductor.houdini.hda import driver_ui, takes, uistate
+from conductor.houdini.hda import takes, uistate
 from conductor.houdini.lib.sequence import Sequence
 
 # Specify that Expressions are Python
 XP = hou.exprLanguage.Python
+
 
 def _replace_with_input_expression(parm, input_path):
     """Write expression based on equivalent parm on input node."""
@@ -14,14 +15,23 @@ def _replace_with_input_expression(parm, input_path):
 
 
 def _set_to_input(node, rop):
-    """Give all channels an expression to link the input node."""
+    """Give all channels an expression to link the input node.
+
+    If rop doesn't actually have f1, f2, f3 then we cant
+    link, so throw an error.
+    """
 
     if not rop:
         return
     rop_path = rop.path()
-    for parm in ['1', '2', '3']:
+
+    for channel in ['1', '2', '3']:
+        if not rop.parm("f%s" % channel):
+            raise TypeError(
+                """The selected ROP %s has no frame range parameter. 
+                Please select or create an output Rop with start, end, and step""" % rop_path)
         _replace_with_input_expression(
-            node.parm('fs%s' % parm), '%s/f%s' % (rop_path, parm))
+            node.parm('fs%s' % channel), '%s/f%s' % (rop_path, channel))
 
 
 def _set_to_scene(node):
@@ -40,8 +50,9 @@ def custom_frame_sequence(node):
     clump_size = node.parm("clump_size").eval()
     try:
         return Sequence.create(spec, clump_size=clump_size)
-    except ValueError:
+    except (ValueError, TypeError):
         return None
+
 
 
 def range_frame_sequence(node):
@@ -50,7 +61,10 @@ def range_frame_sequence(node):
     start, end, step = [
         node.parm(parm).eval() for parm in ['fs1', 'fs2', 'fs3']
     ]
-    return Sequence.create(start, end, step, clump_size=clump_size)
+    try:
+        return Sequence.create(start, end, step, clump_size=clump_size)
+    except ValueError:
+        return None
 
 
 def scout_frame_sequence(node):
@@ -60,6 +74,7 @@ def scout_frame_sequence(node):
         return Sequence.create(spec)
     except ValueError:
         return None
+
 
 def main_frame_sequence(node):
     """Generate Sequence containing current chosen frames."""
@@ -86,6 +101,7 @@ def resolved_scout_sequence(node):
             return main_seq.intersection(scout_seq)
     return None
 
+
 def _update_sequence_stats(node):
     """Generate frame stats message.
 
@@ -99,7 +115,6 @@ def _update_sequence_stats(node):
     frame_stats, so they have to be unlocked.
     """
     takes.enable_for_current(node, "frame_stats")
-
 
     main_seq = main_frame_sequence(node)
     if main_seq:
@@ -161,7 +176,7 @@ def set_type(node, **_):
     input node, or if it doesn't exist, to the scene
     settings
     """
-    rop = driver_ui.get_driver_node(node)
+    rop = hou.node(node.parm('source').evalAsString())
     if node.parm("use_custom").eval():
         validate_custom_range(node)
     elif rop:
