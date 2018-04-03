@@ -92,7 +92,7 @@ def render(args):
         usage(str(err))
 
     clumps = seq.progressions()
-
+    
     try:
         hou.hipFile.load(args.hipfile)
     except hou.LoadWarning as e:

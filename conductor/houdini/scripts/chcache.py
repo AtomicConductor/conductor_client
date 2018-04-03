@@ -77,6 +77,7 @@ def render(args):
     if not rop:
         usage('Rop does not exist: %s' % args.driver)
 
+    rop.parm("trange").set(1)
     rop.render(
         verbose=True,
         output_progress=True
