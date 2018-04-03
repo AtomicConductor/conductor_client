@@ -23,6 +23,7 @@ OUTPUT_DIR_PARMS = {
     "arnold": "ar_picture",
     "ris": "ri_display",
     "dop": "dopoutput",
+    "output": "dopoutput",
     "geometry": 'sopoutput'
 }
 
@@ -51,7 +52,9 @@ class Job(object):
         task representing the whole time range.
         """
         if driver_ui.is_simulation(node):
+            print "THIS IS A SIMULATION"
             return Job(node, tokens, scene)
+        print "THIS IS NOT A SIMULATION"
         return ClumpedJob(node, tokens, scene)
 
     def __init__(self, node, parent_tokens, scene_file):
@@ -129,11 +132,16 @@ class Job(object):
         either case, no directory is specified we fall back
         to $JOB/render.
         """
-        result = os.path.join(hou.getenv("JOB"), "render")
+        # result = os.path.join(hou.getenv("JOB"), "render")
+        msg = None
+        result = ""
         if self._node.parm('override_output_dir').eval():
             ov_dir = self._node.parm('output_directory').eval()
             if ov_dir:
                 result = ov_dir
+            if not result:
+                msg = """Invalid output directory.
+                Please choose a directory or deselect the override_output_dir checkbox"""
         else:
             parm_name = OUTPUT_DIR_PARMS.get(self._source["type"])
             if parm_name:
@@ -141,6 +149,13 @@ class Job(object):
                 ov_dir = os.path.dirname(path)
                 if ov_dir:
                     result = ov_dir
+            if not result:
+                msg = """Can't determine output directory for %s.
+                Please turn on override_output_dir and enter the 
+                directory where files will be written.""" % self._source["node"].name()
+
+        if msg:
+            raise ValueError(msg)
         return result
 
     def _get_instance(self):
@@ -161,7 +176,7 @@ class Job(object):
 
         instance_types = data_block.for_houdini().instance_types()
         found = [it for it in instance_types if it['cores'] ==
-                 int(cores) and it['flavor'] == flavor][0]
+                 int(cores) and it['flavor'] == flavor]
         if found:
             result.update(found[0])
 
@@ -287,7 +302,7 @@ class Job(object):
             self._source["node"].parm(parm).eval() for parm in [
                 'f1', 'f2', 'f3']
         ]
-        sequence = Sequence.create(start, end, step=step)
+        sequence = Sequence.create(start, end,  step)
 
         return {
             "main": sequence,
