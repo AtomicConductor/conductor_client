@@ -20,7 +20,7 @@ import hou
 from conductor.houdini.hda import uistate, frame_spec_ui
 
 
-SIMULATION_NODES = ["output", "dop", "geometry"]
+SIMULATION_NODES = ["output", "dop"]
 
 # Mantra ROP
 # Geometry ROP (and SOP version)
@@ -52,6 +52,8 @@ def _get_nice_driver_type(input_type):
         return 'Arnold render'
     if input_type == 'ris':
         return 'Prman render'
+    if input_type == 'geometry':
+        return 'Geometry cache'
     if input_type in SIMULATION_NODES:
         return 'Simulation'
     return input_type
