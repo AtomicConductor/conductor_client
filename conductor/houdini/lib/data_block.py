@@ -132,4 +132,4 @@ def for_houdini(force=False):
     base does not need to be littered with calls that
     specify the product keyword.
     """
-    return ConductorDataBlock(product="houdini", force=force)
+    return ConductorDataBlock(product=None, force=force)
