@@ -170,7 +170,7 @@ def get_image_dirpath():
     3. Each renderer (such as vray or maya software) has a different node/attribute
        to set the File Name Prefix field.  So it's important to know which
        renderer is active in order to query the proper node for its data.
-       As other renderersare added/supported by conductor, those nodes will need
+       As other renderers are added/supported by conductor, those nodes will need
        to be considered when querying for data.
 
      '''
@@ -540,10 +540,10 @@ def scrape_yeti_graph(yeti_node):
     contain filepaths, but it also is a "gateway" into yeti's own internal dependency
     node system.... which must be queried for file dependencies as well.
 
-    To further complicate things, these nodes allow paths to be defined relatively
+    To further complicate things, these nodes allow paths to be defined relative/global
     (rather than absolute), so we'll need to resolve them by reading the imageSearchPath
-    attribute on the yeti node. TODO(lws): we may need to also include the
-    PG_IMAGE_PATH environment variable as another search location.
+    attribute on the yeti node, as well as searching any search paths defined in PG_IMAGE_PATH
+    environment variable.
 
     '''
     # If the node is reading from a cache file/directory, then ensure that it
@@ -562,8 +562,15 @@ def scrape_yeti_graph(yeti_node):
     # Query the the yeti search paths from imageSearchPath attr.  This attr
     # will be a single string value that may contain multiple paths (just
     # like a typical environment variable might).
-    search_paths = [p.strip() for p in (cmds.getAttr("%s.imageSearchPath" % yeti_node) or "").split(os.pathsep)]
-    logger.debug("Yeti image search paths: %s", search_paths)
+    node_search_paths = [p.strip() for p in (cmds.getAttr("%s.imageSearchPath" % yeti_node) or "").split(os.pathsep)]
+    logger.debug("%s image search paths: %s", yeti_node, node_search_paths)
+
+    # Get any search paths defined by the PG_IMAGE_PATH env variable
+    pg_image_search_paths = [p.strip() for p in os.environ.get("PG_IMAGE_PATH", "").split(os.pathsep)]
+    logger.debug("PG_IMAGE_PATH search paths: %s", pg_image_search_paths)
+
+    search_paths = node_search_paths + pg_image_search_paths
+    logger.debug("combined image search paths: %s", search_paths)
 
     for node_type in yeti_input_nodes:
         logger.debug("Traversing yeti %s nodes", node_type)
@@ -573,8 +580,18 @@ def scrape_yeti_graph(yeti_node):
                                         node=node,
                                         getParamValue=True,
                                         param=attr_name)
+
             logger.debug("Yeti graph node: %s.%s: %s", node, attr_name, filepath)
             if filepath:
+                #  Yeti nodes may store the filepath in either forward slash or backslash format (ugh).
+                # This is problematic if the content is initially created on one platform (like Windows)
+                # but is now currently opened on a different platform (like linux), which doesn't acknowledge
+                # backslashes as path separators (since a backslash is a valid character in unix path).
+                # So we must choose between two evils and simply assume that all backslashes are intended
+                # to be directory separators, and so we convert them to forward slashes (which Windows
+                # will handle just fine as well).
+                filepath = os.path.normpath(filepath).replace('\\', "/")
+                logger.debug("Conformed path: %s", filepath)
                 # if the filepath is absolute, then great; record it.
                 if os.path.isabs(filepath):
                     filepaths.append(filepath)
@@ -582,18 +599,19 @@ def scrape_yeti_graph(yeti_node):
 
                 # If the path is relative then we must construct a potential path
                 # from each of our search paths, and check whether the path existst.
-                logging.debug("Resolving relative path: %s", filepath)
+                logger.debug("Resolving relative path: %s", filepath)
                 for search_path in search_paths:
                     full_path = os.path.join(search_path, filepath)
-                    logging.debug("Checking for potential filepath: %s", full_path)
+                    logger.debug("Checking for potential filepath: %s", full_path)
                     # We must account for cases where the path could actually
                     # be an expression (e.g. <udim>, etc), so we can't just check
                     # for the path's literal existence. Instead, we check whether
                     # the expression resolves in at least one path.  If it does
                     # then great; we've resolved our relative path.
-                    if file_utils.process_upload_filepath(full_path, strict=False):
-                        logging.debug("Resolved filepath: %s", full_path)
-                        filepaths.append(full_path)
+                    resolved_filepaths = file_utils.process_upload_filepath(full_path, strict=False)
+                    if resolved_filepaths:
+                        logger.debug("Resolved filepaths: %s", resolved_filepaths)
+                        filepaths.extend(resolved_filepaths)
                         break
                 else:
                     raise Exception("Couldn't resolve relative path: %s" % filepath)
