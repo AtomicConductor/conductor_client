@@ -285,15 +285,18 @@ class Uploader(object):
 
     sleep_time = 10
 
-    def __init__(self, args=None):
-        logger.debug("Uploader.__init__")
-        self.api_client = api_client.ApiClient()
-        self.args = args or {}
-        self.args['thread_count'] = CONFIG['thread_count']
-        logger.debug("args: %s", self.args)
+    def __init__(self, location=None, thread_count=4, md5_caching=True, database_filepath=None):
+        logger.debug("location: %s", location)
+        logger.debug("thread_count: %s", thread_count)
+        logger.debug("md5_caching: %s", md5_caching)
+        logger.debug("database_filepath: %s", database_filepath)
 
-        self.location = self.args.get("location")
-        self.project = self.args.get("project")
+        self.thread_count = thread_count
+        self.location = location
+        self.md5_caching = md5_caching
+        self.database_filepath = database_filepath
+
+        self.api_client = api_client.ApiClient()
 
     def prepare_workers(self):
         logger.debug('preparing workers...')
@@ -305,21 +308,21 @@ class Uploader(object):
     def create_manager(self, project, md5_only=False):
         if md5_only:
             job_description = [
-                (MD5Worker, [], {'thread_count': self.args['thread_count'],
-                                 "database_filepath": self.args['database_filepath'],
-                                 "md5_caching": self.args['md5_caching']})
+                (MD5Worker, [], {'thread_count': self.thread_count,
+                                 "database_filepath": self.database_filepath,
+                                 "md5_caching": self.md5_caching})
             ]
         else:
             job_description = [
-                (MD5Worker, [], {'thread_count': self.args['thread_count'],
-                                 "database_filepath": self.args['database_filepath'],
-                                 "md5_caching": self.args['md5_caching']}),
+                (MD5Worker, [], {'thread_count': self.thread_count,
+                                 "database_filepath": self.database_filepath,
+                                 "md5_caching": self.md5_caching}),
 
                 (MD5OutputWorker, [], {'thread_count': 1}),
-                (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
+                (HttpBatchWorker, [], {'thread_count': self.thread_count,
                                        "project": project}),
                 (FileStatWorker, [], {'thread_count': 1}),
-                (UploadWorker, [], {'thread_count': self.args['thread_count']}),
+                (UploadWorker, [], {'thread_count': self.thread_count}),
             ]
 
         manager = worker.JobManager(job_description)
@@ -532,7 +535,6 @@ class Uploader(object):
             logger.info('upload_files %s:(truncated)\n\t%s',
                         len(upload_files), "\n\t".join(upload_files.keys()[:5]))
 
-
             # reset counters
             self.num_files_to_process = len(upload_files)
             self.job_start_time = int(time.time())
@@ -658,16 +660,24 @@ def run_uploader(args):
     '''
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
+    logger.debug("Parsed args: %s", args_dict)
 
     # Set up logging
-    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level_name = args_dict.pop("log_level", None) or CONFIG.get("log_level")
     log_level = loggeria.LEVEL_MAP.get(log_level_name)
-    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    log_dirpath = args_dict.pop("log_dir", None) or CONFIG.get("log_dir")
     set_logging(log_level, log_dirpath)
 
-    logger.debug('Uploader parsed_args is %s', args_dict)
-    resolved_args = resolve_args(args_dict)
-    uploader = Uploader(resolved_args)
+    location = resolve_arg("location", args_dict, CONFIG)
+    thread_count = resolve_arg("thread_count", args_dict, CONFIG)
+    md5_caching = resolve_arg("md5_caching", args_dict, CONFIG)
+    database_filepath = resolve_arg("database_filepath", args_dict, CONFIG) or client_db.get_default_db_filepath()
+    uploader = Uploader(
+        location=location,
+        thread_count=thread_count,
+        md5_caching=md5_caching,
+        database_filepath=database_filepath,
+    )
     uploader.main()
 
 
@@ -696,11 +706,11 @@ def resolve_args(args):
     args["md5_caching"] = resolve_arg("md5_caching", args, CONFIG)
     args["database_filepath"] = resolve_arg("database_filepath", args, CONFIG)
     args["location"] = resolve_arg("location", args, CONFIG)
-
+    args["thread_count"] = resolve_arg("thread_count", args, CONFIG)
     return args
 
 
-def resolve_arg(arg_name, args, config):
+def resolve_arg(arg_name, args, config, default=None):
     '''
     Helper function to resolve the value of an argument.
     The order of resolution is:
@@ -719,9 +729,7 @@ def resolve_arg(arg_name, args, config):
     if value != None:
         return value
     # Otherwise use the value in the config if it's there, otherwise default to None
-    return config.get(arg_name)
-
-
+    return config.get(arg_name, default)
 
 
 # @common.dec_timer_exitlog_level=logging.DEBUG
