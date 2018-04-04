@@ -259,7 +259,8 @@ def parse_args():
 
     uploader_parser.add_argument("--database_filepath",
                                  help=("The filepath to the local md5 caching database. If no filepath "
-                                       "is specified, the database will be created in a temp directory"))
+                                       "is specified, the database will be created in a temp directory. "
+                                       "Note that this flag is only active when --local_upload is True."))
 
     uploader_parser.add_argument("--location",
                                  help=('An optional string to indicate which location this uploader '
@@ -300,10 +301,25 @@ def parse_args():
                                        "everyday, while storing the last 7 days "
                                        "of logs"))
 
+    uploader_parser.add_argument("--md5_caching",
+                                 help=("Use cached md5s. This can dramatically improve the uploading "
+                                       "times, as md5 checking can be very time consuming. Caching md5s "
+                                       "allows subsequent uploads (of the same files) to skip the "
+                                       "md5 generation process (if the files appear to not have been "
+                                       "modified since the last time they were submitted). The cache is "
+                                       "stored locally and uses a file's modification time and file size "
+                                       "to intelligently guess whether the file has changed. Set this "
+                                       "flag to False if there is concern that files may not be getting "
+                                       "re-uploaded properly.  "
+                                       "Note that this flag is only active when --local_upload is True."),
+                                 choices=[False, True],
+                                 type=cast_to_bool,
+                                 default=None)
+
     uploader_parser.add_argument("--thread_count",
                                  type=int,
                                  default=conductor.CONFIG.get("thread_count"),
-                                 help=('The number of threads that should download simultaneously'))
+                                 help=('The number of threads that should upload simultaneously'))
 
     uploader_parser.set_defaults(func=run_uploader)
 
