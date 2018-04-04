@@ -14,18 +14,9 @@ from conductor.houdini.hda.task import Task
 from conductor.houdini.hda import (
     frame_spec_ui,
     software_ui,
+    download_directory,
     driver_ui,
     dependency_scan)
-
-
-OUTPUT_DIR_PARMS = {
-    "ifd": "vm_picture",
-    "arnold": "ar_picture",
-    "ris": "ri_display",
-    "dop": "dopoutput",
-    "output": "dopoutput",
-    "geometry": 'sopoutput'
-}
 
 
 class Job(object):
@@ -52,9 +43,7 @@ class Job(object):
         task representing the whole time range.
         """
         if driver_ui.is_simulation(node):
-            print "THIS IS A SIMULATION"
             return Job(node, tokens, scene)
-        print "THIS IS NOT A SIMULATION"
         return ClumpedJob(node, tokens, scene)
 
     def __init__(self, node, parent_tokens, scene_file):
@@ -96,7 +85,7 @@ class Job(object):
         self._tokens = self._setenv(parent_tokens)
 
         self._title = self._node.parm("job_title").eval()
-        self._output_directory = self._get_output_dir()
+        self._output_directory =  self._get_output_dir()
         self._metadata = self._node.parm("metadata").eval()
 
         task_command = self._node.parm("task_command").unexpandedString()
@@ -134,27 +123,14 @@ class Job(object):
         """
         # result = os.path.join(hou.getenv("JOB"), "render")
         msg = None
-        result = ""
-        if self._node.parm('override_output_dir').eval():
-            ov_dir = self._node.parm('output_directory').eval()
-            if ov_dir:
-                result = ov_dir
-            if not result:
-                msg = """Invalid output directory.
-                Please choose a directory or deselect the override_output_dir checkbox"""
-        else:
-            parm_name = OUTPUT_DIR_PARMS.get(self._source["type"])
-            if parm_name:
-                path = self._source["node"].parm(parm_name).eval()
-                ov_dir = os.path.dirname(path)
-                if ov_dir:
-                    result = ov_dir
-            if not result:
-                msg = """Can't determine output directory for %s.
-                Please turn on override_output_dir and enter the 
-                directory where files will be written.""" % self._source["node"].name()
 
-        if msg:
+        result = download_directory.get_directory(self._node)
+ 
+        if not result:
+            msg = """Invalid output directory.
+            Please choose a valid directory or make
+            sure the override output directory
+            checkbox is switched off"""
             raise ValueError(msg)
         return result
 

@@ -72,7 +72,7 @@ def scout_frame_sequence(node):
     spec = node.parm("scout_frames").eval()
     try:
         return Sequence.create(spec)
-    except ValueError:
+    except (ValueError, TypeError):
         return None
 
 
