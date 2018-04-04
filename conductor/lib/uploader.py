@@ -74,7 +74,6 @@ class MD5Worker(worker.ThreadWorker):
         logger.debug("Using md5 cache for file: %s", filepath)
         return file_cache["md5"]
 
-
     def cache_file_info(self, file_info):
         '''
         Store the given file_info into the database
@@ -84,12 +83,12 @@ class MD5Worker(worker.ThreadWorker):
                                    thread_safe=True)
 
 
-
 class MD5OutputWorker(worker.ThreadWorker):
     '''
     This worker will batch the computed md5's into self.batch_size chunks.
     It will send a partial batch after waiting self.wait_time seconds
     '''
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.batch_size = 20  # the controlls the batch size for http get_signed_urls
@@ -149,6 +148,7 @@ class HttpBatchWorker(worker.ThreadWorker):
 
     Each item in the return list is added to the out_queue.
     '''
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.api_client = api_client.ApiClient()
@@ -156,7 +156,7 @@ class HttpBatchWorker(worker.ThreadWorker):
 
     def make_request(self, job):
         uri_path = '/api/files/get_upload_urls'
-        headers = {'Content-Type':'application/json'}
+        headers = {'Content-Type': 'application/json'}
         data = {"upload_files": job,
                 "project": self.project}
 
@@ -191,7 +191,10 @@ The bytes_to_upload arg is used to hold the aggregated size of all files that ne
 to be uploaded. Note: This is stored as an [int] in order to pass it by
 reference, as it needs to be accessed and reset by the caller.
 '''
+
+
 class FileStatWorker(worker.ThreadWorker):
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
 
@@ -224,6 +227,7 @@ class UploadWorker(worker.ThreadWorker):
     This worker receives a (filepath: signed_upload_url) pair and performs an upload
     of the specified file to the provided url.
     '''
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.chunk_size = 1048576  # 1M
@@ -257,9 +261,6 @@ class UploadWorker(worker.ThreadWorker):
             logger.error(error_message)
             raise
 
-
-
-
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def do_upload(self, upload_url, filename, md5):
         '''
@@ -283,15 +284,18 @@ class Uploader(object):
 
     sleep_time = 10
 
-    def __init__(self, args=None):
-        logger.debug("Uploader.__init__")
-        self.api_client = api_client.ApiClient()
-        self.args = args or {}
-        self.args['thread_count'] = CONFIG['thread_count']
-        logger.debug("args: %s", self.args)
+    def __init__(self, location=None, thread_count=4, md5_caching=True, database_filepath=None):
+        logger.debug("location: %s", location)
+        logger.debug("thread_count: %s", thread_count)
+        logger.debug("md5_caching: %s", md5_caching)
+        logger.debug("database_filepath: %s", database_filepath)
 
-        self.location = self.args.get("location")
-        self.project = self.args.get("project")
+        self.thread_count = thread_count
+        self.location = location
+        self.md5_caching = md5_caching
+        self.database_filepath = database_filepath
+
+        self.api_client = api_client.ApiClient()
 
     def prepare_workers(self):
         logger.debug('preparing workers...')
@@ -303,21 +307,21 @@ class Uploader(object):
     def create_manager(self, project, md5_only=False):
         if md5_only:
             job_description = [
-                (MD5Worker, [], {'thread_count': self.args['thread_count'],
-                                 "database_filepath": self.args['database_filepath'],
-                                 "md5_caching": self.args['md5_caching']})
+                (MD5Worker, [], {'thread_count': self.thread_count,
+                                 "database_filepath": self.database_filepath,
+                                 "md5_caching": self.md5_caching})
             ]
         else:
             job_description = [
-                (MD5Worker, [], {'thread_count': self.args['thread_count'],
-                                 "database_filepath": self.args['database_filepath'],
-                                 "md5_caching": self.args['md5_caching']}),
+                (MD5Worker, [], {'thread_count': self.thread_count,
+                                 "database_filepath": self.database_filepath,
+                                 "md5_caching": self.md5_caching}),
 
                 (MD5OutputWorker, [], {'thread_count': 1}),
-                (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
+                (HttpBatchWorker, [], {'thread_count': self.thread_count,
                                        "project": project}),
                 (FileStatWorker, [], {'thread_count': 1}),
-                (UploadWorker, [], {'thread_count': self.args['thread_count']}),
+                (UploadWorker, [], {'thread_count': self.thread_count}),
             ]
 
         manager = worker.JobManager(job_description)
@@ -401,12 +405,11 @@ class Uploader(object):
     @staticmethod
     def convert_time_to_string(time_remaining):
         if time_remaining > 3600:
-            return str(round(time_remaining / float(3600) , 1)) + ' hours'
+            return str(round(time_remaining / float(3600), 1)) + ' hours'
         elif time_remaining > 60:
-            return str(round(time_remaining / float(60) , 1)) + ' minutes'
+            return str(round(time_remaining / float(60), 1)) + ' minutes'
         else:
             return str(round(time_remaining, 1)) + ' seconds'
-
 
     def upload_status_text(self):
         num_files_to_upload = self.manager.metric_store.get('num_files_to_upload')
@@ -429,7 +432,6 @@ class Uploader(object):
             transfer_rate = bytes_uploaded / elapsed_time
         else:
             transfer_rate = 0
-
 
         unformatted_text = '''
 ################################################################################
@@ -467,7 +469,6 @@ class Uploader(object):
 
         return formatted_text
 
-
     def print_status(self):
         logger.debug('starting print_status thread')
         update_interval = 3
@@ -496,16 +497,15 @@ class Uploader(object):
         # start thread
         thd.start()
 
-
     def mark_upload_finished(self, upload_id, upload_files):
 
-        data = {'upload_id':upload_id,
+        data = {'upload_id': upload_id,
                 'status': 'server_pending',
                 'upload_files': upload_files}
 
         self.api_client.make_request('/uploads/%s/finish' % upload_id,
-                                                           data=json.dumps(data),
-                                                           verb='POST', use_api_key=True)
+                                     data=json.dumps(data),
+                                     verb='POST', use_api_key=True)
         return True
 
     def mark_upload_failed(self, error_message, upload_id):
@@ -513,8 +513,8 @@ class Uploader(object):
 
         # report error_message to the app
         self.api_client.make_request('/uploads/%s/fail' % upload_id,
-                                                        data=error_message,
-                                                        verb='POST', use_api_key=True)
+                                     data=error_message,
+                                     verb='POST', use_api_key=True)
 
         return True
 
@@ -583,7 +583,6 @@ class Uploader(object):
         except:
             return traceback.format_exc()
 
-
     def main(self, run_one_loop=False):
         logger.info('Uploader Started. Checking for uploads...')
 
@@ -637,7 +636,6 @@ class Uploader(object):
 
         logger.info('exiting uploader')
 
-
     def return_md5s(self):
         '''
         Return a dictionary of the filepaths and their md5s that were generated
@@ -655,6 +653,7 @@ def set_logging(level=None, log_dirpath=None):
                                      file_formatter=LOG_FORMATTER,
                                      log_filepath=log_filepath)
 
+
 def run_uploader(args):
     '''
     Start the uploader process. This process will run indefinitely, polling
@@ -662,16 +661,24 @@ def run_uploader(args):
     '''
     # convert the Namespace object to a dictionary
     args_dict = vars(args)
+    logger.debug("Parsed args: %s", args_dict)
 
     # Set up logging
-    log_level_name = args_dict.get("log_level") or CONFIG.get("log_level")
+    log_level_name = args_dict.pop("log_level", None) or CONFIG.get("log_level")
     log_level = loggeria.LEVEL_MAP.get(log_level_name)
-    log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
+    log_dirpath = args_dict.pop("log_dir", None) or CONFIG.get("log_dir")
     set_logging(log_level, log_dirpath)
 
-    logger.debug('Uploader parsed_args is %s', args_dict)
-    resolved_args = resolve_args(args_dict)
-    uploader = Uploader(resolved_args)
+    location = resolve_arg("location", args_dict, CONFIG)
+    thread_count = resolve_arg("thread_count", args_dict, CONFIG)
+    md5_caching = resolve_arg("md5_caching", args_dict, CONFIG)
+    database_filepath = resolve_arg("database_filepath", args_dict, CONFIG) or client_db.get_default_db_filepath()
+    uploader = Uploader(
+        location=location,
+        thread_count=thread_count,
+        md5_caching=md5_caching,
+        database_filepath=database_filepath,
+    )
     uploader.main()
 
 
@@ -691,6 +698,7 @@ def get_file_info(filepath):
             "modtime": modtime,
             "size": stat.st_size}
 
+
 def resolve_args(args):
     '''
     Resolve all arguments, reconsiling differences between command line args
@@ -699,12 +707,11 @@ def resolve_args(args):
     args["md5_caching"] = resolve_arg("md5_caching", args, CONFIG)
     args["database_filepath"] = resolve_arg("database_filepath", args, CONFIG)
     args["location"] = resolve_arg("location", args, CONFIG)
-
+    args["thread_count"] = resolve_arg("thread_count", args, CONFIG)
     return args
 
 
-
-def resolve_arg(arg_name, args, config):
+def resolve_arg(arg_name, args, config, default=None):
     '''
     Helper function to resolve the value of an argument.
     The order of resolution is:
@@ -723,9 +730,7 @@ def resolve_arg(arg_name, args, config):
     if value != None:
         return value
     # Otherwise use the value in the config if it's there, otherwise default to None
-    return config.get(arg_name)
-
-
+    return config.get(arg_name, default)
 
 
 # @common.dec_timer_exitlog_level=logging.DEBUG
@@ -797,11 +802,3 @@ def resolve_arg(arg_name, args, config):
 #
 #     logger.debug("Complete")
 #     return md5s
-
-
-
-
-
-
-
-
