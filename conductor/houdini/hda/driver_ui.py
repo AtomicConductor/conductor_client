@@ -73,7 +73,7 @@ def get_driver_type(node):
 def is_simulation(node):
     """Is the node to be treated as a simulation.
 
-    This means the frame range will not be split into clumps
+    This means the frame range will not be split into chunks
     and no frame spec UI will be shown.
     """
     return get_driver_type(node) in SIMULATION_NODES

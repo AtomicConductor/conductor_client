@@ -7,7 +7,7 @@ RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
 
 
 def _clamp(minval, val, maxval):
-    """Clamp a value to min and max."""
+    """Clamp value to min and max."""
     return sorted([minval, val, maxval])[1]
 
 
@@ -41,6 +41,12 @@ def _resolve_start_end_step(*args):
 
 
 def _to_frames(arg):
+    """Convert frame spec to a sorted unique set of frames.
+
+    Logic, If the arg has __iter__ it is not a string, but
+    is iterable. If it is a string break it up into ranges
+    to build the list of frames.
+    """
     if hasattr(arg, "__iter__"):
         return sorted(set(arg))
     arg = str(arg)
@@ -60,7 +66,7 @@ def _to_frames(arg):
 
 
 class Sequence(object):
-    """Collection of frames with the ability to generate sub-sequences."""
+    """Collection of frames with the ability to generate chunks."""
 
     @staticmethod
     def is_valid_spec(spec):
@@ -77,6 +83,13 @@ class Sequence(object):
 
     @staticmethod
     def create(*args, **kw):
+        """Factory which will create either a Sequence or a Progression.
+
+        A Sequence is an arbitrary list of frames with
+        unique sorted elements. A Progression, which is a
+        subclass of Sequence, can be expressed as an
+        arithmetic progression: i.e. start, end, step.
+        """
         if len(args) == 0:
             raise TypeError("Sequence#create needs at least one arg")
         if len(args) > 1:
@@ -90,94 +103,155 @@ class Sequence(object):
         if len(frames) == 1:
             return Progression(frames[0], frames[0], 1, **kw)
         step = frames[1] - frames[0]
+        # if a frames can be expressed as a range, it is a progression
         if range(frames[0], frames[-1] + 1, step) == frames:
             return Progression(frames[0], frames[-1], step, **kw)
         return Sequence(frames, **kw)
 
     def __init__(self, iterable, **kw):
-        """Instantiate from list of +ve ints."""
+        """Instantiate from list of ints.
+
+        This method will usually be called by a factory.
+        """
         self._iterable = iterable
-        self.clump_size = kw.get("clump_size", -1)
+        self.chunk_size = kw.get("chunk_size", -1)
+        self._chunk_strategy = kw.get("chunk_strategy", "linear")
 
     @property
     def start(self):
+        """return the first frame."""
         return self._iterable[0]
 
     @property
     def end(self):
+        """return the last frame."""
         return self._iterable[-1]
 
-    def _cycle_clumps(self):
-        """Generate clumps with frame cycling.
+    def _cycle_chunks(self):
+        """Generate chunks with frame cycling.
 
         Say we have 100 frames to render (1-100). With
-        clumpsize of 5, there will be 20 instances. The
-        first clump will render 1, 21, 41, 61 81, the second
-        clump 2, 22, 42, 62, 82 and so on, which means the
+        chunksize of 5, there will be 20 instances. The
+        first chunk will render 1, 21, 41, 61 81, the second
+        chunk 2, 22, 42, 62, 82 and so on, which means the
         artist will see frames 1,2,3,4...20 early on. This
         may be useful to check for frame coherence artifacts
-        without waiting for a whole clump to render on one
+        without waiting for a whole chunk to render on one
         machine.
         """
-        num_clumps = self.clump_count()
-        result = [[] for i in range(num_clumps)]
+        num_chunks = self.chunk_count()
+        result = [[] for i in range(num_chunks)]
         for index, frame in enumerate(self._iterable):
-            idx = index % num_clumps
+            idx = index % num_chunks
             result[idx].append(frame)
         return [Sequence.create(x) for x in result]
 
-    def _linear_clumps(self):
-        """Generate clumps in sorted order."""
+    def _linear_chunks(self):
+        """Generate chunks in sorted order."""
         result = []
-        for i in xrange(0, len(self._iterable), self._clump_size):
+        for i in xrange(0, len(self._iterable), self._chunk_size):
             result.append(
                 Sequence.create(
-                    list(
-                        self._iterable)[
-                        i:i +
-                        self._clump_size]))
+                    list(self._iterable)[i:i + self._chunk_size])
+            )
         return result
 
-    def clumps(self, order="linear"):
-        """return list of clumps according to size and cycle."""
-        if order == "cycle":
-            return self._cycle_clumps()
-        return self._linear_clumps()
+    def chunks(self):
+        """return list of chunks according to size and chunk strategy.
 
-    def clump_count(self):
-        """Calculate the number of clumps that will be emitted."""
-        return int(math.ceil(len(self._iterable) / float(self._clump_size)))
+        Strategy can be linear, cycle, or progressions. Others
+        may be added in future, such as binary.
+
+        "linear" will generate Sequences by simply walking
+        along the list of frames and grouping so that each
+        group has chunk_size frames. i.e. Fill chunk 1 then chunk 2 ...
+
+        "cycle" will generate Sequences by distributing the
+        frames in each chunk in such a way that they get
+        filled in parallel group 1 gets frame 1, group 2 gets
+        frame 2 and we cycle around. See _cycle_chunks()
+
+        "progressions" tries to walk along as in linear strategy, but
+        with the constraint that each Sequence is a Progression and
+        can be expressed with start, end, step. See
+        Progression.factory()
+        """
+        if self._chunk_strategy == "cycle":
+            return self._cycle_chunks()
+        if self._chunk_strategy == "progressions":
+            return Progression.factory(
+                self._iterable, max_size=self._chunk_size)
+        return self._linear_chunks()
+
+    def chunk_count(self):
+        """Calculate the number of chunks that will be emitted.
+
+        If strategy is progressions we just generate them
+        and count the objects. Otherwise we can calculate
+        from the frame length and chunk size directly
+        """
+        if self._chunk_strategy == "progressions":
+            return len(
+                Progression.factory(
+                    self._iterable,
+                    max_size=self._chunk_size))
+        return int(math.ceil(len(self._iterable) / float(self._chunk_size)))
 
     def intersection(self, iterable):
+        """Generate a Sequence that is the intersection of an iterable with
+        this Sequence.
+
+        This is useful for determining which scout frames
+        are valid
+        """
         common_frames = set(self._iterable).intersection(set(iterable))
         if not common_frames:
             return None
         return Sequence.create(common_frames)
 
-    def progressions(self):
-        return Progression.factory(self._iterable)
+    def best_chunk_size(self):
+        """Determine the best distribution of frames per chunk based on the
+        current number of chunks.
 
-    def best_clump_size(self):
-        return math.ceil(len(self._iterable) /
-                         float(self.clump_count()))
+        For example, if chunk size is 70 and there are 100
+        frames, 2 chunks will be generated with 70 and 30
+        frames. It would be better to have 50 frames per
+        chunk and this method returns that number. NOTE: It
+        doesn't make sense to use the best chunk size when
+        chunk strategy is progressions.
+        """
+        count = int(math.ceil(len(self._iterable) / float(self._chunk_size)))
+        return math.ceil(len(self._iterable) / float(count))
 
     def is_progression(self):
+        """Is this sequence a progression."""
         return isinstance(self, Progression)
 
     @property
-    def clump_size(self):
-        return self._clump_size
+    def chunk_size(self):
+        """Return chunk size."""
+        return self._chunk_size
 
-    @clump_size.setter
-    def clump_size(self, value):
-        """Set clump_size.
+    @chunk_size.setter
+    def chunk_size(self, value):
+        """Set chunk_size.
 
         Max is the length of frames and min is 1. If a value
         less than 1 is given, set it to max, which means the
-        default is to output 1 clump.
+        default is to output 1 chunk.
         """
         n = len(self._iterable)
-        self._clump_size = n if value < 1 else sorted([n, value])[0]
+        self._chunk_size = n if value < 1 else sorted([n, value])[0]
+
+    @property
+    def chunk_strategy(self):
+        """Return the current strategy for emitting chunks."""
+        return self._chunk_strategy
+
+    @chunk_size.setter
+    def chunk_strategy(self, value):
+        """Set strategy for emitting chunks."""
+        self._chunk_strategy = value
 
     def __iter__(self):
         return iter(self._iterable)
@@ -191,31 +265,16 @@ class Sequence(object):
         return (',').join([str(p) for p in progs])
 
     def __repr__(self):
-        """Repr containes whats necessary to init."""
+        """Repr contains whats necessary to recreate."""
         return "Sequence.create(%r)" % (str(self))
-
-
-def _should_add(element, progression, max_size):
-    """Should this element be added to this progression?
-
-    Specifically, if the progression has 0 or 1 elements,
-    then add it, as this starts the progression. Otherwise
-    check if the gap between the element and the last in the
-    progression is the same as the gap in the rest of the
-    progression.
-    """
-    if len(progression) < 2:
-        return True
-    if len(progression) == max_size:
-        return False
-    return progression[1] - progression[0] == element - progression[-1]
 
 
 class Progression(Sequence):
 
     def __init__(self, start, end, step, **kw):
         self._iterable = xrange(start, end + 1, step)
-        self.clump_size = kw.get("clump_size", -1)
+        self.chunk_size = kw.get("chunk_size", -1)
+        self._chunk_strategy = kw.get("chunk_strategy", "linear")
 
     @property
     def step(self):
@@ -308,3 +367,19 @@ class Progression(Sequence):
         results.sort(key=lambda v: v[0])
 
         return [Sequence.create(p) for p in results]
+
+
+def _should_add(element, progression, max_size):
+    """Should an element be added to a progression?
+
+    Specifically, if the progression has 0 or 1 elements,
+    then add it, as this starts the progression. Otherwise
+    check if the gap between the element and the last in the
+    progression is the same as the gap in the rest of the
+    progression.
+    """
+    if len(progression) < 2:
+        return True
+    if len(progression) == max_size:
+        return False
+    return progression[1] - progression[0] == element - progression[-1]

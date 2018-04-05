@@ -83,7 +83,7 @@ def render(args):
     The rop render method taks a range (start, end, step).
     However, our range args are potentially an irregular set
     of frames. Therefore we convert the spec into arithmetic
-    progressions ad call the render command once for each
+    progressions and call the render command once for each
     progression.
     """
     try:
@@ -91,7 +91,7 @@ def render(args):
     except ValueError as err:
         usage(str(err))
 
-    clumps = seq.progressions()
+    chunks = seq.progressions()
     
     try:
         hou.hipFile.load(args.hipfile)
@@ -102,9 +102,9 @@ def render(args):
     if not rop:
         usage('Rop does not exist: %s' % args.driver)
 
-    for clump in clumps:
+    for chunk in chunks:
         rop.render(
-            frame_range=clump.range,
+            frame_range=chunk.range,
             verbose=True,
             output_progress=True,
             method=hou.renderMethod.FrameByFrame

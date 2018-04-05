@@ -107,8 +107,8 @@ class Submission(object):
         also available in Job level fields, and likewise
         tokens at the Job level are available in Task level
         fields. However, it makes no sense the other way,
-        for example you can't use a clump token (available
-        at Task level) in a Job title because a clump
+        for example you can't use a chunk token (available
+        at Task level) in a Job title because a chunk
         changes for every task.
 
         We use hou.putenv() which basically sets these as

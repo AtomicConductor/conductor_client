@@ -37,10 +37,7 @@ def _construct_scene_name(timestamp=None):
     if not timestamp:
         return path
     stripped = stripped_hip()
-    path = os.path.dirname(path)
-    if not path:
-        path = hou.getenv("JOB")
-    return os.path.join(path, "%s_%s.hip" % (stripped, timestamp))
+    return os.path.join(os.path.dirname(path), "%s_%s.hip" % (stripped, timestamp))
 
 
 def set_scene_name(node, timestamp="YYYY_MM_DD_hh_mm_ss"):
@@ -52,9 +49,7 @@ def set_scene_name(node, timestamp="YYYY_MM_DD_hh_mm_ss"):
     last submission. A new timestamp is generated for each
     new submission.
     """
-    ts = None
-    if node.parm("use_timestamped_scene").eval():
-        ts = timestamp
+    ts = timestamp if node.parm("use_timestamped_scene").eval() else None
     result = _construct_scene_name(ts)
     node.parm("scene_file").set(result)
     return result
