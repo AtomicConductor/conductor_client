@@ -671,3 +671,36 @@ def load_yaml(filepath, safe=True, omit_tags=False):
 
     with open(filepath) as f:
         return yaml.load(f, loader)  # nosec  (ignore bandit static analysis warning for not using safe_load [B506:yaml_load] )
+
+
+def is_env_variable_on(env_variable, env=None):
+    '''
+    For the given environment variable name, return a bool, indicating whether
+    the environment variable is considered "on" or "off".
+
+    Criteria for off:
+        1. The environment variable is not set (doesn't exist)
+        2. The environment variable is set to an empty value (zero length string)
+        3. The environment variable is set to "0"
+
+    Any other values is considered "on".
+
+    args:
+        env_variable: str. the name of the environment variable, e.g. "PATH"
+        env: dict. If provided, will be queried for environment variable, rather
+                   than querying the actual system's environment.
+        return: bool
+    '''
+    if env is None:
+        env = os.environ
+    value = env.get(env_variable) or ""
+
+    # If the value doesn't exist or is empty
+    if not value:
+        return False
+
+    # If the value is 0
+    if value == "0":
+        return False
+
+    return True

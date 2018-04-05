@@ -11,10 +11,9 @@ from threading import Thread
 import time
 import traceback
 
-import yappi  # yappi is a profiler specializing in multi-threading
-
 from conductor import CONFIG
-from conductor.lib import api_client, common, worker, client_db, loggeria
+from conductor.lib import api_client, common, worker, client_db, loggeria, profiling_utils
+
 
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
 
@@ -587,60 +586,9 @@ class Uploader(object):
         except:
             return traceback.format_exc()
 
-    def profiling_start(self):
-        # for profiling, grab the environment variable's value
-        # to determine where to put the profiling data
-
-        if "CONDUCTOR_PROFILE_DATA_PATH" not in os.environ:
-            profile_path = tempfile.gettempdir()
-        else:
-            profile_path = os.environ["CONDUCTOR_PROFILE_DATA_PATH"]
-
-            if not profile_path:
-                profile_path = tempfile.gettempdir()
-
-        timestr = time.strftime("%Y%m%d-%H%M%S")
-        func_filename = '{}_func_profile.dmp'.format(timestr)
-        thread_filename = '{}_thread_profile.txt'.format(timestr)
-
-        self.profile_func_filename = os.path.join(profile_path, func_filename)
-        self.profile_thread_filename = os.path.join(profile_path, thread_filename)
-
-        # start profiling
-        logger.info('starting profiling')
-        yappi.start()
-        return True
-
-    def profiling_stop(self):
-        logger.info('stopping profiling')
-        yappi.stop()
-
-        # There are two collections we want
-        # the function stats and the thread stats
-        func_stats = yappi.get_func_stats()
-        pstats_func = yappi.convert2pstats(func_stats)
-        pstats_func.dump_stats(self.profile_func_filename)
-
-        thread_stats = yappi.get_thread_stats()
-        thread_stats_file = open(self.profile_thread_filename, 'w')
-        thread_stats.print_all(thread_stats_file)
-        thread_stats_file.close()
-
-    def sigterm_handler(self, signal, frame):
-        logger.info("Caught SIGTERM, exiting...")
-        self.profiling_stop()
-        sys.exit(0)
-
+    @profiling_utils.YappiProfile()
     def main(self, run_one_loop=False):
         logger.info('Uploader Started. Checking for uploads...')
-
-        # in some cases, this uploader will be terminated with a SIGTERM
-        # in which case, we need to exit gracefully via a handler
-        signal.signal(signal.SIGTERM, self.sigterm_handler)
-
-        # begin profiling
-        self.profiling_start()
-
         while not common.SIGINT_EXIT:
             try:
                 # TODO: we should pass args as url params, not http data
@@ -683,9 +631,6 @@ class Uploader(object):
 
             except KeyboardInterrupt:
                 logger.info("ctrl-c exit")
-
-                # stop profiling here
-                self.profiling_stop()
                 break
             except:
                 logger.exception('Caught exception:\n')

@@ -1,0 +1,410 @@
+#!/usr/bin/env python
+
+import argparse
+import distutils.util
+import imp
+import json
+import logging
+import os
+import re
+import sys
+import tempfile
+
+
+from conductor import CONFIG
+from conductor.lib import common, loggeria, client_db, profiling_utils, test_utils, file_utils
+
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests"))
+import test_client_db
+
+logger = logging.getLogger(__name__)
+
+'''
+Generate content  
+    - random files on disk
+    - download existing job/upload data
+    - sqlitedb
+        filepaths
+
+
+
+
+'''
+
+
+def cast_to_bool(string):
+    '''
+    Ensure that the argument provided is either "True" or "False (or "true" or
+    "false") and convert that argument to an actual bool value (True or False).
+    '''
+    string_lower = string.lower()
+    if string_lower == "true":
+        return True
+    elif string_lower == "false":
+        return False
+    raise argparse.ArgumentTypeError('Argument must be True or False')
+
+#### LOGGING PARSER ####
+logging_parser = argparse.ArgumentParser(
+    add_help=False,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+logging_parser.add_argument(
+    "--log_level",
+
+    choices=loggeria.LEVELS,
+    default=CONFIG.get("log_level"),
+    help="The logging level to display",
+)
+
+logging_parser.add_argument(
+    "--log_dir",
+    default=CONFIG.get("log_dir"),
+    help=("When provided, will write a log file to "
+          "the provided directory. This will be a "
+          "rotating log, creating a new log file "
+          "everyday, while storing the last 7 days "
+          "of logs"))
+
+
+#### JOB ID PARSER ####
+jobid_parser = argparse.ArgumentParser(
+    add_help=False,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+jobid_grp = jobid_parser.add_mutually_exclusive_group(required=True)
+jobid_grp.add_argument("--jid",
+                       help='The jid of the Job to target, e.g. "43023" or "00320"')
+jobid_grp.add_argument("--job_id",
+                       help='The id of the Job to target, e.g. 4234213534538')
+
+
+#### TASK ID PARSER ####
+taskid_parser = argparse.ArgumentParser(add_help=False,
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+taskid_grp = taskid_parser.add_mutually_exclusive_group(required=True)
+taskid_grp.add_argument("--jid-tid",
+                        help='The jid and tid (separated with a dash) of the Task to target, e.g. "30230-023"')
+taskid_grp.add_argument("--task_id",
+                        help='The id of the Task to target, e.g. 3435213534538')
+
+#### UPLOAD ID PARSER ####
+uploadid_parser = argparse.ArgumentParser(add_help=False,
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+uploadid_grp = uploadid_parser.add_mutually_exclusive_group(required=True)
+
+uploadid_grp.add_argument("--jid",
+                          help='The jid of the Job to target, e.g. "43023" or "00320"')
+uploadid_grp.add_argument("--job_id",
+                          help='The id of the Job to target, e.g. 4234213534538')
+
+uploadid_grp.add_argument("--upload_id",
+                          help='The id of the Upload to target, e.g. 3435213534538')
+
+
+#### PROFILING PARSER ####
+profile_parser = argparse.ArgumentParser(
+    add_help=False,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+
+profile_parser.add_argument(
+    "--profile",
+    choices=[False, True],
+    type=cast_to_bool,
+    default=bool(distutils.util.strtobool(os.environ.get(profiling_utils.YappiProfile.VAR_PROFILING_ENABLED, "1"))),
+    help=("Enable performance profiling. Defaults to $CONDUCTOR_PROFILE, otherwise enabled"),
+)
+
+profile_parser.add_argument(
+    "--profile_dir",
+    default=os.environ.get(profiling_utils.YappiProfile.VAR_PROFILE_DIR) or tempfile.gettempdir(),
+    help=("The directory to write profiling data to. Defaults to $CONDUCTOR_PROFILE_DIR, otherwise "
+          "to a tmp directory")
+)
+
+
+#### DATABASE PARSER ####
+database_parser = argparse.ArgumentParser(
+    add_help=False,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+
+database_parser.add_argument(
+    "--database_filepath",
+    default=client_db.get_default_db_filepath(),
+    help=("The filepath to the local md5 caching database. If no filepath "
+          "is specified, the database will be created in a temp directory. "
+          "Note that this flag is only active when --local_upload is True."),
+)
+
+#### DATABASE PARSER ####
+contentfilepath_parser = argparse.ArgumentParser(
+    add_help=False,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+
+contentfilepath_parser.add_argument(
+    "--content_filepath",
+    help="",
+)
+
+#### OUTPUT FILEPATH PARSER ####
+outputfilepath_parser = argparse.ArgumentParser(
+    add_help=False,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+
+outputfilepath_parser.add_argument(
+    "--output_filepath",
+    help="",
+)
+
+
+#### OUTPUT OATH PARSER ####
+outputpath_parser = argparse.ArgumentParser(add_help=False,
+                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+output_grp = outputpath_parser.add_mutually_exclusive_group(required=True)
+output_grp.add_argument("--output_dir",
+                        help='The directory to write to')
+output_grp.add_argument("--output_file",
+                        help='The filepath to write to')
+
+
+# THREAD COUNT PARSER
+threadcount_parser = argparse.ArgumentParser(
+    add_help=False,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+threadcount_parser.add_argument(
+    "--thread_count",
+    default=CONFIG.get("thread_count"),
+    type=int,
+    help=("The filepath to the local sqlite database. If no filepath "
+          "is specified, the database will be created in a temp directory"),
+)
+
+# GZIP PARSER
+gzip_parser = argparse.ArgumentParser(
+    add_help=False,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+
+gzip_parser.add_argument(
+    "--compress",
+    choices=[False, True],
+    type=cast_to_bool,
+    default="True",
+    help="compress content",
+)
+
+
+#### OUTPUT OATH PARSER ####
+filepaths_parser = argparse.ArgumentParser(add_help=False,
+                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+filepaths_grp = filepaths_parser.add_mutually_exclusive_group(required=True)
+filepaths_grp.add_argument("--jid",
+                           help='The jid of the Job to target, e.g. "43023" or "00320"')
+
+filepaths_grp.add_argument("--job_id",
+                           help='The id of the Job to target, e.g. 4234213534538')
+
+filepaths_grp.add_argument("--upload_id",
+                           help='The id of the Upload to target, e.g. 9809476503453')
+
+filepaths_grp.add_argument("--dir",
+                           help='A path to a directory of files to use for testing (recursive)')
+
+filepaths_grp.add_argument("--source_file",
+                           help='Path to a file that contains a json list of filepaths')
+
+
+def parse_args():
+
+    # Create a parent parser. Arguments that are common across all subparsers can be added to this parser
+    parent_parser = argparse.ArgumentParser(add_help=False,
+                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    # create the main parser. Not sure why this parser is required, but got parsing tracebacks when excluding it (it gets confused about the arguments provided)
+    parser = argparse.ArgumentParser(description="description",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    subparsers = parser.add_subparsers(title="actions")
+
+    #############################
+    # DB PARSER
+    #############################
+    db_parser = subparsers.add_parser(
+        "db",
+        parents=[parent_parser, profile_parser, filepaths_grp, database_parser, threadcount_parser, logging_parser],
+        help="",
+        description="",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    db_parser.set_defaults(func=run_db_profle)
+
+    #############################
+    # Content PARSER
+    #############################
+    content_parser = subparsers.add_parser(
+        "content",
+        description="",
+        add_help=False,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    content_subparsers = content_parser.add_subparsers(title="content")
+
+    #############################
+    # Job SUB PARSER
+    #############################
+    job_parser = content_subparsers.add_parser(
+        "job",
+        parents=[jobid_parser, parent_parser, gzip_parser, logging_parser, outputpath_parser],
+        description="",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    job_parser.set_defaults(func=run_content_job)
+
+    #############################
+    # Upload SUB PARSER
+    #############################
+    upload_parser = content_subparsers.add_parser(
+        "upload",
+        parents=[uploadid_parser, parent_parser, gzip_parser, logging_parser, outputpath_parser],
+        description="",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    upload_parser.set_defaults(func=run_content_upload)
+
+    #############################
+    # Task SUB PARSER
+    #############################
+    task_parser = content_subparsers.add_parser(
+        "task",
+        parents=[taskid_parser, parent_parser, gzip_parser, logging_parser, outputpath_parser],
+        description="",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    task_parser.set_defaults(func=run_content_task)
+
+    #############################
+    # Status PARSER
+    #############################
+    status_parser = subparsers.add_parser(
+        "status",
+        description="",
+        add_help=False,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    status_subparsers = status_parser.add_subparsers(title="content")
+
+    #############################
+    # Upload STATUS SUB PARSER
+    #############################
+    upload_parser = status_subparsers.add_parser(
+        "upload",
+        parents=[uploadid_parser, parent_parser, logging_parser],
+        description="",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    upload_parser.add_argument(
+        "status",
+        choices=["client_pending", "client_in_progress", "success"],
+        help='The status to set for the Upload',
+    )
+
+    upload_parser.set_defaults(func=run_status_upload)
+    return parser.parse_args()
+
+
+def run_content_job(args):
+    logging.basicConfig(level=loggeria.LEVEL_MAP.get(args.log_level))
+    if args.jid:
+        job = test_utils.fetch_job_by_jid(args.jid)
+    else:
+        job = test_utils.fetch_job_by_id(args.job_id)
+
+    if args.output_dir:
+        filepath = os.path.join(args.output_dir, "job-%s-%s.json" % (job["jid"], job["id"]))
+    else:
+        filepath = args.filepath
+
+    test_utils.write_json_file(job, filepath, compress=args.compress)
+
+
+def run_content_upload(args):
+    logging.basicConfig(level=loggeria.LEVEL_MAP.get(args.log_level))
+    if args.jid or args.job_id:
+        job = test_utils.fetch_job_by_jid(args.jid) if args.jid else test_utils.fetch_job_by_id(args.job_id)
+        logger.debug("Job %s", job["id"])
+        upload = test_utils.fetch_upload(job["upload"])
+    elif args.upload_id:
+        upload = test_utils.fetch_upload(args.upload_id)
+
+    if args.output_dir:
+        filepath = os.path.join(args.output_dir, "Upload-%s.json" % (upload["id"]))
+    else:
+        filepath = args.filepath
+
+    test_utils.write_json_file(upload, filepath, compress=args.compress)
+
+
+def run_content_task(args):
+    logging.basicConfig(level=loggeria.LEVEL_MAP.get(args.log_level))
+    if args.jid_tid:
+        assert "-" in args.jid_tid, "jid-tid must have a dash (-) separator between jid and tid, e.g. 000424-001"
+        task = test_utils.fetch_task_by_jidtid(*args.jid_tid.split("-"))
+    else:
+        task = test_utils.fetch_task_by_id(args.task_id)
+
+    logger.debug("Task %s", task["id"])
+
+    if args.output_dir:
+        filepath = os.path.join(args.output_dir, "Task-%s-%s-%s.json" % (task["jid"], task["tid"], task["id"]))
+    else:
+        filepath = args.filepath
+
+    test_utils.write_json_file(task, filepath, compress=args.compress)
+
+
+def run_status_upload(args):
+    logging.basicConfig(level=loggeria.LEVEL_MAP.get(args.log_level))
+    if args.jid or args.job_id:
+        job = test_utils.fetch_job_by_jid(args.jid) if args.jid else test_utils.fetch_job_by_id(args.job_id)
+        logger.debug("Job %s", job["id"])
+        upload = test_utils.fetch_upload(job["upload"])
+        print test_utils.set_upload_status(upload["id"], args.status)
+    elif args.upload_id:
+        print test_utils.set_upload_status(args.upload_id, args.status)
+
+
+def run_db_profle(args):
+    logging.basicConfig(level=loggeria.LEVEL_MAP.get(args.log_level))
+
+    os.environ[profiling_utils.YappiProfile.VAR_PROFILING_ENABLED] = "1" if args.profile else "0"
+    os.environ[profiling_utils.YappiProfile.VAR_PROFILE_DIR] = args.profile_dir
+
+    if args.jid or args.job_id:
+        job = test_utils.fetch_job_by_jid(args.jid) if args.jid else test_utils.fetch_job_by_id(args.job_id)
+        logger.debug("Job %s", job["id"])
+        upload = test_utils.fetch_upload(job["upload"])
+        filepaths = upload["upload_files"].keys()
+    elif args.upload_id:
+        upload = test_utils.fetch_upload(args.upload_id)
+        filepaths = upload["upload_files"].keys()
+    elif args.dir:
+        filepaths = file_utils.get_files(args.dir, recurse=True)
+    elif args.source_file:
+        filepaths = test_utils.read_json_file(args.source_file)
+
+    test_client_db.run_db_test(filepaths, args.database_filepath, args.thread_count)
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    print "vars(args): %s" % vars(args)
+    args.func(args)
