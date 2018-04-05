@@ -10,9 +10,12 @@ import traceback
 import json
 import hou
 
+from conductor import CONFIG
 from conductor.lib import conductor_submit
 from conductor.houdini.hda.submission import Submission
 from conductor.houdini.hda.submission_preview import SubmissionPreview
+
+SUCCESS_CODES_SUBMIT = [201, 204]
 
 
 def _create_submission_with_save(node):
@@ -22,9 +25,9 @@ def _create_submission_with_save(node):
     scene, build the submission object first and use the
     timestamped scene name it provides. Otherwise use the
     current scene name, and in the case there are unsaved
-    changes, present the save-scene flow. In the latter case,
-    build the submission object after save so it has the name
-    chosen by the user.
+    changes, present the save-scene flow. In the latter
+    case, build the submission object after save so it has
+    the name chosen by the user.
     """
     if node.parm("use_timestamped_scene").eval():
         current_scene_name = hou.hipFile.basename()
@@ -69,22 +72,59 @@ def preview(node, **_):
     hou.session.conductor_preview = submission_preview
 
 
+def _display_results(results):
+
+    msgType = hou.severityType.Message
+    summaries = []
+    details = []
+    for result in results:
+        code = result["code"]
+        response = result.get("response")
+        if code in SUCCESS_CODES_SUBMIT:
+            jobid = "job/%05d" % int(response.get("jobid") or 0)
+            url = "%s/%s" % (CONFIG['url'], jobid)
+
+            summaries.append("Job submitted: %s" % jobid)
+            details.append("Submitted to: %s" % url)
+
+        else:
+            msgType = hou.severityType.ImportantMessage
+            if code == "undefined":
+                summaries.append("Job failed")
+                details.append(response)
+            elif code == "cancelled":
+                summaries.append("Submission cancelled")
+            else:
+                summaries.append("Job failed with code: %s" % code)
+
+    summary = "\n".join(summaries)
+    detail = "\n".join(details)
+
+    hou.ui.displayMessage(title='Submission response', text=summary,
+                          details_label="Show details",
+                          details=detail,
+                          severity=msgType)
+
+
 def submit(node, **_):
     """Build a submission and submit all its jobs to Conductor.
 
-    We collect and return the responses in a list. If any
-    jobs fail the exception is caught so later jobs can
-    still be attempted.
+    We collect the responses in a list. If any jobs fail the
+    exception is caught so subsequent jobs can still be
+    attempted.
     """
-    responses = []
+    results = []
     submission = _create_submission_with_save(node)
-    for job_args in submission.get_args():
-        try:
-            remote_job = conductor_submit.Submit(job_args)
-            response, response_code = remote_job.main()
-            responses.append({"code": response_code, "response": response})
-        except BaseException:
-            responses.append(
-                {"error": "".join(traceback.format_exception(*sys.exc_info()))})
+    if submission:
+        for job_args in submission.get_args():
+            try:
+                remote_job = conductor_submit.Submit(job_args)
+                response, response_code = remote_job.main()
+                results.append({"code": response_code, "response": response})
+            except BaseException:
+                results.append({"code": "undefined", "response": "".join(
+                    traceback.format_exception(*sys.exc_info()))})
+    else:
+        results.append({"code": "cancelled"})
 
-    return responses
+    _display_results(results)

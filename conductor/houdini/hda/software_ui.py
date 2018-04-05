@@ -175,23 +175,4 @@ def detect(node, **_):
 
 
 def initialize(node):
-    """Populate extra upload paths and environment for chrender."""
-    # node.parm("extra_upload_paths").set(5)
-    # node.parm("upload_1").set(
-    #     '$CONDUCTOR_LOCATION/conductor/houdini/scripts/chrender.py')
-    # node.parm("upload_2").set(
-    #     '$CONDUCTOR_LOCATION/conductor/houdini/lib/sequence.sequence.py')
-    # node.parm("upload_3").set(
-    #     '$CONDUCTOR_LOCATION/conductor/houdini/lib/sequence.clump.py')
-    # node.parm("upload_4").set(
-    #     '$CONDUCTOR_LOCATION/conductor/houdini/lib/sequence.progressions.py')
-    # node.parm("upload_5").set(
-    #     '$CONDUCTOR_LOCATION/conductor/houdini/lib/sequence.__init__.py')
-
-    # node.parm("environment_kv_pairs").set(1)
-    # node.parm("env_key_1").set('PYTHONPATH')
-    # node.parm("env_value_1").set(
-    #     '$CONDUCTOR_LOCATION/conductor/houdini/lib/sequence')
-    # node.parm("env_excl_1").set(0)
-
     detect(node)

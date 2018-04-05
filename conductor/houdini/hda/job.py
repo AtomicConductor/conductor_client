@@ -29,22 +29,22 @@ class Job(object):
 
     A regular Job is useful for simulations or other processes
     where it doesn't make sense to split the job into time
-    based clumps. A ClumpedJob is a subclass, of Job. A
-    clumped job makes use of the frame range specification in
+    based chunks. A ChunkedJob is a subclass, of Job. A
+    chunked job makes use of the frame range specification in
     the UI to calculate how to manufacture a Task for each
-    clump.  A factory method is used to figure out if the job
-    should be a Job or a ClumpedJob.
+    chunk.  A factory method is used to figure out if the job
+    should be a Job or a ChunkedJob.
     """
     @staticmethod
     def create(node, tokens, scene):
-        """Factory makes a Job or ClumpedJob.
+        """Factory makes a Job or ChunkedJob.
 
-        ClumpedJob makes a task per clump. Job makes one
+        ChunkedJob makes a task per chunk. Job makes one
         task representing the whole time range.
         """
         if driver_ui.is_simulation(node):
             return Job(node, tokens, scene)
-        return ClumpedJob(node, tokens, scene)
+        return ChunkedJob(node, tokens, scene)
 
     def __init__(self, node, parent_tokens, scene_file):
         """Build the common job member data in this base class.
@@ -54,7 +54,7 @@ class Job(object):
         * Get the sequence.
         * Fetch dependencies, append scene file (which may not exist).
         * Get the Conductor package IDs and environment.
-        * Get the task command, which will be expanded later per-clump
+        * Get the task command, which will be expanded later per-chunk
 
         After _setenv has been called, the Job level token variables are
         valid and calls to eval string attributes will correctly resolve
@@ -89,8 +89,8 @@ class Job(object):
         self._metadata = self._node.parm("metadata").eval()
 
         task_command = self._node.parm("task_command").unexpandedString()
-        for clump in self._sequence["main"].clumps():
-            task = Task(clump, task_command, self._tokens)
+        for chunk in self._sequence["main"].chunks():
+            task = Task(chunk, task_command, self._tokens)
             self._tasks.append(task)
 
     def _get_resources(self, scene_file):
@@ -211,7 +211,7 @@ class Job(object):
         result["scout_frames"] = ", ".join([str(s) for s in
                                             self._sequence["scout"] or []])
         result["output_path"] = self._output_directory
-        result["chunk_size"] = self._sequence["main"].clump_size
+        result["chunk_size"] = self._sequence["main"].chunk_size
         result["machine_type"] = self._instance["flavor"]
         result["cores"] = self._instance["cores"]
         result["tasks_data"] = [task.data() for task in self._tasks]
@@ -286,18 +286,18 @@ class Job(object):
         }
 
 
-class ClumpedJob(Job):
-    """ClumpedJob contains one task for each clump of frames.
+class ChunkedJob(Job):
+    """ChunkedJob contains one task for each chunk of frames.
 
     It also contains a set of token variables relating to
-    the clumping strategy.
+    the chunking strategy.
     """
 
     def _get_sequence(self):
         """Create the sequence object from the job UI.
 
         As this is not a simulation job, the frames UI is
-        visible and we use it. The Sequence contains clump
+        visible and we use it. The Sequence contains chunk
         information, and we also get a sequence describing
         the scout frames.
         """
@@ -307,24 +307,24 @@ class ClumpedJob(Job):
         }
 
     def _setenv(self, parent_tokens):
-        """Extra env tokens available to the user for a ClumpedJob.
+        """Extra env tokens available to the user for a ChunkedJob.
 
-        These tokens include information such as clump_count
-        and clump_size in case the user wants to use them to
+        These tokens include information such as chunk_count
+        and chunk_size in case the user wants to use them to
         construct strings.
         """
         tokens = {}
         seq = self._sequence["main"]
         sorted_frames = sorted(self._sequence["main"])
         tokens["CT_SCOUT"] = str(self._sequence["scout"])
-        tokens["CT_CLUMPSIZE"] = str(self._sequence["main"].clump_size)
-        tokens["CT_CLUMPCOUNT"] = str(self._sequence["main"].clump_count())
+        tokens["CT_CHUNKSIZE"] = str(self._sequence["main"].chunk_size)
+        tokens["CT_CHUNKCOUNT"] = str(self._sequence["main"].chunk_count())
         tokens["CT_SCOUTCOUNT"] = str(len(self._sequence["scout"] or []))
 
         for token in tokens:
             hou.putenv(token, tokens[token])
         tokens.update(parent_tokens)
 
-        super_tokens = super(ClumpedJob, self)._setenv(parent_tokens)
+        super_tokens = super(ChunkedJob, self)._setenv(parent_tokens)
         tokens.update(super_tokens)
         return tokens
