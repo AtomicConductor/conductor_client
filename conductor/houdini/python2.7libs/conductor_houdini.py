@@ -108,12 +108,14 @@ ACTIONS = dict(
     submit=action_row_ui.submit,
     update=force_update,
     use_custom=frame_spec_ui.set_type,
-    fs1=frame_spec_ui.on_frame_range_changed,
-    fs2=frame_spec_ui.on_frame_range_changed,
-    fs3=frame_spec_ui.on_frame_range_changed,
+    fs1=frame_spec_ui.update_sequence_stats,
+    fs2=frame_spec_ui.update_sequence_stats,
+    fs3=frame_spec_ui.update_sequence_stats,
     custom_range=frame_spec_ui.validate_custom_range,
-    clump_size=frame_spec_ui.on_clump_size_changed,
-    do_scout=frame_spec_ui.on_do_scout_changed,
+    chunk_size=frame_spec_ui.update_sequence_stats,
+    auto_chunk_size=frame_spec_ui.best_chunk_size,
+    progressions=frame_spec_ui.update_sequence_stats,
+    do_scout=frame_spec_ui.update_sequence_stats,
     scout_frames=frame_spec_ui.validate_scout_range,
     detect_software=software_ui.detect,
     choose_software=software_ui.choose,
@@ -128,9 +130,9 @@ ACTIONS = dict(
     use_timestamped_scene=submission_ui.on_toggle_timestamped_scene
 )
 
-AUX_BUTTON_ACTIONS = dict(
-    clump_size=frame_spec_ui.best_clump_size
-)
+# AUX_BUTTON_ACTIONS = dict(
+#     chunk_size=frame_spec_ui.best_chunk_size
+# )
 
 
 def populate_menu(node, parm, **_):
@@ -182,19 +184,19 @@ def action_callback(**kwargs):
                               severity=hou.severityType.Error)
 
 
-def action_button_callback(**kwargs):
-    """Handle actions triggered by the little buttons next to params.
+# def action_button_callback(**kwargs):
+#     """Handle actions triggered by the little buttons next to params.
 
-    Uses the parmtuple kw arg provided by houdini to
-    determine the parm this button refers to.
-    """
-    try:
-        AUX_BUTTON_ACTIONS[kwargs['parmtuple'].name()](**kwargs)
-    except hou.Error as err:
-        hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
-                              details_label="Show stack trace",
-                              details=traceback.format_exc(),
-                              severity=hou.severityType.Error)
+#     Uses the parmtuple kw arg provided by houdini to
+#     determine the parm this button refers to.
+#     """
+#     try:
+#         AUX_BUTTON_ACTIONS[kwargs['parmtuple'].name()](**kwargs)
+#     except hou.Error as err:
+#         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
+#                               details_label="Show stack trace",
+#                               details=traceback.format_exc(),
+#                               severity=hou.severityType.Error)
 
 
 def on_input_changed_callback(node, **_):

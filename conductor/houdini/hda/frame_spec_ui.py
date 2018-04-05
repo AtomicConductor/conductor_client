@@ -28,7 +28,7 @@ def _set_to_input(node, rop):
     for channel in ['1', '2', '3']:
         if not rop.parm("f%s" % channel):
             raise TypeError(
-                """The selected ROP %s has no frame range parameter. 
+                """The selected ROP %s has no frame range parameter.
                 Please select or create an output Rop with start, end, and step""" % rop_path)
         _replace_with_input_expression(
             node.parm('fs%s' % channel), '%s/f%s' % (rop_path, channel))
@@ -47,23 +47,31 @@ def _set_to_scene(node):
 def custom_frame_sequence(node):
     """Generate Sequence from value in custom_range parm."""
     spec = node.parm("custom_range").eval()
-    clump_size = node.parm("clump_size").eval()
+    chunk_size = node.parm("chunk_size").eval()
+    strategy = "progressions" if node.parm("progressions").eval() else "linear"
     try:
-        return Sequence.create(spec, clump_size=clump_size)
+        return Sequence.create(
+            spec,
+            chunk_size=chunk_size,
+            chunk_strategy=strategy)
     except (ValueError, TypeError):
         return None
 
 
-
 def range_frame_sequence(node):
     """Generate Sequence from value in standard range parm."""
-    clump_size = node.parm("clump_size").eval()
+    chunk_size = node.parm("chunk_size").eval()
+    strategy = "progressions" if node.parm("progressions").eval() else "linear"
+
     start, end, step = [
         node.parm(parm).eval() for parm in ['fs1', 'fs2', 'fs3']
     ]
     try:
-        return Sequence.create(start, end, step, clump_size=clump_size)
-    except ValueError:
+        return Sequence.create(
+            start, end, step,
+            chunk_size=chunk_size,
+            chunk_strategy=strategy)
+    except (ValueError, TypeError):
         return None
 
 
@@ -102,7 +110,7 @@ def resolved_scout_sequence(node):
     return None
 
 
-def _update_sequence_stats(node):
+def update_sequence_stats(node, **_):
     """Generate frame stats message.
 
     Especially useful to know the frame count when frame
@@ -111,7 +119,7 @@ def _update_sequence_stats(node):
     num_frames. The only scout frames counted are those that
     intersect the set of total frames. If we happen to be in
     a different take, then the user has enabled frames or
-    clumps or something, and this will affect the
+    chunks or something, and this will affect the
     frame_stats, so they have to be unlocked.
     """
     takes.enable_for_current(node, "frame_stats")
@@ -130,8 +138,8 @@ def _update_sequence_stats(node):
         frame_info = "%d/%d Frames" % (len(scout_seq), num_frames)
 
     node.parm("frame_stats1").set(frame_info)
-    clumps = main_seq.clump_count()
-    node.parm("frame_stats2").set("%d Clumps" % clumps)
+    chunks = main_seq.chunk_count()
+    node.parm("frame_stats2").set("%d Chunks" % chunks)
 
 
 def validate_custom_range(node, **_):
@@ -150,7 +158,7 @@ def validate_custom_range(node, **_):
     valid = Sequence.is_valid_spec(spec)
     node.parm("custom_valid").set(valid)
 
-    _update_sequence_stats(node)
+    update_sequence_stats(node)
     uistate.update_button_state(node)
 
 
@@ -165,7 +173,7 @@ def validate_scout_range(node, **_):
     spec = node.parm("scout_frames").eval()
     valid = Sequence.is_valid_spec(spec)
     node.parm("scout_valid").set(valid)
-    _update_sequence_stats(node)
+    update_sequence_stats(node)
 
 
 def set_type(node, **_):
@@ -183,31 +191,19 @@ def set_type(node, **_):
         _set_to_input(node, rop)
     else:
         _set_to_scene(node)
-    _update_sequence_stats(node)
+    update_sequence_stats(node)
 
 
-def on_frame_range_changed(node, **_):
-    """When frame range changes, update stats."""
-    _update_sequence_stats(node)
 
+def best_chunk_size(node, **_):
+    print "BEST_CHUNK_SIZE"
+    """Adjust the chunksize based on best distribution.
 
-def on_clump_size_changed(node, **_):
-    """When clump size changes, update stats."""
-    _update_sequence_stats(node)
-
-
-def best_clump_size(node, **_):
-    """Adjust the clumpsize based on best distribution.
-
-    If for example there are 120 frames and clump size is
-    100, then 2 clumps are needed, so better to adjust clump
+    If for example there are 120 frames and chunk size is
+    100, then 2 chunks are needed, so better to adjust chunk
     size to 60
     """
     main_seq = main_frame_sequence(node)
-    node.parm("clump_size").set(main_seq.best_clump_size())
-    _update_sequence_stats(node)
+    node.parm("chunk_size").set(main_seq.best_chunk_size())
+    update_sequence_stats(node)
 
-
-def on_do_scout_changed(node, **_):
-    """Update stats when scout_frames toggle on or off."""
-    _update_sequence_stats(node)

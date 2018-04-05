@@ -8,16 +8,16 @@ class Task(object):
     construct the command.
     """
 
-    def __init__(self, clump, command, parent_tokens):
+    def __init__(self, chunk, command, parent_tokens):
         """Resolve the tokens and the command.
 
         After calling setenv, tokens such as start end step
         and so on are valid. So when we expand the command
         any tokens that were used are correctly resolved.
 
-        The clump arg is an instance of Sequence.
+        The chunk arg is an instance of Sequence.
         """
-        self._clump = clump
+        self._chunk = chunk
         self._tokens = self._setenv(parent_tokens)
         self._command = hou.expandString(command)
 
@@ -29,18 +29,18 @@ class Task(object):
         constructing the task command.
 
         Example:
-        python myCmd.py -s $CT_CLUMPSTART -e $CT_CLUMPEND -n $CT_SOURCE -f $CT_SCENE
+        python myCmd.py -s $CT_CHUNKSTART -e $CT_CHUNKEND -n $CT_SOURCE -f $CT_SCENE
         """
 
         tokens = {}
-        clump_type = "regular" if self._clump.is_progression() else "irregular"
-        tokens["CT_CLUMPTYPE"] = clump_type
-        tokens["CT_CLUMP"] = str(self._clump)
-        tokens["CT_CLUMPLENGTH"] = str(len(self._clump))
-        tokens["CT_CLUMPSTART"] = str(self._clump.start)
-        tokens["CT_CLUMPEND"] = str(self._clump.end)
-        tokens["CT_CLUMPSTEP"] = str(
-            self._clump.step) if clump_type == "regular" else "~"
+        chunk_type = "regular" if self._chunk.is_progression() else "irregular"
+        tokens["CT_CHUNKTYPE"] = chunk_type
+        tokens["CT_CHUNK"] = str(self._chunk)
+        tokens["CT_CHUNKLENGTH"] = str(len(self._chunk))
+        tokens["CT_CHUNKSTART"] = str(self._chunk.start)
+        tokens["CT_CHUNKEND"] = str(self._chunk.end)
+        tokens["CT_CHUNKSTEP"] = str(
+            self._chunk.step) if chunk_type == "regular" else "~"
 
         for token in tokens:
             hou.putenv(token, tokens[token])
@@ -51,13 +51,13 @@ class Task(object):
     def data(self):
         """The command and frame spec."""
         return {
-            "frames": str(self._clump),
+            "frames": str(self._chunk),
             "command": self._command
         }
 
     @property
-    def clump(self):
-        return self._clump
+    def chunk(self):
+        return self._chunk
 
     @property
     def command(self):

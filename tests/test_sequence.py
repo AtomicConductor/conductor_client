@@ -155,57 +155,77 @@ class SequenceToStringTest(unittest.TestCase):
         self.assertEqual(repr(s), "Sequence.create('1-10,14,20-48x4')")
 
 
-class ClumpsTest(unittest.TestCase):
+class ChunksTest(unittest.TestCase):
 
-    def test_no_clump_size(self):
+    def test_no_chunk_size(self):
         s = Sequence.create("1-100")
-        self.assertEqual(s.clump_size, 100)
+        self.assertEqual(s.chunk_size, 100)
 
-    def test_clamp_clump_size(self):
-        s = Sequence.create("1-100", clump_size=200)
-        self.assertEqual(s.clump_size, 100)
+    def test_clamp_chunk_size(self):
+        s = Sequence.create("1-100", chunk_size=200)
+        self.assertEqual(s.chunk_size, 100)
 
-    def test_clump_size(self):
-        s = Sequence.create("1-100", clump_size=50)
-        self.assertEqual(s.clump_size, 50)
+    def test_chunk_size(self):
+        s = Sequence.create("1-100", chunk_size=50)
+        self.assertEqual(s.chunk_size, 50)
 
-    def test_clump_size_setter(self):
+    def test_chunk_size_setter(self):
         s = Sequence.create("1-100")
-        s.clump_size = 50
-        self.assertEqual(s.clump_size, 50)
+        s.chunk_size = 50
+        self.assertEqual(s.chunk_size, 50)
 
-    def test_best_clump_size(self):
+    def test_best_chunk_size(self):
         s = Sequence.create("1-100")
-        s.clump_size = 76
-        self.assertEqual(s.best_clump_size(), 50)
-        s.clump_size = 37
-        self.assertEqual(s.best_clump_size(), 34)
-        s.clump_size = 100
-        self.assertEqual(s.best_clump_size(), 100)
+        s.chunk_size = 76
+        self.assertEqual(s.best_chunk_size(), 50)
+        s.chunk_size = 37
+        self.assertEqual(s.best_chunk_size(), 34)
+        s.chunk_size = 100
+        self.assertEqual(s.best_chunk_size(), 100)
 
-    def test_create_clumps_linear(self):
+    def test_create_chunks_linear(self):
         s = Sequence.create("1-100")
-        s.clump_size = 10
-        clumps = s.clumps("linear")
-        self.assertEqual(list(clumps[0]), list(range(1, 11)))
+        s.chunk_size = 10
+        chunks = s.chunks()
+        self.assertEqual(list(chunks[0]), list(range(1, 11)))
 
-    def test_create_clumps_cycle(self):
+    def test_create_chunks_cycle(self):
         s = Sequence.create("1-100")
-        s.clump_size = 10
-        clumps = s.clumps("cycle")
-        self.assertEqual(list(clumps[0]), list(range(1, 100, 10)))
-        s.clump_size = 7
-        clumps = s.clumps("cycle")
-        self.assertEqual(list(clumps[0]), list(range(1, 100, 15)))
+        s.chunk_size = 10
+        s.chunk_strategy = "cycle"
+        chunks = s.chunks()
+        self.assertEqual(list(chunks[0]), list(range(1, 100, 10)))
+        s.chunk_size = 7
+        chunks = s.chunks()
+        self.assertEqual(list(chunks[0]), list(range(1, 100, 15)))
 
-    def test_clump_count(self):
+    def test_chunk_count(self):
         s = Sequence.create("1-100")
-        s.clump_size = 7
-        self.assertEqual(s.clump_count(), 15)
-        s.clump_size = 15
-        self.assertEqual(s.clump_count(), 7)
-        s.clump_size = 10
-        self.assertEqual(s.clump_count(), 10)
+        s.chunk_size = 7
+        self.assertEqual(s.chunk_count(), 15)
+        s.chunk_size = 15
+        self.assertEqual(s.chunk_count(), 7)
+        s.chunk_size = 10
+        self.assertEqual(s.chunk_count(), 10)
+
+    def test_progression_count_with_chunk_size(self):
+        s = Sequence.create("1-3,6-12x2,13,14-36x3")
+        s.chunk_size = 4
+        s.chunk_strategy = "progressions"
+        self.assertEqual(s.chunk_count(), 5)
+
+    def test_progression_count_without_chunk_size(self):
+        s = Sequence.create("1-3,6-12x2,13,14-36x3")
+        s.chunk_size = -1
+        s.chunk_strategy = "progressions"
+        self.assertEqual(s.chunk_count(), 4)
+
+    def test_progression_count_all_progressions(self):
+        s = Sequence.create("1-3,6-12x2,13,14-36x3")
+        s.chunk_size = -1
+        s.chunk_strategy = "progressions"
+        for chunk in s.chunks():
+            self.assertIsInstance(chunk, Progression)
 
 
 class IntersectionTest(unittest.TestCase):
