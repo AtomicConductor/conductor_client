@@ -45,8 +45,7 @@ def get_directory(node):
     the parm name based on the driver node type in
     OUTPUT_DIR_PARMS. If its not a node we know about (or
     even if it is), the user can select to override and
-    specify a directory manually. If in either case, no
-    directory is specified we fall back to $JOB/render.
+    specify a directory manually.
     """
     if node.parm('override_output_dir').eval():
         return node.parm('output_directory').eval()
