@@ -19,11 +19,10 @@ Example .bashrc  on OSX
 
 ```
 # CONDUCTOR_LOCATION is a convenience here in .bashrc, 
-# and is useful in the Houdini client if you want to try 
-# custom script examples. Replace /path/to of 
-# course.
+# It is also useful in the Houdini client if you want to 
+# try custom script examples. Replace "/path/to" of course.
 export CONDUCTOR_LOCATION=/path/to/conductor_client
- 
+
 
 # On osx at least, PYTHONPATH needs the site-packages 
 # below, in addition to CONDUCTOR_LOCATION
@@ -54,7 +53,23 @@ HOUDINI_PATH = "$HOUDINI_PATH;$CONDUCTOR_LOCATION/conductor/houdini;&"
 # conductor config end
 ```
 
+In order to check if the plugin was installed properly launch Houdini and go to /out network. Verify that Conductor Job and Submitter tools appears under Farm section of the Tool Menu. If not, its likeley your HOUDINI_PATH is not correctly configured.
+
+
 ### Get started
+
+to create a simple Mantra render submission to Conductor:
+
+* Open a scene containing some animation and a Mantra ROP that can render it.
+* TAB over the `/out` network and in the *Farm* menu choose *Conductor Job*
+
+The first time you create a Job, a request will be made to fetch information from Conductor, and if necessary you will be asked to authenticate. Once Authenticated you should be able to select a Conductor project in the Submission tab of the Job ROP.
+
+* Switch to the `General` tab and Choose a machine type.
+
+
+Connect the Mantra node to the Job input.
+Set a Conductor project 
 
 
 
