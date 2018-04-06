@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from Qt import QtCore, QtGui, QtWidgets, uic
+from Qt import QtCore, QtGui, QtWidgets, QtCompat
 import imp
 
 try:
@@ -54,8 +54,11 @@ class ClarisseConductorSubmitter(object):
         '''
         Launch the UI
         '''
-        self.app = QtWidgets.QApplication(["Clarisse"])
-        self.ui = uic.loadUi(os.path.join(RESOURCES_DIRPATH, 'clarisse.ui'))
+        try:
+            self.app = QtWidgets.QApplication(["Clarisse"])
+        except:
+            self.app = QtWidgets.QApplication.instance()
+        self.ui = QtCompat.loadUi(os.path.join(RESOURCES_DIRPATH, 'clarisse.ui'))
 
         self.initializeUi()
 
@@ -73,14 +76,16 @@ class ClarisseConductorSubmitter(object):
         #  Populate instance type combo box
         self.ui.ui_instance_type_cmbx.clear()
         for instance_info in INSTANCES:
-            qv = QtCore.QVariant(instance_info)
-            self.ui.ui_instance_type_cmbx.addItem(instance_info['description'], qv)
+            self.ui.ui_instance_type_cmbx.addItem(instance_info['description'], instance_info)
 
         # item_idx = self.ui.ui_instance_type_cmbx.findData({"cores": 16, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
         item_idx = 6
         if item_idx == -1:
             raise Exception("Could not find combobox entry for core count: %s!"
                             "This should never happen!" % core_count)
+
+        # set current project
+        self.ui.ui_project_lnedt.setText(os.environ.get('CONDUCTOR_PROJECT', ''))
 
         #  Connect the submit and refresh buttons
         self.ui.ui_submit_pbtn.clicked.connect(self.doSubmission)
