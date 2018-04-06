@@ -10,7 +10,7 @@ treated as sims.
 """
 import hou
 
-from conductor.houdini.hda import uistate, frame_spec_ui
+from conductor.houdini.hda import uistate, frame_spec_ui, download_directory
 
 
 SIMULATION_NODES = ["output", "dop"]
@@ -86,4 +86,5 @@ def update_input_node(node):
     connected = inputs and inputs[0]
     node.parm('source').set(inputs[0].path() if connected else "" )
     update_input_type(node)
+    download_directory.toggle(node)
 
