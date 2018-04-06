@@ -7,13 +7,6 @@ jobs
 Attributes:     SIMULATION_NODES (list): Node types to be
 treated as sims.
 
-get_driver_node: get the input driver node
-
-get_driver_type: get the input driver type
-
-is_simulation: is it a simuation
-
-update_input_node: update UI when input connection changes
 """
 import hou
 
@@ -21,17 +14,7 @@ from conductor.houdini.hda import uistate, frame_spec_ui
 
 
 SIMULATION_NODES = ["output", "dop"]
-
-# Mantra ROP
-# Geometry ROP (and SOP version)
-# Alembic ROP
-# IFD Archive ROP
-# Comp ROP
-# Channel ROP
-# BakeTexture ROP
-# OpenGL ROP
-# DOP ROP
-
+ 
 def _valid_driver(node):
     driver = get_driver_node(node)
     if not driver:
