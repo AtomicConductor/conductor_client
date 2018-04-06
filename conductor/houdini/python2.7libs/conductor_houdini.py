@@ -88,6 +88,7 @@ def _update_job_node(node, **_):
         notifications_ui.validate_emails(node)
         notifications_ui.email_hook_changed(node)
         uistate.update_button_state(node)
+        download_directory.toggle(node)
 
 
 def _initialize_job_node(node, **_):
