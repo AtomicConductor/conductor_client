@@ -10,7 +10,7 @@ treated as sims.
 """
 import hou
 
-from conductor.houdini.hda import uistate, frame_spec_ui, download_directory
+from conductor.houdini.hda import uistate, frame_spec_ui
 
 
 SIMULATION_NODES = ["output", "dop"]
@@ -31,6 +31,8 @@ def _get_nice_driver_type(input_type):
         return "No render source"
     if input_type == 'ifd':
         return 'Mantra render'
+    if input_type == 'baketexture::3.0':
+        return 'Bake texture'
     if input_type == 'arnold':
         return 'Arnold render'
     if input_type == 'ris':
@@ -86,5 +88,4 @@ def update_input_node(node):
     connected = inputs and inputs[0]
     node.parm('source').set(inputs[0].path() if connected else "" )
     update_input_type(node)
-    download_directory.toggle(node)
 

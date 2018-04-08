@@ -5,20 +5,21 @@ There are currently 3 pieces of data we get from api calls.
 2. Packages.
 3. Instance types.
 
-Instance types doesn't yet come from an api call but maybe it will in future
+Instance types doesn't yet come from an api call but maybe it will in future.
+
+There are 2 commented lines that import mock versions of
+ApiClient The first version provides packages that contain
+Houdini 16.5.323 with arnold plugins and shaders. 
 """
 
 import json
 from conductor.lib import common
 from conductor.houdini.lib import package_tree as ptree
 
-# Below are 2 mock versions of ApiClient - I made because my account was deleted
-# on the weekend and I couldn't access Conductor. Also handy to have fast
-# updates.
+
 # from conductor.houdini.lib.mocks.api_client_mock import ApiClient
 # from conductor.houdini.lib.mocks.api_client_mock import ApiClientNoHost as ApiClient
-
-# Uncomment next line to use the real version of ApiClient
+# The real version of ApiClient below
 from conductor.lib.api_client import ApiClient
 
 
@@ -132,4 +133,4 @@ def for_houdini(force=False):
     base does not need to be littered with calls that
     specify the product keyword.
     """
-    return ConductorDataBlock(product=None, force=force)
+    return ConductorDataBlock(product="houdini", force=force)
