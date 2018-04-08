@@ -70,8 +70,9 @@ def _is_wanted(parm, node):
     if not (types.is_job_node(other_node) or
             types.is_submitter_node(other_node)):
         return True
-    # at this stage we know the other node is a job or submitter
-    if other_node !=  node:
+    # at this stage we know the other node is a job or submitter.
+    # If it is not this node we can ignore it
+    if other_node != node:
         return False
     # at this stage we know the other node is this node
     return parm.name() != "output_directory"

@@ -5,6 +5,7 @@ the JSON objects that will be sent to Conductor.
 
 submit: Send jobs to Conductor
 """
+import os
 import sys
 import traceback
 import json
@@ -18,17 +19,48 @@ from conductor.houdini.hda.submission_preview import SubmissionPreview
 SUCCESS_CODES_SUBMIT = [201, 204]
 
 
+def _save_scene_or_use_current():
+    """Save scene flow"""
+    fn = hou.hipFile.path()
+    save_file_response = hou.ui.displayMessage(
+        title='Unsaved changes',
+        text="What would you like to do?",
+        buttons=(
+            "Save and submit",
+            "Submit existing scene",
+            "Cancel"),
+        close_choice=2)
+    if save_file_response == 2:
+        return None
+    if save_file_response == 0:
+        fn = hou.ui.selectFile(
+            start_directory=os.path.dirname(hou.hipFile.path()),
+            title="Save",
+            file_type=hou.fileType.Hip,
+            pattern="*.hip,*.hiplc,*.hipnc,*.hip*",
+            default_value=hou.hipFile.basename(),
+            chooser_mode=hou.fileChooserMode.Write)
+        if fn:
+            hou.hipFile.save(file_name=fn)
+    if save_file_response == 1:
+        # When use current, just  make sure the file exists.
+        # Will throw otherwise
+        hou.findFile(fn)
+
+    return fn
+
+
 def _create_submission_with_save(node):
     """Save the scene and return a submission object.
 
     If user has selected to automatically save a timestamped
     scene, build the submission object first and use the
-    timestamped scene name it provides. Otherwise use the
-    current scene name, and in the case there are unsaved
-    changes, present the save-scene flow. In the latter
-    case, build the submission object after save so it has
-    the name chosen by the user.
+    timestamped scene name it provides.
+
+    Otherwise in the case there are unsaved
+    changes, present the save-scene flow.
     """
+
     if node.parm("use_timestamped_scene").eval():
         current_scene_name = hou.hipFile.basename()
         submission = Submission(node)
@@ -36,21 +68,11 @@ def _create_submission_with_save(node):
         hou.hipFile.setName(current_scene_name)
     else:
         if hou.hipFile.hasUnsavedChanges():
-            save_file_response = hou.ui.displayMessage(
-                """There are unsaved changes and
-                timestamped save is turned off!
-                Save the file before submitting?""",
-                buttons=(
-                    "Yes",
-                    "No",
-                    "Cancel"),
-                close_choice=2)
-            if save_file_response == 2:
+            if not _save_scene_or_use_current():
                 return None
-            if save_file_response == 0:
-                hou.hipFile.save()
         submission = Submission(node)
     return submission
+ 
 
 
 def preview(node, **_):
@@ -72,7 +94,7 @@ def preview(node, **_):
     hou.session.conductor_preview = submission_preview
 
 
-def _display_results(results):
+def _display_submission_results(results):
 
     msgType = hou.severityType.Message
     summaries = []
@@ -115,6 +137,7 @@ def submit(node, **_):
     """
     results = []
     submission = _create_submission_with_save(node)
+
     if submission:
         for job_args in submission.get_args():
             try:
@@ -124,7 +147,5 @@ def submit(node, **_):
             except BaseException:
                 results.append({"code": "undefined", "response": "".join(
                     traceback.format_exception(*sys.exc_info()))})
-    else:
-        results.append({"code": "cancelled"})
-
-    _display_results(results)
+    if results:
+        _display_submission_results(results)

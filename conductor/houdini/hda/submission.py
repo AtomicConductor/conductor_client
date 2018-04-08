@@ -4,7 +4,7 @@ import datetime
 import hou
 
 from conductor.houdini.lib import data_block
-from conductor.houdini.hda import submission_ui, types, notifications_ui
+from conductor.houdini.hda import types, notifications_ui
 from conductor.houdini.hda.job import Job
 
 
@@ -51,15 +51,11 @@ class Submission(object):
         else:
             self._nodes = node.inputs()
 
-        timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self._file = {
-            "timestamp": timestamp,
-            "hipbase": submission_ui.stripped_hip(),
-            "use_timestamped_scene": bool(
-                self._node.parm("use_timestamped_scene").eval()),
-            "scene": submission_ui.set_scene_name(
-                self._node,
-                timestamp)}
+        self._use_timestamped_scene = bool(self._node.parm("use_timestamped_scene").eval())
+
+        self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        hou.putenv("CT_TIMESTAMP", self._timestamp)
+        self._scene = self._node.parm("scene_file").eval()
 
         self._upload = {
             "local": bool(self._node.parm("local_upload").eval()),
@@ -71,11 +67,14 @@ class Submission(object):
 
         self._tokens = self._setenv()
 
+
+
         self._notifications = notifications_ui.get_notifications(self._node)
+
 
         self._jobs = []
         for node in self._nodes:
-            job = Job.create(node, self._tokens, self._file["scene"])
+            job = Job.create(node, self._tokens, self._scene)
             self._jobs.append(job)
 
     def _get_project(self):
@@ -123,14 +122,15 @@ class Submission(object):
         them is to display them in a dry-run scenario.
         """
         tokens = {}
+        tokens["CT_TIMESTAMP"] = self._timestamp
         tokens["CT_SUBMITTER"] = self._node.name()
-        tokens["CT_TIMESTAMP"] = self._file["timestamp"]
-        tokens["CT_HIPBASE"] = self._file["hipbase"]
-        tokens["CT_SCENE"] = self._file["scene"]
-        tokens["CT_PROJECT"] = self._project["name"]
+        # tokens["CT_HIPBASE"] = self._file["hipbase"]
+        tokens["CT_SCENE"] = self._scene
+        tokens["CT_PROJECT"] = self.project_name
 
         for token in tokens:
             hou.putenv(token, tokens[token])
+
 
         return tokens
 
@@ -182,7 +182,7 @@ class Submission(object):
     @property
     def scene(self):
         """scene."""
-        return self._file["scene"]
+        return self._scene
 
     @property
     def node_name(self):
@@ -217,7 +217,7 @@ class Submission(object):
     @property
     def use_timestamped_scene(self):
         """use_timestamped_scene."""
-        return self._file["use_timestamped_scene"]
+        return self._use_timestamped_scene
 
     @property
     def tokens(self):
