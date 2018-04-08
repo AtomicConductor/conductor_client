@@ -1,9 +1,4 @@
 """Build an object to represent a Conductor job.
-
-Attributes: OUTPUT_DIR_PARMS (dict): If the user has chosen to
-derive the output directory automatically from the driver
-node, we need to know the name of the parm that contains the
-output path, which is different for each kind of node.
 """
 
 import os
@@ -14,7 +9,6 @@ from conductor.houdini.hda.task import Task
 from conductor.houdini.hda import (
     frame_spec_ui,
     software_ui,
-    download_directory,
     driver_ui,
     dependency_scan)
 
@@ -85,7 +79,7 @@ class Job(object):
         self._tokens = self._setenv(parent_tokens)
 
         self._title = self._node.parm("job_title").eval()
-        self._output_directory =  self._get_output_dir()
+        self._output_directory =  self._node.parm('output_directory').eval()
         self._metadata = self._node.parm("metadata").eval()
 
         task_command = self._node.parm("task_command").unexpandedString()
@@ -108,31 +102,7 @@ class Job(object):
             "environment": software_ui.get_environment(self._node),
             "dependencies": dependencies
         }
-
-    def _get_output_dir(self):
-        """Get the directory that will be made available for download.
-
-        By default, try to derive the output directory from
-        the output path in the driver node. Do this by
-        looking up the parm name based on the driver node
-        type in OUTPUT_DIR_PARMS. If its not a node we know
-        about (or even if it is), the user can select to
-        override and specify a directory manually. If in
-        either case, no directory is specified we fall back
-        to $JOB/render.
-        """
-        # result = os.path.join(hou.getenv("JOB"), "render")
-        msg = None
-
-        result = download_directory.get_directory(self._node)
  
-        if not result:
-            msg = """Invalid output directory.
-            Please choose a valid directory or make
-            sure the override output directory
-            checkbox is switched off"""
-            raise ValueError(msg)
-        return result
 
     def _get_instance(self):
         """Get everything related to the instance.

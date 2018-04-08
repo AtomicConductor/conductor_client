@@ -28,19 +28,24 @@ from conductor.houdini.hda import (
     job_source_ui,
     action_row_ui,
     software_ui,
-    download_directory,
     notifications_ui,
-    submission_ui,
     takes,
     uistate,
     types
 )
 
+
 def _all_job_nodes():
-    return hou.nodeType(hou.ropNodeTypeCategory(), "conductor::job::0.1").instances()
+    return hou.nodeType(
+        hou.ropNodeTypeCategory(),
+        "conductor::job::0.1").instances()
+
 
 def _all_submitter_nodes():
-    return hou.nodeType(hou.ropNodeTypeCategory(), "conductor::submitter::0.1").instances()
+    return hou.nodeType(
+        hou.ropNodeTypeCategory(),
+        "conductor::submitter::0.1").instances()
+
 
 def force_update(node, **_):
     """Update was called from the job node UI."""
@@ -52,19 +57,19 @@ def force_update(node, **_):
     for submitter in _all_submitter_nodes():
         _update_submitter_node(submitter)
 
+
 def _update_submitter_node(node, **_):
     """Initialize or update.
 
     We do this on creation/loading or manually. We do it in
     the root take context to ensure everything is unlocked.
-    This can be called without the expensive
-    force_update, but still update widgets
+    This can be called without the expensive force_update,
+    but still update widgets
     """
     with takes.take_context(hou.takes.rootTake()):
         job_source_ui.update_inputs(node)
         notifications_ui.validate_emails(node)
         notifications_ui.email_hook_changed(node)
-        submission_ui.on_toggle_timestamped_scene(node)
         uistate.update_button_state(node)
 
 
@@ -84,11 +89,9 @@ def _update_job_node(node, **_):
         frame_spec_ui.validate_scout_range(node)
         frame_spec_ui.set_type(node)
         driver_ui.update_input_node(node)
-        submission_ui.on_toggle_timestamped_scene(node)
         notifications_ui.validate_emails(node)
         notifications_ui.email_hook_changed(node)
         uistate.update_button_state(node)
-        download_directory.toggle(node)
 
 
 def _initialize_job_node(node, **_):
@@ -121,19 +124,13 @@ ACTIONS = dict(
     detect_software=software_ui.detect,
     choose_software=software_ui.choose,
     clear_software=software_ui.on_clear,
-    override_output_dir=download_directory.toggle,
     project=projects_ui.select,
     email_addresses=notifications_ui.validate_emails,
     email_on_submit=notifications_ui.email_hook_changed,
     email_on_start=notifications_ui.email_hook_changed,
     email_on_finish=notifications_ui.email_hook_changed,
-    email_on_failure=notifications_ui.email_hook_changed,
-    use_timestamped_scene=submission_ui.on_toggle_timestamped_scene
+    email_on_failure=notifications_ui.email_hook_changed
 )
-
-# AUX_BUTTON_ACTIONS = dict(
-#     chunk_size=frame_spec_ui.best_chunk_size
-# )
 
 
 def populate_menu(node, parm, **_):
@@ -183,21 +180,6 @@ def action_callback(**kwargs):
                               details_label="Show stack trace",
                               details=traceback.format_exc(),
                               severity=hou.severityType.Error)
-
-
-# def action_button_callback(**kwargs):
-#     """Handle actions triggered by the little buttons next to params.
-
-#     Uses the parmtuple kw arg provided by houdini to
-#     determine the parm this button refers to.
-#     """
-#     try:
-#         AUX_BUTTON_ACTIONS[kwargs['parmtuple'].name()](**kwargs)
-#     except hou.Error as err:
-#         hou.ui.displayMessage(title='Error', text=err.instanceMessage(),
-#                               details_label="Show stack trace",
-#                               details=traceback.format_exc(),
-#                               severity=hou.severityType.Error)
 
 
 def on_input_changed_callback(node, **_):
