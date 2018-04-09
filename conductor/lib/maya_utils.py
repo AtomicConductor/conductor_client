@@ -387,6 +387,11 @@ def get_workspace_image_dirpath():
     return os.path.join(workspace_root, image_dirname)
 
 
+def get_workspace_dirpath():
+    workspace_root = cmds.workspace(q=True, rootDirectory=True)
+    return workspace_root
+
+
 def get_frame_range():
     '''
     Return the current frame range for the current maya scene.  This consists

@@ -192,7 +192,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         # Create a template command that be be used for each task's command
-        cmd_template = "Render %s -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
+        cmd_template = "Render %s -proj %s -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
 
         # Retrieve the source maya file
         maya_filepath = self.getSourceFilepath()
@@ -200,6 +200,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # This is a hack to allow a Windows filepath to be properly used
         # as an argument in a linux shell on the backend. Not pretty.
         maya_filepath_nodrive = file_utils.strip_drive_letter(maya_filepath)
+
+        # get the root directory of the project to pass as -proj
+        project_root = maya_utils.get_workspace_dirpath()
 
         # If the active renderer is renderman, then we must explictly declare it
         # as the renderer in the command.  Otherwise the output path is not respected.
@@ -221,6 +224,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         frames_generator = submitter.TaskFramesGenerator(frames, chunk_size=chunk_size, uniform_chunk_step=True)
         for start_frame, end_frame, step, task_frames in frames_generator:
             task_cmd = cmd_template % (renderer_arg,
+                                       project_root,
                                        start_frame,
                                        end_frame,
                                        step,
