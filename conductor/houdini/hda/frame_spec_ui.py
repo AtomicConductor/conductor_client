@@ -196,7 +196,6 @@ def set_type(node, **_):
 
 
 def best_chunk_size(node, **_):
-    print "BEST_CHUNK_SIZE"
     """Adjust the chunksize based on best distribution.
 
     If for example there are 120 frames and chunk size is
