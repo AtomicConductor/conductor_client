@@ -10,7 +10,7 @@ Currently the installers do not work for the Houdini environment, so you'll need
 ```
 git clone git@github.com:AtomicConductor/conductor_client.git`
 cd conductor_client/
-git checkout CT-181_magic_trial
+git checkout CT-181_houdini_alpha
 ```
 
 You need to add to the `PYTHONPATH`, the `HOUDINI_PATH` and set `CONDUCTOR_CONFIG`. You can do this in `.bashrc`. You can alternatively use the `houdini.env` file.
