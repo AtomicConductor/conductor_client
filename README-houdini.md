@@ -107,157 +107,159 @@ To cache a simulation, simply connect a Dynamics ROP. You'll notice the `frames`
 
 ----
 
-#### Conductor Job Reference
+### Reference: Conductor job
 
 
 #### Inputs
-`One input `
-    The ROP that will be rendered
+The ROP that will be rendered
 
-#### Parameters
+#### General Parameters
 
-`update`
-    Force update of packages and projects from Conductor. Authenticates if necessary.
-
-
-`preview`
-    Preview the whole submission in two views. Tree view: shows the whole submission object, including available variables. Dry run: shows the JSON array of jobs that will be submitted.
+**Update button** `update`
+Small button top left in the UI. Force update of packages and projects from Conductor. Authenticates if necessary.
 
 
-`submit`
-    Submit the job to to Conductor.
-
-
-`job_title`
-    This title will appear in the Conductor UI. 
-    You may use houdini variables, including job-level Conductor variables to construct this string.
-    To see a list of available Conductor variables and their values in the context of each job, use the Preview button and expand the Tokens section in the Tree view.
+**Job title** `job_title`
+This title will appear in the Conductor UI. 
+You may use houdini variables, including job-level Conductor variables to construct this string. To see a list of available Conductor variables and their values in the context of each job, use the Preview button and expand the Tokens section in the tree view.
 
 
 
 
-`use_custom`
-    Override the frame range defined in the input ROP.
+**Use custom frame range** `use_custom`
+Override the frame range defined in the input ROP.
 
 
-`fs`
-    Start, end, and step value for a regular frame range. These are always derived from the input ROP. 
+**Start/end/inc** `fs`
+Start, end, and step value for a regular frame range. These are always derived from the input ROP. 
 
 
-`custom_range`
-    Specify a custom frame set to override the range from the input ROP. A custom range is valid when it is a comma separated list of arithmetic progressions. These can can be formatted as single numbers or ranges with a hyphen and optionally a step value signified by an x. Example, 1,7,10-20,30-60x3,1001, Spaces and trailing commas are allowed, Letters and other non numeric characters are not. Order is not important.
+**Custom range** `custom_range`
+Specify a custom frame set to override the range from the input ROP. A custom range is valid when it is a comma separated list of arithmetic progressions. These can can be formatted as single numbers or ranges with a hyphen and optionally a step value signified by an x. Example, 1,7,10-20,30-60x3,1001, Spaces and trailing commas are allowed, Letters and other non numeric characters are not. Order is not important.
 
 
-`chunk_size`
-    Set the number of frames in a clump. A clump is a set of frames that will be rendered in one task. you may want to use clumps greater than one if the number of instances is limited, or if the time to load the scene is large compared to the time to process frames. Use the AUTO button to adjust the clump size such that frames are distributed as evenly as possible while retaining the current number of clumps. For example, if clump size is 70 and there are 100 frames, 2 clumps will be generated with 70 and 30 frames. Hit the AUTO button to even them out and set clump size to 50.
+**Chunk size** `chunk_size`
+Set the number of frames in a clump. A clump is a set of frames that will be rendered in one task. you may want to use clumps greater than one if the number of instances is limited, or if the time to load the scene is large compared to the time to process frames. Use the AUTO button to adjust the clump size such that frames are distributed as evenly as possible while retaining the current number of clumps. For example, if clump size is 70 and there are 100 frames, 2 clumps will be generated with 70 and 30 frames. Hit the AUTO button to even them out and set clump size to 50.
 
 
-`auto_chunk_size`
-    Set the best distribution of frames per chunk based on the current number of chunks. For example, if chunk size is 70 and there are 100 frames, 2 chunks will be generated with 70 and 30 frames. It would be better to have 50 frames per chunk and this method returns that number. Auto chunk size is not applicable when chunk strategy is progressions.
+**Auto button** `auto_chunk_size`
+Set the best distribution of frames per chunk based on the current number of chunks. For example, if chunk size is 70 and there are 100 frames, 2 chunks will be generated with 70 and 30 frames. It would be better to have 50 frames per chunk and this method returns that number. Auto chunk size is not applicable when chunk strategy is progressions.
 
 
-`progressions`
-    When using a custom frame range, specify that chunks must be progressions. Progressions are frame ranges that can be expressed as a start, end, and step. If you use a task command that requires start/end/step parameters, such as hrender, then you'll need valid values for the variables $CT_CHUNKSTART, $CT_CHUNKEND, $CT_CHUNKSTEP. Setting progressions to on will ensure the sequence is split into chunks where this is true. If you don't override frame range, then the sequence itself is a progression and will always generate chunks that are progressions.
+**Progressions** `progressions`
+When using a custom frame range, specify that chunks must be progressions. Progressions are frame ranges that can be expressed as a start, end, and step. If you use a task command that requires start/end/step parameters, such as hrender, then you'll need valid values for the variables $CT_CHUNKSTART, $CT_CHUNKEND, $CT_CHUNKSTEP. Setting progressions to on will ensure the sequence is split into chunks where this is true. If you don't override frame range, then the sequence itself is a progression and will always generate chunks that are progressions.
 
 
-`do_scout`
-    Choose to start just a subset of frames before running the complete job. 
+**Scout** `do_scout`
+Choose to start just a subset of frames before running the complete job. 
 
 
-`scout_frames`
-    Specify frames you want to see rendered before deciding whether the render the whole job. Use a frame spec of the same format as the custom frames parameter. Scout frames that are not in the main frame range will be ignored. For example, if the main frame range is 1-10 and scout frames are 9-11, only 9 and 10 will be resolved as valid scout frames. Further, scout frames signify whether or not to start the task they were included in. For example, if clump size is 10 and the first task contains frames 1-10, then specifying 5 as a scout frame will cause the task to be started running. Only tasks that have no scout frames will be initialized on hold.
+**Scout frames** `scout_frames`
+Specify frames you want to see rendered before deciding whether the render the whole job. Use a frame spec of the same format as the custom frames parameter. Scout frames that are not in the main frame range will be ignored. For example, if the main frame range is 1-10 and scout frames are 9-11, only 9 and 10 will be resolved as valid scout frames. Further, scout frames signify whether or not to start the task they were included in. For example, if clump size is 10 and the first task contains frames 1-10, then specifying 5 as a scout frame will cause the task to be started running. Only tasks that have no scout frames will be initialized on hold.
 
 
-`machine_type`
-    Choose a machine type on which to run this job.
+**Machine type** `machine_type`
+Choose a machine type on which to run this job.
 
 
-`preemptible`
-    Choose whether this machine can be preempted by another process and restarted. Preemptible machines are less expensive, especially for short jobs that are unlikely to be preempted.
+**Preemptible** `preemptible`
+Choose whether this machine can be preempted by another process and restarted. Preemptible machines are less expensive, especially for short jobs that are unlikely to be preempted.
 
 
-`retries`
-    Set how many times a preempted task will be retried automatically.
+**Retries** `retries`
+Set how many times a preempted task will be retried automatically.
 
 
-`metadata `
-    Data as key/value pairs that may be attached to the job. This metadata may be useful later for filtering usage charts and so on. You may use houdini variables, including job-level Conductor variables, to construct these strings. To see a list of available Conductor variables and their values in the context of each job, use the Preview button and expand the Tokens section in the Tree view.
+**Job metadata** `metadata`
+Data as key/value pairs that may be attached to the job. This metadata may be useful later for filtering usage charts and so on. You may use houdini variables, including job-level Conductor variables, to construct these strings. To see a list of available Conductor variables and their values in the context of each job, use the Preview button and expand the Tokens section in the Tree view.
+
+#### Advanced Parameters
+
+**Task command** `task_command`
+Command that will be run at conductor on each instance. By default this will be set to hrender, Houdini's command line render script. You may also provide your own. There are some examples provided by conductor, see the Custom scripts section above. 
+
+You can use houdini variables, including job-level Conductor variables, to construct this command. You will likely want to pass the scene name and the source ROP path to the command. These are stored in variables $CT_SCENE and $CT_SOURCE. $CT_SCENE is guaranteed to be the scene that will be uploaded, whether it is the normal scene name or a timestamped version of the scene that is saved automatically. To see a list of available Conductor variables and their values in the context of each job, use the Preview button and expand the Tokens section in the Tree view. 
 
 
-`task_command`
-    Command that will be run at conductor on each instance. You may run scripts provided by conductor, such as chrender.py or chcache.py, or provide your own. You can use houdini variables, including job-level Conductor variables, to construct this command. You will likely want to pass the scene name and the source ROP path to the command. These are stored in variables $CT_SCENE and $CT_SOURCE. $CT_SCENE is guaranteed to be the scene that will be uploaded, whether it is the normal scene name or a timestamped version of the scene that is saved automatically. To see a list of available Conductor variables and their values in the context of each job, use the Preview button and expand the Tokens section in the Tree view. 
+**Choose packages button** `choose_software`
+Choose one or more licensed software packages that Conductor has installed. The chooser contains a tree of software dependencies. At the top level are host versions of Houdini, and if plugins are available they are parented to hosts. If you choose a plugin or any package other than a host package, all its ancestors up to the host will also be added. It is not necessary that the Houdini version you choose is the same as the current session. The current version may not be available. What matters is that the command you run can execute in the context of the software you choose.
 
 
-`choose_software`
-    Choose one or more licensed software packages that Conductor has installed. The chooser contains a tree of software dependencies. At the top level are host versions of Houdini, and if plugins are available they are parented to hosts. If you choose a plugin or any package other than a host package, all its ancestors up to the host will also be added. It is not necessary that the Houdini version you choose is the same as the current session. The current version may not be available. What matters is that the command you run can execute in the context of the software you choose.
+**Autodetect button** `detect_software`
+Detect the current Houdini version and any plugins in use. If Conductor has the exact versions available, add them to the list of packages to use. If the exact versions are not available, use the choose button instead to select acceptable versions.
 
 
-`detect_software`
-    Detect the current Houdini version and any plugins in use. If Conductor has the exact versions available, add them to the list of packages to use. If the exact versions are not available, use the choose button instead to select acceptable versions.
+**Clear packages button** `clear_software`
+Clear the list of software packages.
 
 
-`clear_software`
-    Clear the list of software packages.
+**Extra uploads** `extra_upload_paths`
+Specify paths to extra resources you want to upload for this job. If you specify a script to run in the task comand, you'll want to include it here, along with any other libraries or packages it depends on, so they are available when the task launches on Conductor's instances.
 
 
-`extra_upload_paths`
-    Specify paths to extra resources you want to upload for this job. If you specify a script to run in the task comand, you'll want to include it here, along with any other libraries or packages it depends on, so they are available when the task launches on Conductor's instances.
+**Extra environment** `environment_kv_pairs`
+If any scripts are being uploaded in the extra upload paths section, you may want to provide paths or other environment variables here so they can be found. You can use this section to set or append to any variables you like, for example to run Houdini with verbose debug output.
 
 
-`environment_kv_pairs`
-    If any scripts are being uploaded in the extra upload paths section, you may want to provide paths or other environment variables here so they can be found. You can also use this section to set variables that relate to Conductor package, for example to run Houdini with verbose debug output.  
+**Output directory** `output_directory`
+The directory that will be made available for download. By default there is an expression to get the directory from the output image parameter on the source ROP. As the parameter name is different for each type of ROP, it can only find the path for node types it knows about. If you have an input ROP connected and you see "None" in the output directry, either edit the expression so it can find the correct path in your ROP, or simply delete the expression and add a path manually.
+
+#### Submission Parameters
+
+**Preview button** `preview`
+Preview the whole submission in two views.
+
+* Tree view: shows the whole submission object, including available variables. 
+* Dry run: shows the JSON array of jobs that will be submitted.
 
 
-`output_directory`
-    The directory that will be made available for download. By default there is an expression to get the directory from the output image parameter on the source ROP. As the parameter name is different for each type of ROP, it can only find the path for node types it knows about. If you have an input ROP connected and you see "None" in the output directry, either edit the expression so it can find the correct path in your ROP, or simply delete the expression and add a path manually.
+**Autosave with timestamp** `use_timestamped_scene`
+Choose to write out a scene file automatically using the filename with a timestamp suffix. The timestamp used will also be available as a variable and can be useful to keep the scene associated with renders. It also improves workflow as you don't need to think about filenames every time you send a render job.
 
 
-`project`
-    Choose the Conductor project in which to ru the job.
+**Submit button** `submit`
+Submit the job to to Conductor.
+
+**Project** `project`
+Choose the Conductor project in which to ru the job.
 
 
-`use_timestamped_scene`
-    Choose to write out a scene file automatically using the filename with a timestamp suffix. The timestamp used will also be available as a variable and can be useful to keep the scene associated with renders. It also improves workflow as you don't need to think about filenames every time you send a render job.
-
-
-`local_upload`
+**Local upload** `local_upload`
     Currently local upload is always on. In future it will be possible to use a Conductor upload daemon to take care of file uploads on a machine other than the local workstation. 
 
 
-`force_upload`
+**Force upload** `force_upload`
     When force upload is on, files will be uploaded regardless of whether they already exist at Conductor.
 
 
-`upload_only `
+**Upload only** `upload_only `
     Do not run any tasks. Only upload files. 
 
 
-`email_addresses`
-    Enter a comma delimited list of email addresses that will be notified when the job completes or fails.
+**Email addresses** `email_addresses`
+    Enter a comma delimited list of email addresses that will be notified when the job completes or fails. Disabled if no email hooks are selected.
 
 
-`email_on_submit`
+**On submit** `email_on_submit`
     Currently not used
 
 
-`email_on_start `
+**On start** `email_on_start `
     Currently not used
 
 
-`email_on_finish`
+**On finish** `email_on_finish`
     Send an email on completion
 
 
-`email_on_failure`
+**On failure** `email_on_failure`
     Currently not used
  
-@related
-
-* [Node:out/conductor::submitter::0.1]
 
 
+### Reference: Conductor submitter
 
-
+*wip*
 
 
 
