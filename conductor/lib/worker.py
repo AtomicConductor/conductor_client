@@ -14,7 +14,9 @@ This is used to signal to workers if work should continue or not
 '''
 WORKING = True
 
+
 class Reporter():
+
     def __init__(self, metric_store=None):
         self.metric_store = metric_store
         self.api_helper = api_client.ApiClient()
@@ -48,8 +50,6 @@ class Reporter():
         return self.thread
 
 
-
-
 class ThreadWorker(object):
     '''
     Abstract worker class.
@@ -78,9 +78,6 @@ class ThreadWorker(object):
 
         # create a list to hold the threads that we create
         self.threads = []
-
-
-
 
     def do_work(self, job):
         '''
@@ -214,6 +211,7 @@ class ThreadWorker(object):
         self.out_queue.put(job)
         return True
 
+
 class MetricStore():
     '''
     This provides a thread-safe integer store that can be used by workers to
@@ -226,8 +224,10 @@ class MetricStore():
         self.metric_store = {}
         self.update_queue = Queue.Queue()
         self.started = False
+        self.terminate = False
 
     def join(self):
+        empty_queue(self.update_queue)
         self.update_queue.join()
         return True
 
@@ -239,11 +239,11 @@ class MetricStore():
             logger.debug('metric_store already started')
             return None
         logger.debug('starting metric_store')
-        thd = threading.Thread(target=self.target, name=self.__class__.__name__)
-        thd.daemon = True
-        thd.start()
+        self.thread = threading.Thread(target=self.target, name=self.__class__.__name__)
+        self.thread.daemon = True
+        self.thread.start()
         self.started = True
-        return thd
+        return self.thread
 
     def set(self, key, value):
         self.metric_store[key] = value
@@ -312,9 +312,11 @@ class MetricStore():
 
     def target(self):
         logger.debug('created metric_store target thread')
-        while True:
-            # block until update given
-            update_tuple = self.update_queue.get(True)
+        while not self.terminate:
+
+            update_tuple = safe_get(self.update_queue)
+            if not update_tuple:
+                continue
 
             method = update_tuple[0]
             method_args = update_tuple[1:]
@@ -331,6 +333,9 @@ class MetricStore():
             # mark task done
             self.update_queue.task_done()
 
+    def kill(self):
+        self.terminate = True
+        self.thread.join()
 
 
 class JobManager():
@@ -379,18 +384,27 @@ class JobManager():
             logger.debug('killing reporter %s', reporter)
             reporter.kill()
 
+    def kill_metric_store(self):
+        logger.debug('killing metric store %s', self.metric_store)
+        self.metric_store.kill()
+
+
     def stop_work(self):
         global WORKING
         WORKING = False  # stop any new jobs from being created
         self.drain_queues()  # clear out any jobs in queue
         self.kill_workers()  # kill all threads
+        self.kill_metric_store()
         self.kill_reporters()
         self.mark_all_tasks_complete()  # reset task counts
 
     def error_handler_target(self):
+        global WORKING
 
-        while True:
-            error = self.error_queue.get(True)
+        while  WORKING:
+            error = safe_get(self.error_queue)
+            if not error:
+                continue
             logger.error('got something from the error queue')
             self.error.append(error)
             self.stop_work()
@@ -482,6 +496,7 @@ class JobManager():
         if self.error:
             return self.error
         self.kill_workers()
+        self.kill_metric_store()
         self.kill_reporters()
         return None
 
@@ -496,3 +511,30 @@ class JobManager():
             msg += '\t\t%s threads' % num_active_threads
             msg += '\n'
         return msg
+
+
+def empty_queue(queue):
+    '''
+    Remove and return all items from the given Queue object
+    '''
+    items = []
+
+    while True:
+        item = safe_get(queue)
+        if not item:
+            break
+        items.append(item)
+    return items
+
+
+def safe_get(queue):
+    '''
+    Get and return an item from the given queue.
+    If the queue is empty, reurn None (supressing the exception).
+    '''
+    try:
+        return (queue.get_nowait())
+    except Queue.Empty:
+        return
+    except Exception:
+        logger.exception("recovered from exception:\n%s")
