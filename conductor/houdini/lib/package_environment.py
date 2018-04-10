@@ -30,7 +30,7 @@ class PackageEnvironment(object):
     def _append(self, name, value):
         """Append to a variable.
 
-        Create it if necessary, otherwise join with :
+        Create it if necessary, otherwise join with `:`.
         """
         if self._env.get(name):
             self._env[name] = ":".join([self._env[name], value])
@@ -46,6 +46,18 @@ class PackageEnvironment(object):
         and a merge_policy. One by one they are added
         according to their merge policy. See set and append
         above.
+
+        TODO: The merge policy should be set the first time a
+        variable is declared and used for all subsequent
+        amendments. Why? Because its more likely that
+        variables are being added from packages registered
+        with conductor first, and then user-defined variables
+        added later. A user is more likely to make a mistake
+        and corrupt a variable that has been specified in
+        packages. Example: A package may set FOO=BAR
+        (exclusive), but then a user may set FOO=BAZ (append).
+        The result will be FOO=BAR:BAZ. The user's attempt
+        should have been rejected.
         """
 
         try:
@@ -68,7 +80,7 @@ class PackageEnvironment(object):
                 self._set(name, value)
 
     def __iter__(self):
-        """Allow cast the whole object as a dict.
+        """Cast the object as a dict.
 
         See the tests /tests/test_package_environment.py for
         example use.

@@ -9,7 +9,14 @@ Instance types doesn't yet come from an api call but maybe it will in future.
 
 There are 2 commented lines that import mock versions of
 ApiClient The first version provides packages that contain
-Houdini 16.5.323 with arnold plugins and shaders. 
+Houdini 16.5.323 with arnold plugins and shaders. As
+development is being done on a machine with that version of
+Houdini installed, it helps to tests the autodetect software
+feature.
+
+The second mock has no exact host match, and in fact contains
+only the Houdini version that the real packages end point
+would return.
 """
 
 import json
@@ -63,32 +70,30 @@ def _packages():
         return []
 
     return json.loads(response).get("data", [])
-    # TODO - figure out best waty to deal with errors here.
 
 
 class ConductorDataBlock:
     """Singleton to keep some common data accessible.
 
     We store the list of instance types, projects, and the
-    package tree here. In theory, this data is fetched once
-    and then all the job & submitter nodes have access to
-    it. User can force an update, which might be handy if
-    they started working when offline, and then need to get
-    real before submitting.
+    package tree here. This data is fetched once and then
+    all the job & submitter nodes have access to it. User
+    can force an update, which might be handy if they
+    started working when offline, and then need to get real
+    before submitting.
     """
     instance = None
 
     @classmethod
     def clear(cls):
         cls.instance = None
-    
+
     class __ConductorDataBlock:
         def __init__(self, **kw):
             self._projects = _projects()
             self._instance_types = common.get_conductor_instance_types()
             self._package_tree = ptree.PackageTree(_packages(), **kw)
 
-   
         def __str__(self):
             return repr(self)
 
@@ -106,10 +111,10 @@ class ConductorDataBlock:
 
         The **kw args are:
         force = fetch from conductor again
-        product = the product filter to pass onto the
+        product = the product to pass onto the
         package_tree constructor to filter it.
 
-        product is only actually used when making a new instance.
+        product is only used when making a new instance.
         """
         if kw.get("force"):
             ConductorDataBlock.clear()
@@ -118,9 +123,13 @@ class ConductorDataBlock:
             ConductorDataBlock.instance = ConductorDataBlock.__ConductorDataBlock(
                 **kw)
 
-    
     def __getattr__(self, name):
-        """Delegate method calls to the singleton."""
+        """Delegate method calls to the singleton.
+
+        For example, if you call
+        ConductorDataBlock.projects(), then
+        __ConductorDataBlock.projects() will be called.
+        """
         return getattr(self.instance, name)
 
 
