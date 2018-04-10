@@ -14,11 +14,9 @@ Attributes:
 """
 
 import hou
-
+from conductor.houdini.hda import houdini_info
 from conductor.houdini.lib import data_block
 from conductor.houdini.lib import package_tree as ptree
-from conductor.houdini.hda import houdini_info
-
 
 NO_HOST_PACKAGES = "No conductor packages have been selected"
 

@@ -1,5 +1,6 @@
 """Some utility functions when working in other takes."""
 from contextlib import contextmanager
+
 import hou
 
 
