@@ -6,6 +6,7 @@ the defined asset (such as ArnoldInfo).
 """
 import os
 import re
+
 import hou
 from conductor.lib import package_utils
 

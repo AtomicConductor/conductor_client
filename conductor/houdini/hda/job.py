@@ -2,15 +2,13 @@
 """
 
 import os
+
 import hou
+from conductor.houdini.hda import (dependency_scan, driver_ui, frame_spec_ui,
+                                   software_ui)
+from conductor.houdini.hda.task import Task
 from conductor.houdini.lib import data_block
 from conductor.houdini.lib.sequence import Sequence
-from conductor.houdini.hda.task import Task
-from conductor.houdini.hda import (
-    frame_spec_ui,
-    software_ui,
-    driver_ui,
-    dependency_scan)
 
 
 class Job(object):
@@ -36,7 +34,7 @@ class Job(object):
         ChunkedJob makes a task per chunk. Job makes one
         task representing the whole time range.
         """
-        if driver_ui.is_simulation(node):
+        if driver_ui.is_simulation(driver_ui.get_driver_type(node)):
             return Job(node, tokens, scene)
         return ChunkedJob(node, tokens, scene)
 

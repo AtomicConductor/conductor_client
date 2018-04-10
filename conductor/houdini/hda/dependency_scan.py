@@ -1,27 +1,26 @@
 """Get a list of all files that are needed to run a job.
 
-Attributes:     PARAMETRISED_RE (Regex): Find <udim> or $SF
+Attributes:     PARAMETERISED_RE (Regex): Find <udim> or $SF
 tokens in filenames so they can be globbed.
 
 fetch: get a list of dependencies required for the submission.
 """
-import os
 import glob
+import os
 import re
-import hou
 
+import hou
 from conductor.houdini.hda import types
 
+PARAMETERISED_RE = re.compile(r"<udim>|\$SF")
 
-PARAMETRISED_RE = re.compile(r"<udim>|\$SF")
 
-
-def _file_exists(file):
+def _file_exists(filename):
     """Does it exist and is it a file?"""
-    if not file:
+    if not filename:
         return False
     try:
-        hou.findFile(file)
+        hou.findFile(filename)
         return True
     except hou.OperationFailed:
         return False
@@ -42,7 +41,7 @@ def _remove_redundant_entries(entries):
     """Remove file entries where containing directory is an entry.
 
     Given a list containing both /u/fred/myfile and /u/fred,
-    remove /u/fred/myfile as its not necessary. By sorting
+    remove /u/fred/myfile as it's not necessary. By sorting
     the entries first on depth, then a secondary sort on
     name length reversed, we can move through the list
     linearly, testing previously seen directories with
@@ -109,12 +108,12 @@ def fetch(node, sequence):
 
     for frame in sequence:
         for parm in parms:
-            path = PARAMETRISED_RE.sub(
+            path = PARAMETERISED_RE.sub(
                 '*', os.path.abspath(parm.evalAtFrame(frame)))
-            for file in glob.glob(path):
-                if file not in result and _file_exists(
-                        file) or _directory_exists(file):
-                    result.add(file)
+            for found in glob.glob(path):
+                if found not in result and _file_exists(
+                        found) or _directory_exists(found):
+                    result.add(found)
 
     result = _remove_redundant_entries(result)
 

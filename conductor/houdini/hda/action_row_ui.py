@@ -5,22 +5,22 @@ the JSON objects that will be sent to Conductor.
 
 submit: Send jobs to Conductor
 """
+import json
 import os
 import sys
 import traceback
-import json
-import hou
 
+import hou
 from conductor import CONFIG
-from conductor.lib import conductor_submit
 from conductor.houdini.hda.submission import Submission
 from conductor.houdini.hda.submission_preview import SubmissionPreview
+from conductor.lib import conductor_submit
 
 SUCCESS_CODES_SUBMIT = [201, 204]
 
 
 def _save_scene_or_use_current():
-    """Save scene flow"""
+    """Save scene flow."""
     fn = hou.hipFile.path()
     save_file_response = hou.ui.displayMessage(
         title='Unsaved changes',
@@ -72,7 +72,6 @@ def _create_submission_with_save(node):
                 return None
         submission = Submission(node)
     return submission
- 
 
 
 def preview(node, **_):

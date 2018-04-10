@@ -1,6 +1,6 @@
 
-import re
 import math
+import re
 
 NUMBER_RE = re.compile(r"^(\d+)$")
 RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
