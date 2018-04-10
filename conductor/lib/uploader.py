@@ -33,6 +33,7 @@ class MD5Worker(worker.ThreadWorker):
         logger.debug('job is %s', job)
         filename, submission_time_md5 = job
         assert isinstance(filename, (str, unicode)), "Filepath not of expected type. Got %s" % type(filename)
+
         filename = str(filename)
         current_md5 = self.get_md5(filename)
         # if a submission time md5 was provided then check against it
@@ -348,7 +349,7 @@ class Uploader(object):
     def report_status(self):
         logger.debug('started report_status thread')
         update_interval = 5
-        while True:
+        while self.working:
 
             # don't report status if we are doing a local_upload
             if not self.upload_id:
@@ -493,15 +494,13 @@ class Uploader(object):
         def sleep():
             time.sleep(update_interval)
 
-        while True:
-            if self.working:
-                try:
-                    logger.info(self.manager.worker_queue_status_text())
-                    logger.info(self.upload_status_text())
-                except Exception, e:
-                    print e
-                    print traceback.format_exc()
-                    # pass
+        while self.working:
+            try:
+                logger.info(self.manager.worker_queue_status_text())
+                logger.info(self.upload_status_text())
+            except Exception, e:
+                print e
+                print traceback.format_exc()
             sleep()
 
     def create_print_status_thread(self):
