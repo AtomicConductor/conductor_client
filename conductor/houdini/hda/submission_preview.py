@@ -1,6 +1,6 @@
-from PySide2 import QtWidgets
-from conductor.houdini.hda.submission_tree import SubmissionTree
 from conductor.houdini.hda.submission_dry_run import SubmissionDryRun
+from conductor.houdini.hda.submission_tree import SubmissionTree
+from PySide2 import QtWidgets
 
 
 class SubmissionPreview(QtWidgets.QTabWidget):

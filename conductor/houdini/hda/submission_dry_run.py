@@ -1,4 +1,4 @@
-from PySide2 import QtWidgets, QtGui
+from PySide2 import QtGui, QtWidgets
 
 
 class SubmissionDryRun(QtWidgets.QWidget):
