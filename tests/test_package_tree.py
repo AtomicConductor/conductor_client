@@ -1,16 +1,16 @@
-import unittest
 import json
-import sys
 import os
 import random
+import sys
+import unittest
 
+from conductor.houdini.lib import package_tree as ptree
+from conductor.houdini.lib.mocks.api_client_mock import ApiClient
 
 HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
-from conductor.houdini.lib import package_tree as ptree
-from conductor.houdini.lib.mocks.api_client_mock import ApiClient
 
 
 class RemoveUnreachableTest(unittest.TestCase):
