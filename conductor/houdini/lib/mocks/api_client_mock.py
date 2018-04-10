@@ -4,9 +4,8 @@ ApiClientNoHost includes an incompatible version of Houdini
 (to my curret setup) and is useful for testing behaviour of
 software / autodetect etc.
 """
-import os
 import json
-
+import os
 
 PROJECTS_RESPONSE = {"data": [
     {"id": "123|deadpool", "name": "Deadpool", "status": "active"},

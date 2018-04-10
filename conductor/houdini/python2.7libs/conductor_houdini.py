@@ -17,22 +17,13 @@ Attributes:
 """
 
 import traceback
-import hou
 
+import hou
+from conductor.houdini.hda import (action_row_ui, driver_ui, frame_spec_ui,
+                                   instances_ui, job_source_ui,
+                                   notifications_ui, projects_ui, software_ui,
+                                   takes, types, uistate)
 from conductor.houdini.lib import data_block
-from conductor.houdini.hda import (
-    instances_ui,
-    projects_ui,
-    frame_spec_ui,
-    driver_ui,
-    job_source_ui,
-    action_row_ui,
-    software_ui,
-    notifications_ui,
-    takes,
-    uistate,
-    types
-)
 
 
 def _all_job_nodes():
@@ -107,19 +98,18 @@ MENUS = dict(
 
 
 ACTIONS = dict(
-    source=driver_ui.update_input_type,
     preview=action_row_ui.preview,
     submit=action_row_ui.submit,
     update=force_update,
     use_custom=frame_spec_ui.set_type,
-    fs1=frame_spec_ui.update_sequence_stats,
-    fs2=frame_spec_ui.update_sequence_stats,
-    fs3=frame_spec_ui.update_sequence_stats,
+    fs1=frame_spec_ui.update_frame_stats_message,
+    fs2=frame_spec_ui.update_frame_stats_message,
+    fs3=frame_spec_ui.update_frame_stats_message,
     custom_range=frame_spec_ui.validate_custom_range,
-    chunk_size=frame_spec_ui.update_sequence_stats,
+    chunk_size=frame_spec_ui.update_frame_stats_message,
     auto_chunk_size=frame_spec_ui.best_chunk_size,
-    progressions=frame_spec_ui.update_sequence_stats,
-    do_scout=frame_spec_ui.update_sequence_stats,
+    progressions=frame_spec_ui.update_frame_stats_message,
+    do_scout=frame_spec_ui.update_frame_stats_message,
     scout_frames=frame_spec_ui.validate_scout_range,
     detect_software=software_ui.detect,
     choose_software=software_ui.choose,

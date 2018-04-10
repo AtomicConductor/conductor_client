@@ -1,5 +1,5 @@
 """Manage change of input jobs for a submitter node."""
-from conductor.houdini.hda import uistate, types
+from conductor.houdini.hda import types, uistate
 
 
 def update_inputs(node):

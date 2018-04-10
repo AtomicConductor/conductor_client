@@ -24,12 +24,10 @@ def _set_to_input(node, rop):
     if not rop:
         return
     rop_path = rop.path()
-
-    for channel in ['1', '2', '3']:
-        if not rop.parm("f%s" % channel):
-            raise TypeError(
-                """The selected ROP %s has no frame range parameter.
+    if not rop.parmTuple("f"):
+        raise hou.Error("""The selected ROP %s has no frame range parameter.
                 Please select or create an output Rop with start, end, and step""" % rop_path)
+    for channel in ['1', '2', '3']:
         _replace_with_input_expression(
             node.parm('fs%s' % channel), '%s/f%s' % (rop_path, channel))
 
@@ -44,41 +42,43 @@ def _set_to_scene(node):
         'hou.playbar.frameIncrement()', XP, True)
 
 
+def _chunk_parameters(node):
+    return {
+        "size": node.parm("chunk_size").eval(),
+        "strategy": "progressions" if node.parm("progressions").eval() else "linear"}
+
+
 def custom_frame_sequence(node):
     """Generate Sequence from value in custom_range parm."""
-    spec = node.parm("custom_range").eval()
-    chunk_size = node.parm("chunk_size").eval()
-    strategy = "progressions" if node.parm("progressions").eval() else "linear"
     try:
+        spec = node.parm("custom_range").eval()
+        chunk = _chunk_parameters(node)
         return Sequence.create(
             spec,
-            chunk_size=chunk_size,
-            chunk_strategy=strategy)
+            chunk_size=chunk["size"],
+            chunk_strategy=chunk["strategy"]
+        )
     except (ValueError, TypeError):
         return None
 
 
 def range_frame_sequence(node):
-    """Generate Sequence from value in standard range parm."""
-    chunk_size = node.parm("chunk_size").eval()
-    strategy = "progressions" if node.parm("progressions").eval() else "linear"
-
-    start, end, step = [
-        node.parm(parm).eval() for parm in ['fs1', 'fs2', 'fs3']
-    ]
+    """Generate Sequence from value in the standard range parmTuple."""
     try:
+        chunk = _chunk_parameters(node)
+        start, end, step = node.parmTuple("fs").eval()
         return Sequence.create(
             start, end, step,
-            chunk_size=chunk_size,
-            chunk_strategy=strategy)
+            chunk_size=chunk["size"],
+            chunk_strategy=chunk["strategy"])
     except (ValueError, TypeError):
         return None
 
 
 def scout_frame_sequence(node):
     """Generate Sequence from value in scout_frames parm."""
-    spec = node.parm("scout_frames").eval()
     try:
+        spec = node.parm("scout_frames").eval()
         return Sequence.create(spec)
     except (ValueError, TypeError):
         return None
@@ -95,51 +95,49 @@ def resolved_scout_sequence(node):
     """The sub-sequence the user intends to render immediately.
 
     If do_scout is off then returning None indicates all
-    frames will be rendered. However, if its on and the set
-    of scout frames intersects the main frames, then only
-    start those frames. If scout frames does not intersect
-    the main frames, then the user intended to scout but
-    ended up with no frames. This produces an empty
-    sequence.
+    frames will be rendered. However, if it is on and the
+    set of scout frames intersects the main frames, then
+    only start those frames. If scout frames does not
+    intersect the main frames, then the user intended to
+    scout but ended up with no frames. This produces an
+    empty sequence.
     """
     main_seq = main_frame_sequence(node)
     if main_seq and node.parm("do_scout").eval():
         scout_seq = scout_frame_sequence(node)
         if scout_seq:
             return main_seq.intersection(scout_seq)
-    return None
 
 
-def update_sequence_stats(node, **_):
-    """Generate frame stats message.
+def update_frame_stats_message(node, **_):
+    """Generate frame stats message and set the parameter.
 
-    Especially useful to know the frame count when frame
-    spec is set to custom. Additionally, if scout frames are
-    set, display the frame info as the num_scout_frames /
-    num_frames. The only scout frames counted are those that
-    intersect the set of total frames. If we happen to be in
-    a different take, then the user has enabled frames or
-    chunks or something, and this will affect the
-    frame_stats, so they have to be unlocked.
+    It is specially useful to know the frame count when
+    frame spec is set to custom. Additionally, if scout
+    frames are set, display the frame info as the
+    num_scout_frames / num_frames. The only scout frames
+    counted are those that intersect the set of total
+    frames. If we happen to be in a different take, then the
+    user has enabled frames or chunks or something, and this
+    will affect the frame_stats, so they have to be
+    unlocked.
     """
     takes.enable_for_current(node, "frame_stats")
 
     main_seq = main_frame_sequence(node)
-    if main_seq:
-        num_frames = len(main_seq)
-    else:
-        node.parm("frame_stats1").set("-")
-        node.parm("frame_stats2").set("-")
+    if not main_seq:
+        node.parmTuple("frame_stats").set(("-", "-"))
         return
 
-    frame_info = "%d Frames" % num_frames
+    num_frames = len(main_seq)
     scout_seq = resolved_scout_sequence(node)
     if scout_seq:
         frame_info = "%d/%d Frames" % (len(scout_seq), num_frames)
+    else:
+        frame_info = "%d Frames" % num_frames
 
-    node.parm("frame_stats1").set(frame_info)
-    chunks = main_seq.chunk_count()
-    node.parm("frame_stats2").set("%d Chunks" % chunks)
+    chunks = ("%d Chunks" % main_seq.chunk_count())
+    node.parmTuple("frame_stats").set((frame_info, chunks))
 
 
 def validate_custom_range(node, **_):
@@ -158,7 +156,7 @@ def validate_custom_range(node, **_):
     valid = Sequence.is_valid_spec(spec)
     node.parm("custom_valid").set(valid)
 
-    update_sequence_stats(node)
+    update_frame_stats_message(node)
     uistate.update_button_state(node)
 
 
@@ -173,7 +171,7 @@ def validate_scout_range(node, **_):
     spec = node.parm("scout_frames").eval()
     valid = Sequence.is_valid_spec(spec)
     node.parm("scout_valid").set(valid)
-    update_sequence_stats(node)
+    update_frame_stats_message(node)
 
 
 def set_type(node, **_):
@@ -191,8 +189,7 @@ def set_type(node, **_):
         _set_to_input(node, rop)
     else:
         _set_to_scene(node)
-    update_sequence_stats(node)
-
+    update_frame_stats_message(node)
 
 
 def best_chunk_size(node, **_):
@@ -204,5 +201,4 @@ def best_chunk_size(node, **_):
     """
     main_seq = main_frame_sequence(node)
     node.parm("chunk_size").set(main_seq.best_chunk_size())
-    update_sequence_stats(node)
-
+    update_frame_stats_message(node)

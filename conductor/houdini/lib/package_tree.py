@@ -10,9 +10,8 @@ See tests in /tests/test_package_tree.py for additional usage info.
 import copy
 import json
 
-
-from conductor.houdini.lib.package_environment import PackageEnvironment
 from conductor import CONFIG
+from conductor.houdini.lib.package_environment import PackageEnvironment
 
 
 def remove_unreachable(paths):
