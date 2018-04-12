@@ -133,6 +133,7 @@ class ExceptionLogger(ExceptionAction):
 
 
     '''
+
     def __init__(self, message="", log_traceback=True, log_level=logging.WARNING,
                  raise_=False, omitted_exceptions=(), disable_var=""):
         '''
@@ -182,7 +183,6 @@ def dec_timer_exit(log_level=logging.INFO):
 
 
 def dec_catch_exception(raise_=False):
-
     '''
     DECORATOR
     Wraps the decorated function/method so that if the function raises an
@@ -233,6 +233,7 @@ class DecRetry(object):
     0 and the full exponential backoff time length.
 
     '''
+
     def __init__(self, retry_exceptions=Exception, skip_exceptions=(), tries=8, static_sleep=None):
         self.retry_exceptions = retry_exceptions
         self.skip_exceptions = skip_exceptions
@@ -382,7 +383,7 @@ def base_dir():
 class Config():
     required_keys = []
     default_config = {'base_url': 'atomic-light-001.appspot.com',
-                      'thread_count': (multiprocessing.cpu_count() * 2),
+                      'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
                       'instance_cores': 16,
                       'instance_flavor': "standard",
                       'priority': 5,
@@ -627,3 +628,46 @@ def get_human_timestamp(seconds_since_epoch):
     convert the given seconds since epoch (float)
     '''
     return str(datetime.datetime.fromtimestamp(int(seconds_since_epoch)))
+
+
+def load_yaml(filepath, safe=True, omit_tags=False):
+    '''
+    Helper class that loads the given yaml filepath into a python object.
+
+    safe: bool. When True, will use yaml's safe_loader.
+
+    omit_tags: bool. When True, will skip any yaml tags in the file. This can be
+                useful when you want to read a yaml file but don't have all
+                of the necessary yaml tag constructors to do so.  All tags in the file
+                will be given a value of u'<TAG OMITTED>'
+
+    This function is somewhat complex(and ugly) because it must create it's own functions and classes.
+    The reason it must create it's own Loader class is because when adding a custom constructor,
+    that constructor remains loaded (and imbedded in the PyYaml's native Loader class) for the
+    duration of the python session. This could lead to disastrous behavior for customers that may
+    be using the same session to do additional python work (think inside of Maya).  So instead
+    of using PyYaml's Loader classes directly, we subclass our own so that we can dispose of it when
+    we're done. This all could have been avoided if PyYaml also provided a "remove_multi_constructor"
+    function.
+    '''
+
+    loader = yaml.SafeLoader if safe else yaml.Loader
+
+    def ommitter_constructor(loader, tag_suffix, node):
+        '''
+        Instead of loading the yaml tag as an object, simply return a string that
+        indicated that it was omitted.
+        '''
+        return tag_suffix + u' <TAG OMITTED>'
+
+    if omit_tags:
+        # Create our own Loader class and add our omission constructor to it
+        class TmpLoader(loader):
+            pass
+        loader = TmpLoader
+        yaml.add_multi_constructor(u'', ommitter_constructor, Loader=loader)
+
+    logger.debug("Using yaml loader: %s", loader.__name__)
+
+    with open(filepath) as f:
+        return yaml.load(f, loader)  # nosec  (ignore bandit static analysis warning for not using safe_load [B506:yaml_load] )

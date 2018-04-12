@@ -301,6 +301,7 @@ package_ids:
                 "3.52.01": 37759d6ab204516c75b8bb7fa8c555d3
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
+                "3.60.03": b11fb9d577021918d0a9ea1a410c2486
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -336,7 +337,9 @@ package_ids:
                 "2.1.0": ee7336e8a1799fc479617d5774bd43c7
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
+                "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
+                
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -375,6 +378,7 @@ package_ids:
                 "3.52.01": 37759d6ab204516c75b8bb7fa8c555d3
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
+                "3.60.03": b11fb9d577021918d0a9ea1a410c2486
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -410,7 +414,9 @@ package_ids:
                 "2.1.0": ee7336e8a1799fc479617d5774bd43c7
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
+                "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
+
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -448,6 +454,7 @@ package_ids:
                 "3.52.01": 37759d6ab204516c75b8bb7fa8c555d3
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
+                "3.60.03": b11fb9d577021918d0a9ea1a410c2486
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -483,7 +490,9 @@ package_ids:
                 "2.1.0": ee7336e8a1799fc479617d5774bd43c7
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
+                "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
+
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -522,6 +531,7 @@ package_ids:
                 "3.52.01": 37759d6ab204516c75b8bb7fa8c555d3
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
+                "3.60.03": b11fb9d577021918d0a9ea1a410c2486
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -557,6 +567,7 @@ package_ids:
                 "2.1.0": ee7336e8a1799fc479617d5774bd43c7
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
+                "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
@@ -596,6 +607,7 @@ package_ids:
                 "3.52.01": 37759d6ab204516c75b8bb7fa8c555d3
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
+                "3.60.03": b11fb9d577021918d0a9ea1a410c2486
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -631,6 +643,7 @@ package_ids:
                 "2.1.0": ee7336e8a1799fc479617d5774bd43c7
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
+                "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
@@ -670,6 +683,7 @@ package_ids:
                 "3.52.01": 37759d6ab204516c75b8bb7fa8c555d3
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
+                "3.60.03": b11fb9d577021918d0a9ea1a410c2486
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -705,6 +719,7 @@ package_ids:
                 "2.1.0": ee7336e8a1799fc479617d5774bd43c7
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
+                "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
@@ -744,6 +759,7 @@ package_ids:
                 "3.52.01": 37759d6ab204516c75b8bb7fa8c555d3
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
+                "3.60.03": b11fb9d577021918d0a9ea1a410c2486
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -779,6 +795,7 @@ package_ids:
                 "2.1.0": ee7336e8a1799fc479617d5774bd43c7
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
+                "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
@@ -805,7 +822,6 @@ package_ids:
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
 
-
         "Autodesk Maya 2016 Extension 1 + SP5": # Not sure if this an actual product
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
             v-ray-maya:
@@ -818,6 +834,7 @@ package_ids:
                 "3.52.01": 37759d6ab204516c75b8bb7fa8c555d3
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
+                "3.60.03": b11fb9d577021918d0a9ea1a410c2486
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -853,7 +870,9 @@ package_ids:
                 "2.1.0": ee7336e8a1799fc479617d5774bd43c7
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
+                "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
+                
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -892,6 +911,7 @@ package_ids:
                 "3.52.01": 37759d6ab204516c75b8bb7fa8c555d3
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
+                "3.60.03": b11fb9d577021918d0a9ea1a410c2486
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -927,6 +947,7 @@ package_ids:
                 "2.1.0": ee7336e8a1799fc479617d5774bd43c7
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
+                "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
@@ -953,7 +974,6 @@ package_ids:
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
 
-
         "Autodesk Maya 2016 Extension 2":  # Not sure if this an actual product
             package: 358ec09e234da63c29d612b49a77fb58 # Autodesk_MayaIO_2016_EXT2
             v-ray-maya:
@@ -963,6 +983,8 @@ package_ids:
                 "3.52.01": 495636d3affc4fb5f75d88ab0da51dfc
                 "3.52.02": a642ce35b29dc466830b583f308af04a
                 "3.60.01": 6e8d7b814b5ecccdf605bb1db7f78b9a
+                "3.60.03": 038886c08d799d90b43fd259761d3940
+                "3.60.04": 7e419f321332f8cc3c434ee2b68a70fe
             arnold-maya:
                 "1.2.7.3": 79ff37973ef0c543a9dadd9bda8ff774
                 "1.3.0.1": bc64abcfac228eacd95103fefe19448c
@@ -984,7 +1006,9 @@ package_ids:
                 "2.1.0": ad6d64e2abb7877bcac1838e84d1a91d
                 "2.1.0.1": 50123b3cd11dbc64fdb062415ff1a20f
                 "2.1.0.2": bc992ba2e26a9820ade73266a6f300d8
+                "2.1.0.3": fc2175e873a99d64c459d516ce4ee6f4
                 "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
+
             renderman-maya:
                 "21.3": c691fab2d2770adc01d614e16b8d6e64
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
@@ -1017,6 +1041,8 @@ package_ids:
                 "3.52.01": 495636d3affc4fb5f75d88ab0da51dfc
                 "3.52.02": a642ce35b29dc466830b583f308af04a
                 "3.60.01": 6e8d7b814b5ecccdf605bb1db7f78b9a
+                "3.60.03": 038886c08d799d90b43fd259761d3940
+                "3.60.04": 7e419f321332f8cc3c434ee2b68a70fe
             arnold-maya:
                 "1.2.7.3": 79ff37973ef0c543a9dadd9bda8ff774
                 "1.3.0.1": bc64abcfac228eacd95103fefe19448c
@@ -1038,6 +1064,7 @@ package_ids:
                 "2.1.0": ad6d64e2abb7877bcac1838e84d1a91d
                 "2.1.0.1": 50123b3cd11dbc64fdb062415ff1a20f
                 "2.1.0.2": bc992ba2e26a9820ade73266a6f300d8
+                "2.1.0.3": fc2175e873a99d64c459d516ce4ee6f4
                 "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
@@ -1073,6 +1100,8 @@ package_ids:
                 "3.52.01": 495636d3affc4fb5f75d88ab0da51dfc
                 "3.52.02": a642ce35b29dc466830b583f308af04a
                 "3.60.01": 6e8d7b814b5ecccdf605bb1db7f78b9a
+                "3.60.03": 038886c08d799d90b43fd259761d3940
+                "3.60.04": 7e419f321332f8cc3c434ee2b68a70fe
             arnold-maya:
                 "1.2.7.3": 79ff37973ef0c543a9dadd9bda8ff774
                 "1.3.0.1": bc64abcfac228eacd95103fefe19448c
@@ -1094,6 +1123,7 @@ package_ids:
                 "2.1.0": ad6d64e2abb7877bcac1838e84d1a91d
                 "2.1.0.1": 50123b3cd11dbc64fdb062415ff1a20f
                 "2.1.0.2": bc992ba2e26a9820ade73266a6f300d8
+                "2.1.0.3": fc2175e873a99d64c459d516ce4ee6f4
                 "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
@@ -1127,6 +1157,8 @@ package_ids:
                 "3.52.01": 68e5a3d6974edf2893fdd52b30530f4f
                 "3.52.02": 9560e1ec0f4416791dfaeedec70d1fa8
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
+                "3.60.03": 47147c0857472c6d740bb415ad2baa15
+                "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1148,6 +1180,7 @@ package_ids:
                 "2.1.0": 410fe5d88fe65eb62b746b5905681c6a
                 "2.1.0.1": 379b3514603cac841e36a7b0cc06f4d9
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
+                "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
@@ -1186,6 +1219,8 @@ package_ids:
                 "3.52.01": 68e5a3d6974edf2893fdd52b30530f4f
                 "3.52.02": 9560e1ec0f4416791dfaeedec70d1fa8
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
+                "3.60.03": 47147c0857472c6d740bb415ad2baa15
+                "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1207,6 +1242,7 @@ package_ids:
                 "2.1.0": 410fe5d88fe65eb62b746b5905681c6a
                 "2.1.0.1": 379b3514603cac841e36a7b0cc06f4d9
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
+                "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
@@ -1245,6 +1281,8 @@ package_ids:
                 "3.52.01": 68e5a3d6974edf2893fdd52b30530f4f
                 "3.52.02": 9560e1ec0f4416791dfaeedec70d1fa8
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
+                "3.60.03": 47147c0857472c6d740bb415ad2baa15
+                "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1266,6 +1304,7 @@ package_ids:
                 "2.1.0": 410fe5d88fe65eb62b746b5905681c6a
                 "2.1.0.1": 379b3514603cac841e36a7b0cc06f4d9
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
+                "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
@@ -1304,6 +1343,8 @@ package_ids:
                 "3.52.01": 68e5a3d6974edf2893fdd52b30530f4f
                 "3.52.02": 9560e1ec0f4416791dfaeedec70d1fa8
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
+                "3.60.03": 47147c0857472c6d740bb415ad2baa15
+                "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1325,6 +1366,7 @@ package_ids:
                 "2.1.0": 410fe5d88fe65eb62b746b5905681c6a
                 "2.1.0.1": 379b3514603cac841e36a7b0cc06f4d9
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
+                "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
@@ -1363,6 +1405,8 @@ package_ids:
                 "3.52.01": 68e5a3d6974edf2893fdd52b30530f4f
                 "3.52.02": 9560e1ec0f4416791dfaeedec70d1fa8
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
+                "3.60.03": 47147c0857472c6d740bb415ad2baa15
+                "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1384,6 +1428,7 @@ package_ids:
                 "2.1.0": 410fe5d88fe65eb62b746b5905681c6a
                 "2.1.0.1": 379b3514603cac841e36a7b0cc06f4d9
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
+                "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
@@ -1419,6 +1464,8 @@ package_ids:
             package: 460411ee5c24661ed354863bcb3d7c21
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
+                "3.60.03": 4948a81728a1612262ce781ed3c35511
+                "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1427,6 +1474,7 @@ package_ids:
                 "2.1.0": cbe8d96aea67a3f39d17918f69312432
                 "2.1.0.1": 95a2241e0efdba008eec42deef13c24d
                 "2.1.0.2": 0c4af05117037150629d43e7a85c8389
+                "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
@@ -1444,6 +1492,8 @@ package_ids:
             package: 38015a170f892bf61e5275deac8dd421
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
+                "3.60.03": 4948a81728a1612262ce781ed3c35511
+                "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1452,6 +1502,7 @@ package_ids:
                 "2.1.0": cbe8d96aea67a3f39d17918f69312432
                 "2.1.0.1": 95a2241e0efdba008eec42deef13c24d
                 "2.1.0.2": 0c4af05117037150629d43e7a85c8389
+                "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
@@ -1469,6 +1520,8 @@ package_ids:
             package: f7e93d6431686b48648a7bee94145d06
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
+                "3.60.03": 4948a81728a1612262ce781ed3c35511
+                "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1477,6 +1530,7 @@ package_ids:
                 "2.1.0": cbe8d96aea67a3f39d17918f69312432
                 "2.1.0.1": 95a2241e0efdba008eec42deef13c24d
                 "2.1.0.2": 0c4af05117037150629d43e7a85c8389
+                "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
