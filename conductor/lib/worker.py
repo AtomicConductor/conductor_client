@@ -388,7 +388,6 @@ class JobManager():
         logger.debug('killing metric store %s', self.metric_store)
         self.metric_store.kill()
 
-
     def stop_work(self):
         global WORKING
         WORKING = False  # stop any new jobs from being created
@@ -401,7 +400,7 @@ class JobManager():
     def error_handler_target(self):
         global WORKING
 
-        while  WORKING:
+        while WORKING:
             error = safe_get(self.error_queue)
             if not error:
                 continue
@@ -491,10 +490,10 @@ class JobManager():
             logger.debug('waiting for %s workers to finish', worker_class_name)
             worker.join()
         logger.debug('all workers finished')
-        self.metric_store.join()
-        logger.debug('metric store in sync')
         if self.error:
             return self.error
+        self.metric_store.join()
+        logger.debug('metric store in sync')
         self.kill_workers()
         self.kill_metric_store()
         self.kill_reporters()
