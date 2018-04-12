@@ -1,5 +1,4 @@
 import datetime
-import time
 import json
 import logging
 import os
@@ -7,6 +6,7 @@ import Queue
 import sys
 import thread
 from threading import Thread
+import time
 import traceback
 
 from conductor import CONFIG
@@ -491,17 +491,13 @@ class Uploader(object):
         logger.debug('starting print_status thread')
         update_interval = 3
 
-        def sleep():
-            time.sleep(update_interval)
-
         while self.working:
             try:
                 logger.info(self.manager.worker_queue_status_text())
                 logger.info(self.upload_status_text())
-            except Exception, e:
-                print e
-                print traceback.format_exc()
-            sleep()
+            except Exception:
+                logger.exception("#### Print Status Thread exception ####\n")
+            self.sleep(update_interval)
 
     def create_print_status_thread(self):
         logger.debug('creating console status thread')
@@ -596,8 +592,16 @@ class Uploader(object):
 
                 self.mark_upload_finished(self.upload_id, finished_upload_files)
 
-        except:
+        except Exception:
+            logger.exception("######## ENCOUNTERED EXCEPTION #########\n")
             return traceback.format_exc()
+
+    @classmethod
+    def sleep(cls, seconds):
+        for _ in xrange(seconds):
+            if common.SIGINT_EXIT:
+                return
+            time.sleep(1)
 
     def main(self, run_one_loop=False):
         logger.info('Uploader Started. Checking for uploads...')
@@ -615,12 +619,12 @@ class Uploader(object):
                     logger.debug('no files to upload')
                     sys.stdout.write('.')
                     sys.stdout.flush()
-                    time.sleep(self.sleep_time)
+                    self.sleep(self.sleep_time)
                     continue
                 elif resp_code != 201:
                     logger.error('received invalid response code from app %s', resp_code)
                     logger.error('response is %s', resp_str)
-                    time.sleep(self.sleep_time)
+                    self.sleep(self.sleep_time)
                     continue
 
                 print ''  # to make a newline after the 204 loop
@@ -631,7 +635,7 @@ class Uploader(object):
                     upload = json_data.get("data", {})
                 except ValueError:
                     logger.error('response was not valid json: %s', resp_str)
-                    time.sleep(self.sleep_time)
+                    self.sleep(self.sleep_time)
                     continue
 
                 upload_files = upload['upload_files']
@@ -647,7 +651,7 @@ class Uploader(object):
                 break
             except:
                 logger.exception('Caught exception:\n')
-                time.sleep(self.sleep_time)
+                self.sleep(self.sleep_time)
                 continue
 
         logger.info('exiting uploader')
