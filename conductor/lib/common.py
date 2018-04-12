@@ -7,6 +7,7 @@ import logging
 import multiprocessing
 import os
 import platform
+from pprint import pformat
 import random
 import signal
 import subprocess
@@ -671,3 +672,22 @@ def load_yaml(filepath, safe=True, omit_tags=False):
 
     with open(filepath) as f:
         return yaml.load(f, loader)  # nosec  (ignore bandit static analysis warning for not using safe_load [B506:yaml_load] )
+
+
+def sstr(object_, char_count=1000, pretty=True):
+    '''
+    Return a string representation of the given object, shortened to the given
+    char_count. This can be useful when printing/logging out data for debugging
+    purposes, but don't want an overwhelming wall of text to scroll through.
+
+    pretty: bool. If true, will pretty print the object
+    '''
+
+    try:
+        s_str = pformat(object_) if pretty else str(object_)
+    except Exception:
+        s_str = "<object cannot be cast to string (%s)>" % type(object_)
+
+    if len(s_str) > char_count:
+        s_str = s_str[:char_count] + "...<TRUNCATED>"
+    return s_str
