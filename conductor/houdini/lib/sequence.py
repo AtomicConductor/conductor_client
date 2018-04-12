@@ -209,6 +209,26 @@ class Sequence(object):
             return None
         return Sequence.create(common_frames)
 
+    def subsample(self, count):
+        """Take a selection of elements from the sequence.
+
+        Return value is a new sequence.
+        """
+        n = len(self)
+        count = sorted([1, count, n])[1]
+
+        res = []
+        gap = n / float(count)
+        pos = gap / 2.0
+
+        for i in range(count):
+            index = int(pos)
+            res.append(self._iterable[index])
+            pos += gap
+
+        spec = ",".join([str(x) for x in res])
+        return Sequence.create(spec)
+
     def best_chunk_size(self):
         """Determine the best distribution of frames per chunk based on the
         current number of chunks.
