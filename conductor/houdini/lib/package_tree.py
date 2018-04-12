@@ -212,9 +212,7 @@ class PackageTree(object):
     """Class to represent available packages as a tree.
     
     Data structure is really a DAG because a tool may be
-    compatible with more than one host product. TODO: Make
-    parents that point to the same child use the actual same
-    instance in memory, not a copy.  
+    compatible with more than one host product.
     """
 
     def __init__(self, packages, **kw):

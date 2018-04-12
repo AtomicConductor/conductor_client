@@ -9,7 +9,6 @@ if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
 
-
 class SequenceFactoryTest(unittest.TestCase):
 
     def test_single_number_is_progression(self):
@@ -334,5 +333,45 @@ class ProgressionsTest(unittest.TestCase):
         self.assertEqual(len(result), 5)
 
 
+class SubsampleTest(unittest.TestCase):
+
+    def test_counts_from_1_to_10(self):
+        s = Sequence.create("1-10")
+        ss = s.subsample(1)
+        self.assertEqual(len(ss), 1)
+        self.assertEqual(list(ss), [6])
+        ss = s.subsample(2)
+        self.assertEqual(len(ss), 2)
+        self.assertEqual(list(ss), [3, 8])
+        ss = s.subsample(3)
+        self.assertEqual(len(ss), 3)
+        self.assertEqual(list(ss), [2, 6, 9])
+        ss = s.subsample(4)
+        self.assertEqual(len(ss), 4)
+        self.assertEqual(list(ss), [2, 4, 7, 9])
+        ss = s.subsample(5)
+        self.assertEqual(len(ss), 5)
+        self.assertEqual(list(ss), [2, 4, 6, 8, 10])
+        ss = s.subsample(6)
+        self.assertEqual(len(ss), 6)
+        self.assertEqual(list(ss), [1, 3, 5, 6, 8, 10])
+        ss = s.subsample(7)
+        self.assertEqual(len(ss), 7)
+        self.assertEqual(list(ss), [1, 3, 4, 6, 7, 8, 10])
+        ss = s.subsample(8)
+        self.assertEqual(len(ss), 8)
+        self.assertEqual(list(ss), [1, 2, 4, 5, 6, 7, 9, 10])
+        ss = s.subsample(9)
+        self.assertEqual(len(ss), 9)
+        self.assertEqual(list(ss), [1, 2, 3, 4, 6, 7, 8, 9, 10])
+        ss = s.subsample(10)
+        self.assertEqual(len(ss), 10)
+        self.assertEqual(list(ss), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        ss = s.subsample(11)
+        self.assertEqual(len(ss), 10)
+        self.assertEqual(list(ss), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+
+ 
 if __name__ == '__main__':
     unittest.main()
