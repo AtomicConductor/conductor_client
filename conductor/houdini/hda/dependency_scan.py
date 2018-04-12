@@ -12,7 +12,8 @@ import re
 import hou
 from conductor.houdini.hda import types
 
-PARAMETERISED_RE = re.compile(r"<udim>|\$SF")
+# PARAMETERISED_RE = re.compile(r"<udim>|\$SF")
+PARAMETERISED_RE = re.compile(r"<udim>")
 
 
 def _file_exists(filename):
@@ -36,6 +37,8 @@ def _directory_exists(directory):
     except hou.OperationFailed:
         return False
 
+def _exists(fn):
+    return _file_exists(fn) or _directory_exists(fn)
 
 def _remove_redundant_entries(entries):
     """Remove file entries where containing directory is an entry.
@@ -64,7 +67,11 @@ def _remove_redundant_entries(entries):
 
 
 def _is_wanted(parm, node):
-    """Some parameters should not be be evaluated for dependencies."""
+    """Some parameters should not be be evaluated for dependencies.
+
+    Currently we ignore parms on other job or submitter
+    nodes. We also ignore the output directory.
+    """
     other_node = parm.node()
     if not (types.is_job_node(other_node) or
             types.is_submitter_node(other_node)):
@@ -73,7 +80,8 @@ def _is_wanted(parm, node):
     # If it is not this node we can ignore it
     if other_node != node:
         return False
-    # at this stage we know the other node is this node
+    # now we know the other node is this node.
+    # We want it, unless its the output directory
     return parm.name() != "output_directory"
 
 
@@ -94,7 +102,7 @@ def _ref_parms(node):
     return result
 
 
-def fetch(node, sequence):
+def fetcho(node, sequence):
     """Finds all file dependencies in the project.
 
     The results contain files and directories that exist and
@@ -107,6 +115,7 @@ def fetch(node, sequence):
     result = set()
 
     for frame in sequence:
+        # print "Dep Scan FRAME: %d" % frame
         for parm in parms:
             path = PARAMETERISED_RE.sub(
                 '*', os.path.abspath(parm.evalAtFrame(frame)))
@@ -116,5 +125,84 @@ def fetch(node, sequence):
                     result.add(found)
 
     result = _remove_redundant_entries(result)
+
+    return result
+
+# 3 NEW IMPLEMENTATION BELOW
+
+
+def _flagged_parm(parm, samples):
+    """Add flags to the parm so we know how to process it.
+
+    Heuristics to determine if parm value varies over time or
+    needs globbing.
+    """
+
+    result = {"parm": parm, "varying": False, "needs_glob": False}
+
+    # first find out if it has some value and if it varies over time
+    val = parm.evalAtFrame(samples.start)
+    if not val:
+        return
+
+    raw = parm.unexpandedString()
+    if val != raw:
+        # it can be expanded so so it may be varying over time. 
+        # Compare some sample frames.
+        for i in samples:
+            nextval = parm.evalAtFrame(i)
+            if val != nextval:
+                result["varying"] = True
+                break
+            val = nextval
+
+    # now find out if it needs globbing
+    if PARAMETERISED_RE.search(val):
+        result["needs_glob"] = True
+    return result
+
+
+def _get_files(parm, sequence):
+    files = []
+    if parm["varying"] and parm["needs_glob"]:
+        for frame in sequence:
+            val = parm["parm"].evalAtFrame(frame)
+            val = val.replace("<udim>", "*")
+            files += glob.glob(val)
+        return files
+
+    if parm["varying"]:
+        for frame in sequence:
+            fn = parm["parm"].evalAtFrame(frame)
+            if _exists(fn):
+                files.append(fn)
+        return files
+
+    if parm["needs_glob"]:
+        val = parm["parm"].eval()
+        files += glob.glob(val)
+        return files
+
+    fn = parm["parm"].eval()
+    if _exists(fn):
+        return [fn]
+
+
+def fetch(node, sequence):
+
+    result = set()
+    subsequence = sequence.subsample(3)
+    file_refs_parms = _ref_parms(node)
+    parms = [_flagged_parm(p, subsequence) for p in file_refs_parms]
+
+    for parm in parms:
+        if parm:
+            files = _get_files(parm, sequence)
+            if files:
+                for f in files:
+                    result.add(f)
+ 
+    result = _remove_redundant_entries(result)
+ 
 
     return result
