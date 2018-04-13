@@ -256,7 +256,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             environment.update({"OCIO": ocio_config})
 
         # If the user has selected rendeman for maya, make sure to disable pathhelper
-        if "renderman-maya" in [p["product"] for p in self.getJobPackages()]:
+        if "renderman-maya" in (p["product"] for p in self.getJobPackages()):
             logger.debug("Renderman detected.  Setting CONDUCTOR_PATHHELPER to 0")
             environment.update({"CONDUCTOR_PATHHELPER": "0"})
 
