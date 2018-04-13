@@ -157,6 +157,7 @@ class HttpBatchWorker(worker.ThreadWorker):
 
     def make_request(self, job):
         uri_path = '/api/files/get_upload_urls'
+        params = {"memcached": True}
         headers = {'Content-Type': 'application/json'}
         data = {"upload_files": job,
                 "project": self.project}
@@ -164,6 +165,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         response_str, response_code = self.api_client.make_request(uri_path=uri_path,
                                                                    verb='POST',
                                                                    headers=headers,
+                                                                   params=params,
                                                                    data=json.dumps(data),
                                                                    raise_on_error=True,
                                                                    use_api_key=True)
