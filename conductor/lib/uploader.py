@@ -33,6 +33,7 @@ class MD5Worker(worker.ThreadWorker):
         logger.debug('job is %s', job)
         filename, submission_time_md5 = job
         assert isinstance(filename, (str, unicode)), "Filepath not of expected type. Got %s" % type(filename)
+
         filename = str(filename)
         current_md5 = self.get_md5(filename)
         # if a submission time md5 was provided then check against it
@@ -74,7 +75,6 @@ class MD5Worker(worker.ThreadWorker):
         logger.debug("Using md5 cache for file: %s", filepath)
         return file_cache["md5"]
 
-
     def cache_file_info(self, file_info):
         '''
         Store the given file_info into the database
@@ -84,12 +84,12 @@ class MD5Worker(worker.ThreadWorker):
                                    thread_safe=True)
 
 
-
 class MD5OutputWorker(worker.ThreadWorker):
     '''
     This worker will batch the computed md5's into self.batch_size chunks.
     It will send a partial batch after waiting self.wait_time seconds
     '''
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.batch_size = 20  # the controlls the batch size for http get_signed_urls
@@ -149,6 +149,7 @@ class HttpBatchWorker(worker.ThreadWorker):
 
     Each item in the return list is added to the out_queue.
     '''
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.api_client = api_client.ApiClient()
@@ -156,7 +157,7 @@ class HttpBatchWorker(worker.ThreadWorker):
 
     def make_request(self, job):
         uri_path = '/api/files/get_upload_urls'
-        headers = {'Content-Type':'application/json'}
+        headers = {'Content-Type': 'application/json'}
         data = {"upload_files": job,
                 "project": self.project}
 
@@ -191,7 +192,10 @@ The bytes_to_upload arg is used to hold the aggregated size of all files that ne
 to be uploaded. Note: This is stored as an [int] in order to pass it by
 reference, as it needs to be accessed and reset by the caller.
 '''
+
+
 class FileStatWorker(worker.ThreadWorker):
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
 
@@ -224,6 +228,7 @@ class UploadWorker(worker.ThreadWorker):
     This worker receives a (filepath: signed_upload_url) pair and performs an upload
     of the specified file to the provided url.
     '''
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.chunk_size = 1048576  # 1M
@@ -256,9 +261,6 @@ class UploadWorker(worker.ThreadWorker):
             error_message += "expected md5 is %s, real md5 is %s" % (md5, real_md5)
             logger.error(error_message)
             raise
-
-
-
 
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def do_upload(self, upload_url, filename, md5):
@@ -327,7 +329,7 @@ class Uploader(object):
     def report_status(self):
         logger.debug('started report_status thread')
         update_interval = 5
-        while True:
+        while self.working:
 
             # don't report status if we are doing a local_upload
             if not self.upload_id:
@@ -401,12 +403,11 @@ class Uploader(object):
     @staticmethod
     def convert_time_to_string(time_remaining):
         if time_remaining > 3600:
-            return str(round(time_remaining / float(3600) , 1)) + ' hours'
+            return str(round(time_remaining / float(3600), 1)) + ' hours'
         elif time_remaining > 60:
-            return str(round(time_remaining / float(60) , 1)) + ' minutes'
+            return str(round(time_remaining / float(60), 1)) + ' minutes'
         else:
             return str(round(time_remaining, 1)) + ' seconds'
-
 
     def upload_status_text(self):
         num_files_to_upload = self.manager.metric_store.get('num_files_to_upload')
@@ -429,7 +430,6 @@ class Uploader(object):
             transfer_rate = bytes_uploaded / elapsed_time
         else:
             transfer_rate = 0
-
 
         unformatted_text = '''
 ################################################################################
@@ -467,7 +467,6 @@ class Uploader(object):
 
         return formatted_text
 
-
     def print_status(self):
         logger.debug('starting print_status thread')
         update_interval = 3
@@ -475,15 +474,13 @@ class Uploader(object):
         def sleep():
             time.sleep(update_interval)
 
-        while True:
-            if self.working:
-                try:
-                    logger.info(self.manager.worker_queue_status_text())
-                    logger.info(self.upload_status_text())
-                except Exception, e:
-                    print e
-                    print traceback.format_exc()
-                    # pass
+        while self.working:
+            try:
+                logger.info(self.manager.worker_queue_status_text())
+                logger.info(self.upload_status_text())
+            except Exception, e:
+                print e
+                print traceback.format_exc()
             sleep()
 
     def create_print_status_thread(self):
@@ -496,16 +493,15 @@ class Uploader(object):
         # start thread
         thd.start()
 
-
     def mark_upload_finished(self, upload_id, upload_files):
 
-        data = {'upload_id':upload_id,
+        data = {'upload_id': upload_id,
                 'status': 'server_pending',
                 'upload_files': upload_files}
 
         self.api_client.make_request('/uploads/%s/finish' % upload_id,
-                                                           data=json.dumps(data),
-                                                           verb='POST', use_api_key=True)
+                                     data=json.dumps(data),
+                                     verb='POST', use_api_key=True)
         return True
 
     def mark_upload_failed(self, error_message, upload_id):
@@ -513,8 +509,8 @@ class Uploader(object):
 
         # report error_message to the app
         self.api_client.make_request('/uploads/%s/fail' % upload_id,
-                                                        data=error_message,
-                                                        verb='POST', use_api_key=True)
+                                     data=error_message,
+                                     verb='POST', use_api_key=True)
 
         return True
 
@@ -535,6 +531,7 @@ class Uploader(object):
             logger.info('upload_id is %s', upload_id)
             logger.info('upload_files %s:(truncated)\n\t%s',
                         len(upload_files), "\n\t".join(upload_files.keys()[:5]))
+
 
             # reset counters
             self.num_files_to_process = len(upload_files)
@@ -582,7 +579,6 @@ class Uploader(object):
 
         except:
             return traceback.format_exc()
-
 
     def main(self, run_one_loop=False):
         logger.info('Uploader Started. Checking for uploads...')
@@ -637,7 +633,6 @@ class Uploader(object):
 
         logger.info('exiting uploader')
 
-
     def return_md5s(self):
         '''
         Return a dictionary of the filepaths and their md5s that were generated
@@ -654,6 +649,7 @@ def set_logging(level=None, log_dirpath=None):
                                      console_formatter=LOG_FORMATTER,
                                      file_formatter=LOG_FORMATTER,
                                      log_filepath=log_filepath)
+
 
 def run_uploader(args):
     '''
@@ -691,6 +687,7 @@ def get_file_info(filepath):
             "modtime": modtime,
             "size": stat.st_size}
 
+
 def resolve_args(args):
     '''
     Resolve all arguments, reconsiling differences between command line args
@@ -701,7 +698,6 @@ def resolve_args(args):
     args["location"] = resolve_arg("location", args, CONFIG)
 
     return args
-
 
 
 def resolve_arg(arg_name, args, config):
@@ -797,11 +793,3 @@ def resolve_arg(arg_name, args, config):
 #
 #     logger.debug("Complete")
 #     return md5s
-
-
-
-
-
-
-
-
