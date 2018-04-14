@@ -12,8 +12,8 @@ import re
 import hou
 from conductor.houdini.hda import types
 
-# PARAMETERISED_RE = re.compile(r"<udim>|\$SF")
-PARAMETERISED_RE = re.compile(r"<udim>")
+
+GLOB_PATTERNS = ["<udim>"]
 
 
 def _file_exists(filename):
@@ -37,8 +37,10 @@ def _directory_exists(directory):
     except hou.OperationFailed:
         return False
 
+
 def _exists(fn):
     return _file_exists(fn) or _directory_exists(fn)
+
 
 def _remove_redundant_entries(entries):
     """Remove file entries where containing directory is an entry.
@@ -101,41 +103,13 @@ def _ref_parms(node):
             result.append(parm)
     return result
 
-
-def fetcho(node, sequence):
-    """Finds all file dependencies in the project.
-
-    The results contain files and directories that exist and
-    are referenced at some frame in the given frame range.
-    Entries will not be included if a containing directory
-    is present.
-    """
-
-    parms = _ref_parms(node)
-    result = set()
-
-    for frame in sequence:
-        # print "Dep Scan FRAME: %d" % frame
-        for parm in parms:
-            path = PARAMETERISED_RE.sub(
-                '*', os.path.abspath(parm.evalAtFrame(frame)))
-            for found in glob.glob(path):
-                if found not in result and _file_exists(
-                        found) or _directory_exists(found):
-                    result.add(found)
-
-    result = _remove_redundant_entries(result)
-
-    return result
-
-# 3 NEW IMPLEMENTATION BELOW
-
+ 
 
 def _flagged_parm(parm, samples):
     """Add flags to the parm so we know how to process it.
 
-    Heuristics to determine if parm value varies over time or
-    needs globbing.
+    Heuristics to determine if parm value varies over time
+    or needs globbing.
     """
 
     result = {"parm": parm, "varying": False, "needs_glob": False}
@@ -147,7 +121,7 @@ def _flagged_parm(parm, samples):
 
     raw = parm.unexpandedString()
     if val != raw:
-        # it can be expanded so so it may be varying over time. 
+        # it can be expanded so it may be varying over time.
         # Compare some sample frames.
         for i in samples:
             nextval = parm.evalAtFrame(i)
@@ -157,17 +131,29 @@ def _flagged_parm(parm, samples):
             val = nextval
 
     # now find out if it needs globbing
-    if PARAMETERISED_RE.search(val):
-        result["needs_glob"] = True
+    result["needs_glob"] = any(
+        pattern in val for pattern in GLOB_PATTERNS)
     return result
 
 
+def _make_globbable(filename):
+    for pattern in GLOB_PATTERNS:
+        filename = filename.replace(pattern, "*")
+    return filename
+
+
 def _get_files(parm, sequence):
+    """Resolve filenames from parms.
+
+    We have previously run some heuristic _flagged_parm and
+    marked each parm to know whether it needs to be globbed
+    or if it varies over time.
+    """
     files = []
     if parm["varying"] and parm["needs_glob"]:
         for frame in sequence:
             val = parm["parm"].evalAtFrame(frame)
-            val = val.replace("<udim>", "*")
+            val = _make_globbable(val)
             files += glob.glob(val)
         return files
 
@@ -180,6 +166,7 @@ def _get_files(parm, sequence):
 
     if parm["needs_glob"]:
         val = parm["parm"].eval()
+        val = _make_globbable(val)
         files += glob.glob(val)
         return files
 
@@ -201,8 +188,7 @@ def fetch(node, sequence):
             if files:
                 for f in files:
                     result.add(f)
- 
+
     result = _remove_redundant_entries(result)
- 
 
     return result

@@ -9,7 +9,6 @@ if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
 
-
 class InitEnvTest(unittest.TestCase):
 
     def test_init_empty_env(self):

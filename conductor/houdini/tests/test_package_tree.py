@@ -12,7 +12,6 @@ if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
 
-
 class RemoveUnreachableTest(unittest.TestCase):
 
     def test_single_valid_tree_unchanged(self):
