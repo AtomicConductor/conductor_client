@@ -15,12 +15,18 @@ HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if HDA_MODULE not in sys.path:
     sys.path.insert(0, HDA_MODULE)
 
-# use a mocked hou
+# use a mocked hou and glob
 sys.modules['hou'] = __import__(
     'conductor.houdini.lib.mocks.hou', fromlist=['dummy'])
 
+sys.modules['glob'] = __import__(
+    'conductor.houdini.lib.mocks.glob', fromlist=['dummy'])
+
+
 # import hou and dependency_scan after mocking houdini
 import hou
+import glob
+
 from conductor.houdini.hda import dependency_scan
 
 json_file = os.path.join(
@@ -32,6 +38,7 @@ json_file = os.path.join(
 with open(json_file, 'r') as content:
     data = json.loads(content.read())
     hou.initialize(data)
+    glob.initialize(data)
 
 
 class DependencyScanTest(TestCase):
@@ -88,6 +95,43 @@ class DependencyScanTest(TestCase):
         self.assertIn("/path/to/shader5/tex.0097.jpg", result)
         self.assertIn("/path/to/shader5/tex.0097.jpg.BAK.final", result)
 
+    def test_find_files_with_udims(self):
+        result = [
+            f for f in dependency_scan.fetch(
+                self.node, self.seq) if f.startswith("/path/to/shader6")]
+        self.assertIn("/path/to/shader6/tex_01_03.0010.jpg", result)
+        self.assertEqual(len(result), 90)
+
+    def test_find_sequence_with_us_and_vs(self):
+        result = [
+            f for f in dependency_scan.fetch(
+                self.node,
+                self.seq) if f.startswith("/path/to/shader6")]
+        self.assertIn("/path/to/shader6/tex_01_03.0010.jpg", result)
+        self.assertEqual(len(result), 90)
+
+    def test_dont_find_files_outside_sequence_with_Us_and_Vs(self):
+        result = [
+            f for f in dependency_scan.fetch(
+                self.node,
+                self.seq) if f.startswith("/path/to/shader6")]
+        self.assertNotIn("/path/to/shader6/tex_01_03.0011.jpg", result)
+
+
+def suite():
+    """Convenient way to run subset of tests.
+
+    To run one test, use the second addTest statement and
+    enter the name of test to run
+    """
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(DependencyScanTest))
+    # suite.addTest(DependencyScanTest(
+    #    "test_dont_find_files_outside_sequence_with_Us_and_Vs"))
+    return suite
+
 
 if __name__ == '__main__':
-    unittest.main()
+    # unittest.main()
+    runner = unittest.TextTestRunner()
+    runner.run(suite())

@@ -333,31 +333,36 @@ class ProgressionsTest(unittest.TestCase):
         self.assertEqual(len(result), 5)
 
 
-class FormatTest(unittest.TestCase):
+class PermutationsTest(unittest.TestCase):
 
-    def test_one_substitution_in_filename(self):
-        s = Sequence.create("1-10")
-        result = s.format("foo/fn.%d.jpg")
-        self.assertIn("foo/fn.1.jpg", result)
-        self.assertIn("foo/fn.10.jpg", result)
+    def test_one_substitution(self):
 
-    def test_many_substitution_in_filename(self):
-        s = Sequence.create("1-10")
-        result = s.format("foo/%02d/fn.%04d.jpg")
-        self.assertIn("foo/01/fn.0001.jpg", result)
-        self.assertIn("foo/10/fn.0010.jpg", result)
+        template = "image.%(frame)04d.tif"
+        result = list(Sequence.permutations(template, frame="0-20x2"))
+        self.assertIn("image.0008.tif", result)
+        self.assertIn("image.0012.tif", result)
+        self.assertEqual(len(result), 11)
 
-    def test_many_substitution_including_escaped_percent(self):
-        s = Sequence.create("1-10")
-        result = s.format("%%_foo/%02d/fn.%04d.jpg")
-        self.assertIn("%_foo/01/fn.0001.jpg", result)
-        self.assertIn("%_foo/10/fn.0010.jpg", result)
+    def test_two_the_same_substitution(self):
 
-    def test_no_substitution(self):
-        s = Sequence.create("1-10")
-        fn = "foo/fn.jpg"
-        result = s.format(fn)
-        self.assertIn(fn, result)
+        template = "/path/%(frame)d/image.%(frame)04d.tif"
+        result = list(Sequence.permutations(template, frame="0-20x2"))
+        self.assertIn("/path/8/image.0008.tif", result)
+        self.assertIn("/path/12/image.0012.tif", result)
+        self.assertEqual(len(result), 11)
+
+    def test_2x2x2_substitutions(self):
+        template = "image_%(uval)02d_%(vval)02d.%(frame)04d.tif"
+        kw = {
+            "uval": "1-2",
+            "vval": "1-2",
+            "frame": "10-11"
+        }
+        result = list(Sequence.permutations(template, **kw))
+        self.assertIn("image_01_01.0010.tif", result)
+        self.assertIn("image_02_02.0011.tif", result)
+        self.assertIn("image_02_01.0010.tif", result)
+        self.assertEqual(len(result), 8)
 
 
 class SubsampleTest(unittest.TestCase):

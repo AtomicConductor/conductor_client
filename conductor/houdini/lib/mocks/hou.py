@@ -133,8 +133,15 @@ def findDirectory(path):
 
 
 def initialize(data):
+    """Generate nodes, types, and files from fixture data."""
+    global NODES
+    global NODE_TYPES
+    global FILES
+    global GVARS
 
-    type_names = list(set([n["type"] for n in data["nodes"] if n.get("type")]))
+    GVARS.update(data["gvars"])
+
+    type_names = list(set([n["type"] for n in data["nodes"]]))
     for t in type_names:
         NODE_TYPES[t] = NodeType(t)
 
@@ -142,11 +149,8 @@ def initialize(data):
         NODES[item["name"]] = Node(item)
 
     for item in data["files"]:
-        if item.get("frames"):
-            seq = Sequence.create(item.get("frames"))
-            for fn in seq.format(item["path"]):
+        if item.get("params"):
+            for fn in Sequence.permutations(item["path"], **item["params"]):
                 FILES.append({"path": fn, "type": item["type"]})
         else:
             FILES.append(item)
-
-    GVARS.update(data["gvars"])
