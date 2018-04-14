@@ -1,6 +1,7 @@
 
 import math
 import re
+import itertools
 
 NUMBER_RE = re.compile(r"^(\d+)$")
 RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
@@ -66,7 +67,14 @@ def _to_frames(arg):
 
 
 class Sequence(object):
-    """Collection of frames with the ability to generate chunks."""
+    """A collection of frames with the ability to generate chunks."""
+
+    @staticmethod
+    def permutations(template, **kw):
+        for vals in itertools.product(
+                *(iter(Sequence.create(spec)) for spec in kw.values())):
+            subs = dict(zip(kw, vals))
+            yield template % subs
 
     @staticmethod
     def is_valid_spec(spec):
@@ -272,32 +280,6 @@ class Sequence(object):
     def chunk_strategy(self, value):
         """Set strategy for emitting chunks."""
         self._chunk_strategy = value
-
-    def format(self, template):
-        """Insert each frame number in a template.
-
-        For example if format string is "foo/%02d/fn.%04d.ass"
-        Then the result array will contain:
-        "foo/01/fn.0001.ass"
-        "foo/02/fn.0002.ass"
-        and so on.
-
-        parameterize_template_regex.sub will replace a single
-        % with %(frame). The reason is to support multiple
-        substitutions easily. If the %s are parameterized in
-        this way , then we only need to pass a dict pointing
-        to the frame number. To use sub with a non-
-        parameterized regex we would have to provide the exact
-        same number of copies of of the frame number (in a tuple)
-        as there are % substitutions. The regex itself uses
-        both negative look behind and negative look ahead to
-        make sure we don't paramtereize a double: %%.
-        """
-
-        parameterize_template_regex = re.compile(r"(?<!%)%(?!%)")
-        template = parameterize_template_regex.sub("%(frame)", template)
-        for i in self._iterable:
-            yield template % {"frame": i}
 
     def __iter__(self):
         return iter(self._iterable)
