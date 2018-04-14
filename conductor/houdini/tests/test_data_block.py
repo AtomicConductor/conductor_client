@@ -1,8 +1,6 @@
 import unittest
-import json
 import sys
 import os
-import random
 
 import mock
 
@@ -18,7 +16,7 @@ sys.modules['conductor.lib.api_client'] = __import__(
 
 from conductor.houdini.lib import data_block as db
 from conductor.houdini.lib.mocks.api_client_mock import ApiClient
-from conductor.houdini.lib.software_data import PackageTree
+from conductor.houdini.lib.package_tree import PackageTree
 
 
 class InstantiationTest(unittest.TestCase):
@@ -60,6 +58,7 @@ class FactoryTest(unittest.TestCase):
         self.assertIsInstance(d, db.ConductorDataBlock)
 
     klass = 'conductor.houdini.lib.data_block.ConductorDataBlock'
+
     @mock.patch(klass, autospec=True)
     def test_houdini_factory_calls_constructor(
             self, mock_data_block):
