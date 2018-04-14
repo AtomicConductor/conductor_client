@@ -12,8 +12,7 @@ import re
 import hou
 from conductor.houdini.hda import types
 
-
-GLOB_PATTERNS = ["<udim>"]
+PARAMETERISED_RE = re.compile(r"<udim>|<u>|<v>|<U>|<V>|<u2>|<v2>|<U2>|<V2>")
 
 
 def _file_exists(filename):
@@ -103,7 +102,6 @@ def _ref_parms(node):
             result.append(parm)
     return result
 
- 
 
 def _flagged_parm(parm, samples):
     """Add flags to the parm so we know how to process it.
@@ -131,15 +129,8 @@ def _flagged_parm(parm, samples):
             val = nextval
 
     # now find out if it needs globbing
-    result["needs_glob"] = any(
-        pattern in val for pattern in GLOB_PATTERNS)
+    result["needs_glob"] = bool(PARAMETERISED_RE.search(val))
     return result
-
-
-def _make_globbable(filename):
-    for pattern in GLOB_PATTERNS:
-        filename = filename.replace(pattern, "*")
-    return filename
 
 
 def _get_files(parm, sequence):
@@ -153,7 +144,7 @@ def _get_files(parm, sequence):
     if parm["varying"] and parm["needs_glob"]:
         for frame in sequence:
             val = parm["parm"].evalAtFrame(frame)
-            val = _make_globbable(val)
+            val = PARAMETERISED_RE.sub('*', val)
             files += glob.glob(val)
         return files
 
@@ -166,7 +157,7 @@ def _get_files(parm, sequence):
 
     if parm["needs_glob"]:
         val = parm["parm"].eval()
-        val = _make_globbable(val)
+        val = PARAMETERISED_RE.sub('*', val)
         files += glob.glob(val)
         return files
 
