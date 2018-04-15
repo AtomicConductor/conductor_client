@@ -10,7 +10,6 @@ See tests in /tests/test_package_tree.py for additional usage info.
 import copy
 import json
 
-from conductor import CONFIG
 from conductor.houdini.lib.package_environment import PackageEnvironment
 
 
@@ -272,9 +271,7 @@ class PackageTree(object):
 
     def get_environment(self, paths):
         """Get merged environment from paths."""
-
-        config_environment = CONFIG.get("environment") or {}
-        package_env = PackageEnvironment(config_environment)
+        package_env = PackageEnvironment()
         for path in paths:
             package = _find_by_path(self._tree, path)
             if package:

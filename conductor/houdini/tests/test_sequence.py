@@ -351,7 +351,7 @@ class PermutationsTest(unittest.TestCase):
         self.assertIn("/path/12/image.0012.tif", result)
         self.assertEqual(len(result), 11)
 
-    def test_2x2x2_substitutions(self):
+    def test_three_substitutions(self):
         template = "image_%(uval)02d_%(vval)02d.%(frame)04d.tif"
         kw = {
             "uval": "1-2",
@@ -363,7 +363,7 @@ class PermutationsTest(unittest.TestCase):
         self.assertIn("image_02_02.0011.tif", result)
         self.assertIn("image_02_01.0010.tif", result)
         self.assertEqual(len(result), 8)
-
+        
 
 class SubsampleTest(unittest.TestCase):
 
