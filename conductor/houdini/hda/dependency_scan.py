@@ -1,6 +1,6 @@
 """Get a list of all files that are needed to run a job.
 
-Attributes:     PARAMETERISED_RE (Regex): Find <udim> or $SF
+Attributes:     UDIM_RE (Regex): Find <udim> and related
 tokens in filenames so they can be globbed.
 
 fetch: get a list of dependencies required for the submission.
@@ -12,7 +12,7 @@ import re
 import hou
 from conductor.houdini.hda import types
 
-PARAMETERISED_RE = re.compile(r"<udim>|<u>|<v>|<U>|<V>|<u2>|<v2>|<U2>|<V2>")
+UDIM_RE = re.compile(r"<udim>|<u>|<v>|<U>|<V>|<u2>|<v2>|<U2>|<V2>")
 
 
 def _file_exists(filename):
@@ -103,33 +103,40 @@ def _ref_parms(node):
     return result
 
 
-def _flagged_parm(parm, samples):
+def _flagged_parm(parm, subsequence):
     """Add flags to the parm so we know how to process it.
 
     Heuristics to determine if parm value varies over time
-    or needs globbing.
+    and/or needs globbing.
+
+    If subsequence is none, that means we are not optimizing
+    by sampling. We just set the flag to varying, which means
+    we will evaluate every frame.
     """
 
     result = {"parm": parm, "varying": False, "needs_glob": False}
 
-    # first find out if it has some value and if it varies over time
-    val = parm.evalAtFrame(samples.start)
-    if not val:
-        return
+    if subsequence:
+        # first find out if it has some value and if it varies over time
+        val = parm.evalAtFrame(subsequence.start)
+        if not val:
+            return
 
-    raw = parm.unexpandedString()
-    if val != raw:
-        # it can be expanded so it may be varying over time.
-        # Compare some sample frames.
-        for i in samples:
-            nextval = parm.evalAtFrame(i)
-            if val != nextval:
-                result["varying"] = True
-                break
-            val = nextval
+        raw = parm.unexpandedString()
+        if val != raw:
+            # It can be expanded so it may be varying over time.
+            # Therefore, compare some sample frames.
+            for i in subsequence:
+                nextval = parm.evalAtFrame(i)
+                if val != nextval:
+                    result["varying"] = True
+                    break
+                val = nextval
+    else:
+        result["varying"] = True
 
-    # now find out if it needs globbing
-    result["needs_glob"] = bool(PARAMETERISED_RE.search(val))
+    # It needs globbing if there are udim tokens
+    result["needs_glob"] = bool(UDIM_RE.search(parm.eval()))
     return result
 
 
@@ -144,7 +151,7 @@ def _get_files(parm, sequence):
     if parm["varying"] and parm["needs_glob"]:
         for frame in sequence:
             val = parm["parm"].evalAtFrame(frame)
-            val = PARAMETERISED_RE.sub('*', val)
+            val = UDIM_RE.sub('*', val)
             files += glob.glob(val)
         return files
 
@@ -157,7 +164,7 @@ def _get_files(parm, sequence):
 
     if parm["needs_glob"]:
         val = parm["parm"].eval()
-        val = PARAMETERISED_RE.sub('*', val)
+        val = UDIM_RE.sub('*', val)
         files += glob.glob(val)
         return files
 
@@ -169,8 +176,12 @@ def _get_files(parm, sequence):
 def fetch(node, sequence):
 
     result = set()
-    subsequence = sequence.subsample(3)
     file_refs_parms = _ref_parms(node)
+
+    do_samples = node.parm("pre_sample_animation").eval()
+    samples = node.parm("animation_samples").eval()
+    subsequence = do_samples and sequence.subsample(samples)
+
     parms = [_flagged_parm(p, subsequence) for p in file_refs_parms]
 
     for parm in parms:
