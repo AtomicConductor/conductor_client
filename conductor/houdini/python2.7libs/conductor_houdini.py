@@ -12,7 +12,6 @@ as well as populating menus, initializing state and so on.
 
 Attributes:
     ACTIONS (dict): Mapping of parm_names to callbacks they trigger.
-    AUX_BUTTON_ACTIONS (dict): Mapping of auxilary buttons to callbacks
     MENUS (dict): Mapping of callbacks to populate menus dynamically
 """
 
@@ -22,7 +21,7 @@ import hou
 from conductor.houdini.hda import (action_row_ui, driver_ui, frame_spec_ui,
                                    instances_ui, job_source_ui,
                                    notifications_ui, projects_ui, software_ui,
-                                   takes, types, uistate)
+                                   submitter_ui, takes, types, uistate)
 from conductor.houdini.lib import data_block
 
 
@@ -85,10 +84,18 @@ def _update_job_node(node, **_):
         uistate.update_button_state(node)
 
 
-def _initialize_job_node(node, **_):
+def _on_create_job_node(node, **_):
     """On creation only, set some defaults in software UI."""
     with takes.take_context(hou.takes.rootTake()):
-        software_ui.initialize(node)
+        instances_ui.on_create(node)
+        software_ui.on_create(node)
+        submitter_ui.on_create(node)
+
+def _on_create_submitter_node(node, **_):
+    """On creation only, set some defaults in software UI."""
+    with takes.take_context(hou.takes.rootTake()):
+        submitter_ui.on_create(node)
+
 
 
 MENUS = dict(
@@ -198,7 +205,9 @@ def _on_created_or_loaded(node):
 def _on_created(node):
     """Update things when a node is created only."""
     if types.is_job_node(node):
-        _initialize_job_node(node)
+        _on_create_job_node(node)
+    else:
+        _on_create_submitter_node(node)
 
 
 def on_created_callback(node, **_):

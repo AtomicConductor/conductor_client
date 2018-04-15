@@ -1,5 +1,7 @@
 """Manage instance_type menu."""
 
+from conductor.lib import common
+
 from conductor.houdini.lib import data_block
 
 
@@ -26,3 +28,18 @@ def populate_menu(node):
         node.parm('machine_type').set(_to_menu_item(instance_types[0])[0])
 
     return [k for i in instance_types for k in _to_menu_item(i)]
+
+
+def on_create(node):
+    """Set up preemptible and retries from config."""
+    cfg = common.Config().get_user_config()
+    retries = cfg.get(
+        'autoretry_policy',
+        {}).get(
+        "preempted",
+        {}).get("max_retries")
+    if retries:
+        node.parm('preemptible').set(1)
+        node.parm('retries').set(retries)
+    else:
+        node.parm('preemptible').set(0)

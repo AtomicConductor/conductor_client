@@ -175,11 +175,10 @@ def fetch(node, sequence):
 
     for parm in parms:
         if parm:
-            files = _get_files(parm, sequence)
-            if files:
-                for f in files:
-                    result.add(f)
+            files = _get_files(parm, sequence) or []
+            for f in files:
+                result.add(os.path.normpath(f))
 
     result = _remove_redundant_entries(result)
 
-    return result
+    return sorted(result)

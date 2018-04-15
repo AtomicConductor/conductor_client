@@ -121,6 +121,16 @@
           "value": "/path/to/shader6/tex_<U>_<V>.$F4.jpg"
         }
       ]
+    },
+    {
+      "name": "shader7",
+      "type": "shader",
+      "parms": [
+        {
+          "name": "texture_file_1",
+          "value": "/path/to/shader7/tex_<udim>.$F4.jpg"
+        }
+      ]
     }
   ],
   "gvars": {
@@ -181,6 +191,14 @@
       "params": {
         "uval": "1-3",
         "vval": "1-3",
+        "frame": "1-20"
+      },
+      "type": "f"
+    },
+    {
+      "path": "/path/to/shader7/tex_%(udim)04d.%(frame)04d.jpg",
+      "params": {
+        "udim": "1001-1010",
         "frame": "1-20"
       },
       "type": "f"
