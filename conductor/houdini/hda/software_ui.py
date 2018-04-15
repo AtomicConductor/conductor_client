@@ -14,6 +14,9 @@ Attributes:
 """
 
 import hou
+
+from conductor.lib import common
+
 from conductor.houdini.hda import houdini_info
 from conductor.houdini.lib import data_block
 from conductor.houdini.lib import package_tree as ptree
@@ -171,6 +174,29 @@ def detect(node, **_):
     paths = ptree.remove_unreachable(paths)
     _add_package_entries(node, paths)
 
+def _addEnvEntry(node, **kw):
+    num = node.parm("environment_kv_pairs").eval()
+    i = num+1
+    node.parm("environment_kv_pairs").set(i)
+    for key in kw:
+        node.parm( "env_key_%d" % i).set(key)
+        node.parm("env_value_%d" % i).set(kw[key])
 
-def initialize(node):
+def _addPathEntry(node, path):
+    num = node.parm("extra_upload_paths").eval()
+    i = num+1
+    node.parm("extra_upload_paths").set(i)
+    node.parm( "upload_%d" % i).set(path)
+
+def on_create(node):
+    cfg = common.Config().get_user_config()
+    environment = cfg.get('environment', {})
+    for key in environment:
+        for value in environment[key].split(":"):
+            _addEnvEntry(node, **{key:value})
+
+    upload_paths = cfg.get('upload_paths', [])
+    for path in upload_paths:
+        _addPathEntry(node, path)
+
     detect(node)

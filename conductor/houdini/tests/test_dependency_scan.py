@@ -110,6 +110,14 @@ class DependencyScanTest(TestCase):
         self.assertIn("/path/to/shader6/tex_01_03.0010.jpg", result)
         self.assertEqual(len(result), 90)
 
+    def test_find_sequence_with_udim(self):
+        result = [
+            f for f in dependency_scan.fetch(
+                self.node,
+                self.seq) if f.startswith("/path/to/shader7")]
+        self.assertIn("/path/to/shader7/tex_1010.0005.jpg", result)
+        self.assertEqual(len(result), 100)
+ 
     def test_dont_find_files_outside_sequence_with_Us_and_Vs(self):
         result = [
             f for f in dependency_scan.fetch(
@@ -132,6 +140,5 @@ def suite():
 
 
 if __name__ == '__main__':
-    # unittest.main()
     runner = unittest.TextTestRunner()
     runner.run(suite())
