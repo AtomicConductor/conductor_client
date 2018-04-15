@@ -15,6 +15,8 @@ class SubmissionDryRun(QtWidgets.QWidget):
         self._text_area = QtWidgets.QTextEdit()
         self._text_area.setReadOnly(True)
         self._text_area.setWordWrapMode(QtGui.QTextOption.NoWrap)
+
+
         hbox.addWidget(self._text_area)
         self.setLayout(hbox)
 

@@ -24,8 +24,9 @@ class SubmissionTree(QtWidgets.QWidget):
         """Set up the UI for a tree view."""
         QtWidgets.QWidget.__init__(self, parent)
         hbox = QtWidgets.QHBoxLayout()
-
+        hbox.setContentsMargins(0, 0, 0, 0)
         self._view = QtWidgets.QTreeView()
+
         self._view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
 
         self._model = QtGui.QStandardItemModel()
@@ -39,7 +40,7 @@ class SubmissionTree(QtWidgets.QWidget):
         self.setLayout(hbox)
 
     def populate(self, submission):
-        """Put nicely formatted submission information in the tree widget."""
+        """Put formatted submission information in the tree widget."""
         appendRow(self._model, "Submission node:", submission.node_name)
         appendRow(self._model, "Hip file:", submission.filename)
         appendRow(
@@ -135,7 +136,7 @@ class SubmissionTree(QtWidgets.QWidget):
 
             for j, task in enumerate(job.tasks):
                 task_header = appendRow(
-                    task_item, "%s" % str(task.chunk))
+                    task_item, "Task %s" % str(task.chunk))
                 appendRow(task_header, "Command:", task.command)
                 appendRow(task_header, "Frames:", str(task.chunk))
                 task_token_item = appendRow(task_header, "Tokens:")
