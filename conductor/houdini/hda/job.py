@@ -1,5 +1,4 @@
-"""Build an object to represent a Conductor job.
-"""
+"""Build an object to represent a Conductor job."""
 
 import os
 
@@ -77,7 +76,7 @@ class Job(object):
         self._tokens = self._setenv(parent_tokens)
 
         self._title = self._node.parm("job_title").eval()
-        self._output_directory =  self._node.parm('output_directory').eval()
+        self._output_directory = self._node.parm('output_directory').eval()
         self._metadata = self._node.parm("metadata").eval()
 
         task_command = self._node.parm("task_command").unexpandedString()
@@ -89,10 +88,15 @@ class Job(object):
         """Collect dependencies and environment.
 
         Dependency scan needs the sequence so that it scans
-        only the frame range we are using.
+        only the frame range we are using. Also, to
+        determine if a parm even needs scanning for all
+        frames, the user can specify to a few frames.
         """
+        samples = self._node.parm("pre_sample_animation").eval(
+        ) and self._node.parm("animation_samples").eval()
+
         dependencies = dependency_scan.fetch(
-            self._node, self._sequence["main"])
+            self._node, self._sequence["main"], samples)
         dependencies.append(scene_file)
 
         return {
@@ -100,7 +104,6 @@ class Job(object):
             "environment": software_ui.get_environment(self._node),
             "dependencies": dependencies
         }
- 
 
     def _get_instance(self):
         """Get everything related to the instance.
@@ -246,7 +249,7 @@ class Job(object):
             self._source["node"].parm(parm).eval() for parm in [
                 'f1', 'f2', 'f3']
         ]
-        sequence = Sequence.create(start, end,  step)
+        sequence = Sequence.create(start, end, step)
 
         return {
             "main": sequence,

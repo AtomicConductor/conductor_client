@@ -49,8 +49,8 @@ def _remove_redundant_entries(entries):
     the entries first on depth, then a secondary sort on
     name length reversed, we can move through the list
     linearly, testing previously seen directories with
-    startswith() (as opposed to climbing up the path with
-    dirname() in a loop). The secondary sort criteria
+    startswith(), as opposed to climbing up the path with
+    dirname() in a loop. The secondary sort criteria
     ensures that a regular filename that prefixes another,
     will not be seen until the other longer name has been
     tested. Example, /u/fred/myfile.a.b will be tested
@@ -82,7 +82,10 @@ def _is_wanted(parm, node):
     if other_node != node:
         return False
     # now we know the other node is this node.
-    # We want it, unless its the output directory
+    # We want the parm, unless its the output directory,
+    # because the out directory should be automatically
+    # created when by the render process and the local out
+    # directory may already contain a ton of renders.
     return parm.name() != "output_directory"
 
 
@@ -103,21 +106,30 @@ def _ref_parms(node):
     return result
 
 
-def _flagged_parm(parm, subsequence):
+
+
+def _flag_parm(parm, subsequence):
     """Add flags to the parm so we know how to process it.
 
-    Heuristics to determine if parm value varies over time
-    and/or needs globbing.
+    Run heuristics to determine if parm value varies over time
+    and/or needs globbing later in _get_files(). 
 
-    If subsequence is none, that means we are not optimizing
-    by sampling. We just set the flag to varying, which means
-    we will evaluate every frame.
+    Subsequence is a small set of frames at which we evaluate
+    the parm to see if its changing. If subsequence is None,
+    that means we are not optimizing by sampling, and
+    therefore just set the flag to varying, which means we
+    will evaluate every frame.
+
+    If the evaluated parm is empty, then possibly the variable
+    was mal-formed or the field is empty, so we return None.
+    Its important not to return a valid but empty parm
+    because later we may do abspath and that could resolve to
+    the home directory or worse.
     """
 
     result = {"parm": parm, "varying": False, "needs_glob": False}
 
     if subsequence:
-        # first find out if it has some value and if it varies over time
         val = parm.evalAtFrame(subsequence.start)
         if not val:
             return
@@ -135,7 +147,6 @@ def _flagged_parm(parm, subsequence):
     else:
         result["varying"] = True
 
-    # It needs globbing if there are udim tokens
     result["needs_glob"] = bool(UDIM_RE.search(parm.eval()))
     return result
 
@@ -143,7 +154,7 @@ def _flagged_parm(parm, subsequence):
 def _get_files(parm, sequence):
     """Resolve filenames from parms.
 
-    We have previously run some heuristic _flagged_parm and
+    We have previously run some heuristic _flag_parm and
     marked each parm to know whether it needs to be globbed
     or if it varies over time.
     """
@@ -173,16 +184,13 @@ def _get_files(parm, sequence):
         return [fn]
 
 
-def fetch(node, sequence):
+def fetch(node, sequence, samples=None):
 
     result = set()
     file_refs_parms = _ref_parms(node)
+    subsequence = samples and sequence.subsample(samples)
 
-    do_samples = node.parm("pre_sample_animation").eval()
-    samples = node.parm("animation_samples").eval()
-    subsequence = do_samples and sequence.subsample(samples)
-
-    parms = [_flagged_parm(p, subsequence) for p in file_refs_parms]
+    parms = [_flag_parm(p, subsequence) for p in file_refs_parms]
 
     for parm in parms:
         if parm:

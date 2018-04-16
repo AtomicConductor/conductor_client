@@ -48,20 +48,20 @@ class DependencyScanTest(TestCase):
         self.node = hou.node("job1")
 
     def test_include_extra_uploads_in_job(self):
-        result = dependency_scan.fetch(self.node, self.seq)
+        result = dependency_scan.fetch(self.node, self.seq, 3)
         self.assertIn(self.node.parm("upload_1").eval(), result)
 
     def test_exclude_extra_uploads_in_other_jobs(self):
-        result = dependency_scan.fetch(self.node, self.seq)
+        result = dependency_scan.fetch(self.node, self.seq, 3)
         self.assertNotIn(hou.node("job2").parm("upload_1").eval(), result)
 
     def test_include_simple_file_if_exists(self):
-        result = dependency_scan.fetch(self.node, self.seq)
+        result = dependency_scan.fetch(self.node, self.seq, 3)
         fn = hou.node("shader1").parm("texture_file").eval()
         self.assertIn(fn, result)
 
     def test_exclude_simple_file_if_not_exists(self):
-        result = dependency_scan.fetch(self.node, self.seq)
+        result = dependency_scan.fetch(self.node, self.seq, 3)
         fn = hou.node("shader2").parm("texture_file").eval()
         self.assertNotIn(fn, result)
 
@@ -69,7 +69,15 @@ class DependencyScanTest(TestCase):
         result = [
             f for f in dependency_scan.fetch(
                 self.node,
-                self.seq) if f.startswith("/path/to/shader3")]
+                self.seq, 3) if f.startswith("/path/to/shader3")]
+
+        self.assertIn("/path/to/shader3/tex.0010.jpg", result)
+        self.assertEqual(len(result), 10)
+
+    def test_include_sequence_with_no_subsample_optimization(self):
+        result = [
+            f for f in dependency_scan.fetch(
+                self.node, self.seq) if f.startswith("/path/to/shader3")]
 
         self.assertIn("/path/to/shader3/tex.0010.jpg", result)
         self.assertEqual(len(result), 10)
@@ -78,19 +86,19 @@ class DependencyScanTest(TestCase):
         seq = Sequence.create("96-105")
         result = [
             f for f in dependency_scan.fetch(
-                self.node, seq) if f.startswith("/path/to/shader3")]
+                self.node, seq, 3) if f.startswith("/path/to/shader3")]
 
         self.assertIn("/path/to/shader3/tex.0097.jpg", result)
         self.assertEqual(len(result), 5)
 
     def test_remove_file_if_directory_exists(self):
-        result = dependency_scan.fetch(self.node, self.seq)
+        result = dependency_scan.fetch(self.node, self.seq, 3)
         self.assertIn("/path/to/shader4", result)
         self.assertNotIn("/path/to/shader4/tex.0097.jpg", result)
 
     def test_dont_remove_file_if_shorter_name_file_exists(self):
         """This is to ensure _remove_redundant_entries works."""
-        result = dependency_scan.fetch(self.node, self.seq)
+        result = dependency_scan.fetch(self.node, self.seq, 3)
         self.assertIn("/path/to/shader5/tex.0097.jpg.BAK", result)
         self.assertIn("/path/to/shader5/tex.0097.jpg", result)
         self.assertIn("/path/to/shader5/tex.0097.jpg.BAK.final", result)
@@ -98,15 +106,15 @@ class DependencyScanTest(TestCase):
     def test_find_files_with_udims(self):
         result = [
             f for f in dependency_scan.fetch(
-                self.node, self.seq) if f.startswith("/path/to/shader6")]
+                self.node, self.seq, 3) if f.startswith("/path/to/shader6")]
         self.assertIn("/path/to/shader6/tex_01_03.0010.jpg", result)
         self.assertEqual(len(result), 90)
 
-    def test_find_sequence_with_us_and_vs(self):
+    def test_find_sequence_with_Us_and_Vs(self):
         result = [
             f for f in dependency_scan.fetch(
                 self.node,
-                self.seq) if f.startswith("/path/to/shader6")]
+                self.seq, 3) if f.startswith("/path/to/shader6")]
         self.assertIn("/path/to/shader6/tex_01_03.0010.jpg", result)
         self.assertEqual(len(result), 90)
 
@@ -114,15 +122,15 @@ class DependencyScanTest(TestCase):
         result = [
             f for f in dependency_scan.fetch(
                 self.node,
-                self.seq) if f.startswith("/path/to/shader7")]
+                self.seq, 3) if f.startswith("/path/to/shader7")]
         self.assertIn("/path/to/shader7/tex_1010.0005.jpg", result)
         self.assertEqual(len(result), 100)
- 
+
     def test_dont_find_files_outside_sequence_with_Us_and_Vs(self):
         result = [
             f for f in dependency_scan.fetch(
                 self.node,
-                self.seq) if f.startswith("/path/to/shader6")]
+                self.seq, 3) if f.startswith("/path/to/shader6")]
         self.assertNotIn("/path/to/shader6/tex_01_03.0011.jpg", result)
 
 
