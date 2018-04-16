@@ -163,12 +163,13 @@ def _get_files(parm, sequence):
         for frame in sequence:
             val = parm["parm"].evalAtFrame(frame)
             val = UDIM_RE.sub('*', val)
+            val = os.path.abspath(val)
             files += glob.glob(val)
         return files
 
     if parm["varying"]:
         for frame in sequence:
-            fn = parm["parm"].evalAtFrame(frame)
+            fn = os.path.abspath(parm["parm"].evalAtFrame(frame)) 
             if _exists(fn):
                 files.append(fn)
         return files
@@ -176,10 +177,11 @@ def _get_files(parm, sequence):
     if parm["needs_glob"]:
         val = parm["parm"].eval()
         val = UDIM_RE.sub('*', val)
+        val = os.path.abspath(val)
         files += glob.glob(val)
         return files
 
-    fn = parm["parm"].eval()
+    fn = val = os.path.abspath(parm["parm"].eval())
     if _exists(fn):
         return [fn]
 
