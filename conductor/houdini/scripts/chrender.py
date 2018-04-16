@@ -10,7 +10,7 @@ import sys
 import argparse
 import hou
 
-from sequence import Sequence
+from sequence import Progression, Sequence
 
 def error(msg):
     if msg:
@@ -91,7 +91,7 @@ def render(args):
     except ValueError as err:
         usage(str(err))
 
-    chunks = seq.progressions()
+    progressions = Progression.factory(seq)
     
     try:
         hou.hipFile.load(args.hipfile)
@@ -102,9 +102,9 @@ def render(args):
     if not rop:
         usage('Rop does not exist: %s' % args.driver)
 
-    for chunk in chunks:
+    for progression in progressions:
         rop.render(
-            frame_range=chunk.range,
+            frame_range=progression.range,
             verbose=True,
             output_progress=True,
             method=hou.renderMethod.FrameByFrame
