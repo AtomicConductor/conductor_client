@@ -25,4 +25,4 @@ class SubmissionPreview(QtWidgets.QTabWidget):
 
         self.setWindowTitle("Conductor submission preview")
         self.setStyleSheet(hou.qt.styleSheet())
-        # self.setStyleSheet("QTreeView {alternate-background-color: yellow}")
+ 
