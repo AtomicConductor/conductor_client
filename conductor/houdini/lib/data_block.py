@@ -23,10 +23,10 @@ import json
 
 from conductor.houdini.lib import package_tree as ptree
 from conductor.lib import common
-from conductor.houdini.lib.mocks.api_client_mock import ApiClient
+# from conductor.houdini.lib.mocks.api_client_mock import ApiClient
 # from conductor.houdini.lib.mocks.api_client_mock import ApiClientNoHost as ApiClient
 # The real version of ApiClient below
-# from conductor.lib.api_client import ApiClient
+from conductor.lib.api_client import ApiClient
 
 
 def _projects():
