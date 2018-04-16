@@ -62,7 +62,7 @@ def _create_submission_with_save(node):
     """
 
     if node.parm("use_timestamped_scene").eval():
-        current_scene_name = hou.hipFile.basename()
+        current_scene_name = hou.hipFile.name()
         submission = Submission(node)
         hou.hipFile.save(file_name=submission.scene)
         hou.hipFile.setName(current_scene_name)
