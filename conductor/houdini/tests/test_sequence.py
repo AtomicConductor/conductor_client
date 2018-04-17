@@ -363,7 +363,7 @@ class PermutationsTest(unittest.TestCase):
         self.assertIn("image_02_02.0011.tif", result)
         self.assertIn("image_02_01.0010.tif", result)
         self.assertEqual(len(result), 8)
-        
+
 
 class SubsampleTest(unittest.TestCase):
 
