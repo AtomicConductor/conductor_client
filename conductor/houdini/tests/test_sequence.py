@@ -306,35 +306,25 @@ class ProgressionsTest(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(len(result[0]), 32)
 
-    def test_max_size_one(self):
+    def test_range_max_size_one(self):
         result = Progression.factory([2, 4, 6, 8, 10], max_size=1)
         self.assertEqual(len(result), 5)
 
-    def test_max_2(self):
+    def test_range_max_2(self):
         result = Progression.factory([2, 4, 6, 8, 10], max_size=2)
         self.assertEqual(len(result), 3)
 
-    def test_max_16(self):
+    def test_range_max_16(self):
         result = Progression.factory(xrange(2, 197, 3), max_size=16)
         self.assertEqual(len(result[0]), 16)
         self.assertEqual(len(result), 5)
 
-    def test_longest_progressions_factory(self):
+    def test_seq_to_longest_progressions(self):
         s = Sequence.create("1-10, 14, 20-48x4")
         progs = Progression.factory(s)
         self.assertEqual(len(progs), 3)
 
-    def test_limited_length_progressions_factory(self):
-        s = Sequence.create("1-10, 14, 20-48x4")
-        progs = Progression.factory(s, max_size=4)
-        self.assertEqual(len(progs), 6)
-
-    def test_longest_progressions_factory(self):
-        s = Sequence.create("1-10, 14, 20-48x4")
-        progs = Progression.factory(s)
-        self.assertEqual(len(progs), 3)
-
-    def test_limited_length_progressions_factory(self):
+    def test_seq_to_limited_length_progressions(self):
         s = Sequence.create("1-10, 14, 20-48x4")
         progs = Progression.factory(s, max_size=4)
         self.assertEqual(len(progs), 6)
