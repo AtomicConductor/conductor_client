@@ -1,4 +1,20 @@
+"""A Sequence is a set of positive integers representing frames.
 
+To create a sequence, use the create method and pass either:
+
+frame spec: e.g. string  "1-10, 14, 20-50x4"
+range: one, two, or three integers representing start, end, step.
+iterable: something that implements __iter__, e.g. a list.
+
+If the input is valid, either a Sequence or a Progression will
+be created. A Progression is inherited from Sequence. A
+Progression has the special property that it can be expressed
+as an arithmetic progression, i.e. start,end,step.
+
+A Sequence has methods to split itself into chunks. Chunks are
+subsequences and are themselves of type, Sequence or
+Progression.
+"""
 import math
 import re
 import itertools
@@ -224,9 +240,7 @@ class Sequence(object):
         are plucked in the most distributed way.
         """
         n = len(self)
-
-        # clamp the result length
-        count = sorted([1, count, n])[1]
+        count = _clamp(1, count, n)
 
         res = []
         gap = n / float(count)
