@@ -15,7 +15,6 @@ sys.modules['conductor.lib.api_client'] = __import__(
 
 
 from conductor.houdini.lib import data_block as db
-from conductor.houdini.lib.mocks.api_client_mock import ApiClient
 from conductor.houdini.lib.package_tree import PackageTree
 
 
