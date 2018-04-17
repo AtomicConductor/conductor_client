@@ -62,9 +62,9 @@ class FactoryTest(unittest.TestCase):
     @mock.patch(klass, autospec=True)
     def test_houdini_factory_calls_constructor(
             self, mock_data_block):
-        d = db.for_houdini()
+        db.for_houdini()
         mock_data_block.assert_called_with(product="houdini", force=False)
-        d = db.for_houdini(force=True)
+        db.for_houdini(force=True)
         mock_data_block.assert_called_with(product="houdini", force=True)
 
 

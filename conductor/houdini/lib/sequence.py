@@ -220,16 +220,19 @@ class Sequence(object):
     def subsample(self, count):
         """Take a selection of elements from the sequence.
 
-        Return value is a new sequence.
+        Return value is a new sequence where the elements
+        are plucked in the most distributed way.
         """
         n = len(self)
+
+        # clamp the result length
         count = sorted([1, count, n])[1]
 
         res = []
         gap = n / float(count)
         pos = gap / 2.0
 
-        for i in range(count):
+        for _ in range(count):
             index = int(pos)
             res.append(self._iterable[index])
             pos += gap
@@ -276,7 +279,7 @@ class Sequence(object):
         """Return the current strategy for emitting chunks."""
         return self._chunk_strategy
 
-    @chunk_size.setter
+    @chunk_strategy.setter
     def chunk_strategy(self, value):
         """Set strategy for emitting chunks."""
         self._chunk_strategy = value

@@ -8,7 +8,7 @@ Attributes:
     DRIVER_TYPES (dict): A mapping of information about input
     driver ROPs. human_name is used in the UI, and output_parm
     is used in the output_directory expression.
-    """
+"""
 import hou
 from conductor.houdini.hda import frame_spec_ui, uistate
 
@@ -68,7 +68,7 @@ def human_name(input_type):
 
 def output_parm(input_type):
     """Name of the parameter that holds the output path.
-    
+
     The name is different for each type of Rop node, so we
     need to look it up in a map.
     """

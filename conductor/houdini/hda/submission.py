@@ -1,7 +1,6 @@
 """Build an object to represent a Conductor submission."""
 
 import datetime
-
 import hou
 from conductor.houdini.hda import notifications_ui, types
 from conductor.houdini.hda.job import Job
@@ -51,7 +50,8 @@ class Submission(object):
         else:
             self._nodes = node.inputs()
 
-        self._use_timestamped_scene = bool(self._node.parm("use_timestamped_scene").eval())
+        self._use_timestamped_scene = bool(
+            self._node.parm("use_timestamped_scene").eval())
 
         self._timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         hou.putenv("CT_TIMESTAMP", self._timestamp)
@@ -67,10 +67,7 @@ class Submission(object):
 
         self._tokens = self._setenv()
 
-
-
         self._notifications = notifications_ui.get_notifications(self._node)
-
 
         self._jobs = []
         for node in self._nodes:
@@ -80,8 +77,8 @@ class Submission(object):
     def _get_project(self):
         """Get the project name by looking up its ID.
 
-        In case the current project is no longer in the
-        list of projects, throw an error.
+        In case the current project is no longer in the list
+        of projects, throw an error.
         """
         project_id = self._node.parm('project').eval()
         projects = data_block.for_houdini().projects()
@@ -113,7 +110,7 @@ class Submission(object):
         We use hou.putenv() which basically sets these as
         global env vars in the scene. Unfortunately thats the
         only way because you can only attach variables local
-        to nodes through the Houdini devkit. 
+        to nodes through the Houdini devkit.
 
         Once tokens are set, strings using them are expanded
         correctly. In fact we don't need these tokens to be
@@ -130,7 +127,6 @@ class Submission(object):
 
         for token in tokens:
             hou.putenv(token, tokens[token])
-
 
         return tokens
 

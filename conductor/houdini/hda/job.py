@@ -1,7 +1,5 @@
 """Build an object to represent a Conductor job."""
 
-import os
-
 import hou
 from conductor.houdini.hda import (dependency_scan, driver_ui, frame_spec_ui,
                                    software_ui)
@@ -285,8 +283,6 @@ class ChunkedJob(Job):
         construct strings.
         """
         tokens = {}
-        seq = self._sequence["main"]
-        sorted_frames = sorted(self._sequence["main"])
         tokens["CT_SCOUT"] = str(self._sequence["scout"])
         tokens["CT_CHUNKSIZE"] = str(self._sequence["main"].chunk_size)
         tokens["CT_CHUNKCOUNT"] = str(self._sequence["main"].chunk_count())

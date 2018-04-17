@@ -68,11 +68,10 @@ def _build_tree(packages, package):
         child_package = next(
             (c for c in packages if c["package_id"] == child_id), None)
         if child_package:
-            child_package = _build_tree( packages, child_package)
+            child_package = _build_tree(packages, child_package)
             package["children"].append(child_package)
     package.pop("plugins", None)
     return package
-
 
 
 def _is_product(pkg, **kw):
@@ -188,6 +187,7 @@ def to_all_paths(path):
     result.reverse()
     return result
 
+
 def _clean_package(package):
     """Remove some unwanted keys.
 
@@ -201,15 +201,16 @@ def _clean_package(package):
         "updated_at",
         "time_created",
         "plugin_hosts",
-        "relative_path"]:
+            "relative_path"]:
         pkg.pop(att, None)
-    
+
     pkg["children"] = []
     return pkg
- 
+
+
 class PackageTree(object):
     """Class to represent available packages as a tree.
-    
+
     Data structure is really a DAG because a tool may be
     compatible with more than one host product.
     """
@@ -222,7 +223,7 @@ class PackageTree(object):
         "houdini" or "maya-io"
         """
         product = kw.get("product")
-        packages = [_clean_package(p) for p in packages] 
+        packages = [_clean_package(p) for p in packages]
 
         if product:
             root_ids = [p["package_id"]
@@ -231,7 +232,9 @@ class PackageTree(object):
             root_ids = [p["package_id"]
                         for p in packages if not p["plugin_host_product"]]
 
-        self._tree = _build_tree(packages, {"children":[], "plugins": root_ids})
+        self._tree = _build_tree(
+            packages, {
+                "children": [], "plugins": root_ids})
 
     def find_by_name(self, name, limit=None, depth=0):
         """Search the tree for a product with the given name.
