@@ -56,27 +56,27 @@ class SequenceFactoryFailTest(unittest.TestCase):
 
     def test_negative_number(self):
         with self.assertRaises(ValueError):
-            s = Sequence.create(-1)
+            Sequence.create(-1)
 
     def test_negative_end(self):
         with self.assertRaises(ValueError):
-            s = Sequence.create(1, -10, 1)
+            Sequence.create(1, -10, 1)
 
     def test_negative_step(self):
         with self.assertRaises(ValueError):
-            s = Sequence.create(1, 10, -1)
+            Sequence.create(1, 10, -1)
 
-    def test_negative_end(self):
+    def test_negative_end_str(self):
         with self.assertRaises(ValueError):
-            s = Sequence.create("10--30")
+            Sequence.create("10--30")
 
     def test_bad_spec(self):
         with self.assertRaises(ValueError):
-            s = Sequence.create("f")
+            Sequence.create("f")
 
     def test_bad_spec_step(self):
         with self.assertRaises(ValueError):
-            s = Sequence.create("1-10xf")
+            Sequence.create("1-10xf")
 
 
 class StartEndStepValuesTest(unittest.TestCase):
@@ -241,19 +241,6 @@ class IntersectionTest(unittest.TestCase):
         self.assertEqual(i, None)
 
 
-class ProgressionsTest(unittest.TestCase):
-
-    def test_longest_progressions_factory(self):
-        s = Sequence.create("1-10, 14, 20-48x4")
-        progs = Progression.factory(s)
-        self.assertEqual(len(progs), 3)
-
-    def test_limited_length_progressions_factory(self):
-        s = Sequence.create("1-10, 14, 20-48x4")
-        progs = Progression.factory(s, max_size=4)
-        self.assertEqual(len(progs), 6)
-
-
 class SequenceValidator(unittest.TestCase):
 
     def test_is_valid_method_true(self):
@@ -270,7 +257,7 @@ class SequenceValidator(unittest.TestCase):
         with self.assertRaises(TypeError):
             Sequence.is_valid_spec(1)
         with self.assertRaises(TypeError):
-            Sequence.is_valid_spec()
+            Sequence.is_valid_spec(None)
 
 
 class SequenceIterator(unittest.TestCase):
@@ -331,6 +318,26 @@ class ProgressionsTest(unittest.TestCase):
         result = Progression.factory(xrange(2, 197, 3), max_size=16)
         self.assertEqual(len(result[0]), 16)
         self.assertEqual(len(result), 5)
+
+    def test_longest_progressions_factory(self):
+        s = Sequence.create("1-10, 14, 20-48x4")
+        progs = Progression.factory(s)
+        self.assertEqual(len(progs), 3)
+
+    def test_limited_length_progressions_factory(self):
+        s = Sequence.create("1-10, 14, 20-48x4")
+        progs = Progression.factory(s, max_size=4)
+        self.assertEqual(len(progs), 6)
+
+    def test_longest_progressions_factory(self):
+        s = Sequence.create("1-10, 14, 20-48x4")
+        progs = Progression.factory(s)
+        self.assertEqual(len(progs), 3)
+
+    def test_limited_length_progressions_factory(self):
+        s = Sequence.create("1-10, 14, 20-48x4")
+        progs = Progression.factory(s, max_size=4)
+        self.assertEqual(len(progs), 6)
 
 
 class PermutationsTest(unittest.TestCase):
