@@ -428,6 +428,10 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self.ui_instance_type_cmbx.clear()
         for instance_info in instance_types:
             self.ui_instance_type_cmbx.addItem(instance_info['description'], userData=instance_info)
+        # Set instance type to a reasonable default
+        item_idx = self.ui_instance_type_cmbx.findData({"cores": 8, "flavor": "standard", "description": "8 core, 30.0GB Mem"})
+        if item_idx > 0:
+            self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
 
     def populateGpuCmbx(self):
         '''
