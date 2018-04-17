@@ -20,7 +20,12 @@ SUCCESS_CODES_SUBMIT = [201, 204]
 
 
 def _save_scene_or_use_current():
-    """Save scene flow."""
+    """Manual save-scene flow.
+
+    When user chooses to save, they get a dialog to choose a
+    name. When he chooses to use-current, just make sure the
+    file exists.
+    """
     fn = hou.hipFile.path()
     save_file_response = hou.ui.displayMessage(
         title='Unsaved changes',
@@ -43,8 +48,7 @@ def _save_scene_or_use_current():
         if fn:
             hou.hipFile.save(file_name=fn)
     if save_file_response == 1:
-        # When use current, just  make sure the file exists.
-        # Will throw otherwise
+
         hou.findFile(fn)
 
     return fn
@@ -57,8 +61,9 @@ def _create_submission_with_save(node):
     scene, build the submission object first and use the
     timestamped scene name it provides.
 
-    Otherwise in the case there are unsaved
-    changes, present the save-scene flow.
+    Otherwise: If there are unsaved
+    changes, present the save-scene flow before generating a
+    submission.
     """
 
     if node.parm("use_timestamped_scene").eval():
