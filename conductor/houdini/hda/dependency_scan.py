@@ -50,12 +50,12 @@ def _remove_redundant_entries(entries):
     name length reversed, we can move through the list
     linearly, testing previously seen directories with
     startswith(), as opposed to climbing up the path with
-    dirname() in a loop. The secondary sort criteria
-    ensures that a regular filename that prefixes another,
-    will not be seen until the other longer name has been
-    tested. Example, /u/fred/myfile.a.b will be tested
-    before /u/fred/myfile.a so myfile.a.b will not be
-    erroneously discarded.
+    dirname() in a loop. The secondary sort criteria ensures
+    that a regular filename that prefixes another, will not
+    be seen until the other longer name has been tested.
+    Example, /u/fred/myfile.a.b will be tested before
+    /u/fred/myfile.a so myfile.a.b will not be erroneously
+    discarded.
     """
     sorted_entries = sorted(
         entries, key=lambda entry: (entry.count(os.sep), -len(entry)))
@@ -71,18 +71,20 @@ def _is_wanted(parm, node):
     """Some parameters should not be be evaluated for dependencies.
 
     Currently we ignore parms on other job or submitter
-    nodes. We also ignore the output directory.
+    nodes. We also ignore the output directory. TODO: Think
+    about allowing the user to specify exclusion patterns or
+    rules.
     """
     other_node = parm.node()
     if not (types.is_job_node(other_node) or
             types.is_submitter_node(other_node)):
         return True
     # at this stage we know the other node is a job or submitter.
-    # If it is not this node we can ignore it
+    # If it is not _this_ node we can ignore it
     if other_node != node:
         return False
     # now we know the other node is this node.
-    # We want the parm, unless its the output directory,
+    # We want this parm, unless its the output directory,
     # because the out directory should be automatically
     # created when by the render process and the local out
     # directory may already contain a ton of renders.
@@ -106,13 +108,11 @@ def _ref_parms(node):
     return result
 
 
-
-
 def _flag_parm(parm, subsequence):
     """Add flags to the parm so we know how to process it.
 
     Run heuristics to determine if parm value varies over time
-    and/or needs globbing later in _get_files(). 
+    and/or needs globbing later in _get_files().
 
     Subsequence is a small set of frames at which we evaluate
     the parm to see if its changing. If subsequence is None,
@@ -155,8 +155,9 @@ def _get_files(parm, sequence):
     """Resolve filenames from parms.
 
     We have previously run some heuristic _flag_parm and
-    marked each parm to know whether it needs to be globbed
-    or if it varies over time.
+    marked each parm to know whether it needs to be globbed,
+    if it varies over time, or both. Now we get the files
+    based on those flags.
     """
     files = []
     if parm["varying"] and parm["needs_glob"]:
@@ -169,7 +170,7 @@ def _get_files(parm, sequence):
 
     if parm["varying"]:
         for frame in sequence:
-            fn = os.path.abspath(parm["parm"].evalAtFrame(frame)) 
+            fn = os.path.abspath(parm["parm"].evalAtFrame(frame))
             if _exists(fn):
                 files.append(fn)
         return files
@@ -187,7 +188,13 @@ def _get_files(parm, sequence):
 
 
 def fetch(node, sequence, samples=None):
+    """Get the list of files needed to render this node.
 
+    sequence is the whole frame range being rendered.
+    And samples, is a Sequence containing a few frames that we
+    use to tests if a parm is changing over time. If samples
+    is None, then no optimization happens.
+    """
     result = set()
     file_refs_parms = _ref_parms(node)
     subsequence = samples and sequence.subsample(samples)
