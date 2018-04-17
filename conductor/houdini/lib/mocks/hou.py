@@ -9,10 +9,6 @@ sys.modules['hou'] = __import__(
     'conductor.houdini.lib.mocks.hou', fromlist=['dummy'])
 """
 
-
-import os
-import json
-
 from conductor.houdini.lib.sequence import Sequence
 
 NODES = {}

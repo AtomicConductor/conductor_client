@@ -12,6 +12,7 @@ import hou
 
 from sequence import Progression, Sequence
 
+
 def error(msg):
     if msg:
         sys.stderr.write('\n')
@@ -92,7 +93,7 @@ def render(args):
         usage(str(err))
 
     progressions = Progression.factory(seq)
-    
+
     try:
         hou.hipFile.load(args.hipfile)
     except hou.LoadWarning as e:
