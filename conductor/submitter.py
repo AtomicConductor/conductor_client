@@ -222,6 +222,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Add the extended widget (must be implemented by the child class
         self._addExtendedWidget()
 
+        # Add the advanded extended widget (must be implemented by the child class)
+        self._addExtendedAdvancedWidget()
+
     def populateUi(self):
         '''
         Populate the UI with data.  This data should be global information that
@@ -285,6 +288,15 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         extended_widget_layout = self.ui_extended_container_wgt.layout()
         extended_widget_layout.addWidget(self.extended_widget)
 
+    def _addExtendedAdvancedWidget(self):
+        '''
+        Add the extended advanced widget to the UI if one has been defined (via subclass)
+        '''
+        self.extended_advanced_widget = self.getExtendedAdvancedWidget()
+        if self.extended_advanced_widget:
+            layout = self.ui_extended_advanced_container_wgt.layout()
+            layout.addWidget(self.extended_advanced_widget)
+
     def getExtendedWidget(self):
         '''
         This method extends the Conductor UI by providing a single PySide widget
@@ -292,7 +304,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         from QWidget.
 
         In order to do so, subclass this class and override this method to
-        return the desered widget object.  This widget will be inserted between
+        return the desired widget object.  This widget will be inserted between
         the Frame Range area and the  Submit button. See illustration below:
 
                  ____________________
@@ -312,6 +324,29 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
         message = "%s not implemented. Please override method as desribed in its docstring" % class_method
         raise NotImplementedError(message)
+
+    def getExtendedAdvancedWidget(self):
+        '''
+        This method extends the Conductor UI by providing a single PySide widget
+        that will be added to the UI. The widget may be any class object derived
+        from QWidget.
+
+        In order to do so, subclass this class and override this method to
+        return the desired widget object.  This widget will be inserted at the bottom
+        of the "Advanced" tab. See illustration below:
+
+                 ____________________
+                |   Advanced <tab>   |
+                |--------------------|
+                |                    |
+                |                    |
+                |                    |
+                |--------------------|
+                |                    |
+                |  <EXTENDED WIDGET> |   <-- your extended advanced widget goes here.
+                |____________________|
+
+        '''
 
     def _setCustomRangeValidator(self):
         '''
