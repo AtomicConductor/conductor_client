@@ -414,7 +414,7 @@ class Submit(object):
         logger.info("Sending Job...")
         response, response_code = self.api_client.make_request(uri_path="jobs/",
                                                                data=json.dumps(submit_dict),
-                                                               raise_on_error=False,
+                                                               raise_on_error=True,
                                                                use_api_key=True)
         if response_code not in [201, 204]:
             raise Exception("Job Submission failed: Error %s ...\n%s" % (response_code, response))
