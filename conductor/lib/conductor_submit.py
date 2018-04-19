@@ -459,18 +459,11 @@ class Submit(object):
         for upload_file in upload_files:
             logger.debug("doing stat of %s" % upload_file)
             filestat = os.stat(upload_file)
-            upload_file_dict = {"md5": upload_files[upload_file],
-                                "destination": upload_file,
-                                "st_mode": filestat.st_mode,
-                                "st_ino": filestat.st_ino,
-                                "st_dev": filestat.st_dev,
-                                "st_nlink": filestat.st_nlink,
-                                "st_uid": filestat.st_uid,
-                                "st_gid": filestat.st_gid,
-                                "st_size": filestat.st_size,
-                                "st_atime": filestat.st_atime,
-                                "st_mtime": filestat.st_mtime,
-                                "st_ctime": filestat.st_ctime}
+            md5 = upload_files[upload_file]
+            upload_file_dict = {"destination": upload_file,
+                                "st_size": filestat.st_size}
+            if md5:
+                upload_file_dict["md5"] = md5
             upload_file_info.append(upload_file_dict)
             upload_size += filestat.st_size
 
