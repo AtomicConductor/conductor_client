@@ -45,7 +45,7 @@ class ApiClient():
         logger.debug("conductor_url: %s", conductor_url)
         logger.debug("headers: %s", headers)
         logger.debug("params: %s", params)
-        logger.debug("data: %s", data)
+        logger.debug("data: %s", common.sstr(data))
 
         # If we get 300s/400s debug out the response. TODO(lws): REMOVE THIS
         if response.status_code and 300 <= response.status_code < 500:

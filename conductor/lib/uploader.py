@@ -517,7 +517,9 @@ class Uploader(object):
 
         self.api_client.make_request('/uploads/%s/finish' % upload_id,
                                      data=json.dumps(data),
-                                     verb='POST', use_api_key=True)
+                                     compress=True,
+                                     verb='POST',
+                                     use_api_key=True)
         return True
 
     def mark_upload_failed(self, error_message, upload_id):
@@ -586,11 +588,7 @@ class Uploader(object):
             #  Despite storing lots of data about new uploads, we will only send back the things
             #  that have changed, to keep payloads small.
             if self.upload_id:
-                finished_upload_files = {path: {"source": path,
-                                                "md5": md5}
-                                         for path, md5 in self.return_md5s().iteritems()}
-
-                self.mark_upload_finished(self.upload_id, finished_upload_files)
+                self.mark_upload_finished(self.upload_id, self.return_md5s())
 
         except Exception:
             logger.exception("######## ENCOUNTERED EXCEPTION #########\n")
