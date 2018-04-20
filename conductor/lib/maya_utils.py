@@ -381,8 +381,18 @@ def get_maya_image_dirpath():
     return os.path.dirname(image_filepath[0])
 
 
+def get_workspace_dirpath():
+    '''
+    Return the current Workspace directory
+    '''
+    return cmds.workspace(q=True, rootDirectory=True)
+
+
 def get_workspace_image_dirpath():
-    workspace_root = cmds.workspace(q=True, rootDirectory=True)
+    '''
+    Return the current workspace's image directory
+    '''
+    workspace_root = get_workspace_dirpath()
     image_dirname = cmds.workspace(fileRuleEntry="images")
     return os.path.join(workspace_root, image_dirname)
 
