@@ -19,7 +19,8 @@ except ImportError, e:
 
 
 from conductor import CONFIG
-from conductor.lib import file_utils, api_client, uploader, loggeria
+from conductor.lib import common, api_client, file_utils, loggeria, uploader
+sstr = common.sstr
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ class Submit(object):
         logger.debug("chunk_size: %s", self.chunk_size)
 
         self.upload_paths = self.resolve_arg(args, 'upload_paths', [], combine_config=True)
-        logger.debug("upload_paths: %s", self.upload_paths)
+        logger.debug("upload_paths: %s", sstr(self.upload_paths))
 
         self.user = self.resolve_arg(args, 'user', getpass.getuser())
         logger.debug("user: %s", self.user)
@@ -344,7 +345,7 @@ class Submit(object):
 
         '''
         assert isinstance(upload_files, list), "Expected list. Got: %s" % upload_files
-        logger.debug("upload files: %s" % upload_files)
+        logger.debug("upload files: %s" % sstr(upload_files))
 
         submit_dict = {'owner': self.user}
         submit_dict['location'] = self.location
@@ -407,18 +408,10 @@ class Submit(object):
             if self.machine_flavor is not None:
                 submit_dict['machine_flavor'] = self.machine_flavor
 
-        logger.debug("send_job JOB ARGS:")
-        for arg_name, arg_value in sorted(submit_dict.iteritems()):
-            logger.debug("\t%s: %s", arg_name, arg_value)
-
-        logger.info("Sending Job...")
-        response, response_code = self.api_client.make_request(uri_path="jobs/",
-                                                               data=json.dumps(submit_dict),
-                                                               raise_on_error=True,
-                                                               use_api_key=True)
-        if response_code not in [201, 204]:
-            raise Exception("Job Submission failed: Error %s ...\n%s" % (response_code, response))
-        return response, response_code
+        try:
+            return post_job(client=self.api_client, use_api_key=True, **submit_dict)
+        except Exception as e:
+            raise Exception("Job Submission failed: Error %s" % e)
 
     def main(self):
         '''
@@ -464,7 +457,7 @@ class Submit(object):
         #                               "destination": path}
         upload_files = dict([(path, None) for path in upload_files])
 
-        logger.debug("Upload files is %s" % upload_files)
+        logger.debug("Upload files: %s", sstr(upload_files))
         # If opting to upload locally (i.e. from this machine) then run the uploader now
         # This will do all of the md5 hashing and uploading files to the conductor (if necesary).
         if self.local_upload:
@@ -610,6 +603,20 @@ class Submit(object):
             raise
 
 
+def post_job(client=None, use_api_key=True, **job_args):
+    if not client:
+        client = api_client.ApiClient()
+    logger.debug("--- JOB ARGS ---")
+    for arg_name, arg_value in sorted(job_args.iteritems()):
+        logger.debug(" %s: %s", arg_name, sstr(arg_value))
+
+    logger.info("Sending Job...")
+    return client.make_request(uri_path="jobs/",
+                               data=json.dumps(job_args),
+                               raise_on_error=True,
+                               use_api_key=use_api_key)
+
+
 class BadArgumentError(ValueError):
     pass
 
@@ -624,7 +631,7 @@ def run_submit(args):
     log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
     set_logging(log_level, log_dirpath)
 
-    logger.debug('parsed_args is %s', args_dict)
+    logger.debug('parsed_args is %s', sstr(args_dict))
     submitter = Submit(args_dict)
     response, response_code = submitter.main()
     logger.debug("Response Code: %s", response_code)
