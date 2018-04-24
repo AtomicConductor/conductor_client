@@ -72,7 +72,7 @@ def parse_args():
                                      "Example:\n"
                                      "\t--environment PYTHONPATH=/home/user/steve/python:/home/user/marry/python\n\n"
 
-                                     "Multipe environment variable statements can be made by separating them with a space:\n"
+                                     "Multiple environment variable statements can be made by separating them with a space:\n"
                                      "\t--environment PYTHONPATH=/home/user/marry PATH=/home/usr/bin\n\n"
 
                                      "Appending to Conductor's existing environment variables is also possible.  "
