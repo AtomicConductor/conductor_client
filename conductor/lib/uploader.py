@@ -92,7 +92,7 @@ class MD5OutputWorker(worker.ThreadWorker):
 
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
-        self.batch_size = 20  # the controlls the batch size for http get_signed_urls
+        self.batch_size = 100  # the controlls the batch size for http get_signed_urls
         self.wait_time = 1
         self.batch = {}
 
