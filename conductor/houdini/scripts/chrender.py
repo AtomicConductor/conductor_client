@@ -80,7 +80,7 @@ def render(args):
     conductor job and submitter nodes, which were used to
     submit but are not needed to render.
 
-    The rop render method taks a range (start, end, step).
+    The rop render method takes a range (start, end, step).
     However, our range args are potentially an irregular set
     of frames. Therefore we convert the spec into arithmetic
     progressions and call the render command once for each
