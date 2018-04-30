@@ -8,7 +8,6 @@ import threading
 import traceback
 
 
-
 LEVEL_CRITICAL = "CRITICAL"
 LEVEL_ERROR = "ERROR"
 LEVEL_WARNING = "WARNING"
@@ -96,7 +95,6 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
         logger.addHandler(file_handler)
 
 
-
 def create_file_handler(filepath, level=None, formatter=None, multiproc=False):
     '''
     Create a file handler object for the given filepath.
@@ -107,7 +105,6 @@ def create_file_handler(filepath, level=None, formatter=None, multiproc=False):
     when = 'h'  # rotate unit is "h" (hours)
     interval = 24  # rotate every  24 units (24 hours)
     backupCount = 7  # Retain up to 7 log files (7 days of log files)
-
 
     log_dirpath = os.path.dirname(filepath)
     if not os.path.exists(log_dirpath):
@@ -138,7 +135,7 @@ def set_conductor_log_level(log_level):
     assert log_level in LEVEL_MAP.keys(), "Invalid log_level: %s" % log_level
     logger = get_conductor_logger()
     logger.setLevel(log_level)
-    logger.info("Changed log level to %s", log_level)
+    logging.info("Changed log level to %s", log_level)
 
 
 def get_conductor_logger():
@@ -148,15 +145,12 @@ def get_conductor_logger():
     return logging.getLogger(CONDUCTOR_LOGGER_NAME)
 
 
-
-
 class MPFileHandler(logging.Handler):
     '''
     Multiprocess-safe Rotating File Handler
 
     Copied from: http://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python
     '''
-
 
     def __init__(self, filename, when='h', interval=1, backupCount=0, encoding=None, delay=0, utc=0):
         '''
@@ -170,7 +164,6 @@ class MPFileHandler(logging.Handler):
                                                  encoding=encoding,
                                                  delay=delay,
                                                  utc=utc)
-
 
         self.queue = multiprocessing.Queue()
 
@@ -225,13 +218,11 @@ class MPFileHandler(logging.Handler):
         logging.Handler.close(self)
 
 
-
-
 class TableStr(object):
     '''
-    
+
     A class to help log/print tables of data
-    
+
     ############## DOWNLOAD HISTORY #################
     COMPLETED AT         DOWNLOAD ID       JOB    TASK       SIZE  ACTION  DURATION  THREAD     FILEPATH
     2016-01-16 01:12:46  5228833175240704  00208  010    137.51MB  DL      0:00:57   Thread-12  /tmp/conductor_daemon_dl/04/cental/cental.010.exr
@@ -250,20 +241,19 @@ class TableStr(object):
 
     row_spacer = "\n"
 
-
     def __init__(self, data, column_names, title="", footer="", upper_headers=True):
         '''
         args:
             data: list of dicts. Each dict represents a row, where the key is the
                   column name, and the value is the...value
-            
+
             column_names: list of str. The columns of data to show (and the order
                           in which they are shown)
-            
+
             title: str. if provided, will be printed above the table
-            
+
             footer: str. if provided, will be printed below the table
-        
+
             upper_headers: bool. If True, will automatically uppercase the column
                            header names
         '''
@@ -273,18 +263,17 @@ class TableStr(object):
         self.footer = footer
         self.uppper_headers = upper_headers
 
-
     def make_table_str(self):
         '''
         Create and return a final table string that is suitable to print/log.
-        
+
         This is achieved by creating a list of items for each column in the table.
         Once all column lists have been created, they are then joined via a constant
         column space character(s) - self.column_spacer. The rows that are created
         from the columns are then prefixed with given title (self.title) and suffixed
         with the given footer (self.footer)
 
-          
+
         '''
         column_strs = {}
         for column_name in self.column_names:
@@ -301,10 +290,9 @@ class TableStr(object):
         rows.append(self.get_footer())
         return self.row_spacer.join(rows)
 
-
     def make_column_strs(self, column_name, data):
         '''
-        
+
         Return a two dimensial list (list of lists), where the inner lists
         repersent a column of data.
         '''
@@ -325,7 +313,6 @@ class TableStr(object):
 
         return column_strs
 
-
     def modify_header(self, column_name):
         '''
         Modify and return the given column name.  This provides an opportunity
@@ -336,7 +323,6 @@ class TableStr(object):
             column_name = header_modifier(column_name)
         return column_name.upper() if self.uppper_headers else column_name
 
-
     def modify_cell(self, column_name, cell_data):
         '''
         Modify and return the given cell data of the given column name.
@@ -345,8 +331,7 @@ class TableStr(object):
         cell_modifier = self.cell_modifiers.get(column_name)
         if cell_modifier:
             cell_data = cell_modifier(cell_data)
-        return  cell_data
-
+        return cell_data
 
     def get_title(self):
         return self.title
@@ -389,5 +374,3 @@ class TableStr(object):
 #
 #     logger.removeHandler(old_file_handler)
 #     logger.addHandler(new_file_handler)
-
-
