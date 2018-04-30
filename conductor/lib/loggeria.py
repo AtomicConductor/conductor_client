@@ -6,7 +6,6 @@ import sys
 import threading
 import traceback
 from logging.handlers import TimedRotatingFileHandler
-
 LEVEL_CRITICAL = "CRITICAL"
 LEVEL_ERROR = "ERROR"
 LEVEL_WARNING = "WARNING"
@@ -117,7 +116,6 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
         console_handler_out.setFormatter(console_formatter)
         console_handler_err.setFormatter(console_formatter)
 
-
     # Create a file handler if a filepath was given
     if log_filepath:
         if file_level:
@@ -174,7 +172,7 @@ def set_conductor_log_level(log_level):
     assert log_level in LEVEL_MAP.keys(), "Invalid log_level: %s" % log_level
     logger = get_conductor_logger()
     logger.setLevel(log_level)
-    logger.info("Changed log level to %s", log_level)
+    logging.info("Changed log level to %s", log_level)
 
 
 def get_conductor_logger():
@@ -263,7 +261,7 @@ class MPFileHandler(logging.Handler):
 class TableStr(object):
     '''
     A class to help log/print tables of data
-    
+
     ############## DOWNLOAD HISTORY #################
     COMPLETED AT         DOWNLOAD ID       JOB    TASK       SIZE  ACTION  DURATION  THREAD     FILEPATH
     2016-01-16 01:12:46  5228833175240704  00208  010    137.51MB  DL      0:00:57   Thread-12  /tmp/conductor_daemon_dl/04/cental/cental.010.exr
@@ -271,7 +269,7 @@ class TableStr(object):
     2016-01-16 01:12:40  5273802288136192  00208  012    140.86MB  DL      0:02:02   Thread-16  /tmp/conductor_daemon_dl/04/cental/cental.012.exr
     '''
 
-    # A dict which contains callable functions that can be used 
+    # A dict which contains callable functions that can be used
     # to condition each column entry of the table
     header_modifiers = {}
 
