@@ -1,7 +1,9 @@
+import gzip
 import json
 import logging
 import os
 import requests
+import StringIO
 import time
 import urlparse
 import jwt
@@ -57,7 +59,7 @@ class ApiClient():
 
     def make_request(self, uri_path="/", headers=None, params=None, data=None,
                      verb=None, conductor_url=None, raise_on_error=True, tries=5,
-                     use_api_key=False):
+                     compress=False, use_api_key=False):
         '''
         verb: PUT, POST, GET, DELETE, HEAD, PATCH
         '''
@@ -90,6 +92,15 @@ class ApiClient():
                 verb = 'GET'
 
         assert verb in self.http_verbs, "Invalid http verb: %s" % verb
+
+        # GZip Compress the content of the request
+        if compress:
+            headers["Content-Encoding"] = "gzip"
+            logger.debug("gzipping content...")
+            out_file = StringIO.StringIO()
+            with gzip.GzipFile(fileobj=out_file, mode="wb") as gzipper:
+                gzipper.write(data)
+            data = out_file.getvalue()
 
         # Create a retry wrapper function
         retry_wrapper = common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS,
