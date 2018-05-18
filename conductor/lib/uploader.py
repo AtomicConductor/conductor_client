@@ -3,9 +3,12 @@ import json
 import logging
 import os
 import Queue
+import re
 import sys
 import thread
+import tarfile
 from threading import Thread
+import tempfile
 import time
 import traceback
 
@@ -27,6 +30,10 @@ class MD5Worker(worker.ThreadWorker):
         # The location of the sqlite database. If None, it will degault to a value
         self.md5_caching = kwargs.get('md5_caching')
         self.database_filepath = kwargs.get('database_filepath')
+
+        self.tar_size_threshold = kwargs.get('tar_size_threshold')
+        self.tar_queue = kwargs.get('tar_queue')
+
         worker.ThreadWorker.__init__(self, *args, **kwargs)
 
     def do_work(self, job, thread_int):
@@ -35,7 +42,8 @@ class MD5Worker(worker.ThreadWorker):
         assert isinstance(filename, (str, unicode)), "Filepath not of expected type. Got %s" % type(filename)
 
         filename = str(filename)
-        current_md5 = self.get_md5(filename)
+        file_info = self.get_file_info(filename)
+        current_md5 = file_info["md5"]
         # if a submission time md5 was provided then check against it
         if submission_time_md5:
             logger.info("Enforcing md5 match: %s for: %s", submission_time_md5, filename)
@@ -47,33 +55,48 @@ class MD5Worker(worker.ThreadWorker):
                 logger.error(message)
                 raise Exception(message)
         self.metric_store.set_dict('file_md5s', filename, current_md5)
+
+        # If the file size is "small" then add it to the tar_queue
+        if file_info["size"] < self.tar_size_threshold:
+            logger.debug("small file: %s", filename)
+            self.tar_queue.put_nowait(file_info)
+            return
+
         return (filename, current_md5)
 
-    def get_md5(self, filepath):
+    def get_file_info(self, filepath):
         '''
-        For the given filepath, return it's md5.
+        For the given filepath, return information about the file, e.g. 
+        size, md5, modtime.
 
-        Use the sqlite db cache to retrive this (if the cache is valid),
-        otherwise generate the md5 from scratch
+        Use the sqlite db cache to retrive this info, otherwise generate 
+        the md5 from scratch and update the cache with  the new value(s).
         '''
-        # If md5 caching is disable, then just generate the md5 from scratch
-        if not self.md5_caching:
-            return common.generate_md5(filepath, base_64=True, poll_seconds=5)
-
-        # Otherwise attempt to use the md5 cache
+        # Stat the file for basic file info
         file_info = get_file_info(filepath)
-        file_cache = client_db.FilesDB.get_cached_file(file_info,
-                                                       db_filepath=self.database_filepath,
-                                                       thread_safe=True)
-        if not file_cache:
-            logger.debug("No md5 cache available for file: %s", filepath)
-            md5 = common.generate_md5(filepath, base_64=True, poll_seconds=5)
-            file_info["md5"] = md5
-            self.cache_file_info(file_info)
-            return md5
 
-        logger.debug("Using md5 cache for file: %s", filepath)
-        return file_cache["md5"]
+        # If md5 caching is disabled, then just generate the md5 from scratch
+        if not self.md5_caching:
+            md5 = common.generate_md5(filepath, base_64=True, poll_seconds=5)
+
+        else:
+            # attempt to retrieve cached file information
+            file_cache = client_db.FilesDB.get_cached_file(file_info,
+                                                           db_filepath=self.database_filepath,
+                                                           thread_safe=True)
+
+            # If there's a cache available, use the md5 value from it.
+            if file_cache:
+                md5 = file_cache["md5"]
+            # Otherwise calculate the md5 from scratch.
+            else:
+                logger.debug("No md5 cache available for file: %s", filepath)
+                md5 = common.generate_md5(filepath, base_64=True, poll_seconds=5)
+
+        # inject the md5 into the file info, then update the cache in the db
+        file_info["md5"] = md5
+        self.cache_file_info(file_info)
+        return file_info
 
     def cache_file_info(self, file_info):
         '''
@@ -90,9 +113,13 @@ class MD5OutputWorker(worker.ThreadWorker):
     It will send a partial batch after waiting self.wait_time seconds
     '''
 
+    # The maximum size that a tarball may be
+    TARBALL_MAX_SIZE = 4000000000  # 4GB
+
     def __init__(self, *args, **kwargs):
         worker.ThreadWorker.__init__(self, *args, **kwargs)
         self.batch_size = 100  # the controlls the batch size for http get_signed_urls
+        self.tar_queue = kwargs.get("tar_queue")
         self.wait_time = 1
         self.batch = {}
 
@@ -139,6 +166,92 @@ class MD5OutputWorker(worker.ThreadWorker):
 
             # mark this task as done
             self.mark_done()
+
+    def join(self):
+        '''
+        SUPER HACK to inject tar functionality into existing uploader mechanics with as little changes
+        as possible. This is an embarrassment and should be refactored ASAP.
+
+        Override the parent join method so that after all files in the input_queue have been processed
+        we can then tar up all the small files that we bypassed (placed in the tar_queue).
+        Once the tar file has been created, put it into the input_queue (so that it will be processed
+        just like any other file). Then call the parent join method to resume the normal logic flow.
+        '''
+        # Wait until all the "normal" size files have finished processing
+        self.in_queue.join()
+
+        # Get all the "small" files that have been collected in the tar queue
+        small_files = worker.empty_queue(self.tar_queue)
+
+        # If there are any small files, tar them up and put them in the input_queue for uploading.
+        if small_files:
+
+            # check whether the size of all of the files is within the allowed limit
+            total_size = sum((f["size"] for f in small_files))
+            logger.debug("total tar files size: %s", common.get_human_bytes(total_size))
+            if total_size > self.TARBALL_MAX_SIZE:
+                raise Exception("Exceeded maximum tarball size of %s vs %s. Reduce tarball size by "
+                                "reducing --tar_size_threshold value" % (common.get_human_bytes(self.TARBALL_MAX_SIZE),
+                                                                         common.get_human_bytes(total_size)))
+
+            # Cleanup any old temp files that may have been left
+            # TODO:(lws) This is dangerous, temporary hack to make sure we don't leave huge temp files
+            # laying around on customer machines.
+            self.remove_temp_files()
+
+            # Create a temporary tar file on disk and tar
+            with tempfile.NamedTemporaryFile("w+b", prefix="conductor-tmp-", suffix=".tar", delete=False) as tar_file:
+                logger.debug("Tarring %s files to: %s", len(small_files), tar_file.name)
+                self.tar_files(tar_file, small_files)
+
+            # Because we're using the same mechanics to upload the tar file as our regular files,
+            # we must jump through the same hoops:
+            #   - Generate an md5 for the tar file
+            #   - Update the metric store with the filepath/md5 pair (this is used by the UploadWorker
+            #     later on)
+            tar_md5 = common.generate_md5(tar_file.name, base_64=True, poll_seconds=5)
+            self.metric_store.set_dict('file_md5s', tar_file.name, tar_md5)
+
+            # Put the tar file path and md5 pair back into the input queue so that  HttpBatchWorker
+            # will pick it up and continue the normal uploading logic chain.
+            self.in_queue.put_nowait((tar_file.name, tar_md5))
+
+            # Re-purpose the tar queue (now that its empty and won't be used again. ugh this hideous)
+            # and add the tar filepath, and it's md5 to it.
+            # After everything has finished uploading, we'll check this queue to retrieve the
+            # the tar file and md5 so that we can delete it from local disk and provide the md5
+            # as part of the payload for the /finish endpoint.
+            self.tar_queue.put_nowait((tar_file.name, tar_md5))
+
+        # Call parent method to resume normal logic
+        return super(MD5OutputWorker, self).join()
+
+    @staticmethod
+    def tar_files(tar_file, files):
+        '''
+        Add the given files to the given tar file (file object).  Name the files by using their md5
+        value (rather than their actual filepath).
+        Note that we can't use the base64 format because the tar format doesn't accept all characters
+        (such as a forward slash).  So convert the md5 to a hex format.
+        '''
+        with tarfile.open(fileobj=tar_file, mode="w") as tar:
+            for file_info in files:
+                tar.add(file_info["filepath"], arcname=common.convert_base64_to_hex(file_info["md5"]))
+
+    def remove_temp_files(self):
+        '''
+        Search for any conductor temp .tar files and delete them.
+        '''
+        pattern = r"conductor-tmp-[\w]+.tar"
+        temp_dirpath = tempfile.gettempdir()
+        for f in os.listdir(temp_dirpath):
+            if re.search(pattern, f, re.I):
+                temp_filepath = os.path.join(temp_dirpath, f)
+                logger.debug("Cleaning up temp file: %s", temp_filepath)
+                try:
+                    os.remove(temp_filepath)
+                except Exception as e:
+                    logger.exception("Failed to delete temporary tar file: %s. Error: %s" % (temp_filepath, e))
 
 
 class HttpBatchWorker(worker.ThreadWorker):
@@ -287,16 +400,24 @@ class Uploader(object):
 
     sleep_time = 10
 
-    def __init__(self, location=None, thread_count=4, md5_caching=True, database_filepath=None):
+    def __init__(self, location=None, thread_count=4, md5_caching=True, database_filepath=None, tar_size_threshold=0):
+        '''
+        args:
+            tar_size_threshold: int/long.  The file size threshold (in bytes) of whether a file is
+                tarred into a group with other files vs uploaded independently. A value of 0
+                results in disabling all tar functionality.
+        '''
         logger.debug("location: %s", location)
         logger.debug("thread_count: %s", thread_count)
         logger.debug("md5_caching: %s", md5_caching)
         logger.debug("database_filepath: %s", database_filepath)
+        logger.debug("tar_size_threshold: %s", tar_size_threshold)
 
         self.thread_count = thread_count
         self.location = location
         self.md5_caching = md5_caching
         self.database_filepath = database_filepath
+        self.tar_size_threshold = tar_size_threshold
 
         self.api_client = api_client.ApiClient()
 
@@ -308,24 +429,31 @@ class Uploader(object):
         self.manager = None
 
     def create_manager(self, project, md5_only=False):
+
         if md5_only:
             job_description = [
                 (MD5Worker, [], {'thread_count': self.thread_count,
                                  "database_filepath": self.database_filepath,
-                                 "md5_caching": self.md5_caching})
-            ]
+                                 "md5_caching": self.md5_caching,
+                                 "tar_size_threshold": self.tar_size_threshold,
+                                 "tar_queue": self.tar_queue}),
+                ]
         else:
             job_description = [
                 (MD5Worker, [], {'thread_count': self.thread_count,
                                  "database_filepath": self.database_filepath,
-                                 "md5_caching": self.md5_caching}),
+                                 "md5_caching": self.md5_caching,
+                                 "tar_size_threshold": self.tar_size_threshold,
+                                 "tar_queue": self.tar_queue}),
 
-                (MD5OutputWorker, [], {'thread_count': 1}),
+
+                (MD5OutputWorker, [], {'thread_count': 1,
+                                       "tar_queue": self.tar_queue}),
                 (HttpBatchWorker, [], {'thread_count': self.thread_count,
                                        "project": project}),
                 (FileStatWorker, [], {'thread_count': 1}),
                 (UploadWorker, [], {'thread_count': self.thread_count}),
-            ]
+                ]
 
         manager = worker.JobManager(job_description)
         manager.start()
@@ -349,7 +477,7 @@ class Uploader(object):
                         'upload_id': self.upload_id,
                         'transfer_size': bytes_to_upload,
                         'bytes_transfered': bytes_uploaded,
-                    }
+                        }
                     logger.debug('reporting status as: %s', status_dict)
                     self.api_client.make_request(
                         '/uploads/%s/update' % self.upload_id,
@@ -462,7 +590,7 @@ class Uploader(object):
             transfer_rate=self.convert_byte_count_to_string(transfer_rate) + '/s',
             time_remaining=self.convert_time_to_string(
                 self.estimated_time_remaining(elapsed_time, percent_complete)),
-        )
+            )
 
         file_progress = self.manager.metric_store.get_dict('files')
         for filename in file_progress:
@@ -494,11 +622,12 @@ class Uploader(object):
         # start thread
         thd.start()
 
-    def mark_upload_finished(self, upload_id, upload_files):
+    def mark_upload_finished(self, upload_id, upload_files, tar_md5=None):
 
         data = {'upload_id': upload_id,
                 'status': 'server_pending',
-                'upload_files': upload_files}
+                'upload_files': upload_files,
+                'upload_bundle_md5': tar_md5}
 
         self.api_client.make_request('/uploads/%s/finish' % upload_id,
                                      data=json.dumps(data),
@@ -546,6 +675,9 @@ class Uploader(object):
 
             self.prepare_workers()
 
+            # create a queue for files that will be tarred into one file
+            self.tar_queue = Queue.Queue()
+
             # create worker pools
             self.manager = self.create_manager(project, md5_only)
 
@@ -570,10 +702,26 @@ class Uploader(object):
             if error_message:
                 return "\n".join(error_message)
 
+            # Check if there is a tar file in this queue. There should none or one.
+            tar_items = worker.empty_queue(self.tar_queue)
+            assert len(tar_items) <= 1, "Got more than one tar file: %s" % tar_items
+            tar_filepath, tar_md5 = tar_items[0] if tar_items else (None, None)
+
             #  Despite storing lots of data about new uploads, we will only send back the things
             #  that have changed, to keep payloads small.
             if self.upload_id:
-                self.mark_upload_finished(self.upload_id, self.return_md5s())
+                upload_files = self.return_md5s()
+                # Remove the tar file from the upload files (since this isn't a customer's actual file,
+                # simply our own temporary transport file)
+                upload_files.pop(tar_filepath, None)
+                self.mark_upload_finished(self.upload_id, upload_files, tar_md5=tar_md5)
+
+            if tar_filepath:
+                logger.debug("Removing temporary tar file: %s", tar_filepath)
+                try:
+                    os.remove(tar_filepath)
+                except Exception as e:
+                    logger.exception("Failed to delete temporary tar file: %s. Error: %s" % tar_filepath, e)
 
         except Exception:
             logger.exception("######## ENCOUNTERED EXCEPTION #########\n")
@@ -676,12 +824,14 @@ def run_uploader(args):
     thread_count = resolve_arg("thread_count", args_dict, CONFIG)
     md5_caching = resolve_arg("md5_caching", args_dict, CONFIG)
     database_filepath = resolve_arg("database_filepath", args_dict, CONFIG) or client_db.get_default_db_filepath()
+    tar_size_threshold = resolve_arg("tar_size_threshold", args_dict, CONFIG)
     uploader = Uploader(
         location=location,
         thread_count=thread_count,
         md5_caching=md5_caching,
         database_filepath=database_filepath,
-    )
+        tar_size_threshold=tar_size_threshold,
+        )
     uploader.main()
 
 

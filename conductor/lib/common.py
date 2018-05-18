@@ -1,4 +1,5 @@
 import base64
+import binascii
 import datetime
 import functools
 import hashlib
@@ -280,7 +281,7 @@ def run(cmd):
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
-    )
+        )
     stdout, stderr = command.communicate()
     status = command.returncode
     return status, stdout, stderr
@@ -691,3 +692,11 @@ def sstr(object_, char_count=1000, pretty=True):
     if len(s_str) > char_count:
         s_str = s_str[:char_count] + "...<TRUNCATED>"
     return s_str
+
+
+def convert_base64_to_hex(string):
+    '''
+    Convert base64 string to hex string
+    '''
+    binary = binascii.a2b_base64(string)
+    return binascii.b2a_hex(binary)

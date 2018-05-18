@@ -305,6 +305,16 @@ def parse_args():
                                  default=conductor.CONFIG.get("thread_count"),
                                  help=('The number of threads that should upload simultaneously'))
 
+    uploader_parser.add_argument("--tar_size_threshold",
+                                 type=int,
+                                 default=0,
+                                 help=('The file size threshold (in bytes) that dictates whether a '
+                                       'file is tarred into a group with other files vs uploaded '
+                                       'independently. The default value, 0, essentially disables '
+                                       'tarring of any files.  Recommended values could be anywhere '
+                                       'between 1000(1KB) and 5000000(5MB)'),
+                                 )
+
     uploader_parser.add_argument("--alt",
                                  help=('Run an alternative version of the downloader'),
                                  action='store_true')
