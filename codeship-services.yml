@@ -1,0 +1,32 @@
+deb:
+  build:
+    dockerfile_path: ./installers/build/Dockerfile.deb
+  volumes:
+    - .:/src
+    - ./tmp:/artifacts
+  encrypted_env_file: build.env.encrypted
+  cached: true
+el6:
+  build:
+    dockerfile_path: ./installers/build/Dockerfile.el6
+  volumes:
+    - .:/src
+    - ./tmp:/artifacts
+  encrypted_env_file: build.env.encrypted
+  cached: true
+el7:
+  build:
+    dockerfile_path: ./installers/build/Dockerfile.el7
+  volumes:
+    - .:/src
+    - ./tmp:/artifacts
+  encrypted_env_file: build.env.encrypted
+  cached: true
+python:
+  build:
+    dockerfile_path: ./installers/build/Dockerfile.python
+  volumes:
+    - .:/src
+    - ./tmp:/artifacts
+  encrypted_env_file: build.env.encrypted
+  cached: true
