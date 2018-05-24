@@ -33,6 +33,7 @@ for artifact in artifacts:
                                  auth=(github_api_user, github_api_token),
                                  headers={'content-type': 'application/octet-stream'})
         responses.append(response)
+        print response.json()
 
 for response in responses:
     response.raise_for_status()

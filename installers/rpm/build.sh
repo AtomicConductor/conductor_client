@@ -18,11 +18,11 @@ mkdir -p ${RPM_BUILDROOT}/etc/profile.d
 pushd ${BUILD_DIR}/python
 curl -s -o python.tgz "https://www.python.org/ftp/python/2.7.11/Python-2.7.11.tgz"
 tar zxf python.tgz
-Python*/configure --prefix=${BUILD_DIR}/rpm/BUILDROOT/${VERSION}/opt/conductor/python && \
+Python*/configure --prefix=${RPM_BUILDROOT}/opt/conductor/python && \
     make && make install
 curl -O "https://bootstrap.pypa.io/get-pip.py"
-${BUILD_DIR}/rpm/BUILDROOT/${VERSION}/opt/conductor/python/bin/python get-pip.py
-${BUILD_DIR}/rpm/BUILDROOT/${VERSION}/opt/conductor/python/bin/pip install -r ${SRC_DIR}/requirements.txt
+${RPM_BUILDROOT}/opt/conductor/python/bin/python get-pip.py
+${RPM_BUILDROOT}/opt/conductor/python/bin/pip install -r ${SRC_DIR}/requirements.txt
 popd
 
 cp -r ${SRC_DIR}/bin \
