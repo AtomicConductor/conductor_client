@@ -54,3 +54,7 @@ houdini/notes
 
 # sublime
 conductor_client.sublime-*
+
+#build
+build.env
+tmp/
