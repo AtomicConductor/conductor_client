@@ -1,4 +1,5 @@
 %define __spec_install_post %{nil}
+%define __spec_install_pre %{nil}
 %define debug_package %{nil}
 %define __os_install_post %{_dbpath}/brp-compress
 
