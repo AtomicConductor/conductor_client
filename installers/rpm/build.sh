@@ -1,46 +1,48 @@
-#!/bin/bash -x
+#!/bin/bash -xe
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
+RELEASE_VERSION=${CI_BRANCH}
 VERSION="conductor-${RELEASE_VERSION}-0.x86_64"
+DIST_VER=${1}
+BUILD_DIR=/artifacts/build/el${DIST_VER}
+SRC_DIR=/src
+RPM_BUILDROOT=${BUILD_DIR}/rpm/BUILDROOT/conductor-${RELEASE_VERSION}-0.el${DIST_VER}.x86_64
 
-mkdir -p build/{BUILDROOT,RPMS,SPECS}
-mkdir -p build/BUILDROOT/${VERSION}/opt/conductor
-mkdir -p build/BUILDROOT/${VERSION}/etc/profile.d
 
-cp -r ../../bin \
-      ../../conductor \
-      ../../maya_shelf \
-      ../../nuke_menu \
-      ../../clarisse_shelf \
-       build/BUILDROOT/${VERSION}/opt/conductor
+mkdir -p ${BUILD_DIR}
+mkdir -p ${BUILD_DIR}/python
+mkdir -p ${BUILD_DIR}/rpm/{BUILDROOT,RPMS,SPECS}
+mkdir -p ${RPM_BUILDROOT}/opt/conductor
+mkdir -p ${RPM_BUILDROOT}/etc/profile.d
 
-cp conductor.spec build/SPECS
-mv build/BUILDROOT/${VERSION}/opt/conductor/bin/conductor \
-    build/BUILDROOT/${VERSION}/opt/conductor/bin/conductor_client
-cp conductor build/BUILDROOT/${VERSION}/opt/conductor/bin/
-cp conductor.sh build/BUILDROOT/${VERSION}/etc/profile.d
+pushd ${BUILD_DIR}/python
+curl -s -o python.tgz "https://www.python.org/ftp/python/2.7.11/Python-2.7.11.tgz"
+tar zxf python.tgz
+Python*/configure --prefix=${RPM_BUILDROOT}/opt/conductor/python && \
+    make && make install
+curl -O "https://bootstrap.pypa.io/get-pip.py"
+${RPM_BUILDROOT}/opt/conductor/python/bin/python get-pip.py
+${RPM_BUILDROOT}/opt/conductor/python/bin/pip install -r ${SRC_DIR}/requirements.txt
+popd
 
-for dist_ver in 6 7; do
-    cp -r build build-${dist_ver}
-    docker run -i \
-      -v ${WORKSPACE}/installers/Python-2.7.11:/root/src \
-      -v $(pwd)/build-${dist_ver}/BUILDROOT/${VERSION}/opt/conductor/python:/root/python \
-      -v $(pwd)/build-python.sh:/root/build-python.sh \
-      centos:${dist_ver} \
-      /root/build-python.sh
+cp -r ${SRC_DIR}/bin \
+      ${SRC_DIR}/conductor \
+      ${SRC_DIR}/maya_shelf \
+      ${SRC_DIR}/nuke_menu \
+      ${SRC_DIR}/clarisse_shelf \
+       ${RPM_BUILDROOT}/opt/conductor
 
-    mv build-${dist_ver}/BUILDROOT/${VERSION} build-${dist_ver}/BUILDROOT/conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64
-    pushd build-${dist_ver}
-    rpmbuild --define "_topdir ${PWD}" \
+cp conductor.spec ${BUILD_DIR}/rpm/SPECS
+mv ${RPM_BUILDROOT}/opt/conductor/bin/conductor \
+    ${RPM_BUILDROOT}/opt/conductor/bin/conductor_client
+cp conductor ${RPM_BUILDROOT}/opt/conductor/bin/
+cp conductor.sh ${RPM_BUILDROOT}/etc/profile.d
+
+pushd ${BUILD_DIR}/rpm
+rpmbuild --define "_topdir $(pwd)" \
          --define "_version ${RELEASE_VERSION}" \
-         --define "_dist el${dist_ver}" \
+         --define "_dist el${DIST_VER}" \
          -bb SPECS/conductor.spec
-
-    #upload our asset to GitHub
-    curl -s -u \
-        ${GITHUB_API_TOKEN} \
-        --data-binary @RPMS/x86_64/conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64.rpm	 \
-        -H "Content-Type:application/octet-stream" \
-        "${UPLOAD_URL}?name=conductor-${RELEASE_VERSION}-0.el${dist_ver}.x86_64.rpm"
-    popd
-done
+mv RPMS/x86_64/conductor-${RELEASE_VERSION}-0.el${DIST_VER}.x86_64.rpm /artifacts
+popd
+popd
