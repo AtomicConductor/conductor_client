@@ -56,6 +56,9 @@ maya_dependency_attrs:
         - cam
     file: # maya builtin
         - fileTextureName
+    igmDescription: # xgen
+        - xuvDir
+        - path
     McdGlobal: # Miarmy
         - outMD2Folder
     pgYetiEmitter: # yeti
@@ -245,10 +248,16 @@ maya_dependency_attrs:
     RMSPointLight: # Renderman
         - iconName
         - templatePath
-    xgmPalette: # XGen (now maya builtin?)
-        - xfn
-    xgmDescription:
+    xgmCurveToSpline: # xgen
+        - fileName
+    xgmDescription: # xgen
         - ai_batch_render_patch
+    xgmPalette: # xgen
+        - xgDeltaFiles
+        - xgBaseFile
+        - xgFileName
+    xgmSplineCache: # xgen
+        - fileName
     VRayMesh: # VRay
         - fileName
     VRaySettingsNode: # VRay
@@ -258,6 +267,7 @@ maya_dependency_attrs:
         - if
     VRayScene: #Vray Scene
         - FilePath
+
 
 # A dictionary of node types and their corresponing knobs(s) for
 # seeking out file dependencies (external filepaths)
