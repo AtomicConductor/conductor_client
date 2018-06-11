@@ -644,9 +644,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def getNotifications(self):
         '''
-        Return the UI's Notificaiton field
+        Query the UI's Notification field and split string on commas, returning
+        a list of email addresses
         '''
-        return str(self.ui_notify_lnedt.text())
+        notify_str = str(self.ui_notify_lnedt.text())
+        return [email.strip() for email in notify_str.split(",") if email.strip()]
 
     def setNotifications(self, value):
         '''
