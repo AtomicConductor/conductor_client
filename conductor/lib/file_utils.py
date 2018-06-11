@@ -364,24 +364,7 @@ def quote_path(filepath):
     return '"%s"' % filepath.replace('"', '\\"')
 
 
-def reconstruct_filename(matched, file_pieces):
-    full_file_string = ""
-    matched = matched.lower()
-    for count, piece in enumerate(file_pieces):
-
-        full_file_string += piece
-
-        # If there's more to the file peices add the frame number
-        if len(file_pieces) > count + 1:
-            dummy_piece = piece.lower()
-            frame_val = matched.split(dummy_piece)[1]
-            frame_val = frame_val.split(file_pieces[count + 1].lower())[0]
-            full_file_string += frame_val
-
-    return full_file_string
-
-
-def get_files_from_path_expression(path_expression, no_extension=False):
+def get_files_from_path_expression(path_expression):
     '''
     Given a path expression (such as an image sequence path), seek out all files
     that are part of that path expression (e.g all of the files that are part
@@ -389,36 +372,47 @@ def get_files_from_path_expression(path_expression, no_extension=False):
     This function relies on what is actually on disk, so only files that are
     found on disk will be returned. If no files are found, return an empty list.
 
-    Supports a variaty of path expressions. Here are a few examples:
+    Supports a variety of path expressions. Here are a few examples:
         "image.####.exr"   # Hash syntax
         "image.####"       # no extension  - if there is no extension for the file then that must be specified by the no_extension argument
         "image.%04d.exr"   # printf format
         "image<UDIM>.exr   # Udim
         "image.$F.exr      # Houdini
+
+    In addition to matching against the file name/root, this function also matches expressions
+    found against the directory name/path, e.g.
+        /data/shot-###/image.exr
+        /data/shot-###/image.####.exr
+        /data/shot-###/image.%04d.exr
+        /data/shot-###/camera-$F/image.%04d.exr
     '''
-    dirpath, basename, extension = separate_path(path_expression, no_extension=no_extension)
+
     logger.debug("Evaluating path expression: %s", path_expression)
-
-    rx = get_rx_match(basename, PATH_EXPRESSIONS)
-    if rx:
+    # Cycle through all regexes and replace each match with a * so that we can glob file system.
+    # Note that a single path expression may contain more than one expression, as well as more than
+    # one expression format (e.g. containing both  #### and %04d).
+    rxs = get_rx_matches(path_expression, PATH_EXPRESSIONS)
+    glob_path = path_expression
+    for rx in rxs:
         logger.debug("Matched path regular expression: %s", rx)
-        glob_basename = re.sub(rx, "*", basename, flags=re.I)
-        glob_filepath = os.path.join(dirpath, glob_basename + extension)
-        file_pieces = glob_filepath.split("*")
-        logger.debug("glob_filepath: %r", glob_filepath)
-        return [reconstruct_filename(matched, file_pieces) for matched in glob.glob(glob_filepath)]
-    logger.debug("Path expression not recognized: %s", path_expression)
-    return []
+        glob_path = re.sub(rx, "*", glob_path, flags=re.I)
+
+    logger.debug("glob_path: %r", glob_path)
+    return glob.glob(glob_path)
 
 
-def get_rx_match(path_expression, expressions):
+def get_rx_matches(path_expression, expressions, limit=0):
     '''
-    Loop through the given list expressions (regexes), and return the first
-    one that is found within the given path (path_expression)
+    Loop through the given list of expressions (regexes), and return those that match the given
+    path_expression.  If a limit is provided, return the first n expressions that match.
     '''
+    matches = []
     for rx in expressions:
         if re.findall(rx, path_expression, flags=re.I):
-            return rx
+            matches.append(rx)
+            if limit and len(matches) == limit:
+                break
+    return matches
 
 
 def create_file(filepath, mode=0660):
