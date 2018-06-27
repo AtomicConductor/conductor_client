@@ -1,14 +1,22 @@
 #!/usr/bin/env python
+'''
 
+sudo -HE env PATH=$PATH PYTHONPATH=$PYTHONPATH HOME=$HOME ./profile.py dirs /mnt/WD-Passport-WDBYFT0040BBL-1/test_data/random_data/07 --read=False --xxhash=True  --md5=False --warm_cache=True --benchmark_device=True
+'''
 import argparse
+import collections
 import csv
 import functools
 import hashlib
+import io
 import inspect
 import json
 import logging
 from multiprocessing.pool import ThreadPool
 import os
+import re
+import socket
+import subprocess
 import time
 
 from conductor.lib import api_client, loggeria
@@ -20,6 +28,7 @@ except ImportError as e:
     print "warning: Could not import xxhash.  xxhash functionality disabled"
     XXHASH = False
 
+IS_ROOT = os.geteuid() is 0
 
 DEFAULT_READ_SIZE = 65536
 
@@ -28,18 +37,17 @@ TIME_STAT = "STAT TIME"
 TIME_READ = "READ TIME"
 TIME_MD5 = "MD5 TIME"
 TIME_XXHASH = "XXHASH TIME"
-TIME_WARMUP = "WARMUP TIME"
 FILEPATH = "FILEPATH"
 SIZE = "SIZE"
 NAME = "NAME"
 VALUE = "VALUE"
 FILE_COUNT = "FILE COUNT"
 
-
 # HEADERS for different csv/table sections
-DATA_HEADERS = (DESCRIPTION, FILEPATH, SIZE, TIME_STAT, TIME_WARMUP, TIME_READ, TIME_MD5, TIME_XXHASH)
-SUMMARY_HEADERS = (DESCRIPTION, FILE_COUNT, SIZE, TIME_STAT, TIME_WARMUP, TIME_READ, TIME_MD5, TIME_XXHASH)
 ARGS_HEADERS = [NAME, VALUE]
+DEVICE_HEADERS = [DESCRIPTION, VALUE]
+DATA_HEADERS = (DESCRIPTION, FILEPATH, SIZE, TIME_STAT, TIME_READ, TIME_MD5, TIME_XXHASH)
+SUMMARY_HEADERS = (DESCRIPTION, FILE_COUNT, SIZE, TIME_STAT, TIME_READ, TIME_MD5, TIME_XXHASH)
 
 logger = logging.getLogger("conductor")
 
@@ -85,13 +93,12 @@ def parse_args():
         )
 
     common_parser.add_argument(
-        "--warmup",
+        "--warm_cache",
         choices=[False, True],
         type=cast_to_bool,
-        default=True,
-        help=("If True, will \"warm up\" each file before performing any further operations on it."
-              "This essentially loads the file into any OS/disk cache so that subsequent reads to "
-              "that file will yield consistent performance between tests.")
+        default=False if IS_ROOT else True,
+        help=("If True, will \"warm up\"(i.e.read) each file before performing any further operation on it. "
+              "If False (which requires running as root)will clear OS cache before performing read operations (recommended)")
     )
 
     common_parser.add_argument(
@@ -106,6 +113,12 @@ def parse_args():
     common_parser.add_argument(
         "--csv_path",
         help="A csv filepath to write the the results to. Results contain metrics per each file",
+    )
+
+    common_parser.add_argument(
+        "--limit",
+        type=int,
+        help="Limit the number of files tested to the given value",
     )
 
     common_parser.add_argument(
@@ -130,6 +143,26 @@ def parse_args():
               "testing.")
     )
 
+    common_parser.add_argument(
+        "--benchmark_device",
+        choices=[False, True],
+        type=cast_to_bool,
+        default=True if IS_ROOT else False,
+        help=("If True, will test read-throughput of disk before performing file profiling."
+              "Requires root privileges")
+    )
+
+    common_parser.add_argument(
+        "--suite_file",
+        action=ValidatePath,
+        help=("The path to the suite of test configurations to be run"),
+    )
+
+    common_parser.add_argument(
+        "--output_dir",
+        help=("The directory to write verbose results to"),
+    )
+
     # ------------------------------------------------
     # Main parser
     # ------------------------------------------------
@@ -138,7 +171,7 @@ def parse_args():
                      "A set of files is dictated by either providing a conductor job id, or a "
                      "list of directories. Use the appropriate sub command to use either methodology.")
     )
-    subparsers = parser.add_subparsers(title="actions")
+    subparsers = parser.add_subparsers(title="Target files from")
 
     # ------------------------------------------------
     # Job/jid parser
@@ -146,6 +179,7 @@ def parse_args():
     job_parser = subparsers.add_parser(
         "job",
         parents=[common_parser],
+        help="Target files from an existing Conductor job for profiling",
         description=("Profile the performance of your file system by processing files from the provided "
                      "Conductor Job ID (jid)"),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -164,8 +198,9 @@ def parse_args():
     dir_parser = subparsers.add_parser(
         "dirs",
         parents=[common_parser],
-        description=("Profile the performance of your file system by processing files found in the"
-                     "the given directories"),
+        help="Target files from a provided directory for profiling",
+        description=("Profile the performance of your file system by processing files found in the "
+                     "given directories"),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
@@ -191,6 +226,17 @@ def cast_to_bool(string):
     elif string_lower == "false":
         return False
     raise argparse.ArgumentTypeError('Argument must be True or False')
+
+
+class ValidatePath(argparse.Action):
+    '''
+    Validate that the give path exists
+    '''
+
+    def __call__(self, parser, namespace, values, option_string):
+        if not os.path.exists(values):
+            raise argparse.ArgumentError(self, "Path does not exist: %s" % values)
+        setattr(namespace, self.dest, values)
 
 
 def run_job_profiler(args):
@@ -225,17 +271,7 @@ def run_job_profiler(args):
     upload = json.loads(r_body).get("data")
     filepaths = upload["upload_files"].keys()
 
-    profile(
-        filepaths,
-        stat=args.stat,
-        read=args.read,
-        hash_md5=args.md5,
-        hash_xx=args.xxhash if XXHASH else None,
-        warmup=args.warmup,
-        read_size=args.read_size,
-        thread_count=args.threads,
-        csv_filepath=args.csv_path,
-    )
+    return run_profiler(filepaths, args)
 
 
 def run_dir_profiler(args):
@@ -252,25 +288,59 @@ def run_dir_profiler(args):
     for dirpath in args.dirs:
         filepaths.extend(get_files(dirpath, recurse=True))
 
-    profile(
+    return run_profiler(filepaths, args)
+
+
+def run_profiler(filepaths, args):
+
+    if not args.suite_file:
+        return _run_profiler(filepaths, args)
+
+    with open(args.suite_file) as f:
+        suite_file = json.load(f)
+        for test_args in suite_file:
+            new_args = vars(args)
+            new_args.update(test_args)
+            _run_profiler(filepaths, argparse.Namespace(**new_args))
+
+
+def _run_profiler(filepaths, args):
+    if args.output_dir:
+        filename = "%s_threads=%s_stat=%s_read=%s_md5=%s_xxhash=%s_warm_cache=%s.csv"
+        args.csv_path = os.path.join(args.output_dir, filename % (
+            socket.gethostname(),
+            args.threads,
+            bool(args.stat),
+            bool(args.read),
+            bool(args.md5),
+            bool(args.xxhash),
+            bool(args.warm_cache),
+
+        ))
+
+    if args.limit:
+        filepaths = filepaths[:args.limit]
+
+    return profile(
         filepaths,
         stat=args.stat,
         read=args.read,
         hash_md5=args.md5,
         hash_xx=args.xxhash if XXHASH else None,
-        warmup=args.warmup,
+        warm_cache=args.warm_cache,
         read_size=args.read_size,
         thread_count=args.threads,
         csv_filepath=args.csv_path,
         skip_failures=args.skip_failures,
+        benchmark_device=args.benchmark_device,
     )
 
 
-def profile(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warmup=True,
+def profile(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warm_cache=False, benchmark_device=True,
             read_size=DEFAULT_READ_SIZE, thread_count=1, skip_failures=False, csv_filepath=None):
     '''
     Profile the given list of files. see "profile_file" function for
-    additional argument details.  If a csv_filepath is provided, verbose profiling data
+    additional argument details.  If a output_dir is provided, verbose profiling data
     will be written to that destination.  Otherwise, only summary data will be logged to stdout, e.g
 
         ---------- SUMMARY -----------
@@ -291,12 +361,29 @@ def profile(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warmup
     for arg_name, arg_value in sorted(args_record.iteritems()):
         logger.info("%s: %s", arg_name, arg_value)
 
+    bench_results = []
+    if benchmark_device:
+        logger.info("Using device used by file: %s" % filepaths[0])
+        device = get_device(filepaths[0])
+        logger.info("Benchmarking device: %s", device)
+        bench_results.append({DESCRIPTION: "Device", VALUE: device})
+
+        for bench_type, result in run_hdparm(device, runs=3).iteritems():
+            bench_results.append({DESCRIPTION: bench_type, VALUE: "%s bytes/sec" % result})
+
+        # Generate a summary string that can be logged out
+        disk_bench_str = SummaryTableStr(bench_results,
+                                         DEVICE_HEADERS,
+                                         title=" DEVICE BENCHMARK ".center(30, "-"),
+                                         footer="-" * 30).make_table_str()
+        print disk_bench_str
+
     # Record the start time for the entire test
     test_time_start = time.time()
     logger.info("Profiling %s files using %s threads...", len(filepaths), thread_count)
 
     # Run the profile
-    results = profile_files(filepaths, stat=stat, read=read, hash_md5=hash_md5, hash_xx=hash_xx, warmup=warmup,
+    results = profile_files(filepaths, stat=stat, read=read, hash_md5=hash_md5, hash_xx=hash_xx, warm_cache=warm_cache,
                             read_size=read_size, thread_count=thread_count, skip_failures=skip_failures)
 
     # Record the duration of the entire test.
@@ -322,6 +409,8 @@ def profile(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warmup
         # Generate a summary of the arguments that were used to run this test
         args_summary = generate_args_summary(args_record)
         logger.debug("Writing to: %s", csv_filepath)
+        if not os.path.isdir(os.path.dirname(csv_filepath)):
+            safe_mkdirs(os.path.dirname(csv_filepath))
 
         # There are three different sections in the csv (each have different headers):
         # - arguments used to run the test
@@ -329,7 +418,8 @@ def profile(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warmup
         # - the per-file results of the test
         with open(csv_filepath, 'w') as f:
             for title, headers, data in (
-                (" ARGUMENTS ".center(30, "-"), [NAME, VALUE], args_summary),
+                (" ARGUMENTS ".center(30, "-"), ARGS_HEADERS, args_summary),
+                (" DEVICE BENCHMARK ".center(30, "-"), DEVICE_HEADERS, bench_results),
                 (" SUMMARY ".center(30, "-"), SUMMARY_HEADERS, summary),
                 (" FILE RESULTS ".center(30, "-"), DATA_HEADERS, results),
             ):
@@ -338,7 +428,7 @@ def profile(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warmup
         logger.info("Summary written to: %s", csv_filepath)
 
 
-def profile_files(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warmup=True,
+def profile_files(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warm_cache=False,
                   read_size=DEFAULT_READ_SIZE, thread_count=1, skip_failures=False):
     '''
     Profile the given list of files within a threading pool.  see "profile_file" function for
@@ -352,14 +442,14 @@ def profile_files(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, 
                                       read=read,
                                       hash_md5=hash_md5,
                                       hash_xx=hash_xx,
-                                      warmup=warmup,
+                                      warm_cache=warm_cache,
                                       read_size=read_size,
                                       skip_failures=skip_failures,
                                       ),
                     filepaths)
 
 
-def profile_file(filepath, stat=True, read=True, hash_md5=True, hash_xx=True, warmup=True,
+def profile_file(filepath, stat=True, read=True, hash_md5=True, hash_xx=True, warm_cache=False,
                  read_size=DEFAULT_READ_SIZE, skip_failures=False):
     '''
     Perform the indicated actions on the given file.  Record and return the time that it takes for
@@ -386,34 +476,26 @@ def profile_file(filepath, stat=True, read=True, hash_md5=True, hash_xx=True, wa
         TIME_READ: None,
         TIME_MD5: None,
         TIME_XXHASH: None,
-        TIME_WARMUP: None,
     }
+    profiler = Profile(use_cache=warm_cache, read_size=read_size)
     try:
-        if warmup:
-            start_time = time.time()
-            read_file(filepath)
-            profile_data[TIME_WARMUP] = time.time() - start_time
 
         if stat:
-            start_time = time.time()
-            size = stat_file(filepath).st_size
-            profile_data[TIME_STAT] = time.time() - start_time
-            profile_data[SIZE] = size
+            result, duration = profiler(stat_file)(filepath)
+            profile_data[TIME_STAT] = duration
+            profile_data[SIZE] = result.st_size
 
         if read:
-            start_time = time.time()
-            read_file(filepath)
-            profile_data[TIME_READ] = time.time() - start_time
-
-        if hash_md5:
-            start_time = time.time()
-            generate_md5(filepath, read_size=read_size)
-            profile_data[TIME_MD5] = time.time() - start_time
+            _, duration = profiler(read_file)(filepath, read_size=read_size)
+            profile_data[TIME_READ] = duration
 
         if hash_xx and XXHASH:
-            start_time = time.time()
-            generate_xxhash(filepath, read_size=read_size)
-            profile_data[TIME_XXHASH] = time.time() - start_time
+            _, duration = profiler(generate_xxhash)(filepath, read_size=read_size)
+            profile_data[TIME_XXHASH] = duration
+
+        if hash_md5:
+            _, duration = profiler(generate_md5)(filepath, read_size=read_size)
+            profile_data[TIME_MD5] = duration
 
     except Exception as e:
         if not skip_failures:
@@ -428,9 +510,11 @@ def stat_file(filepath):
     return os.stat(filepath)
 
 
-def read_file(filepath):
-    with open(filepath) as f:
-        f.read()
+def read_file(filepath, read_size):
+    with io.open(filepath, 'rb') as f:
+        file_buffer = f.read(read_size)
+        while len(file_buffer) > 0:
+            file_buffer = f.read(read_size)
 
 
 def generate_md5(filepath, read_size=DEFAULT_READ_SIZE):
@@ -451,7 +535,7 @@ def generate_hash(filepath, hasher, read_size=DEFAULT_READ_SIZE):
 
     hasher: hashing object.
     '''
-    file_obj = open(filepath, 'rb')
+    file_obj = io.open(filepath, 'rb')
     buffer_count = 1
     file_buffer = file_obj.read(read_size)
     while len(file_buffer) > 0:
@@ -489,6 +573,26 @@ def generate_args_summary(args):
     return args_summary
 
 
+def drop_caches(value=3, sync=True):
+    '''
+    Flush Operating System caches (Linux only!)
+
+    Uses /proc/sys/vm/drop_caches
+
+    sync: bool. If True will flush dirty objects to disk. Otherwise dirty objects will continue to
+        be in use until written out to disk and are not freeable.
+
+    value: int
+        1: free pagecache
+        2: free dentries and inodes
+        3: free pagecache, dentries and inodes
+    '''
+    cmd = "echo %s > /proc/sys/vm/drop_caches" % value
+    if sync:
+        cmd = "sync;" + cmd
+    subprocess.check_call(cmd, shell=True)
+
+
 def generate_summary(data):
     '''
     Generate the summary data from the profiling results. Summary data consists for two rows:
@@ -514,15 +618,15 @@ def generate_summary(data):
             filtered_rows.append(row)
 
     sum_summary = {
-        DESCRIPTION: "Summed Time",
+        DESCRIPTION: "Sum",
         FILE_COUNT: "%s files (%s skipped)" % (len(filtered_rows), len(skipped_rows)),
     }
     avg_summary = {
-        DESCRIPTION: "Averaged Time",
+        DESCRIPTION: "Average",
         FILE_COUNT: "%s files (%s skipped)" % (len(filtered_rows), len(skipped_rows)),
     }
 
-    for header in (SIZE, TIME_STAT, TIME_WARMUP, TIME_READ, TIME_MD5, TIME_XXHASH):
+    for header in (SIZE, TIME_STAT, TIME_READ, TIME_MD5, TIME_XXHASH):
         logger.debug('Summarizing "%s" data...', header)
         column_entries = [row[header] for row in filtered_rows if row[header] is not None]
         sum_summary[header] = sum(column_entries) if column_entries else ""
@@ -558,6 +662,27 @@ def get_files(dirpath, recurse=True):
     return files
 
 
+def safe_mkdirs(dirpath):
+    '''
+    Create the given directory.  If it already exists, suppress the exception.
+    This function is useful when handling concurrency issues where it's not
+    possible to reliably check whether a directory exists before creating it.
+    '''
+
+    # Attempt to create the directory path
+    try:
+        os.makedirs(dirpath)
+
+    # only catch OSERrror exceptions
+    except OSError:
+        # This exception might happen for various reasons. So to be sure that
+        # it's due to the path already existing, check the path existence.
+        # If the path doesn't exist, then raise the original exception.
+        # Otherwise ignore the exception bc the path exists.
+        if not os.path.isdir(dirpath):
+            raise
+
+
 def precision_formatter(value, float_precision=15, zfill=4, omit_empty=True):
     '''
     args:
@@ -570,6 +695,79 @@ def precision_formatter(value, float_precision=15, zfill=4, omit_empty=True):
 
     # Pads/prefixes the float with 3 decimal places of zeros
     return ('%.*f' % (float_precision, value)).zfill(float_precision + zfill)
+
+
+def get_device(path):
+    '''
+    Derive the device from the given filepath
+    '''
+    dev = os.stat(path).st_dev
+    major, minor = os.major(dev), os.minor(dev)
+    res = {}
+    for line in file("/proc/partitions"):
+        fields = line.split()
+        try:
+            tmaj = int(fields[0])
+            tmin = int(fields[1])
+            name = fields[3]
+            res[(tmaj, tmin)] = name
+        except Exception:
+            # just ignore parse errors in header/separator lines
+            pass
+
+    return "/dev/%s" % res[(major, minor)]
+
+
+def run_hdparm(device, runs=3):
+    run_results = collections.defaultdict(list)
+    for _ in range(runs):
+        print "Executing %s/%s runs:" % (_ + 1, runs),
+        for bench_type, result in _run_hdparm(device).iteritems():
+            run_results[bench_type].append(result)
+
+    result_avg = {}
+
+    for bench_type, results in run_results.iteritems():
+        result_avg[bench_type] = int(sum(results) / float(len(results)))
+
+    return result_avg
+
+
+def _run_hdparm(device):
+    '''
+
+    regex samples:
+        Timing cached reads:   18784 MB in  2.00 seconds = 9400.60 MB/sec
+        Timing buffered disk reads: 3220 MB in  3.00 seconds = 1072.86 MB/sec
+        Timing buffered disk reads:  80 MB in  3.01 seconds =  26.60 MB/sec
+
+    '''
+    rx = r"Timing ((?:\w|\s)+)+:\s+\d+\s+\w+\s+in\s+\d+\.\d+\s+seconds\s+=\s+(\d+\.\d+)\s+(\w+)/sec"
+    cmd = "hdparm -Tt %s" % device
+    print cmd
+    results = {}
+    for line in subprocess.check_output(cmd, shell=True).split("\n"):
+        if not line.strip() or line.startswith("/dev/"):
+            continue
+        match = re.search(rx, line.strip())
+        if not match:
+            raise Exception('Failed to parse benchmarking output: "%s"' % line.strip())
+
+        bench_type, data_value, data_unit = match.groups()
+        # convert to bytes
+        if data_unit == "GB":
+            bytes_ = float(data_value) * 1000000000
+        elif data_unit == "MB":
+            bytes_ = float(data_value) * 1000000
+        elif data_unit == "KB":
+            bytes_ = float(data_value) * 1000
+        elif data_unit == "B":
+            bytes_ = float(data_value)
+        else:
+            raise Exception("Got unexpected unit of measurement: %s" % data_unit)
+        results[bench_type] = int(bytes_)
+
+    return results
 
 
 class SummaryTableStr(loggeria.TableStr):
@@ -589,9 +787,39 @@ class SummaryTableStr(loggeria.TableStr):
         TIME_READ: precision_formatter,
         TIME_MD5: precision_formatter,
         TIME_XXHASH: precision_formatter,
-        TIME_WARMUP: precision_formatter,
         SIZE: lambda x: int(x) if x is not "" else x,
     }
+
+
+class Profile(object):
+    '''
+    Wrapped function's signuature must use a filepath as the first argument
+    '''
+
+    def __init__(self, use_cache=False, read_size=DEFAULT_READ_SIZE):
+        '''
+        args
+            use_cache: bool.  If True, will read file first before calling wrapped function
+        '''
+        self.use_cache = use_cache
+        self.read_size = read_size
+
+    def __call__(self, function):
+
+        @functools.wraps(function)
+        def _decorator(*args, **kwargs):
+            filepath = args[0]
+            if self.use_cache:
+                logger.debug("warming file..")
+                read_file(filepath, read_size=self.read_size)
+            else:
+                logger.debug("flushing os caches")
+                drop_caches(value=3, sync=True)
+            start_time = time.time()
+            result = function(*args, **kwargs)
+            duration = time.time() - start_time
+            return result, duration
+        return _decorator
 
 
 if __name__ == '__main__':
