@@ -65,6 +65,8 @@ class FactoryTest(unittest.TestCase):
         mock_data_block.assert_called_with(product="houdini", force=False)
         db.for_houdini(force=True)
         mock_data_block.assert_called_with(product="houdini", force=True)
+
+        # Use self in this test in order to keep codacy quiet. 
         self.assertTrue(True)
 
 if __name__ == '__main__':
