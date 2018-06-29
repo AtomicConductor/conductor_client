@@ -381,8 +381,18 @@ def get_maya_image_dirpath():
     return os.path.dirname(image_filepath[0])
 
 
+def get_workspace_dirpath():
+    '''
+    Return the current Workspace directory
+    '''
+    return cmds.workspace(q=True, rootDirectory=True)
+
+
 def get_workspace_image_dirpath():
-    workspace_root = cmds.workspace(q=True, rootDirectory=True)
+    '''
+    Return the current workspace's image directory
+    '''
+    workspace_root = get_workspace_dirpath()
     image_dirname = cmds.workspace(fileRuleEntry="images")
     return os.path.join(workspace_root, image_dirname)
 
@@ -544,8 +554,10 @@ def scrape_yeti_graph(yeti_node):
 
     filepaths = []
 
-    yeti_input_nodes = ["texture", "reference"]
-    attr_name = "file_name"
+    yeti_input_attrs = {
+        "texture": ["file_name"],
+        "reference": ["reference_file"]
+    }
 
     # Query the the yeti search paths from imageSearchPath attr.  This attr
     # will be a single string value that may contain multiple paths (just
@@ -560,8 +572,29 @@ def scrape_yeti_graph(yeti_node):
     search_paths = node_search_paths + pg_image_search_paths
     logger.debug("combined image search paths: %s", search_paths)
 
-    for node_type in yeti_input_nodes:
+    for node_type, attr_names in yeti_input_attrs.iteritems():
         logger.debug("Traversing yeti %s nodes", node_type)
+        node_filepaths = scrape_yeti_node_type(yeti_node, node_type, attr_names, search_paths=node_search_paths)
+        filepaths.extend(node_filepaths)
+    return filepaths
+
+
+def scrape_yeti_node_type(yeti_node, node_type, attr_names, search_paths=()):
+    '''
+    Scrape the given PgYetiMaya node for all yeti nodes of the given node_type.
+
+    args
+        yeti_node: str. The name of the PyYetiNode to scrape for dependencies.
+        node_type: str. The name of yeti node type to scrape for dependencies.
+        attr_names: list of str. The names of the yeti node's attributes to read for dependencies.
+        search_paths: an optional list of directories to resolved any relative/global
+        files that are found.
+
+    return:
+        A list of filepaths
+    '''
+    node_filepaths = []
+    for attr_name in attr_names:
         for node in cmds.pgYetiGraph(yeti_node, listNodes=True, type=node_type) or []:
 
             filepath = cmds.pgYetiGraph(yeti_node,
@@ -582,7 +615,7 @@ def scrape_yeti_graph(yeti_node):
                 logger.debug("Conformed path: %s", filepath)
                 # if the filepath is absolute, then great; record it.
                 if os.path.isabs(filepath):
-                    filepaths.append(filepath)
+                    node_filepaths.append(filepath)
                     continue
 
                 # If the path is relative then we must construct a potential path
@@ -599,12 +632,12 @@ def scrape_yeti_graph(yeti_node):
                     resolved_filepaths = file_utils.process_upload_filepath(full_path, strict=False)
                     if resolved_filepaths:
                         logger.debug("Resolved filepaths: %s", resolved_filepaths)
-                        filepaths.extend(resolved_filepaths)
+                        node_filepaths.extend(resolved_filepaths)
                         break
                 else:
                     raise Exception("Couldn't resolve relative path: %s" % filepath)
 
-    return filepaths
+    return node_filepaths
 
 
 def parse_vrscene_file(path):

@@ -54,3 +54,8 @@ conductor/houdini/notes/
 
 # sublime
 conductor_client.sublime-*
+
+#build
+build.env
+tmp/
+codeship.aes

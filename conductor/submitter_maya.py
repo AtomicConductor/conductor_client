@@ -104,6 +104,30 @@ class MayaWidget(QtWidgets.QWidget):
         self.ui_render_layers_trwgt.setDisabled(toggled)
 
 
+class MayaAdvancedWidget(QtWidgets.QWidget):
+    '''
+    Maya-specific widget within the Advanced tab of the submitter
+    '''
+    # The .ui designer filepath
+    _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'maya_advanced.ui')
+
+    def __init__(self, parent=None):
+        super(MayaAdvancedWidget, self).__init__(parent=parent)
+        pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
+
+    def setWorkspaceDir(self, text):
+        '''
+        Set the Workspace lineEdit field to the given text
+        '''
+        self.ui_workspace_directory_lnedt.setText(text)
+
+    def getWorkspaceDir(self):
+        '''
+        Get the test from the Workspace lineEdit field
+        '''
+        return str(self.ui_workspace_directory_lnedt.text()).replace("\\", "/")
+
+
 class MayaConductorSubmitter(submitter.ConductorSubmitter):
     '''
 
@@ -150,6 +174,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         self.setFrameRange(start, end)
         self.setGpuWidgetVisibility()
         self.extended_widget.refreshUi()
+        self.extended_advanced_widget.setWorkspaceDir(maya_utils.get_workspace_dirpath())
         self.setOutputDir(maya_utils.get_image_dirpath())
 
     def setGpuWidgetVisibility(self):
@@ -161,6 +186,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     def getExtendedWidget(self):
         return MayaWidget()
+
+    def getExtendedAdvancedWidget(self):
+        return MayaAdvancedWidget()
 
     def generateTasksData(self):
         '''
@@ -192,7 +220,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         # Create a template command that be be used for each task's command
-        cmd_template = "Render %s -s %s -e %s -b %s %s -rd /tmp/render_output/ %s"
+        cmd_template = "Render %s -s %s -e %s -b %s %s -rd /tmp/render_output/ %s %s"
 
         # Retrieve the source maya file
         maya_filepath = self.getSourceFilepath()
@@ -211,6 +239,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         render_layers = self.extended_widget.getSelectedRenderLayers()
         render_layer_args = "-rl " + ",".join(render_layers)
 
+        # Workspace/Project arg. Only add flag if a workspace has been indicated in the submitter ui
+        workspace = self.extended_advanced_widget.getWorkspaceDir()
+        project_arg = "-proj %s" % file_utils.quote_path(workspace) if workspace.strip() else ""
+
         chunk_size = self.getChunkSize()
         frames_str = self.getFrameRangeString()
         frames = seqLister.expandSeq(frames_str.split(","), None)
@@ -225,6 +257,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                                        end_frame,
                                        step,
                                        render_layer_args,
+                                       project_arg,
                                        file_utils.quote_path(maya_filepath_nodrive))
 
             # Generate tasks data

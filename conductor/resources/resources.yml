@@ -15,6 +15,9 @@ instance_types:
     - {cores: 64, flavor: highcpu,  description: "64 core, 57.6GB Mem"}
     - {cores: 64, flavor: standard, description: "64 core, 240GB Mem"}
     - {cores: 64, flavor: highmem,  description: "64 core, 416GB Mem"}
+    - {cores: 96, flavor: standard, description: "96 core, 360GB Mem"}
+    - {cores: 96, flavor: highmem,  description: "96 core, 624GB Mem"}
+    - {cores: 96, flavor: highcpu,  description: "96 core, 86.4GB Mem"}
 
 gpu_configs:
     - {type: nvidia-tesla-k80,   count: 1, description: "NVIDIA Tesla K80, 1 GPU"}
@@ -53,6 +56,9 @@ maya_dependency_attrs:
         - cam
     file: # maya builtin
         - fileTextureName
+    igmDescription: # xgen
+        - xuvDir
+        - path
     McdGlobal: # Miarmy
         - outMD2Folder
     pgYetiEmitter: # yeti
@@ -242,10 +248,16 @@ maya_dependency_attrs:
     RMSPointLight: # Renderman
         - iconName
         - templatePath
-    xgmPalette: # XGen (now maya builtin?)
-        - xfn
-    xgmDescription:
+    xgmCurveToSpline: # xgen
+        - fileName
+    xgmDescription: # xgen
         - ai_batch_render_patch
+    xgmPalette: # xgen
+        - xgDeltaFiles
+        - xgBaseFile
+        - xgFileName
+    xgmSplineCache: # xgen
+        - fileName
     VRayMesh: # VRay
         - fileName
     VRaySettingsNode: # VRay
@@ -255,6 +267,7 @@ maya_dependency_attrs:
         - if
     VRayScene: #Vray Scene
         - FilePath
+
 
 # A dictionary of node types and their corresponing knobs(s) for
 # seeking out file dependencies (external filepaths)
@@ -339,7 +352,7 @@ package_ids:
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
                 "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
-                
+                "3.0.0.1": 7939bd2f238c526372c62aac078e7463
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -347,6 +360,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
+                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -364,6 +378,8 @@ package_ids:
                 "2.1.12": 48785fa2fb81e6f6849f637363dbd087
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
+            golaem:
+                "6.2.4": 2d1ab1b8e4888e6e6f31cbe33e77217f
 
 
         "Autodesk Maya 2016 SP1":
@@ -416,7 +432,7 @@ package_ids:
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
                 "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
-
+                "3.0.0.1": 7939bd2f238c526372c62aac078e7463
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -424,6 +440,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
+                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -441,6 +458,8 @@ package_ids:
                 "2.1.12": 48785fa2fb81e6f6849f637363dbd087
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
+            golaem:
+                "6.2.4": 2d1ab1b8e4888e6e6f31cbe33e77217f
 
         "Autodesk Maya 2016 SP2":
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
@@ -492,7 +511,7 @@ package_ids:
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
                 "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
-
+                "3.0.0.1": 7939bd2f238c526372c62aac078e7463
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -500,6 +519,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
+                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -517,6 +537,8 @@ package_ids:
                 "2.1.12": 48785fa2fb81e6f6849f637363dbd087
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
+            golaem:
+                "6.2.4": 2d1ab1b8e4888e6e6f31cbe33e77217f
 
 
         "Autodesk Maya 2016 SP3":
@@ -569,6 +591,7 @@ package_ids:
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
                 "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
+                "3.0.0.1": 7939bd2f238c526372c62aac078e7463
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -576,6 +599,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
+                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -593,6 +617,8 @@ package_ids:
                 "2.1.12": 48785fa2fb81e6f6849f637363dbd087
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
+            golaem:
+                "6.2.4": 2d1ab1b8e4888e6e6f31cbe33e77217f
 
 
         "Autodesk Maya 2016 SP4":
@@ -645,6 +671,7 @@ package_ids:
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
                 "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
+                "3.0.0.1": 7939bd2f238c526372c62aac078e7463
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -652,6 +679,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
+                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -669,6 +697,8 @@ package_ids:
                 "2.1.12": 48785fa2fb81e6f6849f637363dbd087
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
+            golaem:
+                "6.2.4": 2d1ab1b8e4888e6e6f31cbe33e77217f
 
 
         "Autodesk Maya 2016 SP5":
@@ -721,6 +751,7 @@ package_ids:
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
                 "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
+                "3.0.0.1": 7939bd2f238c526372c62aac078e7463
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -728,6 +759,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
+                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -745,6 +777,8 @@ package_ids:
                 "2.1.12": 48785fa2fb81e6f6849f637363dbd087
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
+            golaem:
+                "6.2.4": 2d1ab1b8e4888e6e6f31cbe33e77217f
 
 
         "Autodesk Maya 2016 SP6":
@@ -797,6 +831,7 @@ package_ids:
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
                 "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
                 "3.0.0": 376c8d7c44c638545ee6f587a9503baa
+                "3.0.0.1": 7939bd2f238c526372c62aac078e7463
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -804,6 +839,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
+                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -821,6 +857,8 @@ package_ids:
                 "2.1.12": 48785fa2fb81e6f6849f637363dbd087
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
+            golaem:
+                "6.2.4": 2d1ab1b8e4888e6e6f31cbe33e77217f
 
         "Autodesk Maya 2016 Extension 1 + SP5": # Not sure if this an actual product
             package: 7208372e306614d514944938c395e0e7 # Autodesk_MayaIO_2016
@@ -871,8 +909,8 @@ package_ids:
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
                 "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
-                "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
-                
+                "3.0.0": 376c8d7c44c638545ee6f587a9503baa
+                "3.0.0.1": 7939bd2f238c526372c62aac078e7463
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -880,6 +918,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
+                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -897,6 +936,8 @@ package_ids:
                 "2.1.12": 48785fa2fb81e6f6849f637363dbd087
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
+            golaem:
+                "6.2.4": 2d1ab1b8e4888e6e6f31cbe33e77217f
 
 
         "Autodesk Maya 2016 Extension 1 + SP6": # Not sure if this an actual product
@@ -948,7 +989,8 @@ package_ids:
                 "2.1.0.1": a0eddec3d5716765c8a11086abf88624
                 "2.1.0.2": d0e9caeba57ff51e0e9d1ef5e66cd6cf
                 "2.1.0.3": 4bac58ecc9a578ced7bb9306bba6bce7
-                "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
+                "3.0.0": 376c8d7c44c638545ee6f587a9503baa
+                "3.0.0.1": 7939bd2f238c526372c62aac078e7463
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -956,6 +998,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
+                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -973,6 +1016,8 @@ package_ids:
                 "2.1.12": 48785fa2fb81e6f6849f637363dbd087
                 "2.1.13": 44ff92f62be621986c7de89697d529b4
                 "2.1.15": f366e0cdc8e75171f9c8e4cce8881240
+            golaem:
+                "6.2.4": 2d1ab1b8e4888e6e6f31cbe33e77217f
 
         "Autodesk Maya 2016 Extension 2":  # Not sure if this an actual product
             package: 358ec09e234da63c29d612b49a77fb58 # Autodesk_MayaIO_2016_EXT2
@@ -1008,12 +1053,13 @@ package_ids:
                 "2.1.0.2": bc992ba2e26a9820ade73266a6f300d8
                 "2.1.0.3": fc2175e873a99d64c459d516ce4ee6f4
                 "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
-
+                "3.0.0.1": ec7ca6ade19d6bcf5826fc245bfc3a47
             renderman-maya:
                 "21.3": c691fab2d2770adc01d614e16b8d6e64
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
                 "21.6": 04116397b91f786baa0852ee6a33484a
+                "21.7": 73293c7d60f3067ef4b1707325295d4b
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1031,6 +1077,8 @@ package_ids:
                 "2.1.13": 6fecce703a823ac96daa6470d5e4ac54
                 "2.1.14": 82317a36f70abbca7b4485307e341f96
                 "2.1.15": 04df12d1a3effc24725d33a249a1bc82
+            golaem:
+                "6.2.4": c3241305d1d44b48ad6b5849b5480566
 
         "Autodesk Maya 2016 Extension 2 + SP1":
             package: 358ec09e234da63c29d612b49a77fb58 # Autodesk_MayaIO_2016_EXT2
@@ -1066,6 +1114,7 @@ package_ids:
                 "2.1.0.2": bc992ba2e26a9820ade73266a6f300d8
                 "2.1.0.3": fc2175e873a99d64c459d516ce4ee6f4
                 "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
+                "3.0.0.1": ec7ca6ade19d6bcf5826fc245bfc3a47
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -1073,6 +1122,7 @@ package_ids:
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
                 "21.6": 04116397b91f786baa0852ee6a33484a
+                "21.7": 73293c7d60f3067ef4b1707325295d4b
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1090,6 +1140,8 @@ package_ids:
                 "2.1.13": 6fecce703a823ac96daa6470d5e4ac54
                 "2.1.14": 82317a36f70abbca7b4485307e341f96
                 "2.1.15": 04df12d1a3effc24725d33a249a1bc82
+            golaem:
+                "6.2.4": c3241305d1d44b48ad6b5849b5480566
 
         "Autodesk Maya 2016 Extension 2 SP2":
             package: 358ec09e234da63c29d612b49a77fb58 # Autodesk_MayaIO_2016_EXT2
@@ -1125,6 +1177,7 @@ package_ids:
                 "2.1.0.2": bc992ba2e26a9820ade73266a6f300d8
                 "2.1.0.3": fc2175e873a99d64c459d516ce4ee6f4
                 "3.0.0": eafd6b0c0e336266fd63d74b378e8bd8
+                "3.0.0.1": ec7ca6ade19d6bcf5826fc245bfc3a47
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -1132,6 +1185,7 @@ package_ids:
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
                 "21.6": 04116397b91f786baa0852ee6a33484a
+                "21.7": 73293c7d60f3067ef4b1707325295d4b
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1149,6 +1203,8 @@ package_ids:
                 "2.1.13": 6fecce703a823ac96daa6470d5e4ac54
                 "2.1.14": 82317a36f70abbca7b4485307e341f96
                 "2.1.15": 04df12d1a3effc24725d33a249a1bc82
+            golaem:
+                "6.2.4": c3241305d1d44b48ad6b5849b5480566
 
         "Autodesk Maya 2017":
             package: c14b3fcde1e0d8bd66f88a4e750856b6
@@ -1182,11 +1238,13 @@ package_ids:
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
                 "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
+                "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
+                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1211,6 +1269,8 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+            golaem:
+                "6.2.4": 2678102480821dbec9e7a814b317dccf
 
         "Autodesk Maya 2017 Security Fix": # We're treating this as SP0
             package: c14b3fcde1e0d8bd66f88a4e750856b6
@@ -1244,11 +1304,13 @@ package_ids:
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
                 "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
+                "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
+                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1273,6 +1335,8 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+            golaem:
+                "6.2.4": 2678102480821dbec9e7a814b317dccf
 
         "Autodesk Maya 2017 Update 3":
             package: 23f1d45354dd7eacf852386a659a8309
@@ -1306,11 +1370,13 @@ package_ids:
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
                 "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
+                "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
+                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1335,6 +1401,8 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+            golaem:
+                "6.2.4": 2678102480821dbec9e7a814b317dccf
 
         "Autodesk Maya 2017 Update 4":
             package: 830958e28d6e02263af4f0971f036473
@@ -1368,11 +1436,13 @@ package_ids:
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
                 "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
+                "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
+                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1397,6 +1467,8 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+            golaem:
+                "6.2.4": 2678102480821dbec9e7a814b317dccf
 
         "Autodesk Maya 2017 Update 5":
             package: 40b7a0da3efc58046f95269d533fbbed
@@ -1430,11 +1502,13 @@ package_ids:
                 "2.1.0.2": 90f7878cad296e0813028fc37e6de448
                 "2.1.0.3": 7837c3154106ad84518c882a1e5127d9
                 "3.0.0": cd7c9d84d9fcece9cd743a838597cd05
+                "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
+                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1459,6 +1533,8 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+            golaem:
+                "6.2.4": 2678102480821dbec9e7a814b317dccf
 
         "Autodesk Maya 2018":
             package: 460411ee5c24661ed354863bcb3d7c21
@@ -1476,8 +1552,10 @@ package_ids:
                 "2.1.0.2": 0c4af05117037150629d43e7a85c8389
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
+                "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
+                "21.7": 0a76e5128751083ee34eb4efd450dec2
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1487,6 +1565,10 @@ package_ids:
                 "2.2.5": 25eee62bbcca44249ec55153a79c96ae
                 "2.2.6": c7ae678b1b7c406ef3bea0627a03e5f1
                 "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
+                "2.2.8": 341553d46e46aa87ab03e63de60232ff
+                "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+            golaem:
+                "6.2.4": 7840de1ec3aef59e56754a0661827b5e
 
         "Autodesk Maya 2018.1":
             package: 38015a170f892bf61e5275deac8dd421
@@ -1504,8 +1586,10 @@ package_ids:
                 "2.1.0.2": 0c4af05117037150629d43e7a85c8389
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
+                "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
+                "21.7": 0a76e5128751083ee34eb4efd450dec2
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1515,6 +1599,10 @@ package_ids:
                 "2.2.5": 25eee62bbcca44249ec55153a79c96ae
                 "2.2.6": c7ae678b1b7c406ef3bea0627a03e5f1
                 "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
+                "2.2.8": 341553d46e46aa87ab03e63de60232ff
+                "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+            golaem:
+                "6.2.4": 7840de1ec3aef59e56754a0661827b5e
 
         "Autodesk Maya 2018.2":
             package: f7e93d6431686b48648a7bee94145d06
@@ -1532,8 +1620,10 @@ package_ids:
                 "2.1.0.2": 0c4af05117037150629d43e7a85c8389
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
+                "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
+                "21.7": 0a76e5128751083ee34eb4efd450dec2
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1543,6 +1633,10 @@ package_ids:
                 "2.2.5": 25eee62bbcca44249ec55153a79c96ae
                 "2.2.6": c7ae678b1b7c406ef3bea0627a03e5f1
                 "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
+                "2.2.8": 341553d46e46aa87ab03e63de60232ff
+                "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+            golaem:
+                "6.2.4": 7840de1ec3aef59e56754a0661827b5e
     "nuke":
         "8.0v1":
             package: c8467d09a1cf38e7940a0f87bd01d5da
