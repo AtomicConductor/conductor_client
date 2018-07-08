@@ -46,7 +46,8 @@ else
 fi
 ```
 
-You can also set `HOUDINI_PATH` in a [houdini.env file](http://www.sidefx.com/docs/houdini/basics/config_env)  
+You can also set `HOUDINI_PATH` in a [houdini.env file](http://www.sidefx.com/docs/houdini/basics/config_env.html)  
+ 
 
 ```
 # conductor config start
