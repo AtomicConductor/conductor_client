@@ -135,16 +135,23 @@ def choose(node, **_):
 
     package_tree = get_package_tree()
     choices = package_tree.to_path_list()
-    results = hou.ui.selectFromTree(
-        choices,
-        exclusive=False,
-        message="Conductor packages",
-        title="Package chooser",
-        clear_on_cancel=True)
-    paths = []
-    for path in results:
-        paths += ptree.to_all_paths(path)
-    _add_package_entries(node, paths)
+    if choices:
+        results = hou.ui.selectFromTree(
+            choices,
+            exclusive=False,
+            message="Conductor packages",
+            title="Package chooser",
+            clear_on_cancel=True)
+        paths = []
+        for path in results:
+            paths += ptree.to_all_paths(path)
+        _add_package_entries(node, paths)
+    else:
+        msg = "No Houdini packages at Conductor."
+        hou.ui.displayMessage(
+            title='Warning',
+            text=msg,
+            severity=hou.severityType.ImportantMessage)
 
 
 def detect(node, **_):
@@ -156,7 +163,7 @@ def detect(node, **_):
     hopefully manage the current scene. We may detect a
     plugin in the scene that Conductor knows about, but does
     not have a path-to-host that Conductor knows about. In
-    this case it is considered unreachable and removed.
+    this case it is considered unreachable and ignored.
     Again, if the user wants it, they can select it manually
     along with the path-to-host that Conductor does know
     about.
@@ -166,34 +173,38 @@ def detect(node, **_):
 
     host = houdini_info.HoudiniInfo().get()
     paths = package_tree.get_all_paths_to(**host)
-
     for info in houdini_info.get_used_plugin_info():
         plugin_paths = package_tree.get_all_paths_to(**info)
         paths += plugin_paths
-
     paths = ptree.remove_unreachable(paths)
-    _add_package_entries(node, paths)
+    if not paths:
+        choose(node)
+    else:
+        _add_package_entries(node, paths)
+
 
 def _addEnvEntry(node, **kw):
     num = node.parm("environment_kv_pairs").eval()
-    i = num+1
+    i = num + 1
     node.parm("environment_kv_pairs").set(i)
     for key in kw:
-        node.parm( "env_key_%d" % i).set(key)
+        node.parm("env_key_%d" % i).set(key)
         node.parm("env_value_%d" % i).set(kw[key])
+
 
 def _addPathEntry(node, path):
     num = node.parm("extra_upload_paths").eval()
-    i = num+1
+    i = num + 1
     node.parm("extra_upload_paths").set(i)
-    node.parm( "upload_%d" % i).set(path)
+    node.parm("upload_%d" % i).set(path)
+
 
 def on_create(node):
     cfg = common.Config().get_user_config()
     environment = cfg.get('environment', {})
     for key in environment:
         for value in environment[key].split(":"):
-            _addEnvEntry(node, **{key:value})
+            _addEnvEntry(node, **{key: value})
 
     upload_paths = cfg.get('upload_paths', [])
     for path in upload_paths:
