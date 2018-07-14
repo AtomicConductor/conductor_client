@@ -3,6 +3,18 @@
 #Put conductor in the path
 echo "/Applications/Conductor.app/Contents/MacOS/bin" > /etc/paths.d/conductor
 
+# add conductor HOUDINI_PATH in user's houdini.env files
+# remove previous lines added by Conductor
+for envfile in `ls ${HOME}/Library/Preferences/houdini/*/houdini.env`
+do
+	bak=${envfile}.conductor.bak
+	/bin/cp -rf ${envfile} ${bak} 
+	cat ${bak} | grep -v "added by Conductor" | sed '/./,$!d' > ${envfile}
+	echo "" >> ${envfile}
+	echo "# The following lines have been added by Conductor"  >> ${envfile}
+	echo 'HOUDINI_PATH = "$HOUDINI_PATH;/Applications/Conductor.app/Contents/MacOS/conductor/conductor_client/conductor/houdini;&" # added by Conductor' >> ${envfile}
+done
+
 #initialize the environment so conductor is ready to go after installation
 #if we don't do this the user has to log out before the environment is set up
 INSTALLER_USER=$(stat -f '%Su' $HOME)
