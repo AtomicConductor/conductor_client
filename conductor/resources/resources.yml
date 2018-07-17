@@ -61,6 +61,8 @@ maya_dependency_attrs:
         - path
     McdGlobal: # Miarmy
         - outMD2Folder
+    mesh: # Maya/native
+        - dso # custom MtoA attr
     pgYetiEmitter: # yeti
         - iconName
         - templatePath
