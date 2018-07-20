@@ -292,17 +292,20 @@ class Submit(object):
         if not (self.upload_file or self.upload_paths):
             logger.warning("Submitted Job/tasks don't include any upload files")
 
-        if self.machine_flavor not in ["standard", "highmem", "highcpu"]:
-            raise BadArgumentError("Machine type %r is not one of %s" % (self.machine_flavor, ["highmem", "standard", "highcpu"]))
+        supported_machine_flavors = ["standard", "highmem", "highcpu", "ultramem"]
+        if self.machine_flavor not in supported_machine_flavors:
+            raise BadArgumentError("Machine type %r is not one of %s" % (self.machine_flavor, supported_machine_flavors))
 
         if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
             raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
+
+        if self.machine_flavor == "ultramem" and self.cores < 40:
+            raise BadArgumentError("ultramem machines have a minimum of 40 cores")
 
         if self.gpu_config:
             supported_gpu_types = ['nvidia-tesla-k80', 'nvidia-tesla-k100']
             if self.gpu_config.get("type") not in supported_gpu_types:
                 raise BadArgumentError("GPU type %s is not one of %s" % (self.gpu_config.get("type"), supported_gpu_types))
-
 
     def send_job(self, upload_files, upload_size):
         '''
