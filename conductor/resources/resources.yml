@@ -270,6 +270,11 @@ maya_dependency_attrs:
     VRayScene: #Vray Scene
         - FilePath
 
+# Arnold .ass file depdency node attrs
+arnold_dependency_attrs:
+    MayaFile: 
+        - filename
+
 
 # A dictionary of node types and their corresponing knobs(s) for
 # seeking out file dependencies (external filepaths)
