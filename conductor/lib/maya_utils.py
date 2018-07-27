@@ -475,6 +475,10 @@ def collect_dependencies(node_attrs):
     dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
     logger.debug("maya scene base dependencies: %s", dependencies)
 
+    # collect a list of ass filepaths that we can process at one time at the end of function, rather
+    # than on a per node/attr basis (much slower)
+    ass_filepaths = []
+
     all_node_types = cmds.allNodeTypes()
 
     for node_type, node_attrs in node_attrs.iteritems():
@@ -519,12 +523,40 @@ def collect_dependencies(node_attrs):
                             logger.debug("Skipping path because fileMode is disabled")
                             continue
 
+                    # ---- ARNOLD STANDIN SCRAPING -----
+                    if node_type == "aiStandIn" and path:
+                        # We expect an aiStandin node to point towards and .ass file (or sequence thereof)
+                        # Instead of loading/reading the .ass file now, simply append to a list
+                        # that we'll process all at one time (*much faster*)
+
+                        # The ass_filepath may actually be an expression (of several ass filepaths). Resolve the path
+                        # to at least one file, and only scrape that one file.  The assumption here is that every .ass
+                        # file in an .ass sequence will have the same file dependencies, so don't bother reading every
+                        # ass file. Perhaps dangerous, but we'll cross that bridge later (it's better than reading/loading
+                        # potentially thousands of .ass files)
+                        ass_filepath = file_utils.process_upload_filepath(path, strict=True)[0]
+                        ass_filepaths.append(ass_filepath)
+
+                    # Append path to list of dependencies
                     dependencies.append(path)
 
     # ---- OCIO SCRAPING -----
     ocio_dependencies = scrape_ocio_dependencies()
     logger.debug("ocio_dependencies: %s", ocio_dependencies)
     dependencies.extend(ocio_dependencies)
+
+    # ---- ARNOLD .ASS SCRAPING -----
+    # If any ass_filepaths were found, we need to process their dependencies as well.
+    # Note that we intentionally maintain an explicit list of .ass files (rather than simply searching
+    # through all of our dependencies thus far for a .ass extension) because there may some ass files
+    # that are dependencies, but are not necessary (or redundant) to load/parse (i.e. in the case of
+    # ass sequences.
+    if ass_filepaths:
+        resources = common.load_resources_file()
+        ass_attrs = resources.get("arnold_dependency_attrs") or {}
+        ass_dependencies = scrape_ass_files(ass_filepaths, ass_attrs)
+        logger.debug("Arnold .ass_dependencies: %s" % ass_dependencies)
+        dependencies.extend(ass_dependencies)
 
     # Strip out any paths that end in "\"  or "/"    Hopefully this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
@@ -910,6 +942,109 @@ def is_arnold_tx_enabled():
         return cmds.getAttr("%s.use_existing_tiled_textures" % arnold_node)
 
 
+def scrape_ass_files(ass_filepaths, node_attrs, plugin_paths=()):
+    '''
+    Read/load the given arnold files with the arnold api, and seek out nodes that have filepaths
+    of interest.
+
+    todo(lws): Still need to investigate why this crashes in mayapy when arnold plugins are
+        present (such as yeti or alshaders).
+
+    node_attrs: dictionary. key is the node type, value is a list of node attributes to query.
+
+    plugin_paths: tuple of strings. This may be necessary when running outside of maya/interactive,
+        so that nodes for arnold plugins (yeti, etc) can be properly loaded/used.
+
+        e.g. ("/usr/anderslanglands/alshaders/alShaders-linux-2.0.0b2-ai5.0.1.0/bin",
+              "/usr/peregrinelabs/yeti/Maya2017/Yeti-v2.2.6_Maya2017-linux64/bin")
+
+    '''
+    cmds.loadPlugin("mtoa")
+    try:
+        import arnold
+    except ImportError:
+        logger.warning("Failed to import arnold. Could not scrape arnold files: %s", ass_filepaths)
+        return []
+
+    arnold.AiBegin()
+    try:
+        arnold.AiMsgSetConsoleFlags(arnold.AI_LOG_ALL)
+        if plugin_paths:
+            arnold.AiLoadPlugins(os.path.sep.join(plugin_paths))
+        paths = []
+        for ass_filepath in ass_filepaths:
+            deps = _scrape_ass_file(ass_filepath, node_attrs)
+            paths.extend(deps)
+    finally:
+        arnold.AiEnd()
+
+    return paths
+
+
+def scrape_ass_file(ass_filepath, node_attrs, plugin_paths=()):
+    '''
+    Read/load the given arnold file with the arnold api, and seek out nodes that have filepaths
+    of interest.
+
+    todo(lws): Still need to investigate why this crashes in mayapy when arnold plugins are
+        present (such as yeti or alshaders).
+
+    node_attrs: dictionary. key is the node type, value is a list of node attributes to query.
+
+    plugin_paths: tuple of strings. This may be necessary when running outside of maya/interactive,
+        so that nodes for arnold plugins (yeti, etc) can be properly loaded/used.
+
+        e.g. ("/usr/anderslanglands/alshaders/alShaders-linux-2.0.0b2-ai5.0.1.0/bin",
+              "/usr/peregrinelabs/yeti/Maya2017/Yeti-v2.2.6_Maya2017-linux64/bin")
+    '''
+    cmds.loadPlugin("mtoa")
+    try:
+        import arnold
+    except ImportError:
+        logger.warning("Failed to import arnold. Could not scrape arnold file: %s", ass_filepath)
+        return []
+
+    print "loading ass file: %s" % ass_filepath
+    arnold.AiBegin()
+    arnold.AiMsgSetConsoleFlags(arnold.AI_LOG_ALL)
+    if plugin_paths:
+        arnold.AiLoadPlugins(os.path.sep.join(plugin_paths))
+
+    paths = _scrape_ass_file(ass_filepath, node_attrs)
+    arnold.AiEnd()
+    return paths
+
+
+def _scrape_ass_file(ass_filepath, node_attrs):
+    '''
+    Read/load the given arnold file with the arnold api, and query the given the node/attrs
+    for paths of interest.
+
+    node_attrs: dictionary. key is the node type, value is a list of node attributes to query.
+
+    NOTE: this should not be called directly (requires some initialization/cleanup)
+    '''
+
+    import arnold
+
+    paths = []
+    arnold.AiASSLoad(ass_filepath, arnold.AI_NODE_ALL)
+
+    # Iterate over all shape nodes, which includes procedural nodes
+    iterator = arnold.AiUniverseGetNodeIterator(arnold.AI_NODE_ALL)
+    while not arnold.AiNodeIteratorFinished(iterator):
+        node = arnold.AiNodeIteratorGetNext(iterator)
+        entryNode = arnold.AiNodeGetNodeEntry(node)
+        node_type = arnold.AiNodeEntryGetName(entryNode)
+        for attr_name in node_attrs.get(node_type) or []:
+            value = arnold.AiNodeGetStr(node, attr_name)
+            if value:
+                paths.append(value)
+
+    arnold.AiNodeIteratorDestroy(iterator)
+    return paths
+
+
 def get_node_by_type(node_type, must_exist=True, many=False):
     '''
     For the given node type, return the one node found in the maya scene of that
@@ -1278,6 +1413,7 @@ class YetiInfo(MayaPluginInfo):
         rx_release = r'(?P<release_version>\d+)'
         rx = r'{}\.{}\.{}'.format(rx_major, rx_minor, rx_release)
         return rx
+
 
 PLUGIN_CLASSES = [
     ArnoldInfo,
