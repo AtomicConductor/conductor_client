@@ -277,8 +277,27 @@ maya_dependency_attrs:
 arnold_dependency_attrs:
     MayaFile: 
         - filename
-
-
+    xgen_procedural:
+        - data
+# xgen palette file depdency node attrs
+xgen_dependency_attrs:
+    Palette:       
+        - xgDataPath: 
+            null 
+        - xgProjectPath: 
+            null 
+    SplinePrimitive:
+        - cacheFileName: 
+            useCache: "true"
+    MapTextures:
+        - RandomGenerator: 
+            null
+        - SplinePrimitive: 
+            null
+    MeshCutFXModule:
+        - meshFile: 
+            active: "true"
+        
 # A dictionary of node types and their corresponing knobs(s) for
 # seeking out file dependencies (external filepaths)
 nuke_dependency_knobs:
