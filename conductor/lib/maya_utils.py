@@ -1,10 +1,17 @@
+# Standard libs
+import collections
+import functools
 import logging
 import os
 import re
-import functools
+import shlex
+
+# Maya libs
 from maya import cmds, mel
 
+# Conductor libs
 from conductor.lib import common, package_utils, file_utils
+
 logger = logging.getLogger(__name__)
 
 
@@ -498,9 +505,9 @@ def collect_dependencies(node_attrs):
                     # ---- XGEN SCRAPING -----
                     #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
                     if node_type == "xgmPalette":
-                        sceneFile = cmds.file(query=True, sceneName=True)
-                        path = os.path.join(os.path.dirname(sceneFile), plug_value)
-                        xgen_dependencies = parse_xgen_file(path, node)
+                        maya_filepath = cmds.file(query=True, sceneName=True)
+                        palette_filepath = os.path.join(os.path.dirname(maya_filepath), plug_value)
+                        xgen_dependencies = scrape_palette_node(node, palette_filepath)
                         logger.debug("xgen_dependencies: %s", xgen_dependencies)
                         dependencies += xgen_dependencies
 
@@ -683,59 +690,6 @@ def parse_vrscene_file(path):
             if res:
                 files += res
     return files
-
-
-#  Parse the xgen file to find the paths for extra dependencies not explicitly
-#  named. This will return a list of files and directories.
-def parse_xgen_file(path, node):
-    file_paths = []
-    m = re.match("(.+)\.xgen", path)
-    if m:
-        abc_patch_file = cmds.file("%s.abc" % (m.group(1)), expandName=True, query=True, withoutCopyNumber=True)
-        if os.path.isfile(abc_patch_file):
-            file_paths.append(abc_patch_file)
-
-    paletteSection = False
-    project_dir = ""
-    local_file = ""
-    fp = open(path, "r")
-    for line in fp:
-        m = re.match("^Palette$", line)
-        if m:
-            paletteSection = True
-            continue
-
-        m = re.match("\s+cacheFileName\s+(.+)", line)
-        if m:
-            file_path = m.group(1)
-            file_paths.append(file_path)
-            continue
-
-        if paletteSection:
-            print line
-            m = re.match("^\w", line)
-            if m:
-                file_path = os.path.join(project_dir, local_file)
-                file_paths.append(file_path)
-
-                paletteSection = False
-                local_file = ""
-                project_dir = ""
-                continue
-
-            m = re.match("\s*xgDataPath\s+(.+/%s)" % node, line)
-            if m:
-                local_file = m.group(1)
-                local_file = re.sub("\$\{PROJECT\}", "", local_file)
-                continue
-
-            m = re.match("\s*xgProjectPath\s+(.+)", line)
-            if m:
-                project_dir = m.group(1)
-                file_paths.append(os.path.join(project_dir, "xgen"))
-                continue
-
-    return file_paths
 
 
 def scrape_ocio_dependencies():
@@ -973,6 +927,7 @@ def scrape_ass_files(ass_filepaths, node_attrs, plugin_paths=()):
             arnold.AiLoadPlugins(os.path.sep.join(plugin_paths))
         paths = []
         for ass_filepath in ass_filepaths:
+            logger.debug("Scraping Arnold file: %s", ass_filepath)
             deps = _scrape_ass_file(ass_filepath, node_attrs)
             paths.extend(deps)
     finally:
@@ -1004,7 +959,6 @@ def scrape_ass_file(ass_filepath, node_attrs, plugin_paths=()):
         logger.warning("Failed to import arnold. Could not scrape arnold file: %s", ass_filepath)
         return []
 
-    print "loading ass file: %s" % ass_filepath
     arnold.AiBegin()
     arnold.AiMsgSetConsoleFlags(arnold.AI_LOG_ALL)
     if plugin_paths:
@@ -1038,11 +992,244 @@ def _scrape_ass_file(ass_filepath, node_attrs):
         node_type = arnold.AiNodeEntryGetName(entryNode)
         for attr_name in node_attrs.get(node_type) or []:
             value = arnold.AiNodeGetStr(node, attr_name)
-            if value:
+
+            if node_type == "xgen_procedural":
+                logger.debug("Parsing xgen_procedural..")
+                xgen_paths = scrape_arnold_xgen_data_str(value)
+                paths.extend(xgen_paths)
+
+            elif value:
                 paths.append(value)
 
     arnold.AiNodeIteratorDestroy(iterator)
     return paths
+
+
+def scrape_arnold_xgen_data_str(string):
+    '''
+    Parse the given xgen_procedural.data string value into separate parts, and scrape each part
+    for dependencies
+    '''
+    paths = set()
+
+    # First convert the string of arg
+    xgen_args = parse_xgen_command(string)
+    for flag in ("file", 'geom'):
+        logger.debug('Reading "%s" flag', flag)
+        if flag not in xgen_args:
+            logger.warning('"%s" flag not found in xgen procedural.  Skipping', flag)
+            continue
+        path = xgen_args[flag]
+        logger.debug("path: %s", path)
+        if not path:
+            logger.warning('"%s" does not have a path specied', flag)
+            continue
+        paths.add(path)
+
+    # Parse xgen file dependencies
+    xgen_dependencies = set()
+    for path in paths:
+        if path.lower().endswith(".xgen"):
+            logger.debug("Parsing xgen dependencies for: %s", path)
+            if not os.path.isfile(path):
+                logger.warning("File does not exist, skipping: %s", path)
+                continue
+            xgen_dependencies.update(scrape_xgen_file(path))
+
+    return list(paths | xgen_dependencies)
+
+
+def parse_xgen_command(cmd_str):
+    '''
+    Parse xgen produceral command/args. Very crude with many assumptions.
+
+    args:
+        cmd_str: str. The string to parse, e.g.
+        '-debug 1 -warning 1 -stats 1  -frame 1.000000  -nameSpace cat_main -file /tmp/cat.xgen -palette cat_xgen_coll -geom /tmp/cat_xgen_coll.abc -patch Paw_R_emitter -description catcuff_xgen_desc -fps 24.000000  -motionSamplesLookup -0.250000 0.250000  -motionSamplesPlacement -0.250000 0.250000  -world 1;0;0;0;0;1;0;0;0;0;1;0;0;0;0;1'
+
+    return: dict:, e.g.
+        {'debug': '1',
+         'description': 'catcuff_xgen_desc',
+         'file': '/tmp/cat.xgen',
+         'fps': '24.000000',
+         'frame': '1.000000',
+         'geom': '/tmp/cat_xgen_coll.abc',
+         'motionSamplesLookup': ['-0.250000', '0.250000'],
+         'motionSamplesPlacement': ['-0.250000', '0.250000'],
+         'nameSpace': 'cat_main',
+         'palette': 'cat_xgen_coll',
+         'patch': 'Paw_R_emitter',
+         'stats': '1',
+         'warning': '1',
+         'world': '1;0;0;0;0;1;0;0;0;0;1;0;0;0;0;1'}
+
+    '''
+    args = collections.defaultdict(list)
+    attr = None
+    for part in shlex.split(cmd_str):
+        if part.startswith("-") and not _is_number(part):
+            attr = part.lstrip("-")
+        else:
+            args[attr].append(part)
+
+    command_args = {}
+    for flag, value in args.iteritems():
+        if len(value) is 1:
+            value = value[0]
+        command_args[flag] = value
+    return command_args
+
+
+def _is_number(string):
+    '''
+    Return True if the string can be cast to a digit/float, otherwise return False
+    '''
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+
+
+def scrape_palette_node(palette_node, palette_filepath):
+    '''
+    Inspect/scrape the xgen palette node and parse it's associated .xgen file for file dependencies
+    named.
+    '''
+    file_paths = []
+    match = re.match("(.+)\.xgen", palette_filepath)
+    if match:
+        abc_patch_file = cmds.file("%s.abc" % (match.group(1)), expandName=True, query=True, withoutCopyNumber=True)
+        if os.path.isfile(abc_patch_file):
+            file_paths.append(abc_patch_file)
+
+    palette_dependencies = scrape_xgen_file(palette_filepath)
+    return file_paths + palette_dependencies
+
+
+def scrape_xgen_file(filepath):
+    '''
+    Scrape the given .xgen file for file dependencies.
+    '''
+    try:
+        palette_modules = parse_xgen_file(filepath)
+    except Exception:
+        logger.exception("Failed to parse XGen Palette file: %s", filepath)
+        return []
+
+    resources = common.load_resources_file()
+    xgen_attrs = resources.get("xgen_dependency_attrs") or {}
+
+    paths = []
+
+    for module_type, module_attrs in xgen_attrs.iteritems():
+        for module in palette_modules.get(module_type, []):
+            for module_attr_info in module_attrs:
+                for module_attr, attr_conditions in module_attr_info.iteritems():
+                    if _are_conditions_met(module, attr_conditions or {}):
+                        value = module.get(module_attr, "")
+                        # Convert the raw parsed string value to a list of values (split by whitespace),
+                        # filtering out any empty values.
+                        values = filter(None, [v.strip(' \t\r\n') for v in value.split()])
+                        if values:
+                            # Use the last item in the values. This is a huge assumption (that we'll always
+                            # only want the last item, but it's the best we have without a proper
+                            # xgen api
+                            path = values[-1]
+                            if not os.path.isfile(path):
+                                logger.warning("Path does not exist: %s", path)
+                            paths.append(path)
+    return paths
+
+
+def _are_conditions_met(module, attr_conditions):
+    '''
+    Return True if the all of the given conditions are met for the the given xgen module values
+    '''
+    for condition_attr, condition_value in attr_conditions.iteritems():
+        if module.get(condition_attr) != condition_value:
+            logger.debug("Condition: %r != %r", module.get(condition_attr), condition_value)
+            return
+    return True
+
+
+def parse_xgen_file(filepath):
+    '''
+    TODO(LWS): I hope we can get rid of this ASAP if/when xgen provides an api to read .xgen files
+
+    Crude .xgen file parser for reading palette files.
+
+    Return a dictionary where the key is the module type, and the value is a list of modules of that
+    type.  Each module is a dictionary of data, where the key is the property/attribute name, and the
+    value is the raw value of the property.
+
+    example input file content:
+
+        Palette
+            name            robert_xgen_coll
+            parent
+            xgDataPath        /test/robert/collections/robert_xgen_coll
+            xgProjectPath        /test/shot_100/lighting/
+            xgDogTag
+            endAttrs
+
+    example output:
+       {"Palette": [
+           {
+              'name': 'robert_xgen_coll',
+              'parent': '',
+              'xgDataPath': '/test/robert/collections/robert_xgen_coll',
+              'xgDogTag': '',
+              'xgProjectPath': '/test/shot_100/lighting/',
+              'endAttrs': '',
+           }
+        ]}
+
+    '''
+    modules = []
+
+    # First we parse each line to segregate them into groups of lines, where each group represents
+    # a diffent section (module).
+    with open(filepath) as f:
+        module = []
+        for line in f:
+            # Strip the line of all leading/trailing whitepace characters
+            line = line.strip(' \t\r\n')
+            # If the line is empty, it could mean that we're at the end of a module definition.
+            # If so, add the module to the list of modules, and create an empty new one.
+            # Otherwise ignore the blank line and continue parsing.
+            if not line:
+                if module:
+                    modules.append(module)
+                    module = []
+                continue
+            # skip any comments, and the fiile version
+            if line.startswith("#") or line.startswith('FileVersion'):
+                continue
+            module.append(line)
+
+    # Parse each grouping of lines into a dictionary that represents a single module.
+    # Each dictionary key is an attribute/property of the module.
+
+    # Create an empty dictionary which has list as default values
+    parsed_modules = collections.defaultdict(list)
+    for module in modules:
+        parsed_module = {}
+        # The first line of the module defines the module type
+        module_type = module.pop(0).strip(' \t\r\n')
+        # The rest of the lines represent a property on the module
+        for line in module:
+            # Split the line by the first whitespace
+            parts = [v.strip() for v in line.split(None, 1)]
+            # Use the first item as the attr name, and the rest as the attr value
+            attr_name = parts.pop(0)
+            # Its possible that there is no value entry, so must take that into consideration.
+            attr_value = parts[0] if parts else ""
+
+            parsed_module[attr_name] = attr_value
+        parsed_modules[module_type].append(parsed_module)
+
+    return dict(parsed_modules)
 
 
 def get_node_by_type(node_type, must_exist=True, many=False):
