@@ -127,6 +127,13 @@ class MayaAdvancedWidget(QtWidgets.QWidget):
         '''
         return str(self.ui_workspace_directory_lnedt.text()).replace("\\", "/")
 
+    @QtCore.Slot(name="on_ui_choose_workspace_path_pbtn_clicked")
+    def on_ui_choose_workspace_path_pbtn_clicked(self):
+
+        dirpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
+        if dirpath:
+            self.setWorkspaceDir(dirpath)
+
 
 class MayaConductorSubmitter(submitter.ConductorSubmitter):
     '''
