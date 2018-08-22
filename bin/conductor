@@ -14,7 +14,7 @@ except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import conductor
-from conductor.lib import conductor_submit, downloader, downloader2, uploader, uploader_v2, loggeria
+from conductor.lib import conductor_submit, downloader, downloader2, uploader, loggeria
 
 
 def parse_args():
@@ -255,6 +255,10 @@ def parse_args():
                                             description=uploader_parser_desciption,
                                             formatter_class=argparse.RawTextHelpFormatter)
 
+    uploader_parser.add_argument("--database_filepath",
+                                 help=("The filepath to the local md5 caching database. If no filepath "
+                                       "is specified, the database will be created in a temp directory"))
+
     uploader_parser.add_argument("--location",
                                  help=('An optional string to indicate which location this uploader '
                                        'executable should register as. This option is only relevant '
@@ -268,6 +272,20 @@ def parse_args():
                                        'that exist on /filesystem1 and uploader2 should only upload files that exist on /filesystem2. '
                                        'This is achieved by including a location argument (such as "location1" or "location2") '
                                        'when submitting jobs, as well as when launching this uploader command.'))
+
+    uploader_parser.add_argument("--md5_caching",
+                                 help=("Use cached md5s. This can dramatically improve the uploading "
+                                       "times, as md5 checking can be very time consuming. Caching md5s "
+                                       "allows subsequent uploads (of the same files) to skip the "
+                                       "md5 generation process (if the files appear to not have been "
+                                       "modified since the last time they were submitted). The cache is "
+                                       "stored locally and uses a file's modification time and file size "
+                                       "to intelligently guess whether the file has changed. Set this "
+                                       "flag to False if there is concern that files may not be getting "
+                                       "re-uploaded properly"),
+                                 choices=[False, True],
+                                 type=cast_to_bool,
+                                 default=None)
 
     uploader_parser.add_argument("--log_level",
                                  choices=loggeria.LEVELS,
@@ -284,10 +302,6 @@ def parse_args():
                                  type=int,
                                  default=conductor.CONFIG.get("thread_count"),
                                  help=('The number of threads that should download simultaneously'))
-
-    uploader_parser.add_argument("--alt",
-                                 help=('Run an alternative version of the downloader'),
-                                 action='store_true')
 
     uploader_parser.set_defaults(func=run_uploader)
 
@@ -427,13 +441,7 @@ def run_submit(args):
 
 
 def run_uploader(args):
-    args_dict = vars(args)
-    if sys.platform == "win32":
-        uploader.run_uploader(args)
-    if args_dict.get("alt"):
-        uploader_v2.run_uploader(args)
-    else:
-        uploader.run_uploader(args)
+    uploader.run_uploader(args)
 
 
 def run_downloader(args):
