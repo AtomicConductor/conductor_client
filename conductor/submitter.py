@@ -785,7 +785,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         if response_code in SUCCESS_CODES_SUBMIT:
             job_id = str(response.get("jobid") or 0).zfill(5)
             title = "Job Submitted"
-            job_url = CONFIG['url'] + "/job/" + job_id
+            job_url = CONFIG['auth_url'] + "/job/" + job_id
             message = ('<html><head/><body><p>Job submitted: '
                        '<a href="%s"><span style=" text-decoration: underline; '
                        'color:%s;">%s</span></a></p></body></html>') % (job_url, self.link_color, job_id)
