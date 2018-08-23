@@ -62,11 +62,10 @@ class MayaWidget(QtWidgets.QWidget):
         self.ui_render_layers_trwgt.clear()
         assert isinstance(render_layers_info, list), "render_layers argument must be a list. Got: %s" % type(render_layers_info)
         for render_layer_info in reversed(render_layers_info):
-            tree_item = QtWidgets.QTreeWidgetItem([render_layer_info["layer_name"],
-                                                   render_layer_info["camera_shortname"]])
+            cameras_str = " ".join([c["camera_shortname"] for c in render_layer_info["cameras"]])
+            tree_item = QtWidgets.QTreeWidgetItem([render_layer_info["layer_name"], cameras_str])
 
             tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            tree_item._camera_transform = render_layer_info["camera_transform"]
             self.ui_render_layers_trwgt.addTopLevelItem(tree_item)
 
             # If the render layer is set to renderable, then check the item's checkbox on
@@ -572,7 +571,7 @@ class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):
         super(MayaCheckBoxTreeWidget, self).initializeUi()
         self.setIndentation(0)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.setHeaderItem(QtWidgets.QTreeWidgetItem(["Layer", "Camera"]))
+        self.setHeaderItem(QtWidgets.QTreeWidgetItem(["Layer", "Cameras"]))
 
 
 def get_maya_window():
