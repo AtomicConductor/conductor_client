@@ -427,11 +427,7 @@ def get_render_layers_info():
     a a render layer.  Each dictionary provides the following information:
         - render layer name
         - whether the render layer is set to renderable
-        - the camera that the render layer uses
-
-    Note that only one camera is allowed per render layer.  This is somewhat
-    of an arbitrary limitation, but implemented to reduce complexity.  This
-    restriction may need to be removed.
+        - the cameras that the render layer is set to render
 
     Note that this function is wrapped in an undo block because it actually changes
     the state of the maya session (unfortunately). There doesn't appear to be
@@ -439,7 +435,6 @@ def get_render_layers_info():
     it's state (switching the active render layer)
     '''
     render_layers = []
-    cameras = cmds.ls(type="camera", long=True)
 
     # record the original render layer so that we can set it back later. Wow this sucks
     original_render_layer = cmds.editRenderLayerGlobals(currentRenderLayer=True, q=True)
@@ -449,12 +444,18 @@ def get_render_layers_info():
             cmds.editRenderLayerGlobals(currentRenderLayer=render_layer)
         except RuntimeError:
             continue
-        renderable_cameras = [get_transform(camera) for camera in cameras if cmds.getAttr("%s.renderable" % camera)]
-        assert renderable_cameras, 'No Renderable camera found for render layer "%s"' % render_layer
-        assert len(renderable_cameras) == 1, 'More than one renderable camera found for render layer "%s". Cameras: %s' % (render_layer, renderable_cameras)
 
-        layer_info["camera_transform"] = renderable_cameras[0]
-        layer_info["camera_shortname"] = get_short_name(layer_info["camera_transform"])
+        cameras = []
+        # cycle through all renderable camereras in the maya scene
+        for camera in cmds.ls(type="camera", long=True):
+            if not cmds.getAttr("%s.renderable" % camera):
+                continue
+            camera_info = {}
+            camera_info["camera_transform"] = get_transform(camera)
+            camera_info["camera_shortname"] = get_short_name(camera_info["camera_transform"])
+            cameras.append(camera_info)
+
+        layer_info["cameras"] = cameras
         layer_info["renderable"] = cmds.getAttr("%s.renderable" % render_layer)
         render_layers.append(layer_info)
 
