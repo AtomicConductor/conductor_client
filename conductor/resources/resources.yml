@@ -365,6 +365,7 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
+                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -447,6 +448,7 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
+                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -528,6 +530,7 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
+                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -610,6 +613,7 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
+                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -692,6 +696,7 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
+                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -774,6 +779,7 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
+                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -856,6 +862,7 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
+                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -937,6 +944,7 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
+                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -1019,6 +1027,7 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
+                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -1084,6 +1093,7 @@ package_ids:
                 "3.0.0.1": ec7ca6ade19d6bcf5826fc245bfc3a47
                 "3.0.1": f68d6d1ed70e15a8374febde7171f67c
                 "3.0.1.1": f51bbec3c7e56da678a5f083b72f6c2f
+                "3.1.0.0": 1bf0b01f6e9a7aad7833c637d48ba95b
             renderman-maya:
                 "21.3": c691fab2d2770adc01d614e16b8d6e64
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
@@ -1147,6 +1157,7 @@ package_ids:
                 "3.0.0.1": ec7ca6ade19d6bcf5826fc245bfc3a47
                 "3.0.1": f68d6d1ed70e15a8374febde7171f67c
                 "3.0.1.1": f51bbec3c7e56da678a5f083b72f6c2f
+                "3.1.0.0": 1bf0b01f6e9a7aad7833c637d48ba95b
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -1212,6 +1223,7 @@ package_ids:
                 "3.0.0.1": ec7ca6ade19d6bcf5826fc245bfc3a47
                 "3.0.1": f68d6d1ed70e15a8374febde7171f67c
                 "3.0.1.1": f51bbec3c7e56da678a5f083b72f6c2f
+                "3.1.0.0": 1bf0b01f6e9a7aad7833c637d48ba95b
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -1275,6 +1287,7 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
+                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
@@ -1343,6 +1356,7 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
+                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
@@ -1411,6 +1425,7 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
+                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
@@ -1479,6 +1494,7 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
+                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
@@ -1547,6 +1563,7 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
+                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
@@ -1599,6 +1616,7 @@ package_ids:
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
+                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": 0a76e5128751083ee34eb4efd450dec2
@@ -1635,6 +1653,7 @@ package_ids:
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
+                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": 0a76e5128751083ee34eb4efd450dec2
@@ -1671,6 +1690,7 @@ package_ids:
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
+                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": 0a76e5128751083ee34eb4efd450dec2
@@ -1707,6 +1727,7 @@ package_ids:
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
+                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": 0a76e5128751083ee34eb4efd450dec2
