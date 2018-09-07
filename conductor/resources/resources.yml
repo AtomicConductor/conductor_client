@@ -1788,6 +1788,44 @@ package_ids:
                 "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+
+        "Autodesk Maya 2018.4":
+            package: f8a07ea6790a40abe2c06e404ff5849e
+            v-ray-maya:
+                "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
+                "3.60.03": 4948a81728a1612262ce781ed3c35511
+                "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
+                "Next, Beta 2": 46724233e6e0df9f69979d58ddadb3ca
+            arnold-maya:
+                "2.0.1": 75267da8444add2de1a9ce615834e81a
+                "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
+                "2.0.2.3": 0172d14d1aa2abbd56ba4b579c4c0577
+                "2.0.2.4": ed3839551e44709a7820cec9307a23fe
+                "2.1.0": cbe8d96aea67a3f39d17918f69312432
+                "2.1.0.1": 95a2241e0efdba008eec42deef13c24d
+                "2.1.0.2": 0c4af05117037150629d43e7a85c8389
+                "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
+                "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
+                "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.1": c07b1199c9995b3eac749898e95168f6
+                "3.0.1.1": 26e9640b903142f64f9177ae028d0006
+                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
+            renderman-maya:
+                "21.6": 914263d130a20364759697ba1aef15f1
+                "21.7": 0a76e5128751083ee34eb4efd450dec2
+            yeti:
+                "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
+                "2.2.1": 94e2209873200b6f9513aa5430c94699
+                "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
+                "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
+                "2.2.4": 64950eaef0d9ae5a6b72da9a8deab4bd
+                "2.2.5": 25eee62bbcca44249ec55153a79c96ae
+                "2.2.6": c7ae678b1b7c406ef3bea0627a03e5f1
+                "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
+                "2.2.8": 341553d46e46aa87ab03e63de60232ff
+                "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+            golaem:
+                "6.2.4": 7840de1ec3aef59e56754a0661827b5e
     "nuke":
         "8.0v1":
             package: c8467d09a1cf38e7940a0f87bd01d5da
