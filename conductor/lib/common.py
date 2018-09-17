@@ -339,7 +339,12 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
     file_buffer = file_obj.read(blocksize)
     while len(file_buffer) > 0:
         hash_obj.update(file_buffer)
-        file_buffer = file_obj.read(blocksize)
+        try:
+            file_buffer = file_obj.read(blocksize)
+        except IOError:
+            logger.log(log_level, "Cannot read file '%s'. Is it readable by the user running the"
+                                  " uploader?", filepath)
+            raise
         curtime = time.time()
         bytes_processed = buffer_count * blocksize
         percentage_processed = int((bytes_processed / float(file_size)) * 100)
