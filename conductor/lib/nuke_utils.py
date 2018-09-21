@@ -1,8 +1,12 @@
+import logging
 import os
 import re
+
 import nuke
 
 from conductor.lib import package_utils
+
+logger = logging.getLogger(__name__)
 
 
 def get_image_dirpath():
@@ -87,6 +91,12 @@ def collect_dependencies(write_nodes, views, dependency_knobs=None):
     For the given Write nodes, traverse up their hierarchy to query any nodes
     for dependency filepaths and return them.
 
+    Note that a path value found in a node/knob may contain tcl expressions that this function
+    will resolve, e.g. a path value of: 
+        "[python {nuke.script_directory()}]/[value seq]/[value shot]/cat.####.jpg"
+    may resolve to:
+        "/tmp/conductor/nuke/010/010_250/cat.%04d.jpg
+
     write_nodes: a list of Write nodes (their node names) for which to collect
                  dependencies for.
 
@@ -106,17 +116,51 @@ def collect_dependencies(write_nodes, views, dependency_knobs=None):
                 for knob_name in dependency_knobs.get(dep_node.Class(), []):
                     knob = dep_node.knob(knob_name)
                     if knob:
-                        raw_file_path = knob.value()
+                        # Resolve TCL expressions and relative paths
+                        path = resolve_knob_path(knob)
 
-                        if re.search("%[Vv]", raw_file_path):
+                        if re.search("%[Vv]", path):
                             for view in views:
-                                view_path = re.sub("%V", view, raw_file_path)
+                                view_path = re.sub("%V", view, path)
                                 view_path = re.sub("%v", view[0], view_path)
                                 deps.add(view_path)
                         else:
-                            deps.add(raw_file_path)
+                            deps.add(path)
 
     return sorted(deps)
+
+
+def resolve_knob_path(knob):
+    '''
+    Resolve the knob value of any TCL expression and/or relative path
+    Note that this does *not* resolve any frame number expressions.
+
+    args:
+        knob: any File_Knob object
+
+    return: str. the resolved path value
+
+    example paths:
+        '[python {nuke.script_directory()}]/../images/sequences/02/image.%04d.jpg'
+        '../images/sequences/[value this.name]/image.%04d.jpg'
+        '../images/sequences/03/image.%04d.jpg'
+        '../images/sequences/../sequences/03/image.%04d.jpg'
+        ''
+    '''
+    raw_value = knob.value()
+    logger.debug("Resolving tcl expressions (if any)  on %s value: '%s'", knob.fullyQualifiedName(), raw_value)
+    path = nuke.runIn(knob.node().fullName(), "nuke.tcl('return %s')" % raw_value)
+    if not os.path.isabs(path):
+        logger.debug("Resolving relative path: %s", path)
+
+        # Join the relative path with the nuke script directory
+        path = os.path.join(nuke.script_directory(), path)
+
+    # Resolve any ellipses in the path (e.g. ../../  ). Unfortunately this also normpaths it, which may lead to some fallout/bugs
+    path = os.path.abspath(path)
+
+    logger.debug("Resolved to: %s", path)
+    return path
 
 
 def get_node_dependencies(node, types=(), collected_deps=()):
@@ -166,17 +210,20 @@ def get_nuke_script_filepath():
         raise Exception("Nuke script has not been saved to a file location.  Please save file before submitting to Conductor.")
     return filepath
 
+
 def check_script_modified():
     '''
     Check if the scene's been modified, and error out if it has been
     '''
     return nuke.root().modified()
 
+
 def save_current_nuke_script():
     '''
     Save the current script
     '''
     return nuke.scriptSave()
+
 
 def get_frame_range():
     '''
@@ -220,7 +267,9 @@ def get_write_node_filepath(node_name):
     node = nuke.toNode(node_name)
     if node.Class() not in write_node_types:
         raise Exception("Node not of expected types: %s. Got: %s" % (write_node_types, node.Class()))
-    return node.knob("file").value()
+
+    # Resolve the path of any TCL expressions, or relative path
+    return resolve_knob_path(node.knob("file"))
 
 
 class NukeInfo(package_utils.ProductInfo):
