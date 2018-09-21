@@ -1,8 +1,12 @@
+import logging
 import os
 import re
+
 import nuke
 
 from conductor.lib import package_utils
+
+logger = logging.getLogger(__name__)
 
 
 def get_image_dirpath():
@@ -86,6 +90,12 @@ def collect_dependencies(write_nodes, views, dependency_knobs=None):
     '''
     For the given Write nodes, traverse up their hierarchy to query any nodes
     for dependency filepaths and return them.
+    
+    Note that a path value found in a node/knob may contain tcl expressions that this function
+    will resolve, e.g. a path value of: 
+        "[python {nuke.script_directory()}]/[value seq]/[value shot]/cat.####.jpg"
+    may resolve to:
+        "/tmp/conductor/nuke/010/010_250/cat.%04d.jpg
 
     write_nodes: a list of Write nodes (their node names) for which to collect
                  dependencies for.
@@ -106,15 +116,18 @@ def collect_dependencies(write_nodes, views, dependency_knobs=None):
                 for knob_name in dependency_knobs.get(dep_node.Class(), []):
                     knob = dep_node.knob(knob_name)
                     if knob:
-                        raw_file_path = knob.value()
+                        raw_value = knob.value()
+                        logger.debug("Resolving any tcl expressions on %s value: '%s'", knob.fullyQualifiedName(), raw_value)
+                        path = nuke.runIn(dep_node.fullName(), "nuke.tcl('return %s')" % raw_value)
+                        logger.debug("Resolved to: %s", path)
 
-                        if re.search("%[Vv]", raw_file_path):
+                        if re.search("%[Vv]", path):
                             for view in views:
-                                view_path = re.sub("%V", view, raw_file_path)
+                                view_path = re.sub("%V", view, path)
                                 view_path = re.sub("%v", view[0], view_path)
                                 deps.add(view_path)
                         else:
-                            deps.add(raw_file_path)
+                            deps.add(path)
 
     return sorted(deps)
 
@@ -166,17 +179,20 @@ def get_nuke_script_filepath():
         raise Exception("Nuke script has not been saved to a file location.  Please save file before submitting to Conductor.")
     return filepath
 
+
 def check_script_modified():
     '''
     Check if the scene's been modified, and error out if it has been
     '''
     return nuke.root().modified()
 
+
 def save_current_nuke_script():
     '''
     Save the current script
     '''
     return nuke.scriptSave()
+
 
 def get_frame_range():
     '''
