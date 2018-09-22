@@ -344,6 +344,7 @@ package_ids:
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
                 "3.60.03": b11fb9d577021918d0a9ea1a410c2486
+                "Next, Beta 2": 20e3078b29ccc12e25d537817dea614c
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -427,6 +428,7 @@ package_ids:
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
                 "3.60.03": b11fb9d577021918d0a9ea1a410c2486
+                "Next, Beta 2": 20e3078b29ccc12e25d537817dea614c
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -509,6 +511,7 @@ package_ids:
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
                 "3.60.03": b11fb9d577021918d0a9ea1a410c2486
+                "Next, Beta 2": 20e3078b29ccc12e25d537817dea614c
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -592,6 +595,7 @@ package_ids:
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
                 "3.60.03": b11fb9d577021918d0a9ea1a410c2486
+                "Next, Beta 2": 20e3078b29ccc12e25d537817dea614c
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -675,6 +679,7 @@ package_ids:
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
                 "3.60.03": b11fb9d577021918d0a9ea1a410c2486
+                "Next, Beta 2": 20e3078b29ccc12e25d537817dea614c
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -758,6 +763,7 @@ package_ids:
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
                 "3.60.03": b11fb9d577021918d0a9ea1a410c2486
+                "Next, Beta 2": 20e3078b29ccc12e25d537817dea614c
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -841,6 +847,7 @@ package_ids:
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
                 "3.60.03": b11fb9d577021918d0a9ea1a410c2486
+                "Next, Beta 2": 20e3078b29ccc12e25d537817dea614c
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -923,6 +930,7 @@ package_ids:
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
                 "3.60.03": b11fb9d577021918d0a9ea1a410c2486
+                "Next, Beta 2": 20e3078b29ccc12e25d537817dea614c
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -1006,6 +1014,7 @@ package_ids:
                 "3.52.02": 1a4f2057d547dc2a177054d1d1eb8bff
                 "3.60.01": 0852ea6bfcd34dc59029c2b3a3ea1b8e
                 "3.60.03": b11fb9d577021918d0a9ea1a410c2486
+                "Next, Beta 2": 20e3078b29ccc12e25d537817dea614c
             arnold-maya:
                 "1.2.2.0": d6ff0e572eb121f5b3c5327f88f3ddf4
                 "1.2.3.0": 117bdb1282d82e741f8bbf9b50a0c547
@@ -1086,6 +1095,7 @@ package_ids:
                 "3.60.01": 6e8d7b814b5ecccdf605bb1db7f78b9a
                 "3.60.03": 038886c08d799d90b43fd259761d3940
                 "3.60.04": 7e419f321332f8cc3c434ee2b68a70fe
+                "Next, Beta 2": 16924fa6c066a59900f253c3e30c5ed8
             arnold-maya:
                 "1.2.7.3": 79ff37973ef0c543a9dadd9bda8ff774
                 "1.3.0.1": bc64abcfac228eacd95103fefe19448c
@@ -1150,6 +1160,7 @@ package_ids:
                 "3.60.01": 6e8d7b814b5ecccdf605bb1db7f78b9a
                 "3.60.03": 038886c08d799d90b43fd259761d3940
                 "3.60.04": 7e419f321332f8cc3c434ee2b68a70fe
+                "Next, Beta 2": 16924fa6c066a59900f253c3e30c5ed8
             arnold-maya:
                 "1.2.7.3": 79ff37973ef0c543a9dadd9bda8ff774
                 "1.3.0.1": bc64abcfac228eacd95103fefe19448c
@@ -1216,6 +1227,7 @@ package_ids:
                 "3.60.01": 6e8d7b814b5ecccdf605bb1db7f78b9a
                 "3.60.03": 038886c08d799d90b43fd259761d3940
                 "3.60.04": 7e419f321332f8cc3c434ee2b68a70fe
+                "Next, Beta 2": 16924fa6c066a59900f253c3e30c5ed8
             arnold-maya:
                 "1.2.7.3": 79ff37973ef0c543a9dadd9bda8ff774
                 "1.3.0.1": bc64abcfac228eacd95103fefe19448c
@@ -1280,6 +1292,7 @@ package_ids:
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
+                "Next, Beta 2": 63a7413e901d4a674e625bea7c035a33
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1349,6 +1362,7 @@ package_ids:
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
+                "Next, Beta 2": 63a7413e901d4a674e625bea7c035a33
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1418,6 +1432,7 @@ package_ids:
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
+                "Next, Beta 2": 63a7413e901d4a674e625bea7c035a33
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1488,6 +1503,7 @@ package_ids:
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
+                "Next, Beta 2": 63a7413e901d4a674e625bea7c035a33
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1558,6 +1574,7 @@ package_ids:
                 "3.60.01": 61942f7f892f575a6fc84a020f88e731
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
+                "Next, Beta 2": 63a7413e901d4a674e625bea7c035a33
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1625,6 +1642,7 @@ package_ids:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
+                "Next, Beta 2": 46724233e6e0df9f69979d58ddadb3ca
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1662,6 +1680,7 @@ package_ids:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
+                "Next, Beta 2": 46724233e6e0df9f69979d58ddadb3ca
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1699,6 +1718,7 @@ package_ids:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
+                "Next, Beta 2": 46724233e6e0df9f69979d58ddadb3ca
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1737,6 +1757,45 @@ package_ids:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
+                "Next, Beta 2": 46724233e6e0df9f69979d58ddadb3ca
+            arnold-maya:
+                "2.0.1": 75267da8444add2de1a9ce615834e81a
+                "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
+                "2.0.2.3": 0172d14d1aa2abbd56ba4b579c4c0577
+                "2.0.2.4": ed3839551e44709a7820cec9307a23fe
+                "2.1.0": cbe8d96aea67a3f39d17918f69312432
+                "2.1.0.1": 95a2241e0efdba008eec42deef13c24d
+                "2.1.0.2": 0c4af05117037150629d43e7a85c8389
+                "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
+                "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
+                "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.1": c07b1199c9995b3eac749898e95168f6
+                "3.0.1.1": 26e9640b903142f64f9177ae028d0006
+                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
+            renderman-maya:
+                "21.6": 914263d130a20364759697ba1aef15f1
+                "21.7": 0a76e5128751083ee34eb4efd450dec2
+            yeti:
+                "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
+                "2.2.1": 94e2209873200b6f9513aa5430c94699
+                "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
+                "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
+                "2.2.4": 64950eaef0d9ae5a6b72da9a8deab4bd
+                "2.2.5": 25eee62bbcca44249ec55153a79c96ae
+                "2.2.6": c7ae678b1b7c406ef3bea0627a03e5f1
+                "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
+                "2.2.8": 341553d46e46aa87ab03e63de60232ff
+                "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+            golaem:
+                "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+
+        "Autodesk Maya 2018.4":
+            package: f8a07ea6790a40abe2c06e404ff5849e
+            v-ray-maya:
+                "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
+                "3.60.03": 4948a81728a1612262ce781ed3c35511
+                "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
+                "Next, Beta 2": 46724233e6e0df9f69979d58ddadb3ca
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
