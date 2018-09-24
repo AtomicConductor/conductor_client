@@ -333,26 +333,32 @@ def generate_md5(filepath, base_64=False, blocksize=65536, poll_seconds=None,
     '''
     file_size = os.path.getsize(filepath)
     hash_obj = hashlib.md5()
-    file_obj = open(filepath, 'rb')
     buffer_count = 1
     last_time = time.time()
-    file_buffer = file_obj.read(blocksize)
-    while len(file_buffer) > 0:
-        hash_obj.update(file_buffer)
-        file_buffer = file_obj.read(blocksize)
-        curtime = time.time()
-        bytes_processed = buffer_count * blocksize
-        percentage_processed = int((bytes_processed / float(file_size)) * 100)
+    with open(filepath, 'rb') as file_obj:
+        try:
+            file_buffer = file_obj.read(blocksize)
+        except IOError:
+            logger.log(log_level, "Cannot read file '%s'. Is it readable by the user running the"
+                                  " uploader?", filepath)
+            raise
 
-        if poll_seconds and curtime - last_time >= poll_seconds:
-            logger.log(log_level, "MD5 hashing %s%% (size %s bytes): %s ",
-                       percentage_processed, file_size, filepath)
-            last_time = curtime
+        while len(file_buffer) > 0:
+            hash_obj.update(file_buffer)
+            file_buffer = file_obj.read(blocksize)
+            curtime = time.time()
+            bytes_processed = buffer_count * blocksize
+            percentage_processed = int((bytes_processed / float(file_size)) * 100)
 
-        if callback:
-            callback(filepath, file_size, bytes_processed, log_level=log_level)
+            if poll_seconds and curtime - last_time >= poll_seconds:
+                logger.log(log_level, "MD5 hashing %s%% (size %s bytes): %s ",
+                           percentage_processed, file_size, filepath)
+                last_time = curtime
 
-        buffer_count += 1
+            if callback:
+                callback(filepath, file_size, bytes_processed, log_level=log_level)
+
+            buffer_count += 1
 
     md5 = hash_obj.digest()
 
