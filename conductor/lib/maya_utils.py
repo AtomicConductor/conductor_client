@@ -545,6 +545,23 @@ def collect_dependencies(node_attrs):
                         ass_filepath = file_utils.process_upload_filepath(path, strict=True)[0]
                         ass_filepaths.append(ass_filepath)
 
+                    # ---- RENDERMAN RLF files -----
+                    # If the node type is a RenderManArchive, then it may have an associated .rlf
+                    # file on disk. Unfortunatey there doesn't appear to a direct reference to that
+                    # path anywhere, so we'll have to rely upon convention, where a given rib
+                    # archive, such as
+                    #     renderman/ribarchives/SpidermanRibArchiveShape.zip
+                    # will have it's corresponding .rlf file here:
+                    #     renderman/ribarchives/SpidermanRibArchiveShape/SpidermanRibArchiveShape.job.rlf
+                    if node_type == "RenderManArchive" and node_attr == "filename" and path:
+                        rlf_dirpath = os.path.splitext(path)[0]
+                        rlf_filename = "%s.job.rlf" % os.path.basename(rlf_dirpath)
+                        rlf_filepath = os.path.join(rlf_dirpath, rlf_filename)
+                        logger.debug("Searching for corresponding rlf file: %s", rlf_filepath)
+                        rlf_filepaths = file_utils.process_upload_filepath(rlf_filepath, strict=False)
+                        if rlf_filepaths:
+                            dependencies.append(rlf_filepaths[0])
+
                     # Append path to list of dependencies
                     dependencies.append(path)
 
