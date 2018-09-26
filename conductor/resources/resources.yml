@@ -187,6 +187,7 @@ maya_dependency_attrs:
     PxrVisualizer: # Renderman
         - matCap
     RenderManArchive: # Renderman
+        - filename
         - iconName
         - templatePath
     rmanImageFile: # Renderman

@@ -3,8 +3,11 @@ import collections
 import functools
 import logging
 import os
+import pipes
 import re
 import shlex
+import subprocess
+import tempfile
 
 # Maya libs
 from maya import cmds, mel
@@ -499,6 +502,10 @@ def collect_dependencies(node_attrs):
                 plug_name = '%s.%s' % (node, node_attr)
                 if cmds.objExists(plug_name):
                     plug_value = cmds.getAttr(plug_name)
+                    # Skip any empty values
+                    if not plug_value:
+                        continue
+
                     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
                     logger.debug("%s: %s", plug_name, path)
@@ -532,7 +539,7 @@ def collect_dependencies(node_attrs):
                             continue
 
                     # ---- ARNOLD STANDIN SCRAPING -----
-                    if node_type == "aiStandIn" and path:
+                    if node_type == "aiStandIn":
                         # We expect an aiStandin node to point towards and .ass file (or sequence thereof)
                         # Instead of loading/reading the .ass file now, simply append to a list
                         # that we'll process all at one time (*much faster*)
@@ -544,6 +551,33 @@ def collect_dependencies(node_attrs):
                         # potentially thousands of .ass files)
                         ass_filepath = file_utils.process_upload_filepath(path, strict=True)[0]
                         ass_filepaths.append(ass_filepath)
+
+                    # ---- RENDERMAN RLF files -----
+                    # If the node type is a RenderManArchive, then it may have an associated .rlf
+                    # file on disk. Unfortunatey there doesn't appear to a direct reference to that
+                    # path anywhere, so we'll have to rely upon convention, where a given rib
+                    # archive, such as
+                    #     renderman/ribarchives/SpidermanRibArchiveShape.zip
+                    # will have it's corresponding .rlf file here:
+                    #     renderman/ribarchives/SpidermanRibArchiveShape/SpidermanRibArchiveShape.job.rlf
+                    if node_type == "RenderManArchive" and node_attr == "filename":
+                        archive_dependencies = []
+                        rlf_dirpath = os.path.splitext(path)[0]
+                        rlf_filename = "%s.job.rlf" % os.path.basename(rlf_dirpath)
+                        rlf_filepath = os.path.join(rlf_dirpath, rlf_filename)
+                        logger.debug("Searching for corresponding rlf file: %s", rlf_filepath)
+                        rlf_filepaths = file_utils.process_upload_filepath(rlf_filepath, strict=False)
+                        if rlf_filepaths:
+                            rlf_filepath = rlf_filepaths[0] # there should only be one
+                            # Parse the rlf file for file dependencies.
+                            # Note that though this is an rlf file, there is embedded rib data within
+                            # that we can parse using this rib parser.
+                            logger.debug("Parsing rlf file: %s", rlf_filepath)
+                            rlf_depedencies = parse_rib_file(rlf_filepath)
+                            archive_dependencies.extend([rlf_filepath] + rlf_depedencies)
+
+                        logger.debug('%s dependencies: %s', plug_name, archive_dependencies)
+                        dependencies.extend(archive_dependencies)
 
                     # Append path to list of dependencies
                     dependencies.append(path)
@@ -691,6 +725,75 @@ def parse_vrscene_file(path):
             if res:
                 files += res
     return files
+
+
+def parse_rib_file(filepath):
+    '''
+    Parse the given rib filepath for file dependencies
+
+    In leui of  python rib parser/api, we need need to resort to some awful hacks here.
+
+    We use prman library to read the rib file.  The only benefit that this provides is that it can
+    read a binary rib file and output it to ascii.  Aside from that, we're doing crude regex matching
+    from the content (no api for interfacing with ribs :( ).
+
+    Regex for attribites suchs as:
+        filename
+        fileTextureName
+    '''
+
+    # Make sure the renderman plugin is loaded so that we can use it's python lib
+    try:
+        if not cmds.pluginInfo(RendermanInfo.plugin_name, q=True, loaded=True):
+            cmds.loadPlugin(RendermanInfo.plugin_name)
+    except RuntimeError:
+        logger.warning("Could not load %s plugin. Cannot parse rib/rlf file", RendermanInfo.plugin_name)
+        return []
+    try:
+        import prman
+    except ImportError:
+        logger.warning('Failed to import prman module. Cannot parse rib/rlf file')
+        return []
+
+    # Unfortunately renderman api can't write to an object it memory that we can use, so we'll
+    # need to make a tmpfile on disk to write to, and then read it back.
+    tmpfile = tempfile.NamedTemporaryFile(prefix="tmp-conductor-")
+    tmpfilepath = tmpfile.name
+    tmpfile.close()
+
+    # Use the renderman api to read the rib file, and write it back out to the temp file
+    # the only purpose for doing so is so that we can read binary ribs.
+    # Access prman's RiXXX procs and definitions
+    ri = prman.Ri()
+    # Format the output for easier reading;
+    ri.Option("rib", {"string asciistyle": "indented"})
+    ri.Begin(tmpfilepath)           # Echo the rib as it is processed;
+    # Process the input rib. the function will fail if given a unicode string, so convert to regular string.
+    prman.ParseFile(filepath.encode('utf8'))
+    ri.End()
+
+    # Read the rib from the tmpfile, and crudely parse for paths of interest.
+    # I wish there was a rib api to allow access to elements/attributes in a rib file :(
+    paths = []
+    with open(tmpfilepath) as f:
+        for line in f:
+            match = re.search(r'string (?:filename|fileTextureName)" \["([^"]+)"\]', line)
+            if match and match.group(1) not in ["stdout"]:
+                paths.append(match.group(1))
+
+    # Resolve any paths that are relative, unresolved, etc
+    filepaths = []
+    for path in paths:
+        # If the path is relative, resolve it by joining with workspace root
+        if not os.path.isabs(path):
+            path = os.path.join(get_workspace_dirpath(), path)
+        # process the path to resolve any other variables/characters/tokens, etc
+        filepaths.extend(file_utils.process_upload_filepath(path, strict=False))
+
+    # Delete the tmpfile
+    os.remove(tmpfilepath)
+
+    return filepaths
 
 
 def scrape_ocio_dependencies():
