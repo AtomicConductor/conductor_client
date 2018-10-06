@@ -27,6 +27,7 @@ class MD5Worker(worker.ThreadWorker):
         # The location of the sqlite database. If None, it will degault to a value
         self.md5_caching = kwargs.get('md5_caching')
         self.database_filepath = kwargs.get('database_filepath')
+        self.error_queue = Queue.Queue()
         worker.ThreadWorker.__init__(self, *args, **kwargs)
 
     def do_work(self, job, thread_int):
@@ -44,7 +45,10 @@ class MD5Worker(worker.ThreadWorker):
                 message += 'current md5:   %s\n' % current_md5
                 message += 'This is likely due to the file being written to after the user submitted the job but before it got uploaded to conductor'
                 logger.error(message)
-                raise Exception(message)
+                if not self.error_queue:
+                    # Raising an exception will freeze the uploader.
+                    raise Exception(message)
+                self.error_queue.put(traceback.format_exc())
         self.metric_store.set_dict('file_md5s', filename, current_md5)
         return (filename, current_md5)
 
