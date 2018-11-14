@@ -1959,6 +1959,8 @@ package_ids:
             package: d718b7ed428634e164fccca3ff4e0833
         "10.5v5":
             package: 11228b2423a9217e03e7e5709c8cf2da
+        "10.5v8":
+            package: 0a81ec60785b2ab233ee92066a23b6e7
         "11.0v1":
             package: be7b11b0d8182ea853bbb96bf41c1432
         "11.0v2":
@@ -1977,13 +1979,16 @@ package_ids:
             package: de10e13178c92ab7b0d513203966d121
         "11.1v5":
             package: 9740b8f9db20bc353adb8a223571b02f
+        "11.1v6":
+            package: 1ca67e2cca69f7ecf80a0be88db1ca26
         "11.2v1":
             package: 693cd9db13cca8bcdde2f5e0e63ac971
         "11.2v2":
             package: 78cb9abb8136f747a0f6b2f3f87e6e85
         "11.2v3":
             package: 85c6f4118bfabd8afe600b54bf929baa
-
+        "11.2v4":
+            package: 4bbb7526b1dc0f57cfd0032ab7337a80
 
 
  # This houdini section has fake data for testing / QA purposes
