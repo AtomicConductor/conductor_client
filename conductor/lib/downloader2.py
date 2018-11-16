@@ -11,6 +11,7 @@ import os
 import Queue
 import logging
 import logging.handlers
+import multiprocessing
 import re
 import requests
 import random
@@ -233,7 +234,7 @@ class Downloader(object):
     # The amount of time to "sleep" before querying the app for more downloads
     naptime = 15
     endpoint_downloads_next = '/downloads/next'
-    endpoint_downloads_job = '/downloads/%s'
+    endpoint_downloads_job = '/jobs/%s/downloads'
     endpoint_downloads_status = '/downloads/status'
 
     download_progess_polling = 2
@@ -250,6 +251,12 @@ class Downloader(object):
 
     # record last threads alive
     _threads_alive = ()
+
+    # a messaging object to indicate when all jobs have been queued
+    _all_enqueued = multiprocessing.Array('c', 'false')
+
+    # The number of Downloads to fetch per request (only relevant when downloading by job_id)
+    download_page_size = CONFIG.get("download_page_size", 200)
 
     def __init__(self, thread_count=None, location=None, output_dir=None):
 
@@ -274,29 +281,30 @@ class Downloader(object):
         downloader = cls(thread_count=thread_count, location=location, output_dir=output_dir)
         thread_states = downloader.start(summary_interval=summary_interval)
         while not common.SIGINT_EXIT:
-            pass
-#             sleep_time = 5
-#             logger.debug("sleeping1: %s", sleep_time)
-#             time.sleep(sleep_time)
+            time.sleep(0.1)
         downloader._print_download_history()
         downloader.print_uptime()
 
     @classmethod
-    def download_jobs(cls, job_ids, task_id=None, thread_count=None, output_dir=None):
+    def download_jobs(cls, job_ids, task_ids=None, thread_count=None, output_dir=None):
         '''
         Run the downloader for explicit jobs, and terminate afterwards.
         '''
         downloader = cls(thread_count=thread_count, output_dir=output_dir)
-        thread_states = downloader.start(job_ids, task_id=task_id)
-        while not common.SIGINT_EXIT and (not downloader.pending_queue.empty() or not downloader.downloading_queue.empty()):
-            sleep_time = 2
-#             logger.debug("sleeping2: %s", sleep_time)
-            time.sleep(sleep_time)
+        thread_states = downloader.start(job_ids, task_ids=task_ids)
 
+        while not common.SIGINT_EXIT:
+            # Check if all jobs have been enqueued and if our work queues are now empty.
+            # This indicates that all work has finished, and to exit.
+            if downloader._all_enqueued.value == "true":
+                if not downloader.pending_queue.qsize():
+                    if not downloader.downloading_queue.qsize():
+                        break
+            time.sleep(0.1)
         downloader._print_download_history()
         downloader.print_uptime()
 
-    def start(self, job_ids=None, task_id=None, summary_interval=10):
+    def start(self, job_ids=None, task_ids=None, summary_interval=10):
         # Create new queues
         self.start_time = time.time()
         self.pending_queue = Queue.Queue()
@@ -305,12 +313,10 @@ class Downloader(object):
 
         # If a job id has been specified then only load the queue up with that work
         if job_ids:
-            self.history_queue_max = None
-            self.get_jobs_downloads(job_ids, task_id)
+            # Increase the default history max.
+            self.history_queue_max = 500
 
-        # otherwise create a queue thread the polls the app for wor
-        else:
-            self.start_queue_thread()
+        self.start_queue_thread(job_ids, task_ids)
 
         task_download_states = self.start_download_threads(self.downloading_queue, self.pending_queue)
         thread_states = {"task_downloads": task_download_states}
@@ -329,15 +335,22 @@ class Downloader(object):
         human_duration = common.get_human_duration(seconds)
         logger.info("Uptime: %s", human_duration)
 
-    def start_queue_thread(self):
+    def start_queue_thread(self, job_ids=None, task_ids=None):
         '''
-        Start and return a thread that is responsible for pinging the app for
-        Downloads to download (and populating the queue)
+        Start a thread that is responsible for filling the work queue (pending_queue)
         '''
 
-        thread = threading.Thread(name="QueueThread",
-                                  target=self.queue_target,
-                                  args=(self.pending_queue, self.downloading_queue))
+        # If job ids have been provided then we use a different queuing mechanism (for finite/explicit work)
+        if job_ids:
+            thread = threading.Thread(name="QueueThread",
+                                      target=self.job_queue_target,
+                                      args=(self.pending_queue, self.downloading_queue, job_ids, task_ids))
+
+        # Otherwise, use a queuing mechanism that queries for work indefinitely (must be interrupted to exit)
+        else:
+            thread = threading.Thread(name="QueueThread",
+                                      target=self.queue_target,
+                                      args=(self.pending_queue, self.downloading_queue))
         thread.setDaemon(True)
         thread.start()
         return thread
@@ -402,10 +415,6 @@ class Downloader(object):
                 empty_queue_slots = (self.thread_count * 2) - pending_queue.qsize()
                 # If the queue is full, then sleep
                 if empty_queue_slots <= 0:
-                    #                 logger.debug('Pending download queue is full (%s Downloads). Not adding any more Downloads' % self.thread_count)
-                    #                 sleep_time = 0.5
-                    #                 logger.debug("sleeping3: %s", sleep_time)
-                    #                 time.sleep(sleep_time)
                     continue
 
                 logger.debug("empty_queue_slots: %s", empty_queue_slots)
@@ -434,6 +443,28 @@ class Downloader(object):
                 logger.exception("Exception occurred in QueueThead:\n")
                 self.nap()
 
+    def job_queue_target(self, pending_queue, downloading_queue, jids, tids=None):
+        '''
+        Fill the work queue (pending_queue) by querying for the given jobs' downloads.
+        '''
+        for jid in jids:
+            try:
+                # Get the the next download
+                self.enqueue_job_downloads(jid, tids=tids, page_size=self.download_page_size)
+
+            except:
+                logger.exception("Exception occurred in QueueThead:\n")
+                self.nap()
+
+        # when all of the jobs' downloads have been queried for and enqueued, set this value so
+        # that the parent process knows that there's no more work coming (and can safely exit once
+        # the work queues have been emptied/finished
+        self._all_enqueued.value = "true"
+
+        # hang here indefinitely (hack to stay consistent with with queue_target() behavior)
+        while not common.SIGINT_EXIT:
+            time.sleep(0.1)
+
     def nap(self):
         while not common.SIGINT_EXIT:
             #             print "Sleeping4 for %s" % self.naptime
@@ -448,15 +479,45 @@ class Downloader(object):
         except Exception as e:
             logger.exception('Could not get next download')
 
-    def get_jobs_downloads(self, job_ids, task_id):
+    def enqueue_job_downloads(self, jid, tids=None, page_size=200):
+        '''
+        Fetch and enqueue all Downloads for the given job.
+        '''
+        endpoint = self.endpoint_downloads_job % jid
 
-        for job_id in job_ids:
-            endpoint = self.endpoint_downloads_job % job_id
-            downloads = _get_job_download(endpoint, self.api_client, job_id, task_id)
-            if downloads:
-                for task_download in downloads.get("downloads", []):
-                    print "putting in queue: %s" % task_download
-                    self.pending_queue.put(task_download, block=True)
+        start_cursor = None
+        while not common.SIGINT_EXIT:
+            empty_queue_slots = (self.thread_count * 2) - self.pending_queue.qsize()
+
+            # If the queue is full, then sleep and repeat
+            if empty_queue_slots <= 0:
+                time.sleep(0.1)
+                continue
+
+            logger.info("Fetching job %s's downloads...", jid)
+            response = self._get_job_downloads(endpoint, self.api_client, tids, start_cursor, page_size)
+            downloads = response.get("downloads", [])
+            logger.debug("Got %s downloads", len(downloads))
+            for task_download in downloads:
+                logger.debug("Download %s contains %s files", task_download["download_id"], len(task_download.get("files", [])))
+                self.pending_queue.put_nowait(task_download)
+            start_cursor = response.get("next_cursor")
+            if not start_cursor:
+                return
+
+    @staticmethod
+    def _get_job_downloads(endpoint, client, tids, start_cursor, page_size):
+        params = {"limit": page_size,
+                  'start_cursor': start_cursor}
+
+        rbody, rcode = client.make_request(endpoint,
+                                           verb="POST",
+                                           params=params,
+                                           data=json.dumps({"tids": tids}),
+                                           use_api_key=True)
+        if rcode != 201:
+            return {}
+        return json.loads(rbody)
 
     @common.dec_catch_exception(raise_=True)
     def download_target(self, pending_queue, downloading_queue, task_download_state):
@@ -620,9 +681,6 @@ class Downloader(object):
         while True:
 
             try:
-                #             logger.debug("threading.threading.currentThread(): %s", threading.currentThread())
-                #             logger.debug('bytes_downloaded is %s' % bytes_downloaded)
-                #             logger.debug('done is %s' % done)
 
                 if common.SIGINT_EXIT:
                     task_download_state.status = TaskDownloadState.STATE_ERROR
@@ -922,25 +980,6 @@ class Downloader(object):
         else:
             logger.info('##### PENDING QUEUE ###### [None]')
 
-
-#
-#         logger.info('Downloading Queue (Active Downloads) contains %s items', self.downloading_queue.qsize())
-#         for item in list(self.downloading_queue.queue):
-#             logger.info('\tDownloading: %s', item["download_id"])
-#
-
-
-#
-#         logger.debug("TOTAL THREADS: %s", len(active_threads))
-#         logger.debug("DOWNLOAD THREADS: %s", len(active_threads))
-#
-#         logger.debug("Pending Queue: ")
-#         logger.debug("Pending Queue: ")
-#         logger.debug("Last %s files downloaded ")
-#         logger.debug("Last %s Jobs downloaded ")
-#         logger.debug("Last %s Downloads downloaded ")
-
-
     def construct_active_downloads_summary(self, task_download_states):
         '''
         #### ACTIVE DOWNLOADS #####
@@ -1078,20 +1117,6 @@ def _get_next_downloads(location, endpoint, client, count=1):
     return json.loads(response_string).get("data", [])
 
 
-def _get_job_download(endpoint, client, jid, tid):
-    params = None
-    if tid:
-        params = {'tid': tid}
-#     logger.debug('params: %s', params)
-    response_string, response_code = client.make_request(endpoint, params=params, use_api_key=True)
-#     logger.debug("response code is:\n%s" % response_code)
-#     logger.debug("response data is:\n%s" % response_string)
-    if response_code != 201:
-        return None
-    download_job = json.loads(response_string)
-    return download_job
-
-
 # @dec_random_exception(percentage_chance=0.05)
 @common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def download_file(download_url, filepath, poll_rate=2, state=None):
@@ -1175,11 +1200,13 @@ def run_downloader(args):
     logger.debug('Downloader args: %s', args)
 
     job_ids = args.get("job_id")
+    task_ids = args.get("task_id")
+
     thread_count = args.get("thread_count")
 
     if job_ids:
         Downloader.download_jobs(job_ids,
-                                 task_id=args.get("task_id"),
+                                 task_ids=task_ids,
                                  thread_count=thread_count,
                                  output_dir=args.get("output"))
 
