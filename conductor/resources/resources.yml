@@ -187,6 +187,7 @@ maya_dependency_attrs:
     PxrVisualizer: # Renderman
         - matCap
     RenderManArchive: # Renderman
+        - filename
         - iconName
         - templatePath
     rmanImageFile: # Renderman
@@ -385,7 +386,8 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
-                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.1": c84222fe12f96cab18e3f3c0e0446877
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -393,7 +395,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
-                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
+                "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -469,7 +471,8 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
-                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.1": c84222fe12f96cab18e3f3c0e0446877
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -477,7 +480,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
-                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
+                "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -552,7 +555,8 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
-                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.1": c84222fe12f96cab18e3f3c0e0446877
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -560,7 +564,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
-                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
+                "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -636,7 +640,8 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
-                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.1": c84222fe12f96cab18e3f3c0e0446877
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -644,7 +649,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
-                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
+                "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -720,7 +725,8 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
-                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.1": c84222fe12f96cab18e3f3c0e0446877
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -728,7 +734,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
-                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
+                "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -804,7 +810,8 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
-                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.1": c84222fe12f96cab18e3f3c0e0446877
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -812,7 +819,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
-                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
+                "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -888,7 +895,8 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
-                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.1": c84222fe12f96cab18e3f3c0e0446877
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -896,7 +904,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
-                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
+                "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -971,7 +979,8 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
-                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.1": c84222fe12f96cab18e3f3c0e0446877
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -979,7 +988,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
-                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
+                "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -1055,7 +1064,8 @@ package_ids:
                 "3.0.0.1": 7939bd2f238c526372c62aac078e7463
                 "3.0.1": f19098319eec3be00be5eb1ce856f954
                 "3.0.1.1": df72be509340edce3db9aa1499a111a1
-                "3.1.0.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.0": 763532693788d08aae0cf5f7b30a5794
+                "3.1.1": c84222fe12f96cab18e3f3c0e0446877
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -1063,7 +1073,7 @@ package_ids:
                 "21.4": a25f164826949ceab173c47b01c85217
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
-                "21.7": 72d6f5150d3e9a8fcff50138215a6fea
+                "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -1122,13 +1132,14 @@ package_ids:
                 "3.0.0.1": ec7ca6ade19d6bcf5826fc245bfc3a47
                 "3.0.1": f68d6d1ed70e15a8374febde7171f67c
                 "3.0.1.1": f51bbec3c7e56da678a5f083b72f6c2f
-                "3.1.0.0": 1bf0b01f6e9a7aad7833c637d48ba95b
+                "3.1.0": 1bf0b01f6e9a7aad7833c637d48ba95b
+                "3.1.1": b791127ac37360fa5803e4d033e90996
             renderman-maya:
                 "21.3": c691fab2d2770adc01d614e16b8d6e64
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
                 "21.6": 04116397b91f786baa0852ee6a33484a
-                "21.7": 73293c7d60f3067ef4b1707325295d4b
+                "21.7": f8c5244b19e6b577737990ff211447a0
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1187,7 +1198,8 @@ package_ids:
                 "3.0.0.1": ec7ca6ade19d6bcf5826fc245bfc3a47
                 "3.0.1": f68d6d1ed70e15a8374febde7171f67c
                 "3.0.1.1": f51bbec3c7e56da678a5f083b72f6c2f
-                "3.1.0.0": 1bf0b01f6e9a7aad7833c637d48ba95b
+                "3.1.0": 1bf0b01f6e9a7aad7833c637d48ba95b
+                "3.1.1": b791127ac37360fa5803e4d033e90996
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -1195,7 +1207,7 @@ package_ids:
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
                 "21.6": 04116397b91f786baa0852ee6a33484a
-                "21.7": 73293c7d60f3067ef4b1707325295d4b
+                "21.7": f8c5244b19e6b577737990ff211447a0
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1254,7 +1266,8 @@ package_ids:
                 "3.0.0.1": ec7ca6ade19d6bcf5826fc245bfc3a47
                 "3.0.1": f68d6d1ed70e15a8374febde7171f67c
                 "3.0.1.1": f51bbec3c7e56da678a5f083b72f6c2f
-                "3.1.0.0": 1bf0b01f6e9a7aad7833c637d48ba95b
+                "3.1.0": 1bf0b01f6e9a7aad7833c637d48ba95b
+                "3.1.1": b791127ac37360fa5803e4d033e90996
             miarmy:
                 "5.3.11": 01255ad4bb83bc5369d162d3af5fdec2
             renderman-maya:
@@ -1262,7 +1275,7 @@ package_ids:
                 "21.4": ebf7f44b9e0b119b29c2768c1092c4c4
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
                 "21.6": 04116397b91f786baa0852ee6a33484a
-                "21.7": 73293c7d60f3067ef4b1707325295d4b
+                "21.7": f8c5244b19e6b577737990ff211447a0
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1319,13 +1332,14 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
-                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.1": 1b8e007fc22149d6be370445a2c99a1c
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
-                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
+                "21.7": 94df29e845e81cd69b2afe611a347a72
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1350,6 +1364,9 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+                "2.2.8": c962af6233815122fd7bf2b147e7eefb
+                "2.2.9": 7403871b43d3381ce1d72dbab82aa0fb
+                "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
 
@@ -1389,13 +1406,14 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
-                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.1": 1b8e007fc22149d6be370445a2c99a1c
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
-                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
+                "21.7": 94df29e845e81cd69b2afe611a347a72
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1420,6 +1438,9 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+                "2.2.8": c962af6233815122fd7bf2b147e7eefb
+                "2.2.9": 7403871b43d3381ce1d72dbab82aa0fb
+                "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
 
@@ -1459,13 +1480,14 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
-                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.1": 1b8e007fc22149d6be370445a2c99a1c
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
-                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
+                "21.7": 94df29e845e81cd69b2afe611a347a72
                 "1.0": 16d3a54a07910d404295ad14561a9dab
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
@@ -1491,6 +1513,9 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+                "2.2.8": c962af6233815122fd7bf2b147e7eefb
+                "2.2.9": 7403871b43d3381ce1d72dbab82aa0fb
+                "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
 
@@ -1530,13 +1555,14 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
-                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.1": 1b8e007fc22149d6be370445a2c99a1c
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
-                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
+                "21.7": 94df29e845e81cd69b2afe611a347a72
                 "1.0": 16d3a54a07910d404295ad14561a9dab
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
@@ -1562,6 +1588,9 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+                "2.2.8": c962af6233815122fd7bf2b147e7eefb
+                "2.2.9": 7403871b43d3381ce1d72dbab82aa0fb
+                "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
 
@@ -1601,13 +1630,14 @@ package_ids:
                 "3.0.0.1": 315fda89c849ea356b08ddb36cda6f38
                 "3.0.1": 6fa6208cd009ff8a68f23378fa74920e
                 "3.0.1.1": 2bf3aa8c3e53265a17aa6a1664954223
-                "3.1.0.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.0": b6e7d66ce37f52f007b36ee32a933391
+                "3.1.1": 1b8e007fc22149d6be370445a2c99a1c
             renderman-maya:
                 "21.3": 1e7b1b9c5f011b76555d8d751a49cc32
                 "21.4": 128a1a2126250f5413db08ab19c1de25
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
-                "21.7": fe2dcf01b8ed1dc24005b399d47a3004
+                "21.7": 94df29e845e81cd69b2afe611a347a72
                 "1.0": 16d3a54a07910d404295ad14561a9dab
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
@@ -1633,6 +1663,9 @@ package_ids:
                 "2.2.5": d17b74caab01172eb28cbc54ee67040c
                 "2.2.6": 47e193dcbdd625a4d7fff3f249cc6a94
                 "2.2.7": da89cdc35db605e58204715661b7245d
+                "2.2.8": c962af6233815122fd7bf2b147e7eefb
+                "2.2.9": 7403871b43d3381ce1d72dbab82aa0fb
+                "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
 
@@ -1656,10 +1689,11 @@ package_ids:
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
-                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.1": acacb46b8470d1fecc478741bbcaab5f
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
-                "21.7": 0a76e5128751083ee34eb4efd450dec2
+                "21.7": de37d61acba42b6e5961d63982b8381c
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1671,6 +1705,17 @@ package_ids:
                 "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
                 "2.2.8": 341553d46e46aa87ab03e63de60232ff
                 "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+                "2.2.10": 8108a51d187f50fad082bfc53cd1f150
+                "3.0.0": 336091bfb39f0056b28c8bb0e872b6ec
+                "3.0.1": 3679830f2272fbea0d76ad826e23b5c3
+                "3.0.2": cc69eb97c2e8e4703922ca8cdd75ce21
+                "3.0.3": d9c015771218dba8b43f4c6b8456401d
+                "3.0.4": d3e71f895ea19ad44150ad74318c4484
+                "3.0.5": b8888692a7c23e9be77038308dfca210
+                "3.0.6": 0e99fe1776212f57054efb91f957bffa
+                "3.0.7": 5945522322a9768acd12199666ad4dcf
+                "3.0.8": faa67470d482114013218e55b173e9cc
+                
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
 
@@ -1694,10 +1739,11 @@ package_ids:
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
-                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.1": acacb46b8470d1fecc478741bbcaab5f
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
-                "21.7": 0a76e5128751083ee34eb4efd450dec2
+                "21.7": de37d61acba42b6e5961d63982b8381c
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1709,6 +1755,16 @@ package_ids:
                 "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
                 "2.2.8": 341553d46e46aa87ab03e63de60232ff
                 "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+                "2.2.10": 8108a51d187f50fad082bfc53cd1f150
+                "3.0.0": 336091bfb39f0056b28c8bb0e872b6ec
+                "3.0.1": 3679830f2272fbea0d76ad826e23b5c3
+                "3.0.2": cc69eb97c2e8e4703922ca8cdd75ce21
+                "3.0.3": d9c015771218dba8b43f4c6b8456401d
+                "3.0.4": d3e71f895ea19ad44150ad74318c4484
+                "3.0.5": b8888692a7c23e9be77038308dfca210
+                "3.0.6": 0e99fe1776212f57054efb91f957bffa
+                "3.0.7": 5945522322a9768acd12199666ad4dcf
+                "3.0.8": faa67470d482114013218e55b173e9cc
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
 
@@ -1732,10 +1788,11 @@ package_ids:
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
-                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.1": acacb46b8470d1fecc478741bbcaab5f
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
-                "21.7": 0a76e5128751083ee34eb4efd450dec2
+                "21.7": de37d61acba42b6e5961d63982b8381c
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
@@ -1748,6 +1805,16 @@ package_ids:
                 "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
                 "2.2.8": 341553d46e46aa87ab03e63de60232ff
                 "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+                "2.2.10": 8108a51d187f50fad082bfc53cd1f150
+                "3.0.0": 336091bfb39f0056b28c8bb0e872b6ec
+                "3.0.1": 3679830f2272fbea0d76ad826e23b5c3
+                "3.0.2": cc69eb97c2e8e4703922ca8cdd75ce21
+                "3.0.3": d9c015771218dba8b43f4c6b8456401d
+                "3.0.4": d3e71f895ea19ad44150ad74318c4484
+                "3.0.5": b8888692a7c23e9be77038308dfca210
+                "3.0.6": 0e99fe1776212f57054efb91f957bffa
+                "3.0.7": 5945522322a9768acd12199666ad4dcf
+                "3.0.8": faa67470d482114013218e55b173e9cc
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 
@@ -1774,7 +1841,7 @@ package_ids:
                 "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
-                "21.7": 0a76e5128751083ee34eb4efd450dec2
+                "21.7": de37d61acba42b6e5961d63982b8381c
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1809,10 +1876,11 @@ package_ids:
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
-                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.1": acacb46b8470d1fecc478741bbcaab5f
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
-                "21.7": 0a76e5128751083ee34eb4efd450dec2
+                "21.7": de37d61acba42b6e5961d63982b8381c
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1824,6 +1892,16 @@ package_ids:
                 "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
                 "2.2.8": 341553d46e46aa87ab03e63de60232ff
                 "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+                "2.2.10": 8108a51d187f50fad082bfc53cd1f150
+                "3.0.0": 336091bfb39f0056b28c8bb0e872b6ec
+                "3.0.1": 3679830f2272fbea0d76ad826e23b5c3
+                "3.0.2": cc69eb97c2e8e4703922ca8cdd75ce21
+                "3.0.3": d9c015771218dba8b43f4c6b8456401d
+                "3.0.4": d3e71f895ea19ad44150ad74318c4484
+                "3.0.5": b8888692a7c23e9be77038308dfca210
+                "3.0.6": 0e99fe1776212f57054efb91f957bffa
+                "3.0.7": 5945522322a9768acd12199666ad4dcf
+                "3.0.8": faa67470d482114013218e55b173e9cc
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
     "nuke":
@@ -1881,6 +1959,8 @@ package_ids:
             package: d718b7ed428634e164fccca3ff4e0833
         "10.5v5":
             package: 11228b2423a9217e03e7e5709c8cf2da
+        "10.5v8":
+            package: 0a81ec60785b2ab233ee92066a23b6e7
         "11.0v1":
             package: be7b11b0d8182ea853bbb96bf41c1432
         "11.0v2":
@@ -1899,13 +1979,16 @@ package_ids:
             package: de10e13178c92ab7b0d513203966d121
         "11.1v5":
             package: 9740b8f9db20bc353adb8a223571b02f
+        "11.1v6":
+            package: 1ca67e2cca69f7ecf80a0be88db1ca26
         "11.2v1":
             package: 693cd9db13cca8bcdde2f5e0e63ac971
         "11.2v2":
             package: 78cb9abb8136f747a0f6b2f3f87e6e85
         "11.2v3":
             package: 85c6f4118bfabd8afe600b54bf929baa
-
+        "11.2v4":
+            package: 4bbb7526b1dc0f57cfd0032ab7337a80
 
 
  # This houdini section has fake data for testing / QA purposes
