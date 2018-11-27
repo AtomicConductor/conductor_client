@@ -1,10 +1,18 @@
+# Standard libs
+import collections
+import functools
 import logging
 import os
 import re
-import functools
+import shlex
+import tempfile
+
+# Maya libs
 from maya import cmds, mel
 
+# Conductor libs
 from conductor.lib import common, package_utils, file_utils
+
 logger = logging.getLogger(__name__)
 
 
@@ -107,7 +115,12 @@ def save_current_maya_scene():
     Saves current Maya scene using standard save command
     '''
     logger.debug("Saving Maya scene...")
-    cmds.SaveScene()
+
+    # If the file doesn't exist, use the SaveScene command (undocumented). This prompts a file dialog.
+    if not cmds.file(q=True, exists=True):
+        return cmds.SaveScene()
+    # Otherwise force save the file to disk
+    return cmds.file(save=True, force=True, prompt=False)
 
 
 def get_maya_save_state():
@@ -427,11 +440,7 @@ def get_render_layers_info():
     a a render layer.  Each dictionary provides the following information:
         - render layer name
         - whether the render layer is set to renderable
-        - the camera that the render layer uses
-
-    Note that only one camera is allowed per render layer.  This is somewhat
-    of an arbitrary limitation, but implemented to reduce complexity.  This
-    restriction may need to be removed.
+        - the cameras that the render layer is set to render
 
     Note that this function is wrapped in an undo block because it actually changes
     the state of the maya session (unfortunately). There doesn't appear to be
@@ -439,7 +448,6 @@ def get_render_layers_info():
     it's state (switching the active render layer)
     '''
     render_layers = []
-    cameras = cmds.ls(type="camera", long=True)
 
     # record the original render layer so that we can set it back later. Wow this sucks
     original_render_layer = cmds.editRenderLayerGlobals(currentRenderLayer=True, q=True)
@@ -449,12 +457,18 @@ def get_render_layers_info():
             cmds.editRenderLayerGlobals(currentRenderLayer=render_layer)
         except RuntimeError:
             continue
-        renderable_cameras = [get_transform(camera) for camera in cameras if cmds.getAttr("%s.renderable" % camera)]
-        assert renderable_cameras, 'No Renderable camera found for render layer "%s"' % render_layer
-        assert len(renderable_cameras) == 1, 'More than one renderable camera found for render layer "%s". Cameras: %s' % (render_layer, renderable_cameras)
 
-        layer_info["camera_transform"] = renderable_cameras[0]
-        layer_info["camera_shortname"] = get_short_name(layer_info["camera_transform"])
+        cameras = []
+        # cycle through all renderable camereras in the maya scene
+        for camera in cmds.ls(type="camera", long=True):
+            if not cmds.getAttr("%s.renderable" % camera):
+                continue
+            camera_info = {}
+            camera_info["camera_transform"] = get_transform(camera)
+            camera_info["camera_shortname"] = get_short_name(camera_info["camera_transform"])
+            cameras.append(camera_info)
+
+        layer_info["cameras"] = cameras
         layer_info["renderable"] = cmds.getAttr("%s.renderable" % render_layer)
         render_layers.append(layer_info)
 
@@ -475,6 +489,10 @@ def collect_dependencies(node_attrs):
     dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
     logger.debug("maya scene base dependencies: %s", dependencies)
 
+    # collect a list of ass filepaths that we can process at one time at the end of function, rather
+    # than on a per node/attr basis (much slower)
+    ass_filepaths = []
+
     all_node_types = cmds.allNodeTypes()
 
     for node_type, node_attrs in node_attrs.iteritems():
@@ -487,6 +505,10 @@ def collect_dependencies(node_attrs):
                 plug_name = '%s.%s' % (node, node_attr)
                 if cmds.objExists(plug_name):
                     plug_value = cmds.getAttr(plug_name)
+                    # Skip any empty values
+                    if not plug_value:
+                        continue
+
                     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
                     logger.debug("%s: %s", plug_name, path)
@@ -494,9 +516,9 @@ def collect_dependencies(node_attrs):
                     # ---- XGEN SCRAPING -----
                     #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
                     if node_type == "xgmPalette":
-                        sceneFile = cmds.file(query=True, sceneName=True)
-                        path = os.path.join(os.path.dirname(sceneFile), plug_value)
-                        xgen_dependencies = parse_xgen_file(path, node)
+                        maya_filepath = cmds.file(query=True, sceneName=True)
+                        palette_filepath = os.path.join(os.path.dirname(maya_filepath), plug_value)
+                        xgen_dependencies = scrape_palette_node(node, palette_filepath)
                         logger.debug("xgen_dependencies: %s", xgen_dependencies)
                         dependencies += xgen_dependencies
 
@@ -519,12 +541,67 @@ def collect_dependencies(node_attrs):
                             logger.debug("Skipping path because fileMode is disabled")
                             continue
 
+                    # ---- ARNOLD STANDIN SCRAPING -----
+                    if node_type == "aiStandIn":
+                        # We expect an aiStandin node to point towards and .ass file (or sequence thereof)
+                        # Instead of loading/reading the .ass file now, simply append to a list
+                        # that we'll process all at one time (*much faster*)
+
+                        # The ass_filepath may actually be an expression (of several ass filepaths). Resolve the path
+                        # to at least one file, and only scrape that one file.  The assumption here is that every .ass
+                        # file in an .ass sequence will have the same file dependencies, so don't bother reading every
+                        # ass file. Perhaps dangerous, but we'll cross that bridge later (it's better than reading/loading
+                        # potentially thousands of .ass files)
+                        ass_filepath = file_utils.process_upload_filepath(path, strict=True)[0]
+                        ass_filepaths.append(ass_filepath)
+
+                    # ---- RENDERMAN RLF files -----
+                    # If the node type is a RenderManArchive, then it may have an associated .rlf
+                    # file on disk. Unfortunatey there doesn't appear to a direct reference to that
+                    # path anywhere, so we'll have to rely upon convention, where a given rib
+                    # archive, such as
+                    #     renderman/ribarchives/SpidermanRibArchiveShape.zip
+                    # will have it's corresponding .rlf file here:
+                    #     renderman/ribarchives/SpidermanRibArchiveShape/SpidermanRibArchiveShape.job.rlf
+                    if node_type == "RenderManArchive" and node_attr == "filename":
+                        archive_dependencies = []
+                        rlf_dirpath = os.path.splitext(path)[0]
+                        rlf_filename = "%s.job.rlf" % os.path.basename(rlf_dirpath)
+                        rlf_filepath = os.path.join(rlf_dirpath, rlf_filename)
+                        logger.debug("Searching for corresponding rlf file: %s", rlf_filepath)
+                        rlf_filepaths = file_utils.process_upload_filepath(rlf_filepath, strict=False)
+                        if rlf_filepaths:
+                            rlf_filepath = rlf_filepaths[0]  # there should only be one
+                            # Parse the rlf file for file dependencies.
+                            # Note that though this is an rlf file, there is embedded rib data within
+                            # that we can parse using this rib parser.
+                            logger.debug("Parsing rlf file: %s", rlf_filepath)
+                            rlf_depedencies = parse_rib_file(rlf_filepath)
+                            archive_dependencies.extend([rlf_filepath] + rlf_depedencies)
+
+                        logger.debug('%s dependencies: %s', plug_name, archive_dependencies)
+                        dependencies.extend(archive_dependencies)
+
+                    # Append path to list of dependencies
                     dependencies.append(path)
 
     # ---- OCIO SCRAPING -----
     ocio_dependencies = scrape_ocio_dependencies()
     logger.debug("ocio_dependencies: %s", ocio_dependencies)
     dependencies.extend(ocio_dependencies)
+
+    # ---- ARNOLD .ASS SCRAPING -----
+    # If any ass_filepaths were found, we need to process their dependencies as well.
+    # Note that we intentionally maintain an explicit list of .ass files (rather than simply searching
+    # through all of our dependencies thus far for a .ass extension) because there may some ass files
+    # that are dependencies, but are not necessary (or redundant) to load/parse (i.e. in the case of
+    # ass sequences.
+    if ass_filepaths:
+        resources = common.load_resources_file()
+        ass_attrs = resources.get("arnold_dependency_attrs") or {}
+        ass_dependencies = scrape_ass_files(ass_filepaths, ass_attrs)
+        logger.debug("Arnold .ass_dependencies: %s" % ass_dependencies)
+        dependencies.extend(ass_dependencies)
 
     # Strip out any paths that end in "\"  or "/"    Hopefully this doesn't break anything.
     return sorted(set([path.rstrip("/\\") for path in dependencies]))
@@ -653,57 +730,73 @@ def parse_vrscene_file(path):
     return files
 
 
-#  Parse the xgen file to find the paths for extra dependencies not explicitly
-#  named. This will return a list of files and directories.
-def parse_xgen_file(path, node):
-    file_paths = []
-    m = re.match("(.+)\.xgen", path)
-    if m:
-        abc_patch_file = cmds.file("%s.abc" % (m.group(1)), expandName=True, query=True, withoutCopyNumber=True)
-        if os.path.isfile(abc_patch_file):
-            file_paths.append(abc_patch_file)
+def parse_rib_file(filepath):
+    '''
+    Parse the given rib filepath for file dependencies
 
-    paletteSection = False
-    project_dir = ""
-    local_file = ""
-    fp = open(path, "r")
-    for line in fp:
-        m = re.match("^Palette$", line)
-        if m:
-            paletteSection = True
-            continue
+    In leui of  python rib parser/api, we need need to resort to some awful hacks here.
 
-        m = re.match("\s+cacheFileName\s+(.+)", line)
-        if m:
-            file_path = m.group(1)
-            file_paths.append(file_path)
-            continue
+    We use prman library to read the rib file.  The only benefit that this provides is that it can
+    read a binary rib file and output it to ascii.  Aside from that, we're doing crude regex matching
+    from the content (no api for interfacing with ribs :( ).
 
-        if paletteSection:
-            print line
-            m = re.match("^\w", line)
-            if m:
-                file_path = os.path.join(project_dir, local_file)
-                file_paths.append(file_path)
+    Regex for attribites suchs as:
+        filename
+        fileTextureName
+    '''
 
-                paletteSection = False
-                local_file = ""
-                project_dir = ""
-                continue
+    # Make sure the renderman plugin is loaded so that we can use it's python lib
+    try:
+        if not cmds.pluginInfo(RendermanInfo.plugin_name, q=True, loaded=True):
+            cmds.loadPlugin(RendermanInfo.plugin_name)
+    except RuntimeError:
+        logger.warning("Could not load %s plugin. Cannot parse rib/rlf file", RendermanInfo.plugin_name)
+        return []
+    try:
+        import prman
+    except ImportError:
+        logger.warning('Failed to import prman module. Cannot parse rib/rlf file')
+        return []
 
-            m = re.match("\s*xgDataPath\s+(.+/%s)" % node, line)
-            if m:
-                local_file = m.group(1)
-                local_file = re.sub("\$\{PROJECT\}", "", local_file)
-                continue
+    # Unfortunately renderman api can't write to an object it memory that we can use, so we'll
+    # need to make a tmpfile on disk to write to, and then read it back.
+    tmpfile = tempfile.NamedTemporaryFile(prefix="tmp-conductor-")
+    tmpfilepath = tmpfile.name
+    tmpfile.close()
 
-            m = re.match("\s*xgProjectPath\s+(.+)", line)
-            if m:
-                project_dir = m.group(1)
-                file_paths.append(os.path.join(project_dir, "xgen"))
-                continue
+    # Use the renderman api to read the rib file, and write it back out to the temp file
+    # the only purpose for doing so is so that we can read binary ribs.
+    # Access prman's RiXXX procs and definitions
+    ri = prman.Ri()
+    # Format the output for easier reading;
+    ri.Option("rib", {"string asciistyle": "indented"})
+    ri.Begin(tmpfilepath)           # Echo the rib as it is processed;
+    # Process the input rib. the function will fail if given a unicode string, so convert to regular string.
+    prman.ParseFile(filepath.encode('utf8'))
+    ri.End()
 
-    return file_paths
+    # Read the rib from the tmpfile, and crudely parse for paths of interest.
+    # I wish there was a rib api to allow access to elements/attributes in a rib file :(
+    paths = []
+    with open(tmpfilepath) as f:
+        for line in f:
+            match = re.search(r'string (?:filename|fileTextureName)" \["([^"]+)"\]', line)
+            if match and match.group(1) not in ["stdout"]:
+                paths.append(match.group(1))
+
+    # Resolve any paths that are relative, unresolved, etc
+    filepaths = []
+    for path in paths:
+        # If the path is relative, resolve it by joining with workspace root
+        if not os.path.isabs(path):
+            path = os.path.join(get_workspace_dirpath(), path)
+        # process the path to resolve any other variables/characters/tokens, etc
+        filepaths.extend(file_utils.process_upload_filepath(path, strict=False))
+
+    # Delete the tmpfile
+    os.remove(tmpfilepath)
+
+    return filepaths
 
 
 def scrape_ocio_dependencies():
@@ -908,6 +1001,346 @@ def is_arnold_tx_enabled():
     arnold_node = get_arnold_settings_node(strict=False)
     if arnold_node:
         return cmds.getAttr("%s.use_existing_tiled_textures" % arnold_node)
+
+
+def scrape_ass_files(ass_filepaths, node_attrs, plugin_paths=()):
+    '''
+    Read/load the given arnold files with the arnold api, and seek out nodes that have filepaths
+    of interest.
+
+    todo(lws): Still need to investigate why this crashes in mayapy when arnold plugins are
+        present (such as yeti or alshaders).
+
+    node_attrs: dictionary. key is the node type, value is a list of node attributes to query.
+
+    plugin_paths: tuple of strings. This may be necessary when running outside of maya/interactive,
+        so that nodes for arnold plugins (yeti, etc) can be properly loaded/used.
+
+        e.g. ("/usr/anderslanglands/alshaders/alShaders-linux-2.0.0b2-ai5.0.1.0/bin",
+              "/usr/peregrinelabs/yeti/Maya2017/Yeti-v2.2.6_Maya2017-linux64/bin")
+
+    '''
+    cmds.loadPlugin("mtoa")
+    try:
+        import arnold
+    except ImportError:
+        logger.warning("Failed to import arnold. Could not scrape arnold files: %s", ass_filepaths)
+        return []
+
+    arnold.AiBegin()
+    try:
+        arnold.AiMsgSetConsoleFlags(arnold.AI_LOG_ALL)
+        if plugin_paths:
+            arnold.AiLoadPlugins(os.path.sep.join(plugin_paths))
+        paths = []
+        for ass_filepath in ass_filepaths:
+            logger.debug("Scraping Arnold file: %s", ass_filepath)
+            deps = _scrape_ass_file(ass_filepath, node_attrs)
+            paths.extend(deps)
+    finally:
+        arnold.AiEnd()
+
+    return paths
+
+
+def scrape_ass_file(ass_filepath, node_attrs, plugin_paths=()):
+    '''
+    Read/load the given arnold file with the arnold api, and seek out nodes that have filepaths
+    of interest.
+
+    todo(lws): Still need to investigate why this crashes in mayapy when arnold plugins are
+        present (such as yeti or alshaders).
+
+    node_attrs: dictionary. key is the node type, value is a list of node attributes to query.
+
+    plugin_paths: tuple of strings. This may be necessary when running outside of maya/interactive,
+        so that nodes for arnold plugins (yeti, etc) can be properly loaded/used.
+
+        e.g. ("/usr/anderslanglands/alshaders/alShaders-linux-2.0.0b2-ai5.0.1.0/bin",
+              "/usr/peregrinelabs/yeti/Maya2017/Yeti-v2.2.6_Maya2017-linux64/bin")
+    '''
+    cmds.loadPlugin("mtoa")
+    try:
+        import arnold
+    except ImportError:
+        logger.warning("Failed to import arnold. Could not scrape arnold file: %s", ass_filepath)
+        return []
+
+    arnold.AiBegin()
+    arnold.AiMsgSetConsoleFlags(arnold.AI_LOG_ALL)
+    if plugin_paths:
+        arnold.AiLoadPlugins(os.path.sep.join(plugin_paths))
+
+    paths = _scrape_ass_file(ass_filepath, node_attrs)
+    arnold.AiEnd()
+    return paths
+
+
+def _scrape_ass_file(ass_filepath, node_attrs):
+    '''
+    Read/load the given arnold file with the arnold api, and query the given the node/attrs
+    for paths of interest.
+
+    node_attrs: dictionary. key is the node type, value is a list of node attributes to query.
+
+    NOTE: this should not be called directly (requires some initialization/cleanup)
+    '''
+
+    import arnold
+
+    paths = []
+    arnold.AiASSLoad(ass_filepath, arnold.AI_NODE_ALL)
+
+    # Iterate over all shape nodes, which includes procedural nodes
+    iterator = arnold.AiUniverseGetNodeIterator(arnold.AI_NODE_ALL)
+    while not arnold.AiNodeIteratorFinished(iterator):
+        node = arnold.AiNodeIteratorGetNext(iterator)
+        entryNode = arnold.AiNodeGetNodeEntry(node)
+        node_type = arnold.AiNodeEntryGetName(entryNode)
+        for attr_name in node_attrs.get(node_type) or []:
+            value = arnold.AiNodeGetStr(node, attr_name)
+
+            if node_type == "xgen_procedural":
+                logger.debug("Parsing xgen_procedural..")
+                xgen_paths = scrape_arnold_xgen_data_str(value)
+                paths.extend(xgen_paths)
+
+            elif value:
+                paths.append(value)
+
+    arnold.AiNodeIteratorDestroy(iterator)
+    return paths
+
+
+def scrape_arnold_xgen_data_str(string):
+    '''
+    Parse the given xgen_procedural.data string value into separate parts, and scrape each part
+    for dependencies
+    '''
+    paths = set()
+
+    # First convert the string of arg
+    xgen_args = parse_xgen_command(string)
+    for flag in ("file", 'geom'):
+        logger.debug('Reading "%s" flag', flag)
+        if flag not in xgen_args:
+            logger.warning('"%s" flag not found in xgen procedural.  Skipping', flag)
+            continue
+        path = xgen_args[flag]
+        logger.debug("path: %s", path)
+        if not path:
+            logger.warning('"%s" does not have a path specified', flag)
+            continue
+        paths.add(path)
+
+    # Parse xgen file dependencies
+    xgen_dependencies = set()
+    for path in paths:
+        if path.lower().endswith(".xgen"):
+            logger.debug("scraping dependencies for xgen file: %s", path)
+            if not os.path.isfile(path):
+                logger.warning("File does not exist, skipping: %s", path)
+                continue
+            xgen_dependencies.update(scrape_xgen_file(path))
+
+    return list(paths | xgen_dependencies)
+
+
+def parse_xgen_command(cmd_str):
+    '''
+    Parse xgen produceral command/args. Very crude with many assumptions.
+
+    args:
+        cmd_str: str. The string to parse, e.g.
+        '-debug 1 -warning 1 -stats 1  -frame 1.000000  -nameSpace cat_main -file /tmp/cat.xgen -palette cat_xgen_coll -geom /tmp/cat_xgen_coll.abc -patch Paw_R_emitter -description catcuff_xgen_desc -fps 24.000000  -motionSamplesLookup -0.250000 0.250000  -motionSamplesPlacement -0.250000 0.250000  -world 1;0;0;0;0;1;0;0;0;0;1;0;0;0;0;1'
+
+    return: dict:, e.g.
+        {'debug': '1',
+         'description': 'catcuff_xgen_desc',
+         'file': '/tmp/cat.xgen',
+         'fps': '24.000000',
+         'frame': '1.000000',
+         'geom': '/tmp/cat_xgen_coll.abc',
+         'motionSamplesLookup': ['-0.250000', '0.250000'],
+         'motionSamplesPlacement': ['-0.250000', '0.250000'],
+         'nameSpace': 'cat_main',
+         'palette': 'cat_xgen_coll',
+         'patch': 'Paw_R_emitter',
+         'stats': '1',
+         'warning': '1',
+         'world': '1;0;0;0;0;1;0;0;0;0;1;0;0;0;0;1'}
+
+    '''
+    args = collections.defaultdict(list)
+    attr = None
+    for part in shlex.split(cmd_str):
+        if part.startswith("-") and not _is_number(part):
+            attr = part.lstrip("-")
+        else:
+            args[attr].append(part)
+
+    command_args = {}
+    for flag, value in args.iteritems():
+        if len(value) == 1:
+            value = value[0]
+        command_args[flag] = value
+    return command_args
+
+
+def _is_number(string):
+    '''
+    Return True if the string can be cast to a digit/float, otherwise return False
+    '''
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+
+
+def scrape_palette_node(palette_node, palette_filepath):
+    '''
+    Inspect/scrape the xgen palette node and parse it's associated .xgen file for file dependencies
+    named.
+    '''
+    file_paths = []
+    match = re.match("(.+)\.xgen", palette_filepath)
+    if match:
+        abc_patch_file = cmds.file("%s.abc" % (match.group(1)), expandName=True, query=True, withoutCopyNumber=True)
+        if os.path.isfile(abc_patch_file):
+            file_paths.append(abc_patch_file)
+
+    logger.debug("scraping dependencies for xgen file: %s", palette_filepath)
+    palette_dependencies = scrape_xgen_file(palette_filepath)
+    return file_paths + palette_dependencies
+
+
+def scrape_xgen_file(filepath):
+    '''
+    Scrape the given .xgen file for file dependencies.
+    '''
+    try:
+        palette_modules = parse_xgen_file(filepath)
+    except Exception:
+        logger.exception("Failed to parse XGen Palette file: %s", filepath)
+        return []
+
+    resources = common.load_resources_file()
+    xgen_attrs = resources.get("xgen_dependency_attrs") or {}
+
+    paths = []
+
+    for module_type, module_attrs in xgen_attrs.iteritems():
+        for module in palette_modules.get(module_type, []):
+            for module_attr_info in module_attrs:
+                for module_attr, attr_conditions in module_attr_info.iteritems():
+                    logger.debug("Scraping %s.%s", module_type, module_attr)
+                    if _are_conditions_met(module, attr_conditions or {}):
+                        value = module.get(module_attr, "")
+                        # Convert the raw parsed string value to a list of values (split by whitespace),
+                        # filtering out any empty values.
+                        values = filter(None, [v.strip(' \t\r\n') for v in value.split()])
+                        if values:
+                            # Use the last item in the values. This is a huge assumption (that we'll always
+                            # only want the last item, but it's the best we have without a proper
+                            # xgen api
+                            path = values[-1]
+                            logger.debug("Found: %s", path)
+                            if not os.path.isfile(path):
+                                logger.warning("Path does not exist, skipping: %s", path)
+                                continue
+                            paths.append(path)
+    return paths
+
+
+def _are_conditions_met(module, attr_conditions):
+    '''
+    Return True if the all of the given conditions are met for the the given xgen module values
+    '''
+    for condition_attr, condition_value in attr_conditions.iteritems():
+        if module.get(condition_attr) != condition_value:
+            logger.debug("Condition: %r != %r", module.get(condition_attr), condition_value)
+            return False
+    return True
+
+
+def parse_xgen_file(filepath):
+    '''
+    TODO(LWS): I hope we can get rid of this ASAP if/when xgen provides an api to read .xgen files
+
+    Crude .xgen file parser for reading palette files.
+
+    Return a dictionary where the key is the module type, and the value is a list of modules of that
+    type.  Each module is a dictionary of data, where the key is the property/attribute name, and the
+    value is the raw value of the property.
+
+    example input file content:
+
+        Palette
+            name            robert_xgen_coll
+            parent
+            xgDataPath        /test/robert/collections/robert_xgen_coll
+            xgProjectPath        /test/shot_100/lighting/
+            xgDogTag
+            endAttrs
+
+    example output:
+       {"Palette": [
+           {
+              'name': 'robert_xgen_coll',
+              'parent': '',
+              'xgDataPath': '/test/robert/collections/robert_xgen_coll',
+              'xgDogTag': '',
+              'xgProjectPath': '/test/shot_100/lighting/',
+              'endAttrs': '',
+           }
+        ]}
+
+    '''
+    modules = []
+
+    # First we parse each line to segregate them into groups of lines, where each group represents
+    # a diffent section (module).
+    with open(filepath) as f:
+        module = []
+        for line in f:
+            # Strip the line of all leading/trailing whitepace characters
+            line = line.strip(' \t\r\n')
+            # If the line is empty, it could mean that we're at the end of a module definition.
+            # If so, add the module to the list of modules, and create an empty new one.
+            # Otherwise ignore the blank line and continue parsing.
+            if not line:
+                if module:
+                    modules.append(module)
+                    module = []
+                continue
+            # skip any comments, and the fiile version
+            if line.startswith("#") or line.startswith('FileVersion'):
+                continue
+            module.append(line)
+
+    # Parse each grouping of lines into a dictionary that represents a single module.
+    # Each dictionary key is an attribute/property of the module.
+
+    # Create an empty dictionary which has list as default values
+    parsed_modules = collections.defaultdict(list)
+    for module in modules:
+        parsed_module = {}
+        # The first line of the module defines the module type
+        module_type = module.pop(0).strip(' \t\r\n')
+        # The rest of the lines represent a property on the module
+        for line in module:
+            # Split the line by the first whitespace
+            parts = [v.strip() for v in line.split(None, 1)]
+            # Use the first item as the attr name, and the rest as the attr value
+            attr_name = parts.pop(0)
+            # Its possible that there is no value entry, so must take that into consideration.
+            attr_value = parts[0] if parts else ""
+
+            parsed_module[attr_name] = attr_value
+        parsed_modules[module_type].append(parsed_module)
+
+    return dict(parsed_modules)
 
 
 def get_node_by_type(node_type, must_exist=True, many=False):
@@ -1278,6 +1711,7 @@ class YetiInfo(MayaPluginInfo):
         rx_release = r'(?P<release_version>\d+)'
         rx = r'{}\.{}\.{}'.format(rx_major, rx_minor, rx_release)
         return rx
+
 
 PLUGIN_CLASSES = [
     ArnoldInfo,

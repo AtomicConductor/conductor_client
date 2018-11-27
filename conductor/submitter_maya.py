@@ -62,11 +62,10 @@ class MayaWidget(QtWidgets.QWidget):
         self.ui_render_layers_trwgt.clear()
         assert isinstance(render_layers_info, list), "render_layers argument must be a list. Got: %s" % type(render_layers_info)
         for render_layer_info in reversed(render_layers_info):
-            tree_item = QtWidgets.QTreeWidgetItem([render_layer_info["layer_name"],
-                                                   render_layer_info["camera_shortname"]])
+            cameras_str = " ".join([c["camera_shortname"] for c in render_layer_info["cameras"]])
+            tree_item = QtWidgets.QTreeWidgetItem([render_layer_info["layer_name"], cameras_str])
 
             tree_item.setFlags(tree_item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            tree_item._camera_transform = render_layer_info["camera_transform"]
             self.ui_render_layers_trwgt.addTopLevelItem(tree_item)
 
             # If the render layer is set to renderable, then check the item's checkbox on
@@ -126,6 +125,13 @@ class MayaAdvancedWidget(QtWidgets.QWidget):
         Get the test from the Workspace lineEdit field
         '''
         return str(self.ui_workspace_directory_lnedt.text()).replace("\\", "/")
+
+    @QtCore.Slot(name="on_ui_choose_workspace_path_pbtn_clicked")
+    def on_ui_choose_workspace_path_pbtn_clicked(self):
+
+        dirpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
+        if dirpath:
+            self.setWorkspaceDir(dirpath)
 
 
 class MayaConductorSubmitter(submitter.ConductorSubmitter):
@@ -229,15 +235,32 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # as an argument in a linux shell on the backend. Not pretty.
         maya_filepath_nodrive = file_utils.strip_drive_letter(maya_filepath)
 
-        # If the active renderer is renderman, then we must explictly declare it
+        # Get the user-selected render layers
+        render_layers = self.extended_widget.getSelectedRenderLayers()
+
+        active_renderer = maya_utils.get_active_renderer()
+        # If the active renderer is rman/renderman, then we must explicitly declare it
         # as the renderer in the command.  Otherwise the output path is not respected.
         # I assume this is a renderman bug.
         # TODO:(lws). This is a super ugly exception case that we need to better manage/abstract
-        renderer_arg = "-r rman" if maya_utils.get_active_renderer() in ["renderManRIS"] else ""
+        if active_renderer == "renderManRIS":
+            renderer_arg = "-r rman"
+        # If the active renderer is renderman, then we must explicitly declare it (see comment above).
+        # We must also clear out the specified render layers because renderman 22 doesn't accept the rl
+        # flag anymore. By not specifying any render layers, *all* active render layers will be rendered
+        # TODO:(lws). This is really nasty/dangerous. Hopefully pixar/renderman will re-add support
+        # for specifying render layers ASAP!
+        elif active_renderer == "renderman":
+            renderer_arg = "-r renderman"
+            render_layers = []
 
-        # Get the user-selected render layers
-        render_layers = self.extended_widget.getSelectedRenderLayers()
-        render_layer_args = "-rl " + ",".join(render_layers)
+        # For any other renderers, we don't need to specify the renderer arg (the renderer indicated
+        # in the maya scene will be used).
+        else:
+            renderer_arg = ""
+
+        # construct -rl flag (omit it if no render layers specified)
+        render_layer_args = ("-rl " + ",".join(render_layers)) if render_layers else ""
 
         # Workspace/Project arg. Only add flag if a workspace has been indicated in the submitter ui
         workspace = self.extended_advanced_widget.getWorkspaceDir()
@@ -565,7 +588,7 @@ class MayaCheckBoxTreeWidget(pyside_utils.CheckBoxTreeWidget):
         super(MayaCheckBoxTreeWidget, self).initializeUi()
         self.setIndentation(0)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.setHeaderItem(QtWidgets.QTreeWidgetItem(["Layer", "Camera"]))
+        self.setHeaderItem(QtWidgets.QTreeWidgetItem(["Layer", "Cameras"]))
 
 
 def get_maya_window():
