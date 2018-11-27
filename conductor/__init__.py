@@ -1,11 +1,4 @@
-import os
-import sys
-import imp
-import logging
-import tempfile
-import warnings
-
-from conductor.lib import common, loggeria, version_check, wizard
+from conductor.lib import common, loggeria
 
 #The version string is updated by the build system.
 #Do not modify the following line.
@@ -22,12 +15,3 @@ except ValueError:
 log_level = CONFIG.get("log_level")
 if log_level:
     loggeria.set_conductor_log_level(log_level)
-
-#Try to ensure that we have the latest version of Conductor
-try:
-    vc = version_check.VersionCheck()
-    if not vc.is_latest:
-        warnings.warn("Conductor is out of date.  Please go to {} for update information.".format(vc.update_url))
-except:
-    warnings.warn("Failed to check for Conductor updates.")
-
