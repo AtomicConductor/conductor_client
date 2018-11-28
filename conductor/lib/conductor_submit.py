@@ -503,12 +503,11 @@ class Submit(object):
     @staticmethod
     def parse_upload_file(upload_filepath):
         '''
-        Parse the given filepath for paths that are separated by commas, returning
-        a list of these paths
+        Parse the given filepath for all listed paths (one per line)
         '''
         with open(upload_filepath, 'r') as file_:
             logger.debug('opening file')
-            return [line.strip() for line in file_.readlines]
+            return [line.strip() for line in file_.readlines()]
 
     @classmethod
     def cast_metadata(cls, metadata, strict=False):
