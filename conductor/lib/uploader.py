@@ -287,7 +287,6 @@ class Uploader(object):
         logger.debug("Uploader.__init__")
         self.api_client = api_client.ApiClient()
         self.args = args or {}
-        self.args['thread_count'] = CONFIG['thread_count']
         logger.debug("args: %s", self.args)
 
         self.location = self.args.get("location")
@@ -663,7 +662,6 @@ def run_uploader(args):
     log_level = loggeria.LEVEL_MAP.get(log_level_name)
     log_dirpath = args_dict.get("log_dir") or CONFIG.get("log_dir")
     set_logging(log_level, log_dirpath)
-
     logger.debug('Uploader parsed_args is %s', args_dict)
     resolved_args = resolve_args(args_dict)
     uploader = Uploader(resolved_args)
@@ -695,6 +693,7 @@ def resolve_args(args):
     args["md5_caching"] = resolve_arg("md5_caching", args, CONFIG)
     args["database_filepath"] = resolve_arg("database_filepath", args, CONFIG)
     args["location"] = resolve_arg("location", args, CONFIG)
+    args['thread_count'] = resolve_arg('thread_count', args, CONFIG)
 
     return args
 
