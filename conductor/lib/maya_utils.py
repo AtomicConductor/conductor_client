@@ -115,12 +115,7 @@ def save_current_maya_scene():
     Saves current Maya scene using standard save command
     '''
     logger.debug("Saving Maya scene...")
-
-    # If the file doesn't exist, use the SaveScene command (undocumented). This prompts a file dialog.
-    if not cmds.file(q=True, exists=True):
-        return cmds.SaveScene()
-    # Otherwise force save the file to disk
-    return cmds.file(save=True, force=True, prompt=False)
+    cmds.SaveScene()
 
 
 def get_maya_save_state():
