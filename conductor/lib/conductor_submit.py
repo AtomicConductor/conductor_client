@@ -439,6 +439,7 @@ class Submit(object):
 
             uploader_args = {"location": self.location,
                              "database_filepath": self.database_filepath,
+                             "thread_count": CONFIG.get("thread_count"),
                              "md5_caching": self.md5_caching}
             uploader_ = uploader.Uploader(uploader_args)
             upload_error_message = uploader_.handle_upload_response(self.project, upload_files)
