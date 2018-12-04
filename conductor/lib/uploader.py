@@ -27,7 +27,7 @@ class MD5Worker(worker.ThreadWorker):
         # The location of the sqlite database. If None, it will degault to a value
         self.md5_caching = kwargs.get('md5_caching')
         self.database_filepath = kwargs.get('database_filepath')
-        worker.ThreadWorker.__init__(self, *args, **kwargs)
+        super(MD5Worker, self).__init__(*args, **kwargs)
 
     def do_work(self, job, thread_int):
         logger.debug('job is %s', job)
@@ -90,7 +90,7 @@ class MD5OutputWorker(worker.ThreadWorker):
     '''
 
     def __init__(self, *args, **kwargs):
-        worker.ThreadWorker.__init__(self, *args, **kwargs)
+        super(MD5OutputWorker, self).__init__(*args, **kwargs)
         self.batch_size = 20  # the controlls the batch size for http get_signed_urls
         self.wait_time = 1
         self.batch = {}
@@ -150,7 +150,7 @@ class HttpBatchWorker(worker.ThreadWorker):
     '''
 
     def __init__(self, *args, **kwargs):
-        worker.ThreadWorker.__init__(self, *args, **kwargs)
+        super(HttpBatchWorker, self).__init__(*args, **kwargs)
         self.api_client = api_client.ApiClient()
         self.project = kwargs.get('project')
 
@@ -195,7 +195,7 @@ reference, as it needs to be accessed and reset by the caller.
 
 class FileStatWorker(worker.ThreadWorker):
     def __init__(self, *args, **kwargs):
-        worker.ThreadWorker.__init__(self, *args, **kwargs)
+        super(FileStatWorker, self).__init__(*args, **kwargs)
 
     def do_work(self, job, thread_int):
         '''
@@ -228,7 +228,7 @@ class UploadWorker(worker.ThreadWorker):
     '''
 
     def __init__(self, *args, **kwargs):
-        worker.ThreadWorker.__init__(self, *args, **kwargs)
+        super(UploadWorker, self).__init__(*args, **kwargs)
         self.chunk_size = 1048576  # 1M
         self.report_size = 10485760  # 10M
         self.api_client = api_client.ApiClient()
