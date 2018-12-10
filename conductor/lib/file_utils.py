@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import sys
+import tarfile
 import glob
 
 from conductor.lib import exceptions
@@ -469,3 +470,8 @@ def strip_drive_letter(filepath):
     '''
     rx_drive = r'^[a-z]:'
     return re.sub(rx_drive, "", filepath, flags=re.I)
+
+
+def untar_file(filepath, destination_dir=".", members=None):
+    with tarfile.open(filepath) as tf:
+        tf.extractall(path=destination_dir, members=members)

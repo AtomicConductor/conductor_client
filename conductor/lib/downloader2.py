@@ -4,6 +4,7 @@
 """
 
 import base64
+import binascii
 import functools
 import imp
 import json
@@ -31,7 +32,7 @@ except ImportError, e:
 
 
 from conductor import CONFIG
-from conductor.lib import common, api_client, loggeria
+from conductor.lib import common, api_client, loggeria, file_utils
 
 CHUNK_SIZE = 1024
 
@@ -258,7 +259,7 @@ class Downloader(object):
     # The number of Downloads to fetch per request (only relevant when downloading by job_id)
     download_page_size = CONFIG.get("download_page_size", 200)
 
-    def __init__(self, thread_count=None, location=None, output_dir=None):
+    def __init__(self, thread_count=None, location=None, output_dir=None, tar=False):
 
         # Turn on the SIGINT handler.  This will catch
         common.register_sigint_signal_handler()
@@ -273,6 +274,8 @@ class Downloader(object):
 
         self.output_dir = output_dir
 
+        self.tar = tar
+
     @classmethod
     def start_daemon(cls, thread_count=None, location=None, output_dir=None, summary_interval=10):
         '''
@@ -286,11 +289,11 @@ class Downloader(object):
         downloader.print_uptime()
 
     @classmethod
-    def download_jobs(cls, job_ids, task_ids=None, thread_count=None, output_dir=None):
+    def download_jobs(cls, job_ids, task_ids=None, thread_count=None, output_dir=None, tar=False):
         '''
         Run the downloader for explicit jobs, and terminate afterwards.
         '''
-        downloader = cls(thread_count=thread_count, output_dir=output_dir)
+        downloader = cls(thread_count=thread_count, output_dir=output_dir, tar=tar)
         thread_states = downloader.start(job_ids, task_ids=task_ids)
 
         while not common.SIGINT_EXIT:
@@ -450,7 +453,7 @@ class Downloader(object):
         for jid in jids:
             try:
                 # Get the the next download
-                self.enqueue_job_downloads(jid, tids=tids, page_size=self.download_page_size)
+                self.enqueue_job_downloads(jid, tids=tids, page_size=self.download_page_size, tar=self.tar)
 
             except:
                 logger.exception("Exception occurred in QueueThead:\n")
@@ -479,7 +482,7 @@ class Downloader(object):
         except Exception as e:
             logger.exception('Could not get next download')
 
-    def enqueue_job_downloads(self, jid, tids=None, page_size=200):
+    def enqueue_job_downloads(self, jid, tids=None, page_size=200, tar=False):
         '''
         Fetch and enqueue all Downloads for the given job.
         '''
@@ -495,7 +498,7 @@ class Downloader(object):
                 continue
 
             logger.info("Fetching job %s's downloads...", jid)
-            response = self._get_job_downloads(endpoint, self.api_client, tids, start_cursor, page_size)
+            response = self._get_job_downloads(endpoint, self.api_client, tids, start_cursor, page_size, tar)
             downloads = response.get("downloads", [])
             logger.debug("Got %s downloads", len(downloads))
             for task_download in downloads:
@@ -506,9 +509,10 @@ class Downloader(object):
                 return
 
     @staticmethod
-    def _get_job_downloads(endpoint, client, tids, start_cursor, page_size):
+    def _get_job_downloads(endpoint, client, tids, start_cursor, page_size, tar):
         params = {"limit": page_size,
-                  'start_cursor': start_cursor}
+                  'start_cursor': start_cursor,
+                  'tar': tar}
 
         rbody, rcode = client.make_request(endpoint,
                                            verb="POST",
@@ -601,7 +605,10 @@ class Downloader(object):
                     task_download_state.file_download_states[file_download_state] = file_info
 
                     # Define the local filepath to download to
-                    local_filepath = os.path.join(output_dir, file_info["relative_path"])
+                    if self.tar:
+                        local_filepath = os.path.join(output_dir, "%s.tar" % task_download["download_id"])
+                    else:
+                        local_filepath = os.path.join(output_dir, file_info["relative_path"])
 
                     # Record the filepath to the state object
                     file_download_state.filepath = local_filepath
@@ -726,6 +733,11 @@ class Downloader(object):
 
         logger.debug('Checking for existing file %s', local_filepath)
 
+        if self.tar and self.check_dl_record(md5, file_state.download_id):
+            file_state.use_existing = True
+            logger.info('Tar file has been downloaded previously.  Skipping download.')
+            return
+
         # If the file already exists on disk
         if os.path.isfile(local_filepath):
             file_state.status = FileDownloadState.STATE_HASHING_EXISTING_FILE
@@ -776,6 +788,16 @@ class Downloader(object):
         logger.debug('\tsetting file perms to 666')
         chmod(local_filepath, 0666)
 
+        if self.tar:
+            logger.debug("untarring file: %s", local_filepath)
+            file_utils.untar_file(local_filepath, destination_dir=dirpath)
+            logger.debug("Deleting tar file: %s", local_filepath)
+            delete_file(local_filepath)
+            try:
+                self.create_dl_record(md5, file_state.download_id)
+            except Exception:
+                logger.exception("Failed to record DL history record due to error:")
+
     def _update_file_state_callback(self, file_state, filepath, file_size, bytes_processed, log_level):
         '''
         Callback that updates the hash progress (while the hashing is occuring
@@ -785,6 +807,7 @@ class Downloader(object):
 
 
 #     @dec_random_exception(percentage_chance=0.05)
+
 
     def add_to_history(self, file_download_state):
 
@@ -797,6 +820,7 @@ class Downloader(object):
 
 
 #     @dec_random_exception(percentage_chance=0.05)
+
 
     def report_download_status(self, task_download_state):
         download_id = task_download_state.task_download.get("download_id")
@@ -1080,6 +1104,22 @@ class Downloader(object):
 
         return table.make_table_str()
 
+    def create_dl_record(self, md5, download_id):
+        md5_hex = binascii.b2a_hex(binascii.a2b_base64(md5))
+        record_dirpath = os.path.join(tempfile.gettempdir(), "conductor/cache/dl")
+        safe_mkdirs(record_dirpath)
+        record_filepath = os.path.join(record_dirpath, "%s-%s.history" % (download_id, md5_hex))
+        logger.debug("Recording download record to: %s", record_filepath)
+        with open(record_filepath, "w"):
+            pass
+
+    def check_dl_record(self, md5, download_id):
+        md5_hex = binascii.b2a_hex(binascii.a2b_base64(md5))
+        record_dirpath = os.path.join(tempfile.gettempdir(), "conductor/cache/dl")
+        record_filepath = os.path.join(record_dirpath, "%s-%s.history" % (download_id, md5_hex))
+        logger.debug("Checking for download record existence: %s", record_filepath)
+        return bool(os.path.isfile(record_filepath))
+
 
 # @dec_random_exception(percentage_chance=0.05)
 @common.DecRetry(tries=3, static_sleep=1)
@@ -1208,7 +1248,8 @@ def run_downloader(args):
         Downloader.download_jobs(job_ids,
                                  task_ids=task_ids,
                                  thread_count=thread_count,
-                                 output_dir=args.get("output"))
+                                 output_dir=args.get("output"),
+                                 tar=args.get("tar", False))
 
     else:
         Downloader.start_daemon(thread_count=thread_count,

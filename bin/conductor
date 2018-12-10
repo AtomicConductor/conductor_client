@@ -370,6 +370,12 @@ def parse_args():
                                    default=conductor.CONFIG.get("thread_count"),
                                    help=('The number of threads that should download simultaneously'))
 
+    downloader_parser.add_argument("--tar",
+                                   choices=[False, True],
+                                   type=cast_to_bool,
+                                   default=conductor.CONFIG.get("tar") or "false",
+                                   help=('download a a single tarball per Task'))
+
     downloader_parser.add_argument("--alt",
                                    help=('Run an alternative version of the downloader'),
                                    action='store_true')
