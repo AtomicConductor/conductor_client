@@ -14,7 +14,7 @@ RX_UDIM_MARI = r"<UDIM>"  # image.<UDIM>.exr
 RX_UDIM_MUDBOX_L = r"<UVTILE>"  # image.<UVTILE>.exr
 RX_UDIM_MUDBOX_U = r"<uvtile>"  # image.<uvtile>.exr
 RX_UDIM_VRAY_L = r"\$\d*U.*\$\d*V"  # image.u$2U_v$2V.exr or image.u$Uv$V.exr, etc
-RX_UDIM_VRAY_U = r"\$\d*v.*\$\d*v"  # image.u$2u_v$2v.exr or image.u$uv$v.exr, etc
+RX_UDIM_VRAY_U = r"\$\d*u.*\$\d*v"  # image.u$2u_v$2v.exr or image.u$uv$v.exr, etc
 RX_HOUDINI = r"\$F\d*"  # image.$F.exr
 RX_ASTERISK = r"\*+"  # image.*.exr
 
