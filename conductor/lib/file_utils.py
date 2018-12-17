@@ -11,17 +11,32 @@ RX_HASH = r"#+"  # image.####.exr
 RX_MAPID = r"_MAPID_"  # image_MAPID_.exr
 RX_PERCENT = r"%0\d+d"  # image.%04d.exr
 RX_UDIM_MARI = r"<UDIM>"  # image.<UDIM>.exr
-RX_UDIM_MUDBOX_L = r"<UVTILE>"  # image.<UVTILE>.exr
-RX_UDIM_MUDBOX_U = r"<uvtile>"  # image.<uvtile>.exr
-RX_UDIM_VRAY_L = r"\$\d*U.*\$\d*V"  # image.u$2U_v$2V.exr or image.u$Uv$V.exr, etc
-RX_UDIM_VRAY_U = r"\$\d*u.*\$\d*v"  # image.u$2u_v$2v.exr or image.u$uv$v.exr, etc
+RX_UDIM_MUDBOX = r"<UVTILE>"  # image.<UVTILE>.exr
+RX_UDIM_VRAY = r"\$\d*U.*\$\d*V"  # image.u$2U_v$2V.exr or image.u$Uv$V.exr, etc
 RX_HOUDINI = r"\$F\d*"  # image.$F.exr
 RX_ASTERISK = r"\*+"  # image.*.exr
+RX_UDIM_ZBRUSH = r"u<U>_v<V>"  # image.u<U>_v<V>.exr
+RX_UDIM_ZBRUSH_F = r"u<U>_v<V>_<f>"  # image.u<U>_v<V>_<f>.exr
+RX_FRAME_SEQ = "<f>"  # image.<f>.exr
 
-# List of  regular expressions that a filename may be represented as (in maya, nuke, mari, or listed in text file, etc)
-PATH_EXPRESSIONS = [RX_HASH, RX_MAPID, RX_PERCENT, RX_UDIM_MARI, RX_UDIM_MUDBOX_L,
-                    RX_UDIM_MUDBOX_U, RX_UDIM_VRAY_L, RX_UDIM_VRAY_U, RX_HOUDINI,
-                    RX_ASTERISK]
+
+# List of  regular expressions that a filename may be represented as (in maya, nuke, mari, or listed
+# in text file, etc)
+# NOTE: the order MATTERS.  The more specific/stricter expressions should be first in the list, while
+# the more easily-matched expressions at the end.
+PATH_EXPRESSIONS = (
+    RX_HASH,
+    RX_MAPID,
+    RX_PERCENT,
+    RX_UDIM_ZBRUSH,
+    RX_UDIM_ZBRUSH_F,
+    RX_UDIM_MARI,
+    RX_UDIM_MUDBOX,
+    RX_UDIM_VRAY,
+    RX_HOUDINI,
+    RX_FRAME_SEQ,
+    RX_ASTERISK,
+)
 
 logger = logging.getLogger(__name__)
 
