@@ -313,6 +313,8 @@ nuke_dependency_knobs:
     Group:
         - vfield_file
         - cdl_path
+    OCIOCDLTransform:
+        - file
     Precomp:
         - file
     Read:
