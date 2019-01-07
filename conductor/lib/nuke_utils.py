@@ -113,9 +113,16 @@ def collect_dependencies(write_nodes, views, dependency_knobs=None):
         if nuke.exists(node_name):
             write_node = nuke.toNode(node_name)
             for dep_node in get_node_dependencies(write_node):
-                for knob_name in dependency_knobs.get(dep_node.Class(), []):
-                    knob = dep_node.knob(knob_name)
+                for knob_type in dependency_knobs.get(dep_node.Class(), []):
+                    knob = dep_node.knob(knob_type)
                     if knob:
+
+                        # Handle OCIOCDLTransform:  Skip node/knob if "read from file" is not enabled
+                        if dep_node.Class() == "OCIOCDLTransform":
+                            if not dep_node.knob("read_from_file").value():
+                                logger.debug("Skipping %s", knob.fullyQualifiedName())
+                                continue
+
                         # Resolve TCL expressions and relative paths
                         path = resolve_knob_path(knob)
 
