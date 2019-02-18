@@ -439,6 +439,7 @@ class Submit(object):
 
             uploader_args = {"location": self.location,
                              "database_filepath": self.database_filepath,
+                             "thread_count": CONFIG.get("thread_count"),
                              "md5_caching": self.md5_caching}
             uploader_ = uploader.Uploader(uploader_args)
             upload_error_message = uploader_.handle_upload_response(self.project, upload_files)
@@ -503,12 +504,11 @@ class Submit(object):
     @staticmethod
     def parse_upload_file(upload_filepath):
         '''
-        Parse the given filepath for paths that are separated by commas, returning
-        a list of these paths
+        Parse the given filepath for all listed paths (one per line)
         '''
         with open(upload_filepath, 'r') as file_:
             logger.debug('opening file')
-            return [line.strip() for line in file_.readlines]
+            return [line.strip() for line in file_.readlines()]
 
     @classmethod
     def cast_metadata(cls, metadata, strict=False):
