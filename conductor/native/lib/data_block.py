@@ -23,10 +23,10 @@ import json
 
 from conductor.native.lib import package_tree as ptree
 from conductor.lib import common
-# from conductor.native.lib.mocks.api_client_mock import ApiClient
+from conductor.native.lib.mocks.api_client_mock import ApiClient
 # from conductor.native.lib.mocks.api_client_mock import ApiClientNoHost as ApiClient
 # The real version of ApiClient below
-from conductor.lib.api_client import ApiClient
+### from conductor.lib.api_client import ApiClient
 
 
 def _projects():
@@ -142,3 +142,7 @@ def for_houdini(force=False):
     specify the product keyword.
     """
     return ConductorDataBlock(product="houdini", force=force)
+ 
+
+
+

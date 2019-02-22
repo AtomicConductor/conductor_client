@@ -2,11 +2,11 @@ import os
 import sys
 import unittest
 
-from conductor.houdini.lib.sequence import Progression, Sequence
+from conductor.native.lib.sequence import Progression, Sequence
 
-HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if HDA_MODULE not in sys.path:
-    sys.path.insert(0, HDA_MODULE)
+NATIVE_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if NATIVE_MODULE not in sys.path:
+    sys.path.insert(0, NATIVE_MODULE)
 
 
 class SequenceFactoryTest(unittest.TestCase):

@@ -22,7 +22,7 @@ from conductor.houdini.hda import (action_row_ui, driver_ui, frame_spec_ui,
                                    instances_ui, job_source_ui,
                                    notifications_ui, projects_ui, software_ui,
                                    submitter_ui, takes, types, uistate)
-from conductor.houdini.lib import data_block
+from conductor.native.lib import data_block
 
 
 def _all_job_nodes():

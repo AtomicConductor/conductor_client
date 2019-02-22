@@ -2,7 +2,7 @@
 
 import hou
 from conductor.houdini.hda import takes, uistate
-from conductor.houdini.lib.sequence import Sequence
+from conductor.native.lib.sequence import Sequence
 
 # Specify that Expressions are Python
 XP = hou.exprLanguage.Python

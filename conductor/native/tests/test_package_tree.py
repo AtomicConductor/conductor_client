@@ -4,12 +4,12 @@ import random
 import sys
 import unittest
 
-from conductor.houdini.lib import package_tree as ptree
-from conductor.houdini.lib.mocks.api_client_mock import ApiClient
+from conductor.native.lib import package_tree as ptree
+from conductor.native.lib.mocks.api_client_mock import ApiClient
 
-HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if HDA_MODULE not in sys.path:
-    sys.path.insert(0, HDA_MODULE)
+NATIVE_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if NATIVE_MODULE not in sys.path:
+    sys.path.insert(0, NATIVE_MODULE)
 
 
 class RemoveUnreachableTest(unittest.TestCase):

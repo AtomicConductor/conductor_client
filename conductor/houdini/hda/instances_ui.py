@@ -2,7 +2,7 @@
 
 from conductor.lib import common
 
-from conductor.houdini.lib import data_block
+from conductor.native.lib import data_block
 
 
 def _to_menu_item(item):
