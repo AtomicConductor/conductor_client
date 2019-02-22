@@ -6,7 +6,7 @@ it has a project selected and all its input jobs are valid.
 """
 
 from conductor.houdini.hda import takes, types
-from conductor.houdini.lib import data_block
+from conductor.native.lib import data_block
 
 
 def has_valid_project(node):

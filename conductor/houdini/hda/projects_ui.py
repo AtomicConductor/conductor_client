@@ -1,7 +1,7 @@
 """Manage project menu selection."""
 
 from conductor.houdini.hda import uistate
-from conductor.houdini.lib import data_block
+from conductor.native.lib import data_block
 
 
 def populate_menu(node):

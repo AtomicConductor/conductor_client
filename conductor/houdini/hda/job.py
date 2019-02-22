@@ -4,8 +4,8 @@ import hou
 from conductor.houdini.hda import (dependency_scan, driver_ui, frame_spec_ui,
                                    software_ui)
 from conductor.houdini.hda.task import Task
-from conductor.houdini.lib import data_block
-from conductor.houdini.lib.sequence import Sequence
+from conductor.native.lib import data_block
+from conductor.native.lib.sequence import Sequence
 
 
 class Job(object):

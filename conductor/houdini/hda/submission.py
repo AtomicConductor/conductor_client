@@ -4,7 +4,7 @@ import datetime
 import hou
 from conductor.houdini.hda import notifications_ui, types
 from conductor.houdini.hda.job import Job
-from conductor.houdini.lib import data_block
+from conductor.native.lib import data_block
 
 
 class Submission(object):

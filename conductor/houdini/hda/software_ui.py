@@ -18,8 +18,8 @@ import hou
 from conductor.lib import common
 
 from conductor.houdini.hda import houdini_info
-from conductor.houdini.lib import data_block
-from conductor.houdini.lib import package_tree as ptree
+from conductor.native.lib import data_block
+from conductor.native.lib import package_tree as ptree
 
 NO_HOST_PACKAGES = "No conductor packages have been selected"
 

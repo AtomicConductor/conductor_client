@@ -1,4 +1,4 @@
-"""This module tests dependency scanning."""
+"""This module tests houdini dependency scanning."""
 
 
 import os
@@ -8,7 +8,7 @@ import sys
 import unittest
 from unittest import TestCase
 
-from conductor.houdini.lib.sequence import Sequence
+from conductor.native.lib.sequence import Sequence
 
 
 HDA_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,10 +20,10 @@ sys.modules['hou'] = __import__(
     'conductor.houdini.lib.mocks.hou', fromlist=['dummy'])
 
 sys.modules['glob'] = __import__(
-    'conductor.houdini.lib.mocks.glob', fromlist=['dummy'])
+    'conductor.native.lib.mocks.glob', fromlist=['dummy'])
 
 
-# import hou and dependency_scan after mocking houdini
+# import after mocking
 import hou
 import glob
 
