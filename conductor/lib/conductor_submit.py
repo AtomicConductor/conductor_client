@@ -381,6 +381,7 @@ class Submit(object):
         logger.info("Sending Job...")
         response, response_code = self.api_client.make_request(uri_path="jobs/",
                                                                data=json.dumps(submit_dict),
+                                                               compress=True,
                                                                raise_on_error=False,
                                                                use_api_key=True)
         if response_code not in [201, 204]:
