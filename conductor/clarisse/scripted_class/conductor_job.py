@@ -2,8 +2,8 @@ import ix
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.clarisse.scripted_class import cid
 from conductor.clarisse.scripted_class import projects_ui
+from conductor.clarisse.scripted_class import instances_ui
 from conductor.clarisse.scripted_class import frame_spec_ui
-
 from conductor.clarisse.scripted_class import variables
   
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
@@ -13,7 +13,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         print "RUN ConductorJob INIT"
 
     def on_action(self, action, obj, data):
-        # Called each time an action is pressed by the user
         if action.get_name() == "submit":
             window = ix.api.GuiWindow(ix.application, 0, 0, 640, 480)
             lv = ix.api.GuiListView(window, 0, 0, 640, 480)
@@ -36,24 +35,30 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr_name = attr.get_name()
 
         if attr_name == "project":
-            projects_ui.handle_project_change(obj, attr)
-        elif attr_name == "use_custom_range":
-            frame_spec_ui.handle_use_custom_range(obj, attr)
-        elif attr_name == "use_scout_range":
-            frame_spec_ui.handle_use_scout_range(obj, attr)
+            projects_ui.handle_project(obj, attr)
+        elif attr_name == "use_custom_frames":
+            frame_spec_ui.handle_use_custom_frames(obj, attr)
+        elif attr_name == "use_scout_frames":
+            frame_spec_ui.handle_use_scout_frames(obj, attr)
+        elif attr_name == "custom_frames":
+            frame_spec_ui.handle_frames_atts(obj, attr)
+        elif attr_name == "scout_frames":
+            frame_spec_ui.handle_frames_atts(obj, attr)
 
+            
         elif attr_name == "source":
             print "source is:"
             print attr.get_object(0)
 
     def declare_attributes(self, cls):
-        self.add_action(cls, "submit", "actions")
+        self.add_action(cls, "refresh", "status")
         self.add_action(cls, "preview", "actions")
-        self.add_action(cls, "refresh", "actions")
+        self.add_action(cls, "submit", "actions")
 
-def on_refresh_clicked(obj, data):
-    db = ConductorDataBlock(product="clarisse", force=True)
-    projects_ui.refresh(obj, data)
+def on_refresh_clicked(obj, _):
+    data_block = ConductorDataBlock(product="clarisse", force=True)
+    projects_ui.refresh(obj, data_block)
+    instances_ui.refresh(obj, data_block)
     variables.refresh()
  
 # Register our class to Clarisse with the supplied implementation
