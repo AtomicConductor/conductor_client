@@ -140,8 +140,9 @@ def choose(node, **_):
             choices,
             exclusive=False,
             message="Conductor packages",
-            title="Package chooser",
-            clear_on_cancel=True)
+            title="Package chooser"
+            # ,clear_on_cancel=True
+            )
         paths = []
         for path in results:
             paths += ptree.to_all_paths(path)
