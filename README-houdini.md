@@ -142,7 +142,7 @@ Specify a custom frameset to override the range from the input ROP. A custom ran
 
 
 **Chunk size** `chunk_size`
-Set the number of frames in a clump. A clump is a set of frames that will be rendered in one task. you may want to use clumps greater than one if the number of instances is limited, or if the time to load the scene is large compared to the time to process frames. Use the AUTO button to adjust the clump size such that frames are distributed as evenly as possible while retaining the current number of clumps. For example, if clump size is 70 and there are 100 frames, 2 clumps will be generated with 70 and 30 frames. Hit the AUTO button to even them out and set clump size to 50.
+Set the number of frames in a chunk. A chunk is a set of frames that will be rendered in one task. you may want to use chunks greater than one if the number of instances is limited, or if the time to load the scene is large compared to the time to process frames. Use the AUTO button to adjust the chunk size such that frames are distributed as evenly as possible while retaining the current number of chunks. For example, if chunk size is 70 and there are 100 frames, 2 chunks will be generated with 70 and 30 frames. Hit the AUTO button to even them out and set chunk size to 50.
 
 
 **Auto button** `auto_chunk_size`
@@ -158,7 +158,7 @@ Choose to start just a subset of frames before running the complete job.
 
 
 **Scout frames** `scout_frames`
-Specify frames you want to see rendered before deciding whether the render the whole job. Use a frame spec of the same format as the custom frames parameter. Scout frames that are not in the frame range will be ignored. For example, if the frame range is 1-10 and scout frames are 9-11, only 9 and 10 will be resolved as valid scout frames. Further, scout frames signify whether or not to start the task they were included in. For example, if clump size is 10 and the first task contains frames 1-10, then specifying 5 as a scout frame will cause the task to be started running. Only tasks that have no scout frames will be initialized on hold.
+Specify frames you want to see rendered before deciding whether the render the whole job. Use a frame spec of the same format as the custom frames parameter. Scout frames that are not in the frame range will be ignored. For example, if the frame range is 1-10 and scout frames are 9-11, only 9 and 10 will be resolved as valid scout frames. Further, scout frames signify whether or not to start the task they were included in. For example, if chunk size is 10 and the first task contains frames 1-10, then specifying 5 as a scout frame will cause the task to be started running. Only tasks that have no scout frames will be initialized on hold.
 
 
 **Machine type** `machine_type`
