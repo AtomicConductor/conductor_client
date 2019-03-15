@@ -231,6 +231,17 @@ class Sequence(object):
         if not common_frames:
             return None
         return Sequence.create(common_frames)
+    
+
+    def union(self, iterable):
+        """Generate a Sequence that is the union of an iterable with
+        this Sequence.
+
+        This is useful for getting a sequence that covers multiple output ranges.
+        """
+        union_frames = set(self._iterable).union(set(iterable))
+        return Sequence.create(union_frames)
+
 
     def subsample(self, count):
         """Take a selection of elements from the sequence.

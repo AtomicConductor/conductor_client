@@ -52,7 +52,7 @@ def to_name(pkg):
         pkg["release_version"],
         pkg["build_version"]]
     version_string = (".").join([p for p in version_parts if p])
-    return "%s %s" % (pkg["product"], version_string)
+    return "{} {}".format(pkg["product"], version_string)
 
 
 def _build_tree(packages, package):

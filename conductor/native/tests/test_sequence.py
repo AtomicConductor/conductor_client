@@ -173,6 +173,7 @@ class ChunksTest(unittest.TestCase):
         s = Sequence.create("1-100")
         s.chunk_size = 50
         self.assertEqual(s.chunk_size, 50)
+ 
 
     def test_best_chunk_size(self):
         s = Sequence.create("1-100")
@@ -239,6 +240,20 @@ class IntersectionTest(unittest.TestCase):
         s = Sequence.create("1-10")
         i = s.intersection(range(25, 35))
         self.assertEqual(i, None)
+
+
+class UnionTest(unittest.TestCase):
+
+    def test_creates_union_from_range(self):
+        s = Sequence.create("1-10")
+        u = s.union(range(5, 15))
+        self.assertEqual(list(u), list(range(1,15)))
+
+    def test_creates_union_from_other_sequence(self):
+        s1 = Sequence.create("1-10")
+        s2 = Sequence.create("5-15")
+        u = s1.union(s2)
+        self.assertEqual(list(u), list(Sequence.create("1-15")))
 
 
 class SequenceValidator(unittest.TestCase):

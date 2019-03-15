@@ -30,10 +30,23 @@ CONDUCTOR_VARS = [
 ]
 
 
-def refresh():
+def declare():
     for varname in CONDUCTOR_VARS:
-        v = ix.application.get_factory().get_vars().get(varname)
-        if not v:
-            v = ix.application.get_factory().get_vars().add(
-                ix.api.OfVars.TYPE_CUSTOM, varname, ix.api.OfAttr.TYPE_STRING)
-            v.set_string("-")
+        put(varname, "")
+
+
+def put(varname, value):
+    all_vars = ix.application.get_factory().get_vars()
+    v = all_vars.get(varname)
+    if not v:
+        v = all_vars.add(
+            ix.api.OfVars.TYPE_CUSTOM,
+            varname,
+            ix.api.OfAttr.TYPE_STRING)
+    v.set_string(value)
+
+
+def get(varname):
+    v = ix.application.get_factory().get_vars().get(varname)
+    if v:
+        return v.get_string()

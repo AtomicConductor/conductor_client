@@ -1,6 +1,220 @@
 {
   "data": [
     {
+      "build_id": "f1234567-d702-4a0c-a1ec-16f5c3148660",
+      "product": "arnold-clarisse",
+      "time_updated": "Tue, 27 Feb 2018 01:19:18 GMT",
+      "vendor": "solidangle",
+      "description": "",
+      "package": "ctoa-2.0.2.2_r57ffad7_houdini-16.0.736.run",
+      "plugin_hosts": [
+        "d8fedcf2d8b25f367c41a54f82ffffff"
+      ],
+      "major_version": "2",
+      "updated_at": "Tue, 27 Feb 2018 00:22:16 GMT",
+      "time_created": "Tue, 27 Feb 2018 00:22:16 GMT",
+      "minor_version": "0",
+      "environment": [
+        {
+          "merge_policy": "append",
+          "value": "/opt/solidangle/clarisse_arnold/ctoa-2.0.2.2_r57ffad7_clarisse-4.0/bin",
+          "name": "PATH"
+        },
+        {
+          "merge_policy": "append",
+          "value": "/opt/solidangle/clarisse_arnold/ctoa-2.0.2.2_r57ffad7_clarisse-4.0",
+          "name": "HOUDINI_PATH"
+        },
+        {
+          "merge_policy": "append",
+          "value": "/opt/solidangle/clarisse_arnold/ctoa-2.0.2.2_r57ffad7_clarisse-4.0/arnold/plugins",
+          "name": "HTOA_PLUGIN_PATH"
+        },
+        {
+          "merge_policy": "append",
+          "value": "/opt/solidangle/clarisse_arnold/ctoa-2.0.2.2_r57ffad7_clarisse-4.0/python2.7libs",
+          "name": "PYTHONPATH"
+        }
+      ],
+      "release_version": "2",
+      "package_id": "c28f3f5071b045df9c89f2fa4edddddd",
+      "plugin_host_version": "16.0.736",
+      "plugins": [
+        "df9c89f2fa4e844c7c28f3f5071b0457",
+        "c7c28f3f5071b0457df9c89f2fa4e844"
+      ],
+      "build_version": "2",
+      "relative_path": "solidangle/clarisse_arnold/ctoa-2.0.2.2_r57ffad7_clarisse-4.0",
+      "plugin_host_product": "clarisse"
+    },
+
+    {
+      "build_id": "057e368e-26d3-41e2-b56a-ffffffffffff",
+      "build_version": "",
+      "description": "",
+      "environment": [
+         {
+            "merge_policy": "append",
+            "name": "PATH",
+            "value": "/opt/isotropix/clarisse/4/clarisse4.0.b/clarisse"
+         },
+         {
+            "merge_policy": "exclusive",
+            "name": "ILISE_SERVER",
+            "value": "conductor_ilise:40500"
+         }
+      ],
+      "major_version": "4",
+      "minor_version": "0b",
+      "package": "isotropix_clarisse_ifx_4.0b_linux64.tar.gz",
+      "package_id": "d8fedcf2d8b25f367c41a54f82ffffff",
+      "path": "/opt/isotropix/clarisse/3/clarisse4.0.b",
+      "plugin_host_product": "",
+      "plugin_host_version": "",
+      "plugin_hosts": [],
+      "plugins": ["c28f3f5071b045df9c89f2fa4edddddd"],
+      "product": "clarisse",
+      "relative_path": "isotropix/clarisse/4/clarisse4.0.b",
+      "release_version": "",
+      "time_created": "Fri, 08 Feb 2019 19:44:45 GMT",
+      "time_updated": "Fri, 08 Feb 2019 21:24:46 GMT",
+      "updated_at": "Fri, 08 Feb 2019 19:44:45 GMT",
+      "vendor": "isotropix"
+   },
+    {
+      "build_id": "057e368e-26d3-41e2-b56a-0bcb3fceb525",
+      "build_version": "",
+      "description": "",
+      "environment": [
+         {
+            "merge_policy": "append",
+            "name": "PATH",
+            "value": "/opt/isotropix/clarisse/3/clarisse3.6.sp5/clarisse"
+         },
+         {
+            "merge_policy": "exclusive",
+            "name": "ILISE_SERVER",
+            "value": "conductor_ilise:40500"
+         }
+      ],
+      "major_version": "3",
+      "minor_version": "6",
+      "package": "isotropix_clarisse_ifx_3.6_sp5_linux64.tar.gz",
+      "package_id": "d8fedcf2d8b25f367c41a54f826d9ec7",
+      "path": "/opt/isotropix/clarisse/3/clarisse3.6.sp5",
+      "plugin_host_product": "",
+      "plugin_host_version": "",
+      "plugin_hosts": [],
+      "plugins": [],
+      "product": "clarisse",
+      "relative_path": "isotropix/clarisse/3/clarisse3.6.sp5",
+      "release_version": "sp5",
+      "time_created": "Fri, 08 Feb 2019 19:44:45 GMT",
+      "time_updated": "Fri, 08 Feb 2019 21:24:46 GMT",
+      "updated_at": "Fri, 08 Feb 2019 19:44:45 GMT",
+      "vendor": "isotropix"
+   },
+
+   {
+      "build_id": "057e368e-26d3-41e2-b56a-0bcb3fceb525",
+      "build_version": "",
+      "description": "",
+      "environment": [
+         {
+            "merge_policy": "append",
+            "name": "PATH",
+            "value": "/opt/isotropix/clarisse/3/clarisse3.6.sp3/clarisse"
+         },
+         {
+            "merge_policy": "exclusive",
+            "name": "ILISE_SERVER",
+            "value": "conductor_ilise:40500"
+         }
+      ],
+      "major_version": "3",
+      "minor_version": "6",
+      "package": "isotropix_clarisse_ifx_3.6_sp3_linux64.tar.gz",
+      "package_id": "4db72442a38eec2a7416299959b9494e",
+      "path": "/opt/isotropix/clarisse/3/clarisse3.6.sp3",
+      "plugin_host_product": "",
+      "plugin_host_version": "",
+      "plugin_hosts": [],
+      "plugins": [],
+      "product": "clarisse",
+      "relative_path": "isotropix/clarisse/3/clarisse3.6.sp3",
+      "release_version": "sp3",
+      "time_created": "Fri, 08 Feb 2019 19:42:23 GMT",
+      "time_updated": "Fri, 08 Feb 2019 21:22:24 GMT",
+      "updated_at": "Fri, 08 Feb 2019 19:42:23 GMT",
+      "vendor": "isotropix"
+   },
+    {
+      "build_id": "057e368e-26d3-41e2-b56a-0bcb3fceb525",
+      "build_version": "",
+      "description": "",
+      "environment": [
+         {
+            "merge_policy": "append",
+            "name": "PATH",
+            "value": "/opt/isotropix/clarisse/3/clarisse3.6.sp4/clarisse"
+         },
+         {
+            "merge_policy": "exclusive",
+            "name": "ILISE_SERVER",
+            "value": "conductor_ilise:40500"
+         }
+      ],
+      "major_version": "3",
+      "minor_version": "6",
+      "package": "isotropix_clarisse_ifx_3.6_sp4_linux64.tar.gz",
+      "package_id": "73daeedd31bc55a08ccc4f21c7b0130b",
+      "path": "/opt/isotropix/clarisse/3/clarisse3.6.sp4",
+      "plugin_host_product": "",
+      "plugin_host_version": "",
+      "plugin_hosts": [],
+      "plugins": [],
+      "product": "clarisse",
+      "relative_path": "isotropix/clarisse/3/clarisse3.6.sp4",
+      "release_version": "sp4",
+      "time_created": "Fri, 08 Feb 2019 19:44:22 GMT",
+      "time_updated": "Fri, 08 Feb 2019 21:22:59 GMT",
+      "updated_at": "Fri, 08 Feb 2019 19:44:22 GMT",
+      "vendor": "isotropix"
+   },
+    {
+      "build_id": "057e368e-26d3-41e2-b56a-0bcb3fceb525",
+      "build_version": "",
+      "description": "",
+      "environment": [
+         {
+            "merge_policy": "append",
+            "name": "PATH",
+            "value": "/opt/isotropix/clarisse/3/clarisse3.0.sp7/clarisse"
+         },
+         {
+            "merge_policy": "exclusive",
+            "name": "ILISE_SERVER",
+            "value": "conductor_ilise:40500"
+         }
+      ],
+      "major_version": "3",
+      "minor_version": "0",
+      "package": "isotropix_clarisse_ifx_3.0_sp7_linux64.tar.gz",
+      "package_id": "c06d54ffe439005f18231f952afa545e",
+      "path": "/opt/isotropix/clarisse/3/clarisse3.0.sp7",
+      "plugin_host_product": "",
+      "plugin_host_version": "",
+      "plugin_hosts": [],
+      "plugins": [],
+      "product": "clarisse",
+      "relative_path": "isotropix/clarisse/3/clarisse3.0.sp7",
+      "release_version": "sp7",
+      "time_created": "Fri, 08 Feb 2019 19:41:41 GMT",
+      "time_updated": "Fri, 08 Feb 2019 21:24:16 GMT",
+      "updated_at": "Fri, 08 Feb 2019 19:41:41 GMT",
+      "vendor": "isotropix"
+   },
+    {
       "build_id": "f852e8e1-d702-4a0c-a1ec-16f5c3148660",
       "product": "katana",
       "time_updated": "Tue, 27 Feb 2018 01:11:33 GMT",

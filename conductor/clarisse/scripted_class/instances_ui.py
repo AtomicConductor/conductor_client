@@ -16,12 +16,10 @@ def _to_menu_item(item):
     return (key, item["description"])
 
 
-def refresh(obj, data_block):
+def update(obj, data_block):
     instance_types = data_block.instance_types()
     instance_type_att = obj.get_attribute("instance_type")
     instance_type_att.remove_all_presets()
-    print instance_types
-
     for i, p in enumerate(instance_types):
         instance_type_att.add_preset(_to_menu_item(p)[1], str(i))
 

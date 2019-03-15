@@ -1,7 +1,7 @@
 """Mock ApiClient for requests to get packages and projects.
 
 ApiClientNoHost includes an incompatible version of Houdini
-(to my curret setup) and is useful for testing behaviour of
+(to my current setup) and is useful for testing behaviour of
 software / autodetect etc.
 """
 import json

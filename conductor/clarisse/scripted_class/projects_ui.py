@@ -1,13 +1,13 @@
 from conductor.native.lib.data_block import ConductorDataBlock
 
+
 def handle_project(obj, attr):
-    print "handle_project_change"
     label = attr.get_applied_preset_label()
     if label:
         obj.get_attribute("last_project").set_string(label)
 
-def refresh(obj, data_block):
-    projects = data_block.projects()
+def update(obj, data_block):
+    projects = ConductorDataBlock(product="clarisse").projects()
     project_att = obj.get_attribute("project")
     project_att.remove_all_presets()
     for i, p in enumerate(projects):
