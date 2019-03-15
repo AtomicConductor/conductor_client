@@ -7,27 +7,19 @@ There are currently 3 pieces of data we get from api calls.
 
 Instance types doesn't yet come from an api call but maybe it will in future.
 
-There are 2 commented lines that import mock versions of
-ApiClient The first version provides packages that contain
-Houdini 16.5.323 with arnold plugins and shaders. As
-development is being done on a machine with that version of
-Houdini installed, it helps to tests the autodetect software
-feature.
-
-The second mock has no exact host match, and in fact contains
-only the Houdini version that the real packages end point
-would return.
+Set the env var CONDUCTOR_MOCK_API_CLIENT in iorder to avoid hitting the DB 
+while developing
 """
-
+import os
 import json
 
-from conductor.native.lib import package_tree as ptree
 from conductor.lib import common
-from conductor.native.lib.mocks.api_client_mock import ApiClient
-# from conductor.native.lib.mocks.api_client_mock import ApiClientNoHost as ApiClient
-# The real version of ApiClient below
-### from conductor.lib.api_client import ApiClient
+from conductor.native.lib import package_tree as ptree
 
+if os.environ.get("CONDUCTOR_MOCK_API_CLIENT"):
+    from conductor.native.lib.mocks.api_client_mock import ApiClient
+else:
+    from conductor.lib.api_client import ApiClient
 
 def _projects():
     """Get active projects from the server.
@@ -142,7 +134,3 @@ def for_houdini(force=False):
     specify the product keyword.
     """
     return ConductorDataBlock(product="houdini", force=force)
- 
-
-
-

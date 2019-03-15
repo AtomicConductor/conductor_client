@@ -4,6 +4,21 @@ Attributes:     UDIM_RE (Regex): Find <udim> and related
 tokens in filenames so they can be globbed.
 
 fetch: get a list of dependencies required for the submission.
+
+
+Adding this note from Eric at GoodbyeKansas
+```for ref in file_refs:
+    if ref[0]:
+        parm = ref[0]
+        ue = parm.unexpandedString()
+        file_value = hou.expandString(ue.replace('$F', '\$F'))```
+this is a good way to expand everything except but keep $F
+so it can be replaced with * for glob
+should probably replace $OS with parm.node().name() as well but we don't us $OS so havent got any problems from that
+that way you dont get /path/to/frame/range/foobar.1001.bgeo.sc but instead get /path/to/frame/range/foobar.1001.$F4.sc
+that can then be converted to a glob path
+
+this is when looping over hou.fileReferences()
 """
 import glob
 import os
