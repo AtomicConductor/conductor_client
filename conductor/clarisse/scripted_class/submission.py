@@ -2,23 +2,26 @@
 # import re
 import datetime
 import os
+import errno
 import tempfile
 
 import ix
 from conductor.clarisse.scripted_class import common, variables
 from conductor.clarisse.scripted_class.job import Job
 from conductor.native.lib.data_block import ConductorDataBlock
+# import conductor.native.lib.common
 
 
 class Submission(object):
     """class Submission holds all data needed for a submission.
 
     A Submission contains many Jobs, and those Jobs contain many Tasks.
-    A Submission can provide the correct args to send to Conductor, or it
-    can be used to create a dry run to show the user what will happen. A
-    Submission also manages a list of environment tokens that the user
-    can access as $ variables (similar to Clarisse custom variables) in
-    order to build strings in the UI such as commands and job titles.
+    A Submission can provide the correct args to send to Conductor, or
+    it can be used to create a dry run to show the user what will
+    happen. A Submission also manages a list of environment tokens that
+    the user can access as $ variables (similar to Clarisse custom
+    variables) in order to build strings in the UI such as commands and
+    job titles.
     """
 
     def __init__(self, node):
@@ -51,12 +54,13 @@ class Submission(object):
             self.nodes = [node]
         else:
             raise NotImplementedError
-            # When implemented, make sure its a ConductorSubmitter 
+            # When implemented, make sure its a ConductorSubmitter
             # and fill self.nodes from its inputs
             self.nodes = []
 
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self.scene = self._get_render_scene_path()
+        self.render_package = self.node.get_attribute(
+            "render_package").get_string()
         self.local_upload = self.node.get_attribute("local_upload").get_bool()
         self.force_upload = self.node.get_attribute("force_upload").get_bool()
         self.upload_only = self.node.get_attribute("upload_only").get_bool()
@@ -70,14 +74,11 @@ class Submission(object):
             job = Job(node, self.tokens)
             self.jobs.append(job)
 
-    def _get_render_scene_path(self):
-        return self.node.get_attribute("render_package").get_string()
-
     def _get_project(self):
         """Get the applied project.
 
-        Get its ID in case the current project is no longer in the
-        list of projects at conductor, throw an error.
+        Get its ID in case the current project is no longer in the list
+        of projects at conductor, throw an error.
         """
 
         projects = ConductorDataBlock(product="clarisse").projects()
@@ -95,7 +96,7 @@ class Submission(object):
         }
 
     def _get_notifications(self):
-        """Get notification prefs"""
+        """Get notification prefs."""
         if not self.node.get_attribute("notify").get_bool():
             return None
 
@@ -129,13 +130,44 @@ class Submission(object):
         tokens = {}
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
-        tokens["CT_SCENE"] = self.scene
+        tokens["CT_RENDER_PACKAGE"] = self.render_package
         tokens["CT_PROJECT"] = self.project["name"]
 
         for token in tokens:
             variables.put(token, tokens[token])
 
         return tokens
+
+    def write_render_package(self):
+        # ix.enable_command_history()
+        # ix.begin_command_batch("ExportRenderPackage()")
+
+        # contexts = ix.api.OfContextSet()
+        # ix.application.get_factory().get_root().resolve_all_contexts(contexts)
+
+        # [ix.cmds.MakeLocalContext(context)
+        #     for context in contexts if context.is_reference()]
+
+        path = os.path.dirname(self.render_package)
+        try:
+            os.makedirs(path)
+        except OSError as ex:
+            if ex.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else:
+                ix.log_error(
+                    "Failed to make a directory for the render package {}".format(
+                        self.render_package))
+
+        success = ix.application.export_render_archive(self.render_package)
+
+        # ix.application.get_command_manager().undo()
+        # ix.disable_command_history()
+
+        if not success:
+            ix.log_error(
+                "Failed to export render archive {}".format(
+                    self.render_package))
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -152,13 +184,13 @@ class Submission(object):
         submission_args["local_upload"] = self.local_upload
         submission_args["upload_only"] = self.upload_only
         submission_args["force"] = self.force_upload
-        submission_args["project"] = self.project["id"]
+        submission_args["project"] = self.project["name"]
 
         if self.email_addresses:
             addresses = ", ".join(self.email_addresses)
-            submission_args["notify"] = {"emails": addresses, "slack": []}
+            submission_args["notify"] = {"emails": addresses}
         else:
-            submission_args["notify"] = None
+            submission_args["notify"] =[]
 
         # return [submission_args]
 

@@ -1,3 +1,5 @@
+"""Test DependencyList. Assume run on posix filesystem"""
+
 import os
 import sys
 import unittest
@@ -61,13 +63,13 @@ class DepListTest(unittest.TestCase):
     def test_dedup_cleaned_on_access_iter(self):
         d = DependencyList()
         d.add("/file1", must_exist=False)
-        l = list(d)
+        ls = list(d)
         self.assertTrue(d._clean)
 
     def test_dedup_cleaned_on_access_len(self):
         d = DependencyList()
         d.add("/file1", must_exist=False)
-        l = len(d)
+        ls = len(d)
         self.assertTrue(d._clean)
 
     def test_dedup_cleaned_on_access_next(self):
@@ -119,7 +121,6 @@ class DepListTest(unittest.TestCase):
         d = DependencyList()
         files = [
             "/users/joebloggs/tmp",
-            "/users/joebloggs/tmp/",
             "/users/joebloggs/tmp/bolly/operation",
             "/users/joebloggs/tmp/stay/go"]
         d.add(*files, must_exist=False)
@@ -134,6 +135,33 @@ class DepListTest(unittest.TestCase):
             "/users/joebloggs/tmp/bill.project"]
         d.add(*files, must_exist=False)
         self.assertEqual(d.common_path(), "/users/joebloggs/tmp")
+
+    def test_common_path_when_single_path(self):
+        d = DependencyList()
+        files = ["/users/joebloggs/tmp/foo.txt"]
+        d.add(*files, must_exist=False)
+        self.assertEqual(d.common_path(), "/users/joebloggs/tmp/foo.txt")
+
+    def test_common_path_when_duplicate_entries_of_single_path(self):
+        d = DependencyList()
+        files = [
+            "/users/joebloggs/tmp/foo.txt",
+            "/users/joebloggs/tmp/foo.txt"]
+        d.add(*files, must_exist=False)
+        self.assertEqual(d.common_path(), "/users/joebloggs/tmp/foo.txt")
+
+    def test_common_path_is_none_when_no_entries(self):
+        d = DependencyList()
+        self.assertIsNone(d.common_path())
+
+    def test_common_path_is_slash_when_root(self):
+        d = DependencyList()
+        files = [
+            "/users/joebloggs/tmp/foo.txt",
+            "/dev/joebloggs/tmp/foo.txt"]
+        d.add(*files, must_exist=False)
+        self.assertEqual(d.common_path(), "/")
+
 
 if __name__ == '__main__':
     unittest.main()

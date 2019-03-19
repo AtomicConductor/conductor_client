@@ -332,7 +332,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "render_package",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
+            OfAttr.VISUAL_HINT_FILENAME_SAVE,
             "task")
         expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
         attr.set_expression(expr)
@@ -360,7 +360,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "upload")
-        attr.set_bool(True)
+        attr.set_bool(False)
 
         attr = cls.add_attribute(
             "upload_only",
@@ -368,7 +368,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "upload")
-        attr.set_bool(True)
+        attr.set_bool(False)
 
     def declare_environment_attributes(self, cls):
         """Set up any extra environment.

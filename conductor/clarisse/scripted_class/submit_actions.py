@@ -17,30 +17,28 @@ from conductor.lib import conductor_submit
 SUCCESS_CODES_SUBMIT = [201, 204]
 
 
-def _make_all_context_local():
-    all_ctx = ix.api.OfContextSet()
-    ix.application.get_factory().get_root().resolve_all_contexts(all_ctx)
-    ref_ctxs = []
-
-    for i in range(all_ctx.get_count()):
-        ctx = all_ctx[i]
-        if ctx.is_reference():
-            ref_ctxs.append(ctx)
-
-    if len(ref_ctxs) > 0:
-        for ctx in ref_ctxs:
-            ix.cmds.MakeLocalContext(ctx)
-
-
 def submit(obj, _):
     _validate_images(obj)
-    pass
+    submission = Submission(obj)
+    submission.write_render_package()
+    results = []
+    for job_args in submission.get_args():
+        try:
+            remote_job = conductor_submit.Submit(job_args)
+            response, response_code = remote_job.main()
+            results.append({"code": response_code, "response": response})
+        except BaseException:
+            results.append({"code": "undefined", "response": "".join(
+                traceback.format_exception(*sys.exc_info()))})
+    for result in results:
+        ix.log_info(result)
 
 
 def preview(obj, _):
     _validate_images(obj)
     submission = Submission(obj)
     args_list = submission.get_args()
+    # print args_list
     json_jobs = json.dumps(args_list, indent=3, sort_keys=True)
     print json_jobs
 
