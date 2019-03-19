@@ -736,6 +736,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
     @pyside_utils.wait_cursor
     @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
     def _runSubmission(self, conductor_args):
+        print "xXXXXXXXXXXXXXXXXXxxXXXxXxXxxXXXxxxxXxXx"
+        print conductor_args
         try:
             submission = conductor_submit.Submit(conductor_args)
             response, response_code = submission.main()

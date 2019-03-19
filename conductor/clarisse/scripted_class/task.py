@@ -38,7 +38,7 @@ class Task(object):
         constructing the task command.
 
         Example:
-        python myCmd.py -s $CT_CHUNKSTART -e $CT_CHUNKEND -n $CT_SOURCE -f $CT_SCENE
+        python myCmd.py -s $CT_CHUNKSTART -e $CT_CHUNKEND -n $CT_SOURCE -f $CT_RENDER_PACKAGE
         """
 
         tokens = {}

@@ -38,7 +38,7 @@ class Job(object):
 
         Notes about scene_file. We could have omitted to pass the scene
         file as an arg, and instead used the scene file contained in the
-        tokens from the parent (CT_SCENE). The reason for not doing so
+        tokens from the parent (CT_RENDER_PACKAGE). The reason for not doing so
         is that tokens are intended for use as variables by the user
         only. So passing it separately signals that it is needed to
         construct the job proper. Specifically, it is needed to append
@@ -53,7 +53,8 @@ class Job(object):
         self.instance = self._get_instance()
         self.sequence = self._get_sequence()
         self.tokens = self._setenv(parent_tokens)
-        
+        self.render_package = self.tokens["CT_RENDER_PACKAGE"]
+
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
         self.dependencies = self._get_dependencies()
@@ -64,7 +65,7 @@ class Job(object):
         self.common_output_path = out["common_path"]
         self.output_paths = out["output_paths"]
 
-        self.metadata = "no metadata"
+        self.metadata = None
 
         task_att = self.node.get_attribute("task_template")
         for chunk in self.sequence["main"].chunks():
@@ -127,7 +128,24 @@ class Job(object):
 
     def _get_dependencies(self):
         d = DependencyList()
-        d.add(*[attr.get_string() for attr in ix.api.OfAttr.get_path_attrs()])
+
+        for attr in ix.api.OfAttr.get_path_attrs():
+            if attr.get_parent_object().is_disabled():
+                continue
+            hint = ix.api.OfAttr.get_visual_hint_name(attr.get_visual_hint())
+            if hint == "VISUAL_HINT_FILENAME_SAVE":
+                continue
+            d.add(attr.get_string())
+            d.add(self.render_package, must_exist=False)
+
+        # we do this manually because Clarisse has a bug where get_path_attrs()
+        # doesn't find all the attrs in a series of nested references.
+        contexts = ix.api.OfContextSet()
+        ix.application.get_factory().get_root().resolve_all_contexts(contexts)
+        for context in contexts:
+            if context.is_reference() and not context.is_disabled():
+                d.add(context.get_attribute("filename").get_string())
+
         return list(d)
 
     def _get_output_directory(self):
@@ -250,9 +268,10 @@ class Job(object):
         result["cores"] = self.instance["cores"]
         result["tasks_data"] = [task.data() for task in self.tasks]
         result["job_title"] = self.title
-        result["metadata"] = self.metadata
-        result["priority"] = 5
-        result["max_instances"] = 0
+        if self.metadata:
+            result["metadata"] = self.metadata
+        # result["priority"] = 5
+        # result["max_instances"] = 0
         return result
 
     @property

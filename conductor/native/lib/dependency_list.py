@@ -35,7 +35,7 @@ class DependencyList(object):
     def _deduplicate(self):
         """Deduplicate if it has become dirty.
 
-        For an explanation of the algorithm, see
+        Algorithm explained at:
         https://stackoverflow.com/questions/49478361 .
         """
         if self._clean:
@@ -73,13 +73,31 @@ class DependencyList(object):
         """Find the common path among entries.
 
         This is useful for determining output directory when many
-        renders are rendering to different places. os.path.commonprefix
-        is buggy, hence the manual algorithm.
+        renders are rendering to different places.
+
+        In the case where
+        only single path exists, it is not possible to tell from its
+        name whether it is a file or directory. We don't want this
+        method to touch the filesystem, that should be someone else's
+        problem. A trailing slash would be a hint, but the absence of a
+        trailing slash does not mean its a regular file. Therefore, in
+        the case of a single file we return it ASIS and the caller can
+        then stat to find out for sure.
+
+        If no files exist return None.
+
+        If the filesystem root is the common path, return os.sep.
         """
+        if not len(self._entries):
+            return None
+
         def _all_the_same(rhs):
             return all(n == rhs[0] for n in rhs[1:])
         levels = zip(*[p.split(os.sep) for p in self._entries])
-        return os.sep.join(x[0] for x in takewhile(_all_the_same, levels))
+        return os.sep.join(
+            x[0] for x in takewhile(
+                _all_the_same,
+                levels)) or os.sep
 
     def __iter__(self):
         """Get an iterator to entries.
