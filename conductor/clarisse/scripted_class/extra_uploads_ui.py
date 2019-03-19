@@ -1,5 +1,6 @@
 import ix
 from conductor.clarisse.scripted_class import common
+from conductor.native.lib.dependency_list import DependencyList
 
 BTN_HEIGHT = 22
 BTN_WIDTH = 100
@@ -32,12 +33,28 @@ class FileListWidget(ix.api.GuiTree):
     def add_entries(self, entries):
         """Add a line item for each entry.
 
-        Maintain the item_list sync.
+        Use DependencyList to deduplicate on the fly. As the addition of
+        entries may completely change the list (grow or shrink) we
+        delete and rebuild the list of entries each time.
         """
         if not entries:
             return
+
         root_item = self.get_root()
+
+        deduped = DependencyList()
+        for item in self.item_list:
+            # no need to stat as we must have once already
+            deduped.add(item.get_name(), must_exist=False)
+
         for entry in entries:
+            deduped.add(entry)
+        print list(deduped)
+        # clear existing list
+        root_item.remove_children()
+        del self.item_list[:]
+
+        for entry in deduped:
             item = ix.api.GuiTreeItemBasic(root_item, entry)
             self.item_list.append(item)
         self.refresh()
@@ -158,6 +175,7 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         title = "Select extra uploads..."
         mask = "Any files\t*"
         filenames = ix.api.GuiWidget.open_files(app, "", title, mask)
+        
         self.file_list_wdg.add_entries(filenames)
 
     def on_remove_sel_but(self, sender, evtid):
