@@ -115,7 +115,7 @@ class SoftwareDataInitTest(unittest.TestCase):
 
     def test_init_with_no_product(self):
         pt = ptree.PackageTree(self.data)
-        self.assertEqual(len(pt.tree["children"]), 72)
+        self.assertEqual(len(pt.tree["children"]), 77)
 
     def test_init_with_sub_product(self):
         pt = ptree.PackageTree(
