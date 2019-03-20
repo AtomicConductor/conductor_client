@@ -167,10 +167,7 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
 
     def on_browse_but(self, sender, evtid):
-        """User may browse for files.
-
-        TODO deduplicate.
-        """
+        """User may browse for files."""
         app = ix.application
         title = "Select extra uploads..."
         mask = "Any files\t*"

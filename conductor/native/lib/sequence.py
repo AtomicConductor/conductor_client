@@ -30,10 +30,9 @@ def _clamp(minval, val, maxval):
 def _resolve_start_end_step(*args):
     """Generate a valid start, end, step.
 
-    Args may be individual ints or strings. Start may be
-    after end. Step may be None or missing. Arg may be a
-    single range string as 'start-endxstep' where end and
-    step are optional.
+    Args may be individual ints or strings. Start may be after end. Step
+    may be None or missing. Arg may be a single range string as 'start-
+    endxstep' where end and step are optional.
     """
     if len(args) == 1:
         arg = str(args[0])
@@ -59,9 +58,9 @@ def _resolve_start_end_step(*args):
 def _to_frames(arg):
     """Convert frame spec to a sorted unique set of frames.
 
-    Logic, If the arg has __iter__ it is not a string, but
-    is iterable. If it is a string break it up into ranges
-    to build the list of frames.
+    Logic, If the arg has __iter__ it is not a string, but is iterable.
+    If it is a string break it up into ranges to build the list of
+    frames.
     """
     if hasattr(arg, "__iter__"):
         return sorted(set(arg))
@@ -108,10 +107,9 @@ class Sequence(object):
     def create(*args, **kw):
         """Factory which will create either a Sequence or a Progression.
 
-        A Sequence is an arbitrary list of frames with
-        unique sorted elements. A Progression, which is a
-        subclass of Sequence, can be expressed as an
-        arithmetic progression: i.e. start, end, step.
+        A Sequence is an arbitrary list of frames with unique sorted
+        elements. A Progression, which is a subclass of Sequence, can be
+        expressed as an arithmetic progression: i.e. start, end, step.
         """
         if len(args) == 0:
             raise TypeError("Sequence#create needs at least one arg")
@@ -122,7 +120,8 @@ class Sequence(object):
         frames = _to_frames(args[0])
         if not frames:
             raise TypeError("Can't create Sequence with no frames")
-
+        if any(n < 0 for n in frames):
+            raise ValueError("Can't create Sequence with negative frames")
         if len(frames) == 1:
             return Progression(frames[0], frames[0], 1, **kw)
         step = frames[1] - frames[0]
@@ -153,14 +152,12 @@ class Sequence(object):
     def _cycle_chunks(self):
         """Generate chunks with frame cycling.
 
-        Say we have 100 frames to render (1-100). With
-        chunksize of 5, there will be 20 instances. The
-        first chunk will render 1, 21, 41, 61 81, the second
-        chunk 2, 22, 42, 62, 82 and so on, which means the
-        artist will see frames 1,2,3,4...20 early on. This
-        may be useful to check for frame coherence artifacts
-        without waiting for a whole chunk to render on one
-        machine.
+        Say we have 100 frames to render (1-100). With chunksize of 5,
+        there will be 20 instances. The first chunk will render 1, 21,
+        41, 61 81, the second chunk 2, 22, 42, 62, 82 and so on, which
+        means the artist will see frames 1,2,3,4...20 early on. This may
+        be useful to check for frame coherence artifacts without waiting
+        for a whole chunk to render on one machine.
         """
         num_chunks = self.chunk_count()
         result = [[] for i in range(num_chunks)]
@@ -209,9 +206,9 @@ class Sequence(object):
     def chunk_count(self):
         """Calculate the number of chunks that will be emitted.
 
-        If strategy is progressions we just generate them
-        and count the objects. Otherwise we can calculate
-        from the frame length and chunk size directly
+        If strategy is progressions we just generate them and count the
+        objects. Otherwise we can calculate from the frame length and
+        chunk size directly
         """
         if self._chunk_strategy == "progressions":
             return len(
@@ -224,30 +221,65 @@ class Sequence(object):
         """Generate a Sequence that is the intersection of an iterable with
         this Sequence.
 
-        This is useful for determining which scout frames
-        are valid
+        This is useful for determining which scout frames are valid
         """
         common_frames = set(self._iterable).intersection(set(iterable))
         if not common_frames:
             return None
-        return Sequence.create(common_frames)
-    
+        return Sequence.create(
+            common_frames,
+            chunk_size=self._chunk_size,
+            chunk_strategy=self._chunk_strategy)
 
     def union(self, iterable):
-        """Generate a Sequence that is the union of an iterable with
-        this Sequence.
+        """Generate a Sequence that is the union of an iterable with this
+        Sequence.
 
-        This is useful for getting a sequence that covers multiple output ranges.
+        This is useful for getting a sequence that covers multiple
+        output ranges.
         """
         union_frames = set(self._iterable).union(set(iterable))
-        return Sequence.create(union_frames)
+        result = Sequence.create(union_frames)
 
+        return Sequence.create(
+            union_frames,
+            chunk_size=self._chunk_size,
+            chunk_strategy=self._chunk_strategy)
+
+    def offset(self, value):
+        """Generate a new Sequence with all values offset.
+
+        It is an error if the new sequence would contain negative
+        numbers.
+        """
+        offset_frames = [x + value for x in self._iterable]
+        return Sequence.create(
+            offset_frames,
+            chunk_size=self._chunk_size,
+            chunk_strategy=self._chunk_strategy)
+
+    def expand(self, template):
+        """Expand a hash template with this sequence.
+
+        Example /some/directory_###/image.#####.exr. Sequence is invalid
+        if it contains no hashes. First we replace the hashes with a
+        template placeholder that specifies the padding as a number.
+        Then we use format to replace the placehoders with numbers.
+        """
+        if not re.compile("#+").search(template):
+            raise ValueError("Template must contain hashes.")
+
+        format_template = re.sub(
+            '(#+)', lambda match: "{{0:0{:d}d}}".format(len(match.group(1))),
+            template)
+
+        return [format_template.format(el) for el in self._iterable]
 
     def subsample(self, count):
         """Take a selection of elements from the sequence.
 
-        Return value is a new sequence where the elements
-        are plucked in the most distributed way.
+        Return value is a new sequence where the elements are plucked in
+        the most distributed way.
         """
         n = len(self)
         count = _clamp(1, count, n)
@@ -268,12 +300,11 @@ class Sequence(object):
         """Determine the best distribution of frames per chunk based on the
         current number of chunks.
 
-        For example, if chunk size is 70 and there are 100
-        frames, 2 chunks will be generated with 70 and 30
-        frames. It would be better to have 50 frames per
-        chunk and this method returns that number. NOTE: It
-        doesn't make sense to use the best chunk size when
-        chunk strategy is progressions.
+        For example, if chunk size is 70 and there are 100 frames, 2
+        chunks will be generated with 70 and 30 frames. It would be
+        better to have 50 frames per chunk and this method returns that
+        number. NOTE: It doesn't make sense to use the best chunk size
+        when chunk strategy is progressions.
         """
         count = int(math.ceil(len(self._iterable) / float(self._chunk_size)))
         return math.ceil(len(self._iterable) / float(count))
@@ -291,9 +322,9 @@ class Sequence(object):
     def chunk_size(self, value):
         """Set chunk_size.
 
-        Max is the length of frames and min is 1. If a value
-        less than 1 is given, set it to max, which means the
-        default is to output 1 chunk.
+        Max is the length of frames and min is 1. If a value less than 1
+        is given, set it to max, which means the default is to output 1
+        chunk.
         """
         n = len(self._iterable)
         self._chunk_size = n if value < 1 else sorted([n, value])[0]
@@ -327,6 +358,8 @@ class Sequence(object):
 class Progression(Sequence):
 
     def __init__(self, start, end, step, **kw):
+        if any(n < 0 for n in [start, end]):
+            raise ValueError("Can't create Progression with negative frames")
         self._iterable = xrange(start, end + 1, step)
         self.chunk_size = kw.get("chunk_size", -1)
         self._chunk_strategy = kw.get("chunk_strategy", "linear")
@@ -352,13 +385,12 @@ class Progression(Sequence):
     def factory(iterable, **kw):
         """Split a sequence of integers into arithmetic progressions.
 
-        This is not necessarily the most compact set of
-        progressions in the sequence as that would take too
-        long for large sets, and be really difficult to
-        code. This algorithm walks through the sorted
-        sequence, gathers elements with the same gap as the
-        previous element. The max size keyword arg will
-        limit the length of progressions.
+        This is not necessarily the most compact set of progressions in
+        the sequence as that would take too long for large sets, and be
+        really difficult to code. This algorithm walks through the
+        sorted sequence, gathers elements with the same gap as the
+        previous element. The max size keyword arg will limit the length
+        of progressions.
         """
         max_size = kw.get("max_size", len(iterable))
         iterable = sorted(iterable)
@@ -427,11 +459,10 @@ class Progression(Sequence):
 def _should_add(element, progression, max_size):
     """Should an element be added to a progression?
 
-    Specifically, if the progression has 0 or 1 elements,
-    then add it, as this starts the progression. Otherwise
-    check if the gap between the element and the last in the
-    progression is the same as the gap in the rest of the
-    progression.
+    Specifically, if the progression has 0 or 1 elements, then add it,
+    as this starts the progression. Otherwise check if the gap between
+    the element and the last in the progression is the same as the gap
+    in the rest of the progression.
     """
     if len(progression) < 2:
         return True

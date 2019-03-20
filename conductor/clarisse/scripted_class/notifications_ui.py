@@ -10,7 +10,7 @@ SIMPLE_EMAIL_RE = re.compile(r"^\S+@\S+$")
 
 
 def handle_email_addresses(obj, attr):
- 
+    """Validate email addresses when attribute changes."""
     val = obj.get_attribute("email_addresses").get_string().strip(',').strip()
     result = bool(val)
     for address in [x.strip() for x in val.split(',')]:
@@ -19,7 +19,8 @@ def handle_email_addresses(obj, attr):
             break
     if not result:
         ix.log_warning("Email addresses are invalid.")
- 
+
+
 def notify_changed(obj, attr):
-    """If no email hooks selected then dim out the email field."""
+    """If notify toggle is off, then dim out the email field."""
     obj.get_attribute("email_addresses").set_read_only(not attr.get_bool())

@@ -173,7 +173,6 @@ class ChunksTest(unittest.TestCase):
         s = Sequence.create("1-100")
         s.chunk_size = 50
         self.assertEqual(s.chunk_size, 50)
- 
 
     def test_best_chunk_size(self):
         s = Sequence.create("1-100")
@@ -247,7 +246,7 @@ class UnionTest(unittest.TestCase):
     def test_creates_union_from_range(self):
         s = Sequence.create("1-10")
         u = s.union(range(5, 15))
-        self.assertEqual(list(u), list(range(1,15)))
+        self.assertEqual(list(u), list(range(1, 15)))
 
     def test_creates_union_from_other_sequence(self):
         s1 = Sequence.create("1-10")
@@ -375,6 +374,70 @@ class PermutationsTest(unittest.TestCase):
         self.assertIn("image_02_02.0011.tif", result)
         self.assertIn("image_02_01.0010.tif", result)
         self.assertEqual(len(result), 8)
+
+
+class OffsetTest(unittest.TestCase):
+
+    def test_offset_positive_value(self):
+        s = Sequence.create("1-10")
+        s = s.offset(5)
+        self.assertEqual(list(s), list(range(6, 16)))
+
+    def test_offset_negative_value(self):
+        s = Sequence.create("11-20")
+        s = s.offset(-5)
+        self.assertEqual(list(s), list(range(6, 16)))
+
+    def test_raises_if_result_negative(self):
+        s = Sequence.create("1-10")
+        with self.assertRaises(ValueError):
+            s = s.offset(-3)
+
+    def test_offset_sequence_has_same_chunk_size(self):
+        s = Sequence.create("1-10", chunk_size=3)
+        o = s.offset(5)
+        self.assertEqual(o.chunk_size, s.chunk_size)
+
+    def test_offset_sequence_has_same_chunk_strategy(self):
+        s = Sequence.create("1-10", chunk_strategy="cycle")
+        o = s.offset(5)
+        self.assertEqual(o.chunk_strategy, s.chunk_strategy)
+
+
+class ExpandFilenameTest(unittest.TestCase):
+
+    def test_expand_result_same_length(self):
+        s = Sequence.create("8-12")
+        template = "image.#.exr"
+        result = s.expand(template)
+        self.assertEqual(len(result), 5)
+
+    def test_expand_single_hash(self):
+        s = Sequence.create("8-12")
+        template = "image.#.exr"
+        result = s.expand(template)
+        self.assertIn("image.8.exr", result)
+        self.assertIn("image.12.exr", result)
+
+    def test_expand_padded_hash(self):
+        s = Sequence.create("8-12")
+        template = "image.#####.exr"
+        result = s.expand(template)
+        self.assertIn("image.00008.exr", result)
+        self.assertIn("image.00012.exr", result)
+
+    def test_expand_many_captures(self):
+        s = Sequence.create("8-12")
+        template = "/some/directory_###/image.#####.exr"
+        result = s.expand(template)
+        self.assertIn("/some/directory_012/image.00012.exr", result)
+        self.assertIn("/some/directory_008/image.00008.exr", result)
+
+    def test_invalid_template_raises(self):
+        s = Sequence.create("8-12")
+        template = "image.26.exr"
+        with self.assertRaises(ValueError):
+            s.expand(template)
 
 
 class SubsampleTest(unittest.TestCase):

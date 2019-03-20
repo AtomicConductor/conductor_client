@@ -1,7 +1,7 @@
 """Handle button presses to submit and preview jobs.
 
-preview: Open a window displaying the structure of the submission and
-the JSON objects that will be sent to Conductor.
+preview: Open a window, eventually, displaying the structure of
+the submission and the JSON objects that will be sent to Conductor.
 
 submit: Send jobs to Conductor
 """
@@ -38,9 +38,8 @@ def preview(obj, _):
     _validate_images(obj)
     submission = Submission(obj)
     args_list = submission.get_args()
-    # print args_list
     json_jobs = json.dumps(args_list, indent=3, sort_keys=True)
-    print json_jobs
+    ix.log_info(json_jobs)
 
 
 def _validate_images(obj):

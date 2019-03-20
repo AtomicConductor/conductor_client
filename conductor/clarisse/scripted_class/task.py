@@ -19,15 +19,8 @@ class Task(object):
         """
         self._chunk = chunk
         self._tokens = self._setenv(parent_tokens)
-  
         command_attr.activate_expression(False)
         command_attr.activate_expression(True)
-
-
-        # results = ix.api.CoreStringArray()
-        # command_attr.get_values(results)
-        # self._command = results[0] 
-        
         self._command = command_attr.get_string()
 
     def _setenv(self, parent_tokens):
