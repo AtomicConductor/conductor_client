@@ -15,5 +15,6 @@ def initialize(data):
             FILES.append(item["path"])
     FILES = sorted(set(FILES))
 
+
 def glob(pattern):
     return fnmatch.filter(FILES, pattern)

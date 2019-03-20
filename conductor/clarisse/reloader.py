@@ -1,7 +1,7 @@
 
 from  conductor.clarisse.scripted_class import common
 from  conductor.clarisse.scripted_class import dependency_scan
-from  conductor.clarisse.scripted_class import dependency_ui
+from  conductor.clarisse.scripted_class import dependencies
 from  conductor.native.lib import dependency_list
 from  conductor.clarisse.scripted_class import environment_ui
 from  conductor.clarisse.scripted_class import extra_uploads_ui
@@ -21,7 +21,7 @@ from  conductor.clarisse.scripted_class import variables
 
 reload(common)
 reload(dependency_scan)
-reload(dependency_ui)
+reload(dependencies)
 reload(dependency_list)
 reload(environment_ui)
 reload(extra_uploads_ui)

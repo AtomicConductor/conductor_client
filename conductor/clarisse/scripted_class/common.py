@@ -20,3 +20,6 @@ def force_ae_refresh(node):
         attr.add_preset(preset[0], preset[1])
         attr.set_long(applied)
 
+
+# In order to use those textures, you'll need to set UDIM texture Filename
+# attribute to: paint.<UDIM>.tx

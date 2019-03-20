@@ -6,6 +6,7 @@ def handle_project(obj, attr):
     if label:
         obj.get_attribute("last_project").set_string(label)
 
+
 def update(obj, data_block):
     projects = ConductorDataBlock(product="clarisse").projects()
     project_att = obj.get_attribute("project")
@@ -16,9 +17,5 @@ def update(obj, data_block):
     # There may be a case where the index that was saved in the file
     # is different from the actual project the index referred to when
     # the scene was saved. In this case we can look at the stashed
-    # project name and update the figure out what to do. This will if
-    # the stashed project still exists.
+    # project name and figure out what to do.
     #
-    # new_label = attr.get_applied_preset_label()
-    # stash_label = obj.get_attribute("last_project").get_string()
-    # if new_label != stash_label:

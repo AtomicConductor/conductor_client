@@ -2,6 +2,7 @@
 import os
 import random
 from itertools import takewhile
+import glob
 
 
 class DependencyList(object):
@@ -96,8 +97,17 @@ class DependencyList(object):
         levels = zip(*[p.split(os.sep) for p in self._entries])
         return os.sep.join(
             x[0] for x in takewhile(
-                _all_the_same,
-                levels)) or os.sep
+                _all_the_same, levels)) or os.sep
+
+    def glob(self):
+        self._deduplicate()
+        globbed = []
+        for entry in self._entries:
+            globbed += glob.glob(entry)
+        self._entries = globbed
+        self._clean = False
+        self._current = 0
+        
 
     def __iter__(self):
         """Get an iterator to entries.

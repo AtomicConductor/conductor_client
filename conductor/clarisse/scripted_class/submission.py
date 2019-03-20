@@ -139,15 +139,6 @@ class Submission(object):
         return tokens
 
     def write_render_package(self):
-        # ix.enable_command_history()
-        # ix.begin_command_batch("ExportRenderPackage()")
-
-        # contexts = ix.api.OfContextSet()
-        # ix.application.get_factory().get_root().resolve_all_contexts(contexts)
-
-        # [ix.cmds.MakeLocalContext(context)
-        #     for context in contexts if context.is_reference()]
-
         path = os.path.dirname(self.render_package)
         try:
             os.makedirs(path)

@@ -20,7 +20,7 @@ sys.modules['hou'] = __import__(
     'conductor.houdini.lib.mocks.hou', fromlist=['dummy'])
 
 sys.modules['glob'] = __import__(
-    'conductor.native.lib.mocks.glob', fromlist=['dummy'])
+    'conductor.houdini.lib.mocks.glob', fromlist=['dummy'])
 
 
 # import after mocking

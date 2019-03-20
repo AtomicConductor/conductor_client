@@ -10,6 +10,7 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.dependency_list import DependencyList
 from conductor.native.lib.sequence import Sequence
 from conductor.clarisse.scripted_class.task import Task
+import conductor.clarisse.scripted_class.dependencies as deps
 
 
 class Job(object):
@@ -53,11 +54,14 @@ class Job(object):
         self.instance = self._get_instance()
         self.sequence = self._get_sequence()
         self.tokens = self._setenv(parent_tokens)
-        self.render_package = self.tokens["CT_RENDER_PACKAGE"]
+        self.render_package = parent_tokens["CT_RENDER_PACKAGE"]
 
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
-        self.dependencies = self._get_dependencies()
+
+        self.dependencies = deps.collect(self.node)
+
+        self.dependencies.add(self.render_package, must_exist=False)
 
         self.title = self.node.get_attribute("title").get_string()
 
@@ -100,16 +104,10 @@ class Job(object):
         paths = ix.api.CoreStringArray()
         self.node.get_attribute("packages").get_values(paths)
         paths = list(paths)
-        print "PATHS"
-        print paths
         package_env = package_tree.get_environment(paths)
-        print "GOT package_env"
 
         extra_vars = self._get_extra_env_vars()
-        print "GOT extra_vars"
         package_env.extend(extra_vars)
-
-        print "EXTENDED"
         return package_env
 
     def _get_package_ids(self):
@@ -126,29 +124,11 @@ class Job(object):
                     results.append(package_id)
         return results
 
-    def _get_dependencies(self):
-        d = DependencyList()
-
-        for attr in ix.api.OfAttr.get_path_attrs():
-            if attr.get_parent_object().is_disabled():
-                continue
-            hint = ix.api.OfAttr.get_visual_hint_name(attr.get_visual_hint())
-            if hint == "VISUAL_HINT_FILENAME_SAVE":
-                continue
-            d.add(attr.get_string())
-            d.add(self.render_package, must_exist=False)
-
-        # we do this manually because Clarisse has a bug where get_path_attrs()
-        # doesn't find all the attrs in a series of nested references.
-        contexts = ix.api.OfContextSet()
-        ix.application.get_factory().get_root().resolve_all_contexts(contexts)
-        for context in contexts:
-            if context.is_reference() and not context.is_disabled():
-                d.add(context.get_attribute("filename").get_string())
-
-        return list(d)
-
     def _get_output_directory(self):
+        """Get the common path for all image output paths.
+
+        Also return the individual paths as they may need to be created.
+        """
         out_paths = DependencyList()
 
         images = ix.api.OfObjectArray()
@@ -235,7 +215,6 @@ class Job(object):
         tokens["CT_JOB"] = self.node_name
         tokens["CT_SOURCE"] = " ".join(
             [s.get_full_name() for s in self.sources])
-        # tokens["CT_TYPE"] = self.source_type
 
         for token in tokens:
             variables.put(token, tokens[token])
@@ -251,7 +230,7 @@ class Job(object):
         """
         result = {}
 
-        result["upload_paths"] = self.dependencies
+        result["upload_paths"] = list(self.dependencies)
         result["autoretry_policy"] = {'preempted': {
             'max_retries': self.instance["retries"]}
         } if self.instance["preemptible"] else {}
@@ -270,18 +249,10 @@ class Job(object):
         result["job_title"] = self.title
         if self.metadata:
             result["metadata"] = self.metadata
-        # result["priority"] = 5
-        # result["max_instances"] = 0
+        result["priority"] = 5
+        result["max_instances"] = 0
         return result
 
     @property
     def node_name(self):
         return self.node.get_name()
-
-    # @property
-    # def package_ids(self):
-    #     return self._package_ids
-
-    # @property
-    # def environment(self):
-    #     return self._environment

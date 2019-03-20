@@ -313,20 +313,31 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         Optimization attributes are unused right now. Extra uploads are
         managed in a pop out window.
         """
-        attr = cls.add_attribute(
-            "optimize_scan",
-            OfAttr.TYPE_BOOL,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "upload")
-        attr.set_bool(False)
 
         attr = cls.add_attribute(
-            "optimization_samples", OfAttr.TYPE_LONG,
+            "dependency_scan_policy", OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "upload")
-        attr.set_long(3)
+        attr.set_long(0)
+        attr.add_preset("No scan", "0")
+        attr.add_preset("Glob sequence", "1")
+        attr.add_preset("Smart sequence", "2")
+
+        # attr = cls.add_attribute(
+        #     "optimize_scan",
+        #     OfAttr.TYPE_BOOL,
+        #     OfAttr.CONTAINER_SINGLE,
+        #     OfAttr.VISUAL_HINT_DEFAULT,
+        #     "upload")
+        # attr.set_bool(False)
+
+        # attr = cls.add_attribute(
+        #     "optimization_samples", OfAttr.TYPE_LONG,
+        #     OfAttr.CONTAINER_SINGLE,
+        #     OfAttr.VISUAL_HINT_DEFAULT,
+        #     "upload")
+        # attr.set_long(3)
 
         attr = cls.add_attribute(
             "render_package",

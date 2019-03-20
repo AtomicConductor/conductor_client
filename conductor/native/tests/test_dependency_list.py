@@ -1,3 +1,7 @@
+
+
+from conductor.native.lib.dependency_list import DependencyList
+import glob
 """Test DependencyList. Assume run on posix filesystem"""
 
 import os
@@ -5,11 +9,16 @@ import sys
 import unittest
 import mock
 
-from conductor.native.lib.dependency_list import DependencyList
+
+from conductor.native.lib.sequence import Sequence
+
 
 NATIVE_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if NATIVE_MODULE not in sys.path:
     sys.path.insert(0, NATIVE_MODULE)
+
+sys.modules['glob'] = __import__(
+    'conductor.native.lib.mocks.glob', fromlist=['dummy'])
 
 
 @mock.patch.dict(os.environ, {
@@ -161,6 +170,30 @@ class DepListTest(unittest.TestCase):
             "/dev/joebloggs/tmp/foo.txt"]
         d.add(*files, must_exist=False)
         self.assertEqual(d.common_path(), "/")
+
+    def test_self_glob_when_files_match(self):
+        glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
+        d = DependencyList()
+        file = "/some/file.*.exr"
+        d.add(file, must_exist=False)
+        d.glob()
+        self.assertEqual(len(d), 20)
+
+    def test_self_glob_dedups_when_many_files_match(self):
+        glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
+        d = DependencyList()
+        files = ["/some/file.*.exr", "/some/*.exr"]
+        d.add(*files, must_exist=False)
+        d.glob()
+        self.assertEqual(len(d), 20)
+
+    def test_self_glob_when_files_dont_match(self):
+        glob.populate(Sequence.create("1-20").expand("/other/file.####.exr"))
+        d = DependencyList()
+        file = "/some/file.*.exr"
+        d.add(file, must_exist=False)
+        d.glob()
+        self.assertEqual(len(d), 0)
 
 
 if __name__ == '__main__':
