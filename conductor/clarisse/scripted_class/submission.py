@@ -151,10 +151,6 @@ class Submission(object):
                         self.render_package))
 
         success = ix.application.export_render_archive(self.render_package)
-
-        # ix.application.get_command_manager().undo()
-        # ix.disable_command_history()
-
         if not success:
             ix.log_error(
                 "Failed to export render archive {}".format(
@@ -182,8 +178,6 @@ class Submission(object):
             submission_args["notify"] = {"emails": addresses}
         else:
             submission_args["notify"] =[]
-
-        # return [submission_args]
 
         for job in self.jobs:
             args = job.get_args()
