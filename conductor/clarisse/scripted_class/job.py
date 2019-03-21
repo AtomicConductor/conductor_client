@@ -49,10 +49,9 @@ class Job(object):
 
         self.node = node
         self.tasks = []
-
+        self.sequence = self._get_sequence()
         self.sources = self._get_sources()
         self.instance = self._get_instance()
-        self.sequence = self._get_sequence()
         self.tokens = self._setenv(parent_tokens)
         self.render_package = parent_tokens["CT_RENDER_PACKAGE"]
 
@@ -73,17 +72,45 @@ class Job(object):
 
         task_att = self.node.get_attribute("task_template")
         for chunk in self.sequence["main"].chunks():
-            task = Task(chunk, task_att, self.tokens)
+            task = Task(chunk, task_att, self.sources, self.tokens)
             self.tasks.append(task)
 
     def _get_sources(self):
-        images = ix.api.OfObjectArray()
+        use_custom = self.node.get_attribute("use_custom_frames").get_bool()
 
+        images = ix.api.OfObjectArray()
         self.node.get_attribute("images").get_values(images)
-        if not images:
+
+        # cast to list because OfObjectArray is true even when it's empty.
+        if not list(images):
             ix.log_error(
                 "No render images. Please reference one or more image items")
-        return list(images)
+        seq = self.sequence["main"]
+        result = [  ]
+        for image in images:
+            if not use_custom:
+                seq =  Sequence.create(*frames_ui.image_range(image))
+            result.append({ "image": image, "sequence": seq })
+        return result
+
+
+
+    # def _get_misregistered(self):
+    #     """Do different images have different frame ranges?
+
+    #     We need to know this because it affects how we build the task
+    #     command. Specifically, if n images are being rendered in the
+    #     same render command, then we have to specify n frame ranges. If
+    #     we are not relying on the individual image frameranges, and are
+    #     instead using the custom frame range, then there will be no
+    #     misalignment. 
+    #     """
+    #     if self.node.get_attribute("use_custom_frames").get_bool():
+    #         return False
+
+    #     specs = [str(Sequence.create(*frames_ui.image_range(image)))
+    #              for image in self._get_sources()]
+    #     return any(n != specs[0] for n in specs[1:])
 
     def _get_extra_env_vars(self):
         result = []
@@ -213,8 +240,8 @@ class Job(object):
         tokens["CT_PREEMPTIBLE"] = "preemptible" if self.instance["preemptible"] else "non-preemptible"
         tokens["CT_RETRIES"] = str(self.instance["retries"])
         tokens["CT_JOB"] = self.node_name
-        tokens["CT_SOURCE"] = " ".join(
-            [s.get_full_name() for s in self.sources])
+        # tokens["CT_SOURCE"] = " ".join(
+        #     [s.get_full_name() for s in self.sources])
 
         for token in tokens:
             variables.put(token, tokens[token])

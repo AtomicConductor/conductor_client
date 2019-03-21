@@ -313,6 +313,15 @@ class Sequence(object):
         """Is this sequence a progression."""
         return isinstance(self, Progression)
 
+    def to(self, range_sep, step_sep, block_sep):
+        return str(self).replace(
+            "-",
+            range_sep).replace(
+            "x",
+            step_sep).replace(
+            ",",
+            block_sep)
+
     @property
     def chunk_size(self):
         """Return chunk size."""

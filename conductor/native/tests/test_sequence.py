@@ -440,6 +440,29 @@ class ExpandFilenameTest(unittest.TestCase):
             s.expand(template)
 
 
+class ToCustomSpecTest(unittest.TestCase):
+
+
+    def test_spec_single_number(self):
+         s = Sequence.create( 10)
+         self.assertEqual(s.to(":","%",";"), "10")
+
+    def test_spec_range(self):
+         s = Sequence.create( 0, 10 )
+         self.assertEqual(s.to(":","%",";"), "0:10")
+
+    def test_spec_step_range(self):
+         s = Sequence.create(1, 9, 2)
+         self.assertEqual(s.to(":","%",";"), "1:9%2")
+
+    def test_spec_complex(self):
+         s = Sequence.create( "1-10, 14, 20-48x4")
+         self.assertEqual(s.to(":","%",";"), "1:10;14;20:48%4")
+    def test_complex_add_spaces(self):
+         s = Sequence.create( "1-10, 14, 20-48x4")
+         self.assertEqual(s.to(":","%","; "), "1:10; 14; 20:48%4")
+
+
 class SubsampleTest(unittest.TestCase):
 
     def test_counts_from_1_to_10(self):

@@ -4,9 +4,6 @@ from conductor.native.lib.sequence import Sequence
 
 
 def handle_use_custom_frames(obj, attr):
-    print "-" * 20
-    print obj.get_name()
-    print attr.get_name()
     hide = not attr.get_bool()
     obj.get_attribute("custom_frames").set_hidden(hide)
     obj.get_attribute("progressions").set_hidden(hide)
@@ -64,7 +61,7 @@ def custom_frame_sequence(obj):
         return None
 
 
-def _range_from(image):
+def image_range(image):
     return (
         image.get_attribute("first_frame").get_long(),
         image.get_attribute("last_frame").get_long(),
@@ -76,11 +73,11 @@ def _union_sequence(images):
     # print "LEN IMAGES", len(images)
     if not images:
         return None
-    rng = _range_from(images[0])
+    rng = image_range(images[0])
     seq = Sequence.create(*rng)
     # print "remainder len", len(images[1:])
     for image in images[1:]:
-        rng = _range_from(image)
+        rng = image_range(image)
         other = Sequence.create(*rng)
         seq = seq.union(other)
     return seq

@@ -304,7 +304,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "task")
 
         expr = 'cnode "+get_string("render_package[0]")+"'
-        expr += ' -image "+$CT_SOURCE+" -image_frames_list "+$CT_CHUNK'
+        expr += ' -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS'
         attr.set_expression(expr)
 
     def declare_upload_attributes(self, cls):
