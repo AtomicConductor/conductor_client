@@ -22,9 +22,8 @@ class Task(object):
         self.sources = sources
 
         self.tokens = self._setenv(parent_tokens)
-        # command_attr.activate_expression(True)
 
-        
+        # This is insane - I here you scream. Well try reducing it and see what happens.
         command_attr.activate_expression(False)
         command_attr.activate_expression(True)
         command_attr.activate_expression(False)

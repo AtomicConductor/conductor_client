@@ -283,4 +283,7 @@ def build(node, _):
     window.show_modal()
     while window.is_shown():
         ix.application.check_for_events()
-    window.destroy()
+ 
+    # win.destroy is recommended but makes Clarisse crash
+    # when saving the scene
+    # win.destroy()

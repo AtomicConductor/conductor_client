@@ -6,7 +6,6 @@ from conductor.native.lib.sequence import Sequence
 def handle_use_custom_frames(obj, attr):
     hide = not attr.get_bool()
     obj.get_attribute("custom_frames").set_hidden(hide)
-    obj.get_attribute("progressions").set_hidden(hide)
     update_frame_stats_message(obj)
 
 
@@ -23,10 +22,6 @@ def handle_scout_frames(obj, _):
     update_frame_stats_message(obj)
 
 
-def handle_progressions(obj, _):
-    update_frame_stats_message(obj)
-
-
 def handle_chunk_size(obj, _):
     update_frame_stats_message(obj)
 
@@ -35,26 +30,20 @@ def handle_images(obj, _):
     update_frame_stats_message(obj)
 
 
-def _chunk_parameters(obj):
-    index = int(obj.get_attribute("progressions").get_bool())
-    return {
-        "size": obj.get_attribute("chunk_size").get_long(),
-        "strategy": ["linear", "progressions"][index]
-    }
+def handle_best_chunk_size(obj, _):
+    # print obj.get_name()
+    main_seq = main_frame_sequence(obj)
+    obj.get_attribute("chunk_size").set_long(main_seq.best_chunk_size())
+    update_frame_stats_message(obj)
 
 
 def custom_frame_sequence(obj):
-    """Generate Sequence from value in custom_range parm."""
+    """Generate Sequence from the value in custom_range attribute."""
     try:
-        print "START TRY custom_frame_sequence"
+
         spec = obj.get_attribute("custom_frames").get_string()
-        print "custom_frame_sequence", spec
-        chunk = _chunk_parameters(obj)
-        print "chunk", chunk
         seq = Sequence.create(
-            spec,
-            chunk_size=chunk["size"],
-            chunk_strategy=chunk["strategy"]
+            spec, chunk_size=obj.get_attribute("chunk_size").get_long()
         )
         return seq
     except (ValueError, TypeError):
@@ -70,12 +59,10 @@ def image_range(image):
 
 
 def _union_sequence(images):
-    # print "LEN IMAGES", len(images)
     if not images:
         return None
     rng = image_range(images[0])
     seq = Sequence.create(*rng)
-    # print "remainder len", len(images[1:])
     for image in images[1:]:
         rng = image_range(image)
         other = Sequence.create(*rng)
@@ -95,19 +82,10 @@ def range_frame_sequence(obj):
     obj.get_attribute("images").get_values(images)
 
     seq = _union_sequence(list(images))
-    # print "union_sequence", seq
     if not seq:
         return None
 
-    chunk = _chunk_parameters(obj)
-
-    # print "size", chunk["size"],  type(chunk["size"])
-    # print "strategy", chunk["strategy"], type(chunk["strategy"])
-
-    seq.chunk_size = chunk["size"]
-    seq.chunk_strategy = chunk["strategy"]
-    # print "chunk_size", seq.chunk_size
-    # print "chunk_count", seq.chunk_count()
+    seq.chunk_size = obj.get_attribute("chunk_size").get_long()
     return seq
 
 
@@ -119,7 +97,7 @@ def main_frame_sequence(obj):
 
 
 def scout_frame_sequence(obj):
-    """Generate Sequence from value in scout_frames parm."""
+    """Generate Sequence from value in scout_frames attribute."""
     try:
         spec = obj.get_attribute("scout_frames").get_string()
         return Sequence.create(spec)
@@ -134,7 +112,7 @@ def resolved_scout_sequence(obj):
     rendered. However, if it is on and the set of scout frames
     intersects the main frames, then only start those frames. If scout
     frames does not intersect the main frames, then the user intended to
-    scout but ended up with no frames. This produces an empty sequence.
+    scout but ended up with no frames. This produces None.
     """
 
     main_seq = main_frame_sequence(obj)
@@ -160,8 +138,6 @@ def update_frame_stats_message(obj):
         frame_info = "%d/%d Frames" % (len(scout_seq), num_frames)
     else:
         frame_info = "%d Frames" % num_frames
-
-    print "SIZE AND COUNT", main_seq.chunk_size, main_seq.chunk_count()
 
     chunks = ("%d Chunks" % main_seq.chunk_count())
 

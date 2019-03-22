@@ -172,7 +172,7 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         title = "Select extra uploads..."
         mask = "Any files\t*"
         filenames = ix.api.GuiWidget.open_files(app, "", title, mask)
-        
+
         self.file_list_wdg.add_entries(filenames)
 
     def on_remove_sel_but(self, sender, evtid):
@@ -219,4 +219,7 @@ def build(node, _):
 
     while win.is_shown():
         ix.application.check_for_events()
-    win.destroy()
+ 
+    # win.destroy is recommended but makes Clarisse crash
+    # when saving the scene
+    # win.destroy()
