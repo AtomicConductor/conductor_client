@@ -1,6 +1,7 @@
 import ix
 import traceback
 
+
 from conductor.clarisse import reloader
 
 from conductor.clarisse.scripted_class import (dependency_ui, environment_ui,
@@ -34,19 +35,18 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             elif action_name == "manage_extra_environment":
                 environment_ui.build(obj, data)
             elif action_name == "preview":
-                ConductorJob.update_from_data_block(obj)
-                frames_ui.update_frame_stats_message(obj)
+                self.refresh(obj)
                 submit_actions.preview(obj, data)
             elif action_name == "submit":
-                ConductorJob.update_from_data_block(obj)
-                frames_ui.update_frame_stats_message(obj)
+                self.refresh(obj)
                 submit_actions.submit(obj, data)
-            elif action_name == "refresh":
-                ConductorJob.update_from_data_block(obj, force=True)
+            elif action_name == "setup":
+                self.refresh(obj, force=True)
+            elif action_name == "best_chunk_size":
+                frames_ui.handle_best_chunk_size(obj, data)
             elif action_name == "add_metadata":
                 raise NotImplemented
             elif action_name == "reload":
-                pass
                 reload(reloader)
             else:
                 pass
@@ -75,8 +75,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 frames_ui.handle_custom_frames(obj, attr)
             elif attr_name == "scout_frames":
                 frames_ui.handle_scout_frames(obj, attr)
-            elif attr_name == "progressions":
-                frames_ui.handle_progressions(obj, attr)
             elif attr_name == "chunk_size":
                 frames_ui.handle_chunk_size(obj, attr)
             elif attr_name == "images":
@@ -112,12 +110,11 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         self.declare_general_attributes(cls)
         self.declare_frames_attributes(cls)
         self.declare_machines_attributes(cls)
+        self.declare_upload_attributes(cls)
         self.declare_packages_attributes(cls)
         self.declare_environment_attributes(cls)
-        self.declare_upload_attributes(cls)
         self.declare_task_attributes(cls)
         self.declare_notification_attributes(cls)
-
         ConductorJob.set_doc_strings(cls)
 
     def declare_dev_attributes(self, cls):
@@ -144,7 +141,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
     def declare_general_attributes(self, cls):
         """Most commonly accessed attributes."""
-        self.add_action(cls, "refresh", "general")
+        self.add_action(cls, "setup", "general")
 
         attr = cls.add_attribute(
             "title",
@@ -202,21 +199,13 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_string("2,4-8,10-50x2")
 
         attr = cls.add_attribute(
-            "progressions",
-            OfAttr.TYPE_BOOL,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "frames")
-        attr.set_hidden(True)
-        attr.set_bool(True)
-
-        attr = cls.add_attribute(
             "chunk_size",
             OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "frames")
         attr.set_long(5)
+        self.add_action(cls, "best_chunk_size", "frames")
 
         attr = cls.add_attribute(
             "use_scout_frames",
@@ -242,7 +231,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "frames")
         attr.set_read_only(True)
-        attr.set_string("- Please refresh -")
+        attr.set_string("- Please click setup -")
 
     def declare_machines_attributes(self, cls):
         """Attributes related to setting the instance type."""
@@ -261,7 +250,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "machines")
         attr.set_long(0)
-        attr.add_preset("- Please refresh -", "0")
+        attr.add_preset("- Please click setup -", "0")
 
         attr = cls.add_attribute(
             "retries",
@@ -278,34 +267,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "machines")
         attr.set_hidden(True)
-
-    def declare_packages_attributes(self, cls):
-        """Read only attribute to store package names.
-
-        All editing of the packages list happens in the popped out UI.
-        """
-        self.add_action(cls, "choose_packages", "packages")
-
-        attr = cls.add_attribute(
-            "packages",
-            OfAttr.TYPE_STRING,
-            OfAttr.CONTAINER_LIST,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "packages")
-        attr.set_read_only(True)
-
-    def declare_task_attributes(self, cls):
-        """This is the task command."""
-        attr = cls.add_attribute(
-            "task_template",
-            OfAttr.TYPE_STRING,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "task")
-
-        expr = 'cnode "+get_string("render_package[0]")+"'
-        expr += ' -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS'
-        attr.set_expression(expr)
 
     def declare_upload_attributes(self, cls):
         """Specify options for dependency scanning.
@@ -324,21 +285,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.add_preset("Glob sequence", "1")
         attr.add_preset("Smart sequence", "2")
 
-        # attr = cls.add_attribute(
-        #     "optimize_scan",
-        #     OfAttr.TYPE_BOOL,
-        #     OfAttr.CONTAINER_SINGLE,
-        #     OfAttr.VISUAL_HINT_DEFAULT,
-        #     "upload")
-        # attr.set_bool(False)
-
-        # attr = cls.add_attribute(
-        #     "optimization_samples", OfAttr.TYPE_LONG,
-        #     OfAttr.CONTAINER_SINGLE,
-        #     OfAttr.VISUAL_HINT_DEFAULT,
-        #     "upload")
-        # attr.set_long(3)
-
         attr = cls.add_attribute(
             "render_package",
             OfAttr.TYPE_STRING,
@@ -347,6 +293,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "task")
         expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
         attr.set_expression(expr)
+        # attr.set_locked(True)
 
         self.add_action(cls, "manage_extra_uploads", "upload")
         attr = cls.add_attribute(
@@ -380,6 +327,35 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "upload")
         attr.set_bool(False)
+
+    def declare_packages_attributes(self, cls):
+        """Read only attribute to store package names.
+
+        All editing of the packages list happens in the popped out UI.
+        """
+        self.add_action(cls, "choose_packages", "packages")
+
+        attr = cls.add_attribute(
+            "packages",
+            OfAttr.TYPE_STRING,
+            OfAttr.CONTAINER_LIST,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "packages")
+        attr.set_read_only(True)
+
+    def declare_task_attributes(self, cls):
+        """This is the task command."""
+        attr = cls.add_attribute(
+            "task_template",
+            OfAttr.TYPE_STRING,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "task")
+        # attr.set_locked(True)
+
+        # expr = '"cnode "+get_string("render_package")+"'
+        # expr += ' -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS'
+        # attr.set_expression(expr)
 
     def declare_environment_attributes(self, cls):
         """Set up any extra environment.
@@ -415,8 +391,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_read_only(True)
 
     @staticmethod
-    def update_from_data_block(obj, **kw):
-        """Respond to update button click.
+    def refresh(obj, **kw):
+        """Respond to do_setup button click.
 
         Update UI for projects and instances from the data block. kwargs
         may contain the force keyword, which will invalidate the
@@ -426,6 +402,21 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         data_block = ConductorDataBlock(**kw)
         projects_ui.update(obj, data_block)
         instances_ui.update(obj, data_block)
+
+        frames_ui.update_frame_stats_message(obj)
+
+        render_package_attr = obj.get_attribute("render_package")
+        if not render_package_attr.get_string():
+            expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
+            render_package_attr.set_expression(expr)
+        render_package_attr.set_locked(True)
+
+        task_template_attr = obj.get_attribute("task_template")
+        if not task_template_attr.get_string():
+            expr = '"cnode "+get_string("render_package[0]")+"'
+            expr += ' -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS'
+            task_template_attr.set_expression(expr)
+        task_template_attr.set_locked(True)
 
     @staticmethod
     def set_doc_strings(cls):
@@ -442,9 +433,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "use_custom_frames",
             "Override the frame range specified in the image node.")
         cls.set_attr_doc("custom_frames", "Frames to submit.")
-        cls.set_attr_doc(
-            "progressions",
-            "Coerce chunks into arithmetic progressions.")
         cls.set_attr_doc("chunk_size", "Number of frames in a task.")
         cls.set_attr_doc(
             "use_scout_frames",

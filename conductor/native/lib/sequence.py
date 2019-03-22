@@ -307,7 +307,7 @@ class Sequence(object):
         when chunk strategy is progressions.
         """
         count = int(math.ceil(len(self._iterable) / float(self._chunk_size)))
-        return math.ceil(len(self._iterable) / float(count))
+        return int(math.ceil(len(self._iterable) / float(count)))
 
     def is_progression(self):
         """Is this sequence a progression."""

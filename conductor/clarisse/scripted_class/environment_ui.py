@@ -256,9 +256,7 @@ def build(node, _):
     win.show_modal()
     while win.is_shown():
         ix.application.check_for_events()
-    # Need to test. Sometimes I get a crash after using this UI and then
-    # killing with the OS close button. I suspect it destroys the window 
-    # immediately, but then it gets destroyed again after the event loop ends.
-    # If that's the case, i'll uncomment the line below.
-    # if not win.is_destroyed():
-    win.destroy()
+ 
+    # win.destroy is recommended but makes Clarisse crash
+    # when saving the scene
+    # win.destroy()
