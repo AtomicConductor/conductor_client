@@ -52,25 +52,34 @@ class Job(object):
         self.sequence = self._get_sequence()
         self.sources = self._get_sources()
         self.instance = self._get_instance()
+
+
+
+        out = self._get_output_directory()
+        self.common_output_path = out["common_path"]
+        self.output_paths = out["output_paths"]
+
+
         self.tokens = self._setenv(parent_tokens)
         self.render_package = parent_tokens["CT_RENDER_PACKAGE"]
 
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
 
+        print "BEFORE deps.collect(self.node)"
         self.dependencies = deps.collect(self.node)
-
+        print "AFTER deps.collect(self.node)"
+      
         self.dependencies.add(self.render_package, must_exist=False)
 
         self.title = self.node.get_attribute("title").get_string()
 
-        out = self._get_output_directory()
-        self.common_output_path = out["common_path"]
-        self.output_paths = out["output_paths"]
+        task_att = self.node.get_attribute("task_template")
+        
 
         self.metadata = None
 
-        task_att = self.node.get_attribute("task_template")
+        
         for chunk in self.sequence["main"].chunks():
             task = Task(chunk, task_att, self.sources, self.tokens)
             self.tasks.append(task)
@@ -120,7 +129,7 @@ class Job(object):
         for entry in [json.loads(j) for j in json_entries]:
             result.append({
                 "name": entry["key"],
-                "value": entry["value"],
+                "value": os.path.expandvars(entry["value"]),
                 "merge_policy": ["append", "exclusive"][int(entry["excl"])]
             })
         return result
@@ -240,6 +249,7 @@ class Job(object):
         tokens["CT_PREEMPTIBLE"] = "preemptible" if self.instance["preemptible"] else "non-preemptible"
         tokens["CT_RETRIES"] = str(self.instance["retries"])
         tokens["CT_JOB"] = self.node_name
+        tokens["CT_DIRECTORIES"] = " ".join(self.output_paths)
         # tokens["CT_SOURCE"] = " ".join(
         #     [s.get_full_name() for s in self.sources])
 
