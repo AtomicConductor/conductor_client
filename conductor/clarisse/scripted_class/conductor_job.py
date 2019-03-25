@@ -282,7 +282,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "upload")
-        attr.set_long(0)
+        attr.set_long(2)
         attr.add_preset("No scan", "0")
         attr.add_preset("Glob sequence", "1")
         attr.add_preset("Smart sequence", "2")
