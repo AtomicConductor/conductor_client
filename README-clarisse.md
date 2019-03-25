@@ -1,5 +1,5 @@
 
-## Conductor Houdini client.
+## Conductor Clarisse client.
 
 
 
@@ -13,7 +13,7 @@ cd conductor_client/
 git checkout CT-911-clarisse-alpha
 ```
 
-You need to add to the `PYTHONPATH`, the `PATH` and set `CONDUCTOR_CONFIG`. You can do this in `.bashrc` or alternatively, use the `houdini.env` file.
+You need to add to the `PYTHONPATH`, the `PATH` and set `CONDUCTOR_CONFIG`. You can do this in `.bashrc` or alternatively, use the `clarisse.env` file.
 
 Example: .bashrc  on OSX
 
