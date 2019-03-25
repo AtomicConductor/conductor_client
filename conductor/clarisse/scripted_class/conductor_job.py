@@ -104,7 +104,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         the attribute editor.
         """
         variables.declare()
-        self.declare_dev_attributes(cls)
 
         self.declare_actions(cls)
         self.declare_general_attributes(cls)
@@ -115,6 +114,9 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         self.declare_environment_attributes(cls)
         self.declare_task_attributes(cls)
         self.declare_notification_attributes(cls)
+
+        self.declare_dev_attributes(cls)
+
         ConductorJob.set_doc_strings(cls)
 
     def declare_dev_attributes(self, cls):
@@ -295,14 +297,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_expression(expr)
         # attr.set_locked(True)
 
-        self.add_action(cls, "manage_extra_uploads", "upload")
-        attr = cls.add_attribute(
-            "extra_uploads",
-            OfAttr.TYPE_STRING,
-            OfAttr.CONTAINER_LIST,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "upload")
-        attr.set_read_only(True)
 
         attr = cls.add_attribute(
             "local_upload",
@@ -327,6 +321,15 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "upload")
         attr.set_bool(False)
+      
+        self.add_action(cls, "manage_extra_uploads", "upload")
+        attr = cls.add_attribute(
+            "extra_uploads",
+            OfAttr.TYPE_STRING,
+            OfAttr.CONTAINER_LIST,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "upload")
+        attr.set_read_only(True)
 
     def declare_packages_attributes(self, cls):
         """Read only attribute to store package names.
@@ -413,8 +416,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
         task_template_attr = obj.get_attribute("task_template")
         if not task_template_attr.get_string():
-            expr = '"cnode "+get_string("render_package[0]")+"'
-            expr += ' -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS'
+            expr = '"ct_cnode "+get_string("render_package[0]"")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
             task_template_attr.set_expression(expr)
         task_template_attr.set_locked(True)
 

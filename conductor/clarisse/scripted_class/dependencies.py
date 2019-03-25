@@ -15,18 +15,17 @@ def collect(obj):
     Always add any extra uploads the user has chosen. Then do a scan if
     the policy is is not none. Finally, scan for references.
     """
-    print "COLLECT"
+
     index = obj.get_attribute("dependency_scan_policy").get_long()
     policy = [None, "GLOB", "SMART"][index]
 
     result = DependencyList()
 
+
     task_att = obj.get_attribute("task_template")
     parts = task_att.get_string().split(" ")
-    print "-" * 40
-    print parts
-    if parts and parts[0] == "ct_cnode":
-        result.add("$CONDUCTOR_LOCATION/clarisse/bin/ct_cnode", must_exist=True)
+    # if parts and parts[0] == "ct_cnode":
+    result.add("$CONDUCTOR_LOCATION/conductor/clarisse/bin/ct_cnode", must_exist=True)
 
     result.add(*_get_extra_uploads(obj), must_exist=True)
     result.add(*_scan(obj, policy), must_exist=False)
@@ -83,10 +82,10 @@ def _scan(obj, policy):
 
 
 def _get_references(_, policy):
-    """Get referenced fioles from contexts.
+    """Get referenced files from contexts.
 
     We handle contexts separately because Clarisse has a bug where
-    get_path_attrs()  doesn't find all the attrs in a series of nested
+    get_path_attrs() doesn't find all the attrs in a series of nested
     references. References do not have any wildcards in their names, so
     no need to do any expansion.
     """

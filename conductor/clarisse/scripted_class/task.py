@@ -33,8 +33,7 @@ class Task(object):
 
         self.command = command_attr.get_string()
 
-        # "cnode "+get_string("render_package[0]")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS
-
+ 
     def _setenv(self, parent_tokens):
         """Env tokens at the task level.
 
@@ -43,12 +42,9 @@ class Task(object):
         constructing the task command.
 
         Example:
-        python myCmd.py -s $CT_CHUNKSTART -e $CT_CHUNKEND -n $CT_SOURCES -f $CT_RENDER_PACKAGE
         """
 
         tokens = {}
-        # chunk_type = "regular" if self.chunk.is_progression() else "irregular"
-        # tokens["CT_CHUNKTYPE"] = chunk_type
 
         chunks = []
         image_names = []
@@ -69,8 +65,6 @@ class Task(object):
         tokens["CT_CHUNKLENGTH"] = str(len(self.chunk))
         tokens["CT_CHUNKSTART"] = str(self.chunk.start)
         tokens["CT_CHUNKEND"] = str(self.chunk.end)
-        # tokens["CT_CHUNKSTEP"] = str(
-        #     self.chunk.step) if chunk_type == "regular" else "~"
 
         for token in tokens:
             variables.put(token, tokens[token])
