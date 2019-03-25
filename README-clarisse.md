@@ -5,7 +5,7 @@
 
 ### Installation. 
 
-Currently, the installers do not work for the Houdini environment, so you'll need to clone this trial branch and set up some variables.
+Currently, the installers do not set up the Clarisse environment, so you'll need to clone this alpha branch and set up some variables.
 
 ```
 git clone git@github.com:AtomicConductor/conductor_client.git`
@@ -49,7 +49,7 @@ In Clarisse, open preferences, it should be on the General tab already. In the S
  
 ### Get started
 
-#### To create a simple Mantra submission to Conductor:
+#### To create a submission to Conductor:
 
 * Open a scene containing some image nodes to be rendered.
 
