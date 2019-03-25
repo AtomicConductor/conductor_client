@@ -53,12 +53,9 @@ class Job(object):
         self.sources = self._get_sources()
         self.instance = self._get_instance()
 
-
-
         out = self._get_output_directory()
         self.common_output_path = out["common_path"]
         self.output_paths = out["output_paths"]
-
 
         self.tokens = self._setenv(parent_tokens)
         self.render_package = parent_tokens["CT_RENDER_PACKAGE"]
@@ -66,20 +63,16 @@ class Job(object):
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
 
-        print "BEFORE deps.collect(self.node)"
         self.dependencies = deps.collect(self.node)
-        print "AFTER deps.collect(self.node)"
-      
+
         self.dependencies.add(self.render_package, must_exist=False)
 
         self.title = self.node.get_attribute("title").get_string()
 
         task_att = self.node.get_attribute("task_template")
-        
 
         self.metadata = None
 
-        
         for chunk in self.sequence["main"].chunks():
             task = Task(chunk, task_att, self.sources, self.tokens)
             self.tasks.append(task)
@@ -95,14 +88,12 @@ class Job(object):
             ix.log_error(
                 "No render images. Please reference one or more image items")
         seq = self.sequence["main"]
-        result = [  ]
+        result = []
         for image in images:
             if not use_custom:
-                seq =  Sequence.create(*frames_ui.image_range(image))
-            result.append({ "image": image, "sequence": seq })
+                seq = Sequence.create(*frames_ui.image_range(image))
+            result.append({"image": image, "sequence": seq})
         return result
-
-
 
     # def _get_misregistered(self):
     #     """Do different images have different frame ranges?
@@ -112,7 +103,7 @@ class Job(object):
     #     same render command, then we have to specify n frame ranges. If
     #     we are not relying on the individual image frameranges, and are
     #     instead using the custom frame range, then there will be no
-    #     misalignment. 
+    #     misalignment.
     #     """
     #     if self.node.get_attribute("use_custom_frames").get_bool():
     #         return False
@@ -132,6 +123,13 @@ class Job(object):
                 "value": os.path.expandvars(entry["value"]),
                 "merge_policy": ["append", "exclusive"][int(entry["excl"])]
             })
+
+        result.append({
+            "name": "PATH",
+            "value": os.path.expandvars(
+                "$CONDUCTOR_LOCATION/conductor/clarisse/bin"),
+            "merge_policy": "append"
+        })
         return result
 
     def _get_environment(self):
@@ -238,7 +236,6 @@ class Job(object):
         tokens["CT_CHUNKSIZE"] = str(self.sequence["main"].chunk_size)
         tokens["CT_CHUNKCOUNT"] = str(self.sequence["main"].chunk_count())
         tokens["CT_SCOUTCOUNT"] = str(len(self.sequence["scout"] or []))
-
         tokens["CT_SEQLENGTH"] = str(len(seq))
         tokens["CT_SEQUENCE"] = str(seq)
         tokens["CT_SEQUENCEMIN"] = str(seq.start)

@@ -20,9 +20,25 @@ SUCCESS_CODES_SUBMIT = [201, 204]
 def submit(obj, _):
     _validate_images(obj)
     submission = Submission(obj)
+    _submit(submission)
+
+
+def preview(obj, _):
+    _validate_images(obj)
+    submission = Submission(obj)
+    submission_args = submission.get_args()
+
+    # show the submission in a window.
+    # allow user to press Go to submit
+    json_jobs = json.dumps(submission_args, indent=3, sort_keys=True)
+    ix.log_info(json_jobs)
+
+
+def _submit(submission):
+    submission_args = submission.get_args()
     submission.write_render_package()
     results = []
-    for job_args in submission.get_args():
+    for job_args in submission_args:
         try:
             remote_job = conductor_submit.Submit(job_args)
             response, response_code = remote_job.main()
@@ -32,14 +48,6 @@ def submit(obj, _):
                 traceback.format_exception(*sys.exc_info()))})
     for result in results:
         ix.log_info(result)
-
-
-def preview(obj, _):
-    _validate_images(obj)
-    submission = Submission(obj)
-    args_list = submission.get_args()
-    json_jobs = json.dumps(args_list, indent=3, sort_keys=True)
-    ix.log_info(json_jobs)
 
 
 def _validate_images(obj):
