@@ -151,7 +151,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "general")
-        attr.set_expression("$PNAME")
+        attr.set_expression('"Clarisse: shot-010 "+$CT_SEQUENCE')
 
         attr = cls.add_attribute(
             "images",
@@ -293,6 +293,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_FILENAME_SAVE,
             "task")
+
+
         expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
         attr.set_expression(expr)
         # attr.set_locked(True)
@@ -354,11 +356,10 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "task")
-        # attr.set_locked(True)
-
-        # expr = '"cnode "+get_string("render_package")+"'
-        # expr += ' -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS'
-        # attr.set_expression(expr)
+ 
+        expr = '"ct_cnode "+get_string("render_package[0]")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
+ 
+        attr.set_expression(expr)
 
     def declare_environment_attributes(self, cls):
         """Set up any extra environment.
@@ -401,6 +402,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         may contain the force keyword, which will invalidate the
         datablock and fetch afresh from Conductor.
         """
+
+
+        images = ix.api.OfObjectArray()
+        obj.get_attribute("images").get_values(images)
+        if not images.get_count():
+            ix.log_error(
+                "No render images. Please reference one or more image items")
+
         kw["product"] = "clarisse"
         data_block = ConductorDataBlock(**kw)
         projects_ui.update(obj, data_block)
@@ -416,13 +425,22 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
         task_template_attr = obj.get_attribute("task_template")
         if not task_template_attr.get_string():
-            expr = '"ct_cnode "+get_string("render_package[0]"")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
+   
+            expr = '"ct_cnode "+get_string("render_package[0]")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
             task_template_attr.set_expression(expr)
         task_template_attr.set_locked(True)
 
     @staticmethod
     def set_doc_strings(cls):
         """Document all the attributes here."""
+
+        cls.set_attr_doc(
+            "setup",
+            """This action will ensure you are signed in to conductor, 
+                and will update the projects and machine type lists.""")
+
+
+
         cls.set_attr_doc(
             "title",
             "The title that will appear in the Conductor dashboard.")

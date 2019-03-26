@@ -4,11 +4,13 @@ import datetime
 import os
 import errno
 import tempfile
+import traceback
 
 import ix
 from conductor.clarisse.scripted_class import common, variables
 from conductor.clarisse.scripted_class.job import Job
 from conductor.native.lib.data_block import ConductorDataBlock
+from conductor.lib import conductor_submit
 # import conductor.native.lib.common
 
 
@@ -184,6 +186,22 @@ class Submission(object):
             args.update(submission_args)
             result.append(args)
         return result
+
+
+    def submit(self):
+        self.write_render_package()
+        results = []
+        for job_args in self.get_args():
+            try:
+                remote_job = conductor_submit.Submit(job_args)
+                response, response_code = remote_job.main()
+                results.append({"code": response_code, "response": response})
+            except BaseException:
+                results.append({"code": "undefined", "response": "".join(
+                    traceback.format_exception(*sys.exc_info()))})
+        for result in results:
+            ix.log_info(result)
+
 
     @property
     def node_name(self):
