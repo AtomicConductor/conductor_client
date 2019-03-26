@@ -23,17 +23,15 @@ class Task(object):
 
         self.tokens = self._setenv(parent_tokens)
 
-        # This is insane - I here you scream. Well try reducing it and see what happens.
+        # This is insane - I here you scream. 
+        # Well try reducing it and see what happens.
         command_attr.activate_expression(False)
         command_attr.activate_expression(True)
         command_attr.activate_expression(False)
         command_attr.activate_expression(True)
-
-
 
         self.command = command_attr.get_string()
 
- 
     def _setenv(self, parent_tokens):
         """Env tokens at the task level.
 
@@ -53,8 +51,6 @@ class Task(object):
             if intersection:
                 chunks.append(intersection.to(":", "%", "; "))
                 image_names.append(source["image"].get_full_name())
-
-
 
         tokens["CT_CHUNKS"] = " ".join(chunks)
         tokens["CT_SOURCES"] = " ".join(image_names)
