@@ -1,6 +1,6 @@
 from conductor.native.lib.data_block import ConductorDataBlock
 
-
+ 
 def handle_project(obj, attr):
     label = attr.get_applied_preset_label()
     if label:
