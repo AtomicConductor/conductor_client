@@ -16,7 +16,7 @@ class Task(object):
         and so on are valid. So when we expand the command
         any tokens that were used are correctly resolved.
 
-        The chunk arg is an instance of Sequence.
+        The chunk arg is an instance of a Sequence.
         """
         self.chunk = chunk
         self.sources = sources

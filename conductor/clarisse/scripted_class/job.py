@@ -264,7 +264,7 @@ class Job(object):
         """
         result = {}
 
-        result["upload_paths"] = list(self.dependencies)
+        result["upload_paths"] = sorted(list(self.dependencies))
         result["autoretry_policy"] = {'preempted': {
             'max_retries': self.instance["retries"]}
         } if self.instance["preemptible"] else {}

@@ -4,7 +4,7 @@ import os
 def force_ae_refresh(node):
     """Trigger an attribute editor refresh.
 
-    The only way to force the attribute editor to refresh it seems, is
+    The only way to force the attribute editor to refresh, it seems, is
     to remove and replace a preset in a long type attribute.
     """
     attr = node.get_attribute("instance_type")
