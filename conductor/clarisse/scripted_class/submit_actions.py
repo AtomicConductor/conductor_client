@@ -12,6 +12,7 @@ import traceback
 import ix
 from conductor import CONFIG
 from conductor.clarisse.scripted_class.submission import Submission
+from conductor.clarisse.scripted_class import preview_ui
 from conductor.lib import conductor_submit
 
 SUCCESS_CODES_SUBMIT = [201, 204]
@@ -20,34 +21,35 @@ SUCCESS_CODES_SUBMIT = [201, 204]
 def submit(obj, _):
     _validate_images(obj)
     submission = Submission(obj)
-    _submit(submission)
+    submission.submit()
 
 
 def preview(obj, _):
     _validate_images(obj)
     submission = Submission(obj)
-    submission_args = submission.get_args()
-
+    ui = preview_ui.build(submission)
+ 
     # show the submission in a window.
     # allow user to press Go to submit
-    json_jobs = json.dumps(submission_args, indent=3, sort_keys=True)
-    ix.log_info(json_jobs)
+    # submission_args = submission.get_args()
+    # json_jobs = json.dumps(submission_args, indent=3, sort_keys=True)
+    # ix.log_info(json_jobs)
 
 
-def _submit(submission):
-    submission_args = submission.get_args()
-    submission.write_render_package()
-    results = []
-    for job_args in submission_args:
-        try:
-            remote_job = conductor_submit.Submit(job_args)
-            response, response_code = remote_job.main()
-            results.append({"code": response_code, "response": response})
-        except BaseException:
-            results.append({"code": "undefined", "response": "".join(
-                traceback.format_exception(*sys.exc_info()))})
-    for result in results:
-        ix.log_info(result)
+# def _submit(submission):
+#     submission_args = submission.get_args()
+#     submission.write_render_package()
+#     results = []
+#     for job_args in submission_args:
+#         try:
+#             remote_job = conductor_submit.Submit(job_args)
+#             response, response_code = remote_job.main()
+#             results.append({"code": response_code, "response": response})
+#         except BaseException:
+#             results.append({"code": "undefined", "response": "".join(
+#                 traceback.format_exception(*sys.exc_info()))})
+#     for result in results:
+#         ix.log_info(result)
 
 
 def _validate_images(obj):

@@ -17,6 +17,7 @@ from  conductor.clarisse.scripted_class import submission
 from  conductor.clarisse.scripted_class import submit_actions
 from  conductor.clarisse.scripted_class import test_class
 from  conductor.clarisse.scripted_class import variables
+from  conductor.clarisse.scripted_class import preview_ui
 
 
 reload(common)
@@ -37,3 +38,4 @@ reload(submission)
 reload(submit_actions)
 reload(test_class)
 reload(variables)
+reload(preview_ui)
