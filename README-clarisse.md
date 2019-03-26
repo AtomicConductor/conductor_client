@@ -13,29 +13,24 @@ cd conductor_client/
 git checkout CT-911-clarisse-alpha
 ```
 
-You need to add to the `PYTHONPATH`, the `PATH` and set `CONDUCTOR_CONFIG`. You can do this in `.bashrc` or alternatively, use the `clarisse.env` file.
+Some environment variables will need to be set. You can do this in `.bashrc` or alternatively, use the `clarisse.env` file.
 
 Example: .bashrc  on OSX
 
 ```
 
-
 export CONDUCTOR_LOCATION=/path/to/conductor_client
-
-
-# On OsX at least, PYTHONPATH needs the site-packages 
-# below, in addition to CONDUCTOR_LOCATION
 
 PYTHONPATH=${CONDUCTOR_LOCATION}/installers/osx/python/lib/python2.7/site-packages:${CONDUCTOR_LOCATION}:${PYTHONPATH}
  
-# config file for OSX below. On linux it may be 
-# $HOME/.conductor/config.yml or wherever.
+# config file for OSX below. On linux it may be ~/.conductor/config.yml.
 export CONDUCTOR_CONFIG=${HOME}'/Library/Application Support/Conductor/config.yml'
 
-export CLARISSE_VERSION="4.0-SP1"
-export CLARISSE_LOCATION="/Applications/Clarisse-iFX-${CLARISSE_VERSION}/clarisse.app/Contents/MacOS"
+# add clarisse to the PYTHONPATH.
+export CLARISSE_LOCATION="/Applications/Clarisse-iFX-4.0-SP1/clarisse.app/Contents/MacOS"
 export PYTHONPATH="${CLARISSE_LOCATION}/python":${PYTHONPATH}
- 
+
+# and to the PATH.
 PATH="${CLARISSE_LOCATION}:$PATH"
 export PATH
 ```
@@ -46,6 +41,8 @@ In Clarisse, open preferences, it should be on the General tab already. In the S
 ```
 /path/to/conductor_client/conductor/clarisse/startup.py
 ```
+
+Unfortunately, there seems to be a bug in Clarisse on OSX where environment variables don't work as advertised in the startup script field. Hence the literal path is required. 
  
 ### Get started
 
@@ -54,7 +51,11 @@ In Clarisse, open preferences, it should be on the General tab already. In the S
 * Open a scene containing some image nodes to be rendered.
 
 * Right click `New->ConductorJob`.
-* Add images to be rendered to the images section in the attribute editor.
+* Add some images to the images section in the attribute editor.
+* Click the Setup button.
+* .
+* Add images to the images section in the attribute editor.
+* Add images to the images section in the attribute editor.
 
 *docs in progress*
 

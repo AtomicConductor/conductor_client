@@ -26,13 +26,14 @@ CONDUCTOR_VARS = [
     "CT_CHUNKLENGTH",
     "CT_CHUNKSTART",
     "CT_CHUNKEND",
-    "CT_CHUNKSTEP"
+    "CT_CHUNKSTEP",
+    "CT_DIRECTORIES"
 ]
 
 
 def declare():
     for varname in CONDUCTOR_VARS:
-        put(varname, "")
+        put(varname, "deferred")
 
 
 def put(varname, value):
