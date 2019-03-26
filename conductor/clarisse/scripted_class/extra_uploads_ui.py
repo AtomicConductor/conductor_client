@@ -49,7 +49,6 @@ class FileListWidget(ix.api.GuiTree):
 
         for entry in entries:
             deduped.add(entry)
-        print list(deduped)
         # clear existing list
         root_item.remove_children()
         del self.item_list[:]

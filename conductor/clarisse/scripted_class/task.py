@@ -58,10 +58,6 @@ class Task(object):
 
         tokens["CT_CHUNKS"] = " ".join(chunks)
         tokens["CT_SOURCES"] = " ".join(image_names)
-        print("-" * 20)
-        print tokens["CT_SOURCES"]
-        print tokens["CT_CHUNKS"]
-
         tokens["CT_CHUNKLENGTH"] = str(len(self.chunk))
         tokens["CT_CHUNKSTART"] = str(self.chunk.start)
         tokens["CT_CHUNKEND"] = str(self.chunk.end)

@@ -66,7 +66,6 @@ class PackageTreeWidget(ix.api.GuiTree):
         self._deselect_all(self)
 
         to_select = sel + added
-        print [n.get_name() for n in to_select]
         for item in to_select:
             item.set_is_selected(True)
 
@@ -105,7 +104,6 @@ class PackageTreeWidget(ix.api.GuiTree):
             if child.is_selected():
                 result.append(child)
 
-                # print child.get_name()
             result += self._get_selected(child)
         return result
 
@@ -140,25 +138,19 @@ class PackageTreeWidget(ix.api.GuiTree):
             parent_item.expand()
 
     def _select_leaf(self, parent_item, *nodes):
-        # print "_select_leaf:" , parent_item
         try:
             children = parent_item.child_list
-            print "N-0=", nodes[0], "  ", [c.get_name() for c in children]
             child_item = next(c for c in children if c.get_name() == nodes[0])
         except StopIteration:
             return
         if len(nodes) == 1:
-            print "ADDING: ", child_item.get_name()
             child_item.set_is_selected(True)
             return
         self._select_leaf(child_item, *nodes[1:])
 
     def select_path_leaves(self, paths):
         for path in paths:
-            print "PROCESSING PATH: ", path
             nodes = path.split("/")
-            # print nodes
-
             self._select_leaf(self, *nodes)
         self._conform(self)
 
@@ -262,12 +254,12 @@ class PackageChooser(ix.api.GuiWindow):
         self._get_selected(self.tree_widget, selected_items)
         selected_items.sort(key=lambda item: item.count("/"))
 
-        project_att = self.node.get_attribute("packages")
+        packages_att = self.node.get_attribute("packages")
         self.hide()
 
-        project_att.remove_all()
+        packages_att.remove_all()
         for item in selected_items:
-            project_att.add_string(item)
+            packages_att.add_string(item)
 
         common.force_ae_refresh(self.node)
 
@@ -284,6 +276,6 @@ def build(node, _):
     while window.is_shown():
         ix.application.check_for_events()
  
-    # win.destroy is recommended but makes Clarisse crash
-    # when saving the scene
+    # win.destroy is recommended but it makes Clarisse crash
+    # when saving the scene :/
     # win.destroy()

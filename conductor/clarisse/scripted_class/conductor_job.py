@@ -1,7 +1,7 @@
 import ix
 import traceback
 
-
+from conductor.clarisse.clarisse_info import ClarisseInfo
 from conductor.clarisse import reloader
 
 from conductor.clarisse.scripted_class import (dependency_ui, environment_ui,
@@ -81,9 +81,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 frames_ui.handle_images(obj, attr)
             elif attr_name == "optimize_scan":
                 dependency_ui.handle_optimize_scan(obj, attr)
-            elif attr_name == "images":
-                print "source images ref changed to:"
-                pass
             elif attr_name == "notify":
                 notifications_ui.notify_changed(obj, attr)
             elif attr_name == "email_addresses":
@@ -151,7 +148,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "general")
-        attr.set_expression('"Clarisse: shot-010 "+$CT_SEQUENCE')
 
         attr = cls.add_attribute(
             "images",
@@ -294,11 +290,9 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_FILENAME_SAVE,
             "task")
 
-
-        expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
-        attr.set_expression(expr)
+        # expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
+        # attr.set_expression(expr)
         # attr.set_locked(True)
-
 
         attr = cls.add_attribute(
             "local_upload",
@@ -323,7 +317,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "upload")
         attr.set_bool(False)
-      
+
         self.add_action(cls, "manage_extra_uploads", "upload")
         attr = cls.add_attribute(
             "extra_uploads",
@@ -356,10 +350,10 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "task")
- 
-        expr = '"ct_cnode "+get_string("render_package[0]")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
- 
-        attr.set_expression(expr)
+
+        # expr = '"ct_cnode "+get_string("render_package[0]")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
+
+        # attr.set_expression(expr)
 
     def declare_environment_attributes(self, cls):
         """Set up any extra environment.
@@ -395,40 +389,64 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_read_only(True)
 
     @staticmethod
-    def refresh(obj, **kw):
+    def refresh(_, **kw):
         """Respond to do_setup button click.
 
         Update UI for projects and instances from the data block. kwargs
         may contain the force keyword, which will invalidate the
-        datablock and fetch afresh from Conductor.
+        datablock and fetch fresh from Conductor.
+
+        We may as well update all ConductorJob nodes.
         """
-
-
-        images = ix.api.OfObjectArray()
-        obj.get_attribute("images").get_values(images)
-        if not images.get_count():
-            ix.log_error(
-                "No render images. Please reference one or more image items")
-
         kw["product"] = "clarisse"
         data_block = ConductorDataBlock(**kw)
-        projects_ui.update(obj, data_block)
-        instances_ui.update(obj, data_block)
+        nodes = ix.api.OfObjectArray()
+        ix.application.get_factory().get_all_objects("ConductorJob", nodes)
 
-        frames_ui.update_frame_stats_message(obj)
+        host = ClarisseInfo().get()
+        detected_host_paths = data_block.package_tree().get_all_paths_to(**host)
 
-        render_package_attr = obj.get_attribute("render_package")
-        if not render_package_attr.get_string():
-            expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
-            render_package_attr.set_expression(expr)
-        render_package_attr.set_locked(True)
+        for obj in nodes:
 
-        task_template_attr = obj.get_attribute("task_template")
-        if not task_template_attr.get_string():
-   
-            expr = '"ct_cnode "+get_string("render_package[0]")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
-            task_template_attr.set_expression(expr)
-        task_template_attr.set_locked(True)
+            # images = ix.api.OfObjectArray()
+            # obj.get_attribute("images").get_values(images)
+            # if not images.get_count():
+            #     ix.log_error(
+            #         "No render images. Please reference one or more image items")
+
+            projects_ui.update(obj, data_block)
+            instances_ui.update(obj, data_block)
+            frames_ui.update_frame_stats_message(obj)
+
+            title_attr = obj.get_attribute("title")
+            if not title_attr.get_string():
+                title_attr.set_expression(
+                    '"Clarisse: {} "+$CT_SEQUENCE'.format(obj.get_name()))
+
+            render_package_attr = obj.get_attribute("render_package")
+            if not render_package_attr.get_string():
+                expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
+                render_package_attr.set_expression(expr)
+            render_package_attr.set_locked(True)
+
+            task_template_attr = obj.get_attribute("task_template")
+            if not task_template_attr.get_string():
+                expr = '"ct_cnode "+get_string("render_package[0]")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
+                task_template_attr.set_expression(expr)
+            task_template_attr.set_locked(True)
+
+            packages_attr = obj.get_attribute("packages")
+            if not packages_attr.get_value_count():
+                for path in detected_host_paths:
+                    packages.add_string(path)
+
+            inst_type_attr = obj.get_attribute("instance_type")
+            if not inst_type_attr.get_long():
+                inst_type_attr.set_long(1)
+
+            project_attr = obj.get_attribute("project")
+            if not project_attr.get_long():
+                project_attr.set_long(1)
 
     @staticmethod
     def set_doc_strings(cls):
@@ -436,10 +454,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
         cls.set_attr_doc(
             "setup",
-            """This action will ensure you are signed in to conductor, 
-                and will update the projects and machine type lists.""")
-
-
+            """Press to update the available projects and machine types. Sign in may be required.
+            This operation will also update any empty string attributes with sensible defaults.""")
 
         cls.set_attr_doc(
             "title",

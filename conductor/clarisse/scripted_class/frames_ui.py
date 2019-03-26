@@ -31,7 +31,6 @@ def handle_images(obj, _):
 
 
 def handle_best_chunk_size(obj, _):
-    # print obj.get_name()
     main_seq = main_frame_sequence(obj)
     obj.get_attribute("chunk_size").set_long(main_seq.best_chunk_size())
     update_frame_stats_message(obj)
@@ -126,8 +125,7 @@ def update_frame_stats_message(obj):
     info_attr = obj.get_attribute("frames_info")
 
     main_seq = main_frame_sequence(obj)
-
-    print "main_seq", main_seq
+ 
     if not main_seq:
         info_attr.set_string("--")
         return
@@ -141,4 +139,4 @@ def update_frame_stats_message(obj):
 
     chunks = ("%d Chunks" % main_seq.chunk_count())
 
-    info_attr.set_string("{} -- {}".format(frame_info, chunks))
+    info_attr.set_string("{} -- {} -- {}".format(frame_info, chunks, main_seq))
