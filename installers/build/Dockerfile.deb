@@ -4,7 +4,7 @@ RUN dpkg --add-architecture i386 &&\
     apt-get update &&\
     apt-get install -y \
       cpio \
-      libssl-dev:i386 \
+      libssl-1.1.0:i386 \
       libxml2 \
       libc6:i386 \
       libstdc++6:i386
