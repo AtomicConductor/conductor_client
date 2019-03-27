@@ -4,10 +4,10 @@ This is required because Clarisse's attribute editor doesn't allow
 custom UI to be embedded.
 """
 
-import ix
 import json
-from conductor.clarisse.scripted_class import common
 
+import ix
+from conductor.clarisse.scripted_class import common
 
 BTN_HEIGHT = 22
 BTN_WIDTH = 100
@@ -256,7 +256,7 @@ def build(node, _):
     win.show_modal()
     while win.is_shown():
         ix.application.check_for_events()
- 
+
     # win.destroy is recommended here but makes Clarisse crash
     # when saving the scene
     # win.destroy()

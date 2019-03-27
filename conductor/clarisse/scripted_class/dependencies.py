@@ -21,11 +21,12 @@ def collect(obj):
 
     result = DependencyList()
 
-
     task_att = obj.get_attribute("task_template")
     parts = task_att.get_string().split(" ")
     # if parts and parts[0] == "ct_cnode":
-    result.add("$CONDUCTOR_LOCATION/conductor/clarisse/bin/ct_cnode", must_exist=True)
+    result.add(
+        "$CONDUCTOR_LOCATION/conductor/clarisse/bin/ct_cnode",
+        must_exist=True)
 
     result.add(*_get_extra_uploads(obj), must_exist=True)
     result.add(*_scan(obj, policy), must_exist=False)

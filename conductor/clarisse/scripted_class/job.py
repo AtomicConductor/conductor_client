@@ -230,11 +230,12 @@ class Job(object):
         tokens["CT_CORES"] = str(self.instance["cores"])
         tokens["CT_FLAVOR"] = self.instance["flavor"]
         tokens["CT_INSTANCE"] = self.instance["description"]
-        tokens["CT_PREEMPTIBLE"] = "preemptible" if self.instance["preemptible"] else "non-preemptible"
+        pindex = int(self.instance["preemptible"])
+        tokens["CT_PREEMPTIBLE"] = ["non-preemptible", "preemptible"][pindex]
         tokens["CT_RETRIES"] = str(self.instance["retries"])
         tokens["CT_JOB"] = self.node_name
         tokens["CT_DIRECTORIES"] = " ".join(self.output_paths)
- 
+
         for token in tokens:
             variables.put(token, tokens[token])
         tokens.update(parent_tokens)

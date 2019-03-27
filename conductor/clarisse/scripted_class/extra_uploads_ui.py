@@ -116,7 +116,8 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
 
         current_y = 0
         self.browse_but = ix.api.GuiPushButton(
-            self, (WIDTH - BTN_WIDTH), current_y, BTN_WIDTH, BTN_HEIGHT, "Browse")
+            self, (WIDTH - BTN_WIDTH), current_y,
+            BTN_WIDTH, BTN_HEIGHT, "Browse")
         self.connect(
             self.browse_but,
             'EVT_ID_PUSH_BUTTON_CLICK',
@@ -218,7 +219,7 @@ def build(node, _):
 
     while win.is_shown():
         ix.application.check_for_events()
- 
+
     # win.destroy is recommended but makes Clarisse crash
     # when saving the scene
     # win.destroy()
