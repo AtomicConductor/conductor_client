@@ -9,7 +9,7 @@ BUILD_DIR=/artifacts/build/osx
 UTIL_DIR=$(pwd)/utils
 
 echo "----------------------------------"
-dpkg-query -L 'libssl*'
+dpkg-query -L libssl1.0.2
 echo "----------------------------------"
 
 #Create required directory structure
