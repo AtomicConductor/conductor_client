@@ -14,16 +14,15 @@ import conductor.clarisse.scripted_class.dependencies as deps
 
 
 class Job(object):
-    """class Job holds all data for one Conductor job.
+    """class Job holds all data for one Conductor Job in Clarisse.
 
-    Jobs are contained by a Submission and a Job contains potentially
-    many Tasks. Like a Submission, it also manages a list of environment
-    tokens that the user can access as clarisse variables in expressions
-    and so on.
+    Jobs are owned by a Submission and a Job owns potentially many
+    Tasks. Like a Submission, it also manages a list of environment
+    tokens the user can access as clarisse variables in expressions.
     """
 
     def __init__(self, node, parent_tokens):
-        """Build the common job member data in this base class.
+        """Build job for a ConductorJob node.
 
         * Get the sources.
         * Get the instance type, retries, and preemptible flag.
@@ -52,38 +51,38 @@ class Job(object):
         self.sequence = self._get_sequence()
         self.sources = self._get_sources()
         self.instance = self._get_instance()
-
         out = self._get_output_directory()
         self.common_output_path = out["common_path"]
         self.output_paths = out["output_paths"]
 
         self.tokens = self._setenv(parent_tokens)
-        self.render_package = parent_tokens["CT_RENDER_PACKAGE"]
 
+        self.render_package = parent_tokens["CT_RENDER_PACKAGE"]
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
-
         self.dependencies = deps.collect(self.node)
-
         self.dependencies.add(self.render_package, must_exist=False)
-
         self.title = self.node.get_attribute("title").get_string()
-
-        task_att = self.node.get_attribute("task_template")
-
         self.metadata = None
 
+        task_att = self.node.get_attribute("task_template")
         for chunk in self.sequence["main"].chunks():
-            task = Task(chunk, task_att, self.sources, self.tokens)
-            self.tasks.append(task)
+            self.tasks.append(
+                Task(chunk, task_att, self.sources, self.tokens))
 
     def _get_sources(self):
-        use_custom = self.node.get_attribute("use_custom_frames").get_bool()
+        """Get the images, along with associated Sequence objects.
+
+        If we are not rendering a custom range, then the sequence for
+        each image may be different.
+        """
 
         images = ix.api.OfObjectArray()
         self.node.get_attribute("images").get_values(images)
 
-        # cast to list because OfObjectArray is true even when it's empty.
+        use_custom = self.node.get_attribute("use_custom_frames").get_bool()
+
+        # cast to list because OfObjectArray is true even when empty.
         if not list(images):
             ix.log_error(
                 "No render images. Please reference one or more image items")
@@ -95,24 +94,8 @@ class Job(object):
             result.append({"image": image, "sequence": seq})
         return result
 
-    # def _get_misregistered(self):
-    #     """Do different images have different frame ranges?
-
-    #     We need to know this because it affects how we build the task
-    #     command. Specifically, if n images are being rendered in the
-    #     same render command, then we have to specify n frame ranges. If
-    #     we are not relying on the individual image frameranges, and are
-    #     instead using the custom frame range, then there will be no
-    #     misalignment.
-    #     """
-    #     if self.node.get_attribute("use_custom_frames").get_bool():
-    #         return False
-
-    #     specs = [str(Sequence.create(*frames_ui.image_range(image)))
-    #              for image in self._get_sources()]
-    #     return any(n != specs[0] for n in specs[1:])
-
     def _get_extra_env_vars(self):
+        """Collect any environment specified by the user."""
         result = []
         json_entries = ix.api.CoreStringArray()
         self.node.get_attribute("extra_environment").get_values(json_entries)
@@ -133,6 +116,11 @@ class Job(object):
         return result
 
     def _get_environment(self):
+        """Collect all environment variables.
+
+        Collect variables specified by the packages, and add those
+        specified by the user.
+        """
         package_tree = ConductorDataBlock(product="clarisse").package_tree()
 
         paths = ix.api.CoreStringArray()
@@ -145,6 +133,7 @@ class Job(object):
         return package_env
 
     def _get_package_ids(self):
+        """Package Ids for chosen packages."""
         package_tree = ConductorDataBlock(product="clarisse").package_tree()
         paths = ix.api.CoreStringArray()
         self.node.get_attribute("packages").get_values(paths)
@@ -209,7 +198,7 @@ class Job(object):
         return result
 
     def _get_sequence(self):
-        """Create the sequence object from the job UI.
+        """Get the sequence object from the frames section of the UI.
 
         As this is not a simulation job, the frames UI is visible and we
         use it. The Sequence contains chunk information, and we also get
@@ -221,25 +210,23 @@ class Job(object):
         }
 
     def _setenv(self, parent_tokens):
-        """Env tokens common for all Job types.
+        """Env tokens.
 
-        First we collect up token values for the job and set the env to
-        those values. Then we merge with tokens from the parent so that
-        in the preview display the user can see all tokens available at
-        the Job level, including those that were set at the submitter
-        level.
+        Collect token values for this Job and merge with those from the
+        parent Submission.
         """
         tokens = {}
-        seq = self.sequence["main"]
+        main_seq = self.sequence["main"]
+        scout_seq = self.sequence["scout"]
 
-        tokens["CT_SCOUT"] = str(self.sequence["scout"])
-        tokens["CT_CHUNKSIZE"] = str(self.sequence["main"].chunk_size)
-        tokens["CT_CHUNKCOUNT"] = str(self.sequence["main"].chunk_count())
-        tokens["CT_SCOUTCOUNT"] = str(len(self.sequence["scout"] or []))
-        tokens["CT_SEQLENGTH"] = str(len(seq))
-        tokens["CT_SEQUENCE"] = str(seq)
-        tokens["CT_SEQUENCEMIN"] = str(seq.start)
-        tokens["CT_SEQUENCEMAX"] = str(seq.end)
+        tokens["CT_SCOUT"] = str(scout_seq)
+        tokens["CT_CHUNKSIZE"] = str(main_seq.chunk_size)
+        tokens["CT_CHUNKCOUNT"] = str(main_seq.chunk_count())
+        tokens["CT_SCOUTCOUNT"] = str(len(scout_seq or []))
+        tokens["CT_SEQLENGTH"] = str(len(main_seq))
+        tokens["CT_SEQUENCE"] = str(main_seq)
+        tokens["CT_SEQUENCEMIN"] = str(main_seq.start)
+        tokens["CT_SEQUENCEMAX"] = str(main_seq.end)
         tokens["CT_CORES"] = str(self.instance["cores"])
         tokens["CT_FLAVOR"] = self.instance["flavor"]
         tokens["CT_INSTANCE"] = self.instance["description"]
@@ -247,9 +234,7 @@ class Job(object):
         tokens["CT_RETRIES"] = str(self.instance["retries"])
         tokens["CT_JOB"] = self.node_name
         tokens["CT_DIRECTORIES"] = " ".join(self.output_paths)
-        # tokens["CT_SOURCE"] = " ".join(
-        #     [s.get_full_name() for s in self.sources])
-
+ 
         for token in tokens:
             variables.put(token, tokens[token])
         tokens.update(parent_tokens)

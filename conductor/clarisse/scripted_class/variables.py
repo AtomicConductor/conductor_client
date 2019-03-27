@@ -1,3 +1,13 @@
+"""Declare variables that users can use to construct strings.
+
+These variables are available to help construct the job title, task
+command, metadata and so on. Most of the time, the attributes that use
+them wont be changed and can even be hidden. However, when a user wants
+to do something a little more advanced, for examplem create their own
+cnode wrapper, they will find them useful. It should be noted that these
+variables should only be relied on by ConductorJob nodes, and only
+during the submission process, and not by other nodes in Clarisse.
+"""
 import ix
 
 CONDUCTOR_VARS = [
@@ -32,11 +42,13 @@ CONDUCTOR_VARS = [
 
 
 def declare():
+    """Make sure they are all present and have a value"""
     for varname in CONDUCTOR_VARS:
         put(varname, "deferred")
 
 
 def put(varname, value):
+    """Take the pain out of setting an envvar in Clarisse"""
     all_vars = ix.application.get_factory().get_vars()
     v = all_vars.get(varname)
     if not v:
@@ -48,6 +60,7 @@ def put(varname, value):
 
 
 def get(varname):
+    """Take the pain out of getting an envvar in Clarisse"""
     v = ix.application.get_factory().get_vars().get(varname)
     if v:
         return v.get_string()

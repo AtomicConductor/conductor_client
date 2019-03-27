@@ -3,7 +3,6 @@
 It registers the conductor_job class in Clarisse.
 """
 
-# from ix.api import  ModuleScriptedClass
 import ix
 from ix.api import OfAttr, OfObjectFactory
 

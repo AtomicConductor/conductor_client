@@ -269,8 +269,10 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def declare_upload_attributes(self, cls):
         """Specify options for dependency scanning.
 
-        Optimization attributes are unused right now. Extra uploads are
-        managed in a pop out window.
+        Set to no-scan: use only cached uploads,
+        Glob-scan: If filenames contain "##" or <UDIM>. They will be globbed.
+        Smart-scan If filenames contain "##" the hashes will be replaced with 
+        frame numbers that are being used.
         """
 
         attr = cls.add_attribute(
@@ -289,10 +291,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_FILENAME_SAVE,
             "task")
-
-        # expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
-        # attr.set_expression(expr)
-        # attr.set_locked(True)
 
         attr = cls.add_attribute(
             "local_upload",
@@ -343,17 +341,17 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_read_only(True)
 
     def declare_task_attributes(self, cls):
-        """This is the task command."""
+        """This is the task command template.
+
+        It will usually contain variables that will be replaced while
+        generating tasks.
+        """
         attr = cls.add_attribute(
             "task_template",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "task")
-
-        # expr = '"ct_cnode "+get_string("render_package[0]")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
-
-        # attr.set_expression(expr)
 
     def declare_environment_attributes(self, cls):
         """Set up any extra environment.
@@ -394,9 +392,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
         Update UI for projects and instances from the data block. kwargs
         may contain the force keyword, which will invalidate the
-        datablock and fetch fresh from Conductor.
-
-        We may as well update all ConductorJob nodes.
+        datablock and fetch fresh from Conductor. We may as well update
+        all ConductorJob nodes.
         """
         kw["product"] = "clarisse"
         data_block = ConductorDataBlock(**kw)
@@ -407,12 +404,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         detected_host_paths = data_block.package_tree().get_all_paths_to(**host)
 
         for obj in nodes:
-
-            # images = ix.api.OfObjectArray()
-            # obj.get_attribute("images").get_values(images)
-            # if not images.get_count():
-            #     ix.log_error(
-            #         "No render images. Please reference one or more image items")
 
             projects_ui.update(obj, data_block)
             instances_ui.update(obj, data_block)

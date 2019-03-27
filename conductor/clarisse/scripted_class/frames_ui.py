@@ -37,7 +37,7 @@ def handle_best_chunk_size(obj, _):
 
 
 def custom_frame_sequence(obj):
-    """Generate Sequence from the value in custom_range attribute."""
+    """Generate Sequence from the value in custom_frames attribute."""
     try:
 
         spec = obj.get_attribute("custom_frames").get_string()

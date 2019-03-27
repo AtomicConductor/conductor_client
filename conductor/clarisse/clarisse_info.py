@@ -49,7 +49,7 @@ class ClarisseInfo(package_utils.ProductInfo):
 class ClarissePluginInfo(package_utils.ProductInfo):
     """A class for retrieving version information about a plugin in clarisse.
 
-    Should be subclassed. Will ultimately produce something like this:
+    Should be subclassed. Will ultimately produce something like:
 
      {'product': '<plugin name>',
       'major_version': u'3',

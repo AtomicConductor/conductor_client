@@ -21,5 +21,4 @@ def force_ae_refresh(node):
         attr.set_long(applied)
 
 
-# In order to use those textures, you'll need to set UDIM texture Filename
-# attribute to: paint.<UDIM>.tx
+ 
