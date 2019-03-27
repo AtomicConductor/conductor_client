@@ -19,6 +19,3 @@ def force_ae_refresh(node):
         attr.remove_preset(last)
         attr.add_preset(preset[0], preset[1])
         attr.set_long(applied)
-
-
- 

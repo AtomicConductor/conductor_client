@@ -125,7 +125,7 @@ def update_frame_stats_message(obj):
     info_attr = obj.get_attribute("frames_info")
 
     main_seq = main_frame_sequence(obj)
- 
+
     if not main_seq:
         info_attr.set_string("--")
         return

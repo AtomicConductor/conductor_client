@@ -1,9 +1,8 @@
-import ix
 import traceback
 
-from conductor.clarisse.clarisse_info import ClarisseInfo
+import ix
 from conductor.clarisse import reloader
-
+from conductor.clarisse.clarisse_info import ClarisseInfo
 from conductor.clarisse.scripted_class import (dependency_ui, environment_ui,
                                                extra_uploads_ui, frames_ui,
                                                instances_ui, notifications_ui,

@@ -4,7 +4,9 @@ Currently only email notifications.
 """
 
 import re
+
 import ix
+
 # Simple loose email regex, matches 1 email address.
 SIMPLE_EMAIL_RE = re.compile(r"^\S+@\S+$")
 

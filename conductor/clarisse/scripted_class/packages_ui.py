@@ -28,7 +28,6 @@ C_RIGHT = ix.api.GuiWidget.CONSTRAINT_RIGHT
 C_BOTTOM = ix.api.GuiWidget.CONSTRAINT_BOTTOM
 C_COUNT = ix.api.GuiWidget.CONSTRAINT_COUNT
 
- 
 
 class PackageTreeItem(ix.api.GuiTreeItemBasic):
     """An item in the tree that maintains its own child list."""
@@ -44,10 +43,11 @@ class PackageTreeWidget(ix.api.GuiTree):
 
     This implementation is way more complicated than it should be due to
     the fact that GuiTree#get_children() is buggy.
-    See here: https://forum.isotropix.com/viewtopic.php?f=21&t=5391&p=19440#p19440
+    See here:
+    https://forum.isotropix.com/viewtopic.php?f=21&t=5391&p=19440#p19440
 
     Also, starting to think the idea of plugin packages belonging to host
-    packages in a tree like fashion is fundamentally wrong anyway and 
+    packages in a tree like fashion is fundamentally wrong anyway and
     overcomplicates everything.
 
     The only constraint should be that at most one version of each software

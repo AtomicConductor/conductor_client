@@ -75,4 +75,5 @@ def _validate_packages(obj):
     if any(path.startswith('clarisse') for path in paths):
         return
     ix.log_error(
-        "No Clarisse package detected. Please use the package chooser to find one.")
+        "No Clarisse package detected. \
+        Please use the package chooser to find one.")

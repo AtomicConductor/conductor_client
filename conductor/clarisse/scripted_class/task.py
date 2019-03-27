@@ -43,7 +43,7 @@ class Task(object):
         as there are images. For example `cnode -images img1 img2
         -frames 1-20 30-40`. For Conductor to handle this and calculate
         a command per chunk, it must intersect the chunk with the frame
-        range from each image, and apply this in the CT_CHUNKS token, 
+        range from each image, and apply this in the CT_CHUNKS token,
         which will usually be used by the task_template.
         """
 
