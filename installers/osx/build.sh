@@ -8,6 +8,10 @@ VERSION=${RELEASE_VERSION:1}
 BUILD_DIR=/artifacts/build/osx
 UTIL_DIR=$(pwd)/utils
 
+echo "----------------------------------"
+echo `find /usr/lib* -name libssl*`
+echo "----------------------------------"
+
 #Create required directory structure
 mkdir -p ${BUILD_DIR}/flat/base.pkg 
 mkdir -p ${BUILD_DIR}/flat/Resources/en.lproj
