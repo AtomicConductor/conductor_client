@@ -6,4 +6,4 @@ RUN dpkg --add-architecture i386 &&\
       cpio \
       libxml2 \
       libc6:i386 \
-      libstdc++6:i386 && echo `find /usr/lib* -name libssl*`
+      libstdc++6:i386
