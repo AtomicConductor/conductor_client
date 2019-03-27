@@ -8,10 +8,6 @@ VERSION=${RELEASE_VERSION:1}
 BUILD_DIR=/artifacts/build/osx
 UTIL_DIR=$(pwd)/utils
 
-echo "----------------------------------"
-dpkg-query -L libssl1.0.2
-echo "----------------------------------"
-
 #Create required directory structure
 mkdir -p ${BUILD_DIR}/flat/base.pkg 
 mkdir -p ${BUILD_DIR}/flat/Resources/en.lproj
