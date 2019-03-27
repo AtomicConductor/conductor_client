@@ -30,7 +30,7 @@ BOTTOM_BUT_WIDTH = WIDTH / 3
 class PreviewWindow(ix.api.GuiWindow):
     """The entire window.
 
-    Holds the panel plus buttons to Add, Go, Cancel and so on.
+    Holds the panel plus buttons to Submit or Cancel and so on.
     """
 
     def __init__(self, submission):
@@ -97,11 +97,11 @@ class PreviewWindow(ix.api.GuiWindow):
         self.hide()
 
     def on_apply_but(self, sender, evtid):
-        """Save values on the attribute and keep the window visible."""
+        """Submit and keep the window visible."""
         self.submission.submit()
 
     def on_go_but(self, sender, evtid):
-        """Save values on the attribute and hide(destroy) the window."""
+        """Submit and hide(destroy) the window."""
         self.submission.submit()
         self.hide()
 
@@ -109,19 +109,10 @@ class PreviewWindow(ix.api.GuiWindow):
 def build(submission):
     """Show the window.
 
-    Populate it with existing entries from the extra_env attribute. The
-    window is shown in modal mode so we don't keep losing the damn thing
-    behind other stuff. Listen for events until the window is hidden.
+    Populate it with submission args for each job. Listen for events
+    until the window is hidden.
     """
     win = PreviewWindow(submission)
-
-    # attr = node.get_attribute("extra_environment")
-    # json_entries = ix.api.CoreStringArray()
-    # attr.get_values(json_entries)
-    # entries = [json.loads(entry) for entry in json_entries]
-    # if not entries:
-    #     entries = [{}]
-    # win.panel.add_entries(*entries)
 
     win.show_modal()
     while win.is_shown():

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-
-
 import os
 import re
 import errno
@@ -25,9 +23,9 @@ def mkdir_p(dirs):
 def main():
     """Wrapper to run cnode while making directories first.
 
-    Needed because clarisse allows multiple images to be rendered,
-    and each may have a different save_as destination. Arg parser splits
-    the args into -directory args and other args. It then makes the
+    Needed because clarisse allows multiple images to be rendered, and
+    each may have a different save_as destination. Arg parser splits the
+    args into -directory args and other args. It then makes the
     directories and sends all other args on to cnode.  At some point we
     may display task progress, so this script does some rudimentary
     formatting, which can be changed when its needed for real.

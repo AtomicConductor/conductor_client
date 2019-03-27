@@ -1,9 +1,10 @@
 """Handle button presses to submit and preview jobs.
 
-preview: Open a window, eventually, displaying the structure of
-the submission and the JSON objects that will be sent to Conductor.
+Preview, open a window containing the submission script JSON, and
+eventually also the structure of the submission and the JSON objects
+that will be sent to Conductor.
 
-submit: Send jobs to Conductor
+Submit, send jobs straight to Conductor.
 """
 import json
 import os
@@ -19,6 +20,7 @@ SUCCESS_CODES_SUBMIT = [201, 204]
 
 
 def submit(obj, _):
+    """Validate and submit."""
     _validate_images(obj)
     _validate_packages(obj)
     submission = Submission(obj)
@@ -26,12 +28,21 @@ def submit(obj, _):
 
 
 def preview(obj, _):
+    """Validate and show the scrip in a panel.
+
+    Submission can be invoked from the preview panel.
+    """
     _validate_images(obj)
     _validate_packages(obj)
     submission = Submission(obj)
     ui = preview_ui.build(submission)
 
+
 def _validate_images(obj):
+    """Check some images are present to be rendered.
+
+    Then check that they are set up to save to disk.
+    """
     images = ix.api.OfObjectArray()
     obj.get_attribute("images").get_values(images)
     if not images.get_count():

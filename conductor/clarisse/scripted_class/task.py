@@ -3,7 +3,7 @@ from conductor.clarisse.scripted_class import variables
 
 
 class Task(object):
-    """A Task is a command and the list of frames it relates to.
+    """A Task has a command and the list of frames.
 
     It provides a handful of tokens that can be used to construct the
     command.
@@ -23,7 +23,7 @@ class Task(object):
 
         self.tokens = self._setenv(parent_tokens)
 
-        # This is insane - I here you scream. 
+        # This is insane!! - I here you scream.
         # Well try reducing it and see what happens.
         command_attr.activate_expression(False)
         command_attr.activate_expression(True)
@@ -35,11 +35,16 @@ class Task(object):
     def _setenv(self, parent_tokens):
         """Env tokens at the task level.
 
-        Task level tokens are joined with Job and submission
-        level tokens so that all tokens are available when
-        constructing the task command.
-
-        Example:
+        Task level tokens are joined with Job and submission level
+        tokens so that all tokens are available when constructing the
+        task command. As ConductorJob may contain many images, and those
+        images may specify different frame ranges. The Clarisse render
+        command `cnode` handles this by specifying as many frame-specs
+        as there are images. For example `cnode -images img1 img2
+        -frames 1-20 30-40`. For Conductor to handle this and calculate
+        a command per chunk, it must intersect the chunk with the frame
+        range from each image, and apply this in the CT_CHUNKS token, 
+        which will usually be used by the task_template.
         """
 
         tokens = {}
@@ -54,6 +59,7 @@ class Task(object):
 
         tokens["CT_CHUNKS"] = " ".join(chunks)
         tokens["CT_SOURCES"] = " ".join(image_names)
+
         tokens["CT_CHUNKLENGTH"] = str(len(self.chunk))
         tokens["CT_CHUNKSTART"] = str(self.chunk.start)
         tokens["CT_CHUNKEND"] = str(self.chunk.end)

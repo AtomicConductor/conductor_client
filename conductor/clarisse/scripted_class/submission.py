@@ -1,5 +1,5 @@
 """Build an object to represent a Conductor submission."""
-# import re
+
 import datetime
 import os
 import errno
@@ -11,19 +11,17 @@ from conductor.clarisse.scripted_class import common, variables
 from conductor.clarisse.scripted_class.job import Job
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.lib import conductor_submit
-# import conductor.native.lib.common
 
 
 class Submission(object):
     """class Submission holds all data needed for a submission.
 
-    A Submission contains many Jobs, and those Jobs contain many Tasks.
-    A Submission can provide the correct args to send to Conductor, or
-    it can be used to create a dry run to show the user what will
-    happen. A Submission also manages a list of environment tokens that
-    the user can access as $ variables (similar to Clarisse custom
-    variables) in order to build strings in the UI such as commands and
-    job titles.
+    A Submission has many Jobs, and those Jobs each have many Tasks. A
+    Submission can provide the correct args to send to Conductor, or it
+    can be used to create a dry run to show the user what will happen. A
+    Submission also sets a list of tokens that the user can access as
+    Clarisse custom variables in order to build strings in the UI such
+    as commands and job titles.
     """
 
     def __init__(self, node):
@@ -37,17 +35,13 @@ class Submission(object):
         it is instantiated from a ConductorSubmitter
         node, then it will provide top level submission data
         and the Jobs (self.jobs) will built from the
-        ConductorSubmitter's input nodes.
-
-        * Generate a timestamp which will be common to all jobs.
-        * Get the render package name.
-        * Get upload flags and notification data.
-        * Get the project.
+        ConductorSubmitter's input nodes. A separate
+        ConductorSubmitter does not yet exist, but the
+        structure of this class can support it.
 
         After _setenv has been called, the Submission level token
-        variables are valid and calls to eval string attributes will
-        correctly resolve where those tokens have been used.  This is
-        why we eval jobs after the call to _setenv()
+        variables are valid and calls to evaluate expressions will
+        correctly resolve where those tokens have been used.
         """
 
         self.node = node
@@ -110,24 +104,20 @@ class Submission(object):
         return result
 
     def _setenv(self):
-        """Env tokens are variables to help the user build strings.
+        """Env tokens are variables to help the user build expressions.
 
-        The user interface has fields for strings such as
-        job title, task command, metadata. The user can use
-        these tokens, prefixed with a $ symbol, to build
-        those strings. Tokens at the Submission level are
-        also available in Job level fields, and likewise
-        tokens at the Job level are available in Task level
-        fields. However, it makes no sense the other way,
-        for example you can't use a chunk token (available
-        at Task level) in a Job title because a chunk
-        changes for every task.
-
-        Once tokens are set, strings using them are expanded
-        correctly. In fact we don't need these tokens to be
-        stored on the Submission object (or Job or Task) for
-        the submission to succeed. The only reason we store
-        them is to display them in a dry-run scenario.
+        The user interface has fields for strings such as job title,
+        task command. The user can use these env tokens in SeExpr
+        expressions, to build those strings. Tokens at the Submission
+        level are also available in Job level fields, and likewise
+        tokens at the Job level are available in Task level fields.
+        However, it makes no sense the other way, for example you can't
+        use a chunk token (available at Task level) in a Job title
+        because a chunk changes for every task. Once tokens are set,
+        strings using them are expanded correctly. In fact we don't need
+        these tokens to be stored as member data on the Submission
+        object (or Job or Task) for the submission to succeed. The only
+        reason we store them is to display them in a dry-run scenario.
         """
         tokens = {}
         tokens["CT_TIMESTAMP"] = self.timestamp
@@ -141,6 +131,11 @@ class Submission(object):
         return tokens
 
     def write_render_package(self):
+        """Take the value of the render package att and save the file.
+
+        The user could use an SeExpr to set this to the clarisse tmp
+        directory, or to save it in the project.
+        """
         path = os.path.dirname(self.render_package)
         try:
             os.makedirs(path)
@@ -165,7 +160,7 @@ class Submission(object):
         job. The project, notifications, and upload args are the same
         for all jobs, so they are set here. Other args are provided by
         Job objects and updated with these submission level args to form
-        complete jobs.
+        complete job submissions.
         """
         result = []
         submission_args = {}
@@ -179,14 +174,13 @@ class Submission(object):
             addresses = ", ".join(self.email_addresses)
             submission_args["notify"] = {"emails": addresses}
         else:
-            submission_args["notify"] =[]
+            submission_args["notify"] = []
 
         for job in self.jobs:
             args = job.get_args()
             args.update(submission_args)
             result.append(args)
         return result
-
 
     def submit(self):
         self.write_render_package()
@@ -201,7 +195,6 @@ class Submission(object):
                     traceback.format_exception(*sys.exc_info()))})
         for result in results:
             ix.log_info(result)
-
 
     @property
     def node_name(self):

@@ -257,6 +257,6 @@ def build(node, _):
     while win.is_shown():
         ix.application.check_for_events()
  
-    # win.destroy is recommended but makes Clarisse crash
+    # win.destroy is recommended here but makes Clarisse crash
     # when saving the scene
     # win.destroy()
