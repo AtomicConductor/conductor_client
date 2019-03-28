@@ -14,10 +14,8 @@ from conductor.clarisse.scripted_class import task
 from conductor.clarisse.scripted_class import notifications_ui
 from conductor.clarisse.scripted_class import packages_ui
 from conductor.clarisse.scripted_class import projects_ui
-from conductor.clarisse.scripted_class import source_ui
 from conductor.clarisse.scripted_class import submission
 from conductor.clarisse.scripted_class import submit_actions
-from conductor.clarisse.scripted_class import test_class
 from conductor.clarisse.scripted_class import variables
 from conductor.clarisse.scripted_class import preview_ui
 
@@ -34,9 +32,7 @@ reload(task)
 reload(notifications_ui)
 reload(packages_ui)
 reload(projects_ui)
-reload(source_ui)
 reload(submission)
 reload(submit_actions)
-reload(test_class)
 reload(variables)
 reload(preview_ui)
