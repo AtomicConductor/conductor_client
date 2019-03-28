@@ -1,6 +1,15 @@
 FROM debian:stretch
 
-RUN  dpkg --add-architecture i386  && apt-get install  -y  build-essential cpio libxml2-dev libssl1.0-dev zlib1g-dev 
+RUN  dpkg --add-architecture i386  && \
+    apt-get update && \
+    apt-get install  -y  build-essential \
+    cpio \
+    libxml2-dev \
+    libssl1.0-dev \
+    zlib1g-dev 
 
-RUN wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/xar/xar-1.5.2.tar.gz && tar -zxvf xar-1.5.2.tar.gz && cd xar-1.5.2 && ./configure && make && make install
+WORKDIR "/src"
+ADD installers/xar/xar-1.5.2.tar.gz .
+WORKDIR "/src/xar-1.5.2"
+RUN CFLAGS=-w CPPFLAGS=-w CXXFLAGS=-w LDFLAGS=-w ./configure && make && make install
 
