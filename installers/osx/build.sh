@@ -47,3 +47,11 @@ ${UTIL_DIR}/mkbom -u 0 -g 80 root flat/base.pkg/Bom
 ( cd flat && ${UTIL_DIR}/xar --compression none -cf "/artifacts/conductor-${RELEASE_VERSION}.pkg" * )
 popd
 popd
+
+ /src/installers/osx/utils/xar --compression none -cf /artifacts/conductor-v2.8.0.pkg Distribution Resources base.pkg
+2019-03-27 23:15:58
+deb
+
+/src/installers/osx/utils/xar: 
+/usr/lib/x86_64-linux-gnu/libcrypto.so.1.0.0: 
+version `OPENSSL_1.0.0' not found (required by /src/installers/osx/utils/xar)
