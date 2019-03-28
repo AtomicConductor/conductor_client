@@ -3,7 +3,7 @@ import traceback
 import ix
 from conductor.clarisse import reloader
 from conductor.clarisse.clarisse_info import ClarisseInfo
-from conductor.clarisse.scripted_class import (dependency_ui, environment_ui,
+from conductor.clarisse.scripted_class import (environment_ui,
                                                extra_uploads_ui, frames_ui,
                                                instances_ui, notifications_ui,
                                                packages_ui, projects_ui,
@@ -78,8 +78,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 frames_ui.handle_chunk_size(obj, attr)
             elif attr_name == "images":
                 frames_ui.handle_images(obj, attr)
-            elif attr_name == "optimize_scan":
-                dependency_ui.handle_optimize_scan(obj, attr)
             elif attr_name == "notify":
                 notifications_ui.notify_changed(obj, attr)
             elif attr_name == "email_addresses":
