@@ -13,6 +13,9 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.lib import conductor_submit
 
 
+# logger = logging.getLogger('logger')
+# logger.warning('The system may break down')
+
 class Submission(object):
     """class Submission holds all data needed for a submission.
 
