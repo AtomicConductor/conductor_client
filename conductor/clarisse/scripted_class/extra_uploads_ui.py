@@ -1,6 +1,8 @@
 import ix
 from conductor.clarisse.scripted_class import common
+import conductor.clarisse.scripted_class.dependencies as deps
 from conductor.native.lib.dependency_list import DependencyList
+
 
 BTN_HEIGHT = 22
 BTN_WIDTH = 100
@@ -123,6 +125,22 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
             'EVT_ID_PUSH_BUTTON_CLICK',
             self.on_browse_but)
 
+        self.smart_scan_but = ix.api.GuiPushButton(
+            self, (WIDTH - (BTN_WIDTH * 2)), current_y,
+            BTN_WIDTH, BTN_HEIGHT, "Smart scan")
+        self.connect(
+            self.smart_scan_but,
+            'EVT_ID_PUSH_BUTTON_CLICK',
+            self.on_smart_scan_but)
+
+        self.glob_scan_but = ix.api.GuiPushButton(
+            self, (WIDTH - (BTN_WIDTH * 3)), current_y,
+            BTN_WIDTH, BTN_HEIGHT, "Glob scan")
+        self.connect(
+            self.glob_scan_but,
+            'EVT_ID_PUSH_BUTTON_CLICK',
+            self.on_glob_scan_but)
+
         self.remove_sel_but = ix.api.GuiPushButton(
             self, 0, current_y, BTN_WIDTH, BTN_HEIGHT, "Remove selected")
         self.connect(
@@ -172,8 +190,17 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         title = "Select extra uploads..."
         mask = "Any files\t*"
         filenames = ix.api.GuiWidget.open_files(app, "", title, mask)
+        self.file_list_wdg.add_entries(sorted(filenames))
 
-        self.file_list_wdg.add_entries(filenames)
+    def on_smart_scan_but(self, sender, evtid):
+        filenames = deps.get_scan(self.node, "SMART")
+        filenames.glob()
+        self.file_list_wdg.add_entries(sorted(filenames))
+
+    def on_glob_scan_but(self, sender, evtid):
+        filenames = deps.get_scan(self.node, "GLOB")
+        filenames.glob()
+        self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_remove_sel_but(self, sender, evtid):
         self.file_list_wdg.destroy_selelcted()

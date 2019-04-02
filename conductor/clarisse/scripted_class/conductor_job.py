@@ -1,6 +1,7 @@
 import traceback
 
 import ix
+print ("BEFORE ANYTHIONG")
 from conductor.clarisse import reloader
 from conductor.clarisse.clarisse_info import ClarisseInfo
 from conductor.clarisse.scripted_class import (environment_ui,
@@ -268,7 +269,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
         Set to no-scan: use only cached uploads,
         Glob-scan: If filenames contain "##" or <UDIM>. They will be globbed.
-        Smart-scan If filenames contain "##" the hashes will be replaced with 
+        Smart-scan If filenames contain "##" the hashes will be replaced with
         frame numbers that are being used.
         """
 
@@ -281,13 +282,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.add_preset("No scan", "0")
         attr.add_preset("Glob sequence", "1")
         attr.add_preset("Smart sequence", "2")
-
-        attr = cls.add_attribute(
-            "render_package",
-            OfAttr.TYPE_STRING,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_FILENAME_SAVE,
-            "task")
 
         attr = cls.add_attribute(
             "local_upload",
@@ -314,12 +308,13 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_bool(False)
 
         self.add_action(cls, "manage_extra_uploads", "upload")
+
         attr = cls.add_attribute(
             "extra_uploads",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_LIST,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "upload")
+            "cached_upload_list")
         attr.set_read_only(True)
 
     def declare_packages_attributes(self, cls):
@@ -343,6 +338,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         It will usually contain variables that will be replaced while
         generating tasks.
         """
+
+        attr = cls.add_attribute(
+            "render_package",
+            OfAttr.TYPE_STRING,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_FILENAME_SAVE,
+            "task")
+
         attr = cls.add_attribute(
             "task_template",
             OfAttr.TYPE_STRING,
