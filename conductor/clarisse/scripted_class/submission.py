@@ -196,9 +196,9 @@ class Submission(object):
             except BaseException:
                 results.append({"code": "undefined", "response": "".join(
                     traceback.format_exception(*sys.exc_info()))})
-        for result in results:
-            ix.log_info(result)
-
+         for result in results:
+             ix.log_info(result)
+ 
     @property
     def node_name(self):
         """node_name."""
