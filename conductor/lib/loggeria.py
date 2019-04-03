@@ -138,17 +138,9 @@ def set_conductor_log_level(log_level):
     assert log_level in LEVEL_MAP.keys(), "Invalid log_level: %s" % log_level
     logger = get_conductor_logger()
     logger.setLevel(log_level)
+    logger.info("Changed log level to %s", log_level)
 
-    # The logger.info line below gives the error: 
-    # No handlers could be found for logger "conductor"
-    # while Clarisse submitter starts. It makes customers
-    # think something important has failed.
-    # I can't figure out how to fix it, and it seems 
-    # harmless to remove. If it should stay, then please
-    # find a way to suppress the error in Clarisse.
 
-    #logger.info("Changed log level to %s", log_level)
- 
 def get_conductor_logger():
     '''
     Return the "conductor" package's logger object

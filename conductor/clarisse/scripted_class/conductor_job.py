@@ -12,6 +12,7 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from ix.api import OfAttr, OfEnum, OfObjectFactory
 
 
+
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
     def __init__(self):

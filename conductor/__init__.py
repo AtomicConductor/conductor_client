@@ -1,3 +1,4 @@
+import logging
 from conductor.lib import common, loggeria
 
 #The version string is updated by the build system.
@@ -5,6 +6,9 @@ from conductor.lib import common, loggeria
 #__version__="0.0.0"
 
 # Read the config yaml file upon module import
+
+logging.basicConfig()
+
 try:
     CONFIG = common.Config().config
 except ValueError:
