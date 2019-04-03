@@ -4,7 +4,7 @@ import re
 
 import nuke
 
-from conductor.lib import package_utils
+from conductor.lib import file_utils, package_utils
 
 logger = logging.getLogger(__name__)
 
@@ -168,8 +168,8 @@ def resolve_knob_path(knob):
         # Join the relative path with the nuke script directory
         path = os.path.join(nuke.script_directory(), path)
 
-    # Resolve any ellipses in the path (e.g. ../../  ). Unfortunately this also normpaths it, which may lead to some fallout/bugs
-    path = os.path.abspath(path)
+    # Resolve any ellipses in the path (e.g. ../../ )
+    path = file_utils.flatten_path(path)
 
     logger.debug("Resolved to: %s", path)
     return path

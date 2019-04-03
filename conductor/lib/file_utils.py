@@ -1,5 +1,7 @@
 import logging
+import ntpath
 import os
+import posixpath
 import re
 import sys
 import glob
@@ -484,3 +486,53 @@ def strip_drive_letter(filepath):
     '''
     rx_drive = r'^[a-z]:'
     return re.sub(rx_drive, "", filepath, flags=re.I)
+
+
+def flatten_path(path):
+    r'''
+    Replace/resolve any ellipses in the given path (e.g. ../../ or ..\..\  ) to produce a "flattened"
+    path.  This function simply calls python's underlying os.path.normpath function, but explicitly
+    calls the os-specific implementation of it, depending on whether the path is recognized as a
+    "windows style" vs "posix  style" path.
+
+    Note that resolving the segments/tokens of a filepath is heavily reliant upon properly identifying
+    the token separators (i.e. the forward/back slashes in a path). This function does its best to
+    do so, but due to the complexity of running on multiple platforms, as well as
+    handling paths that don't necessarily reflect the standard pathing found on the platform, some
+    edge-cases may exist (specifically when a path contains both forward and backslashes).
+
+    >>> tests = (
+    ...         # No elipses, so no modifications
+    ...         (r'c:/animals/cats.py', r'c:/animals/cats.py'),
+    ...         # No elipses, so no modifications
+    ...         (r'c:\animals\cats.py', r'c:\animals\cats.py'),
+    ...         # backlash ellipses, so winnt normpath
+    ...         (r'c:\animals\..\cats.py', r'c:\cats.py'),
+    ...         # forward slash ellipses, so posix normpath
+    ...         (r'c:/animals/../cats.py', r'c:/cats.py'),
+    ...         # Mixture of forwardslash and backslash ellipses.
+    ...         # Windows recognizes both types of slashes as valid path separators, but posix does not (it
+    ...         # sees it as a literal character value in the path name.
+    ...         # So if we see a mixture, then assume we're on Windows and use winnt path resolving
+    ...         (r'c:/animals/../animals/..\cats.py', r'c:\cats.py'), # Resolves to Windows style (backslash)
+    ...         )
+    >>> for idx, test in enumerate(tests):
+    ...     input_, output = test
+    ...     result = flatten_path(input_)
+    ...     assert result == output, "Test %s failed: %r != %r" % (idx, result, output)
+
+    <BLANKLINE>
+    '''
+
+    # if there are backslash ellipses, resolve the path using Windows normpath.
+    # Note that ntpath.normpath also recognizes *forward* slashes as a valid path separator, so it
+    # will resolve any forward slash ellipses found in the path as well.
+    if '..\\' in path:
+        return ntpath.normpath(path)
+    # if there forward-slash ellipses, resolve the path using posixpath normpath.
+    # Note that posixpath.normpath DOES NOT recognize backward slashes as a path separator, so it
+    # will NOT resolve backslash ellipses (it interprets backslashes as characters in the
+    # path/directory name.
+    if '../' in path:
+        return posixpath.normpath(path)
+    return path
