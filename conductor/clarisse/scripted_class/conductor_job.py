@@ -12,7 +12,6 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from ix.api import OfAttr, OfEnum, OfObjectFactory
 
 
-
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
     def __init__(self):
@@ -129,8 +128,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def declare_actions(self, cls):
         """Attributes concerned with submission.
 
-        Currently only buttons. These will be cleaned up and possibly
-        removed.
+        Currently only buttons.
         """
 
         self.add_action(cls, "preview", "actions")
