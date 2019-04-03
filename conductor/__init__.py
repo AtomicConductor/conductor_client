@@ -7,6 +7,8 @@ from conductor.lib import common, loggeria
 
 # Read the config yaml file upon module import
 
+# Adding this because it supresses logging handler 
+# failures in Clarisse. 
 logging.basicConfig()
 
 try:
