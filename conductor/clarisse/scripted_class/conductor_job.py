@@ -1,7 +1,6 @@
 import traceback
 
 import ix
-print ("BEFORE ANYTHIONG")
 from conductor.clarisse import reloader
 from conductor.clarisse.clarisse_info import ClarisseInfo
 from conductor.clarisse.scripted_class import (environment_ui,
