@@ -1,4 +1,3 @@
-import ix
 from conductor.clarisse.scripted_class import variables
 
 

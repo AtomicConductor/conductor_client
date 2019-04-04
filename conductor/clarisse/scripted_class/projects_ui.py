@@ -1,6 +1,4 @@
-from conductor.native.lib.data_block import ConductorDataBlock
-
-
+ 
 def handle_project(obj, attr):
     """When project changes, stash its name on a string att.
 
@@ -19,8 +17,8 @@ def handle_project(obj, attr):
 
 def update(obj, data_block):
     """Fetch projects afresh and repopulate menu."""
-    projects = ConductorDataBlock(product="clarisse").projects()
+    projects = data_block.projects()
     project_att = obj.get_attribute("project")
     project_att.remove_all_presets()
-    for i, p in enumerate(projects):
-        project_att.add_preset(str(p["name"]), str(i))
+    for i, project in enumerate(projects):
+        project_att.add_preset(str(project["name"]), str(i))

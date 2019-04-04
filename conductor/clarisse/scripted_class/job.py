@@ -22,12 +22,12 @@ class Job(object):
     """
 
     def __init__(self, node, parent_tokens):
-        """Build job for a ConductorJob node.
+        """Build job object for a ConductorJob node.
 
         * Get the sources.
         * Get the instance type, retries, and preemptible flag.
         * Get the sequence.
-        * Fetch dependencies, get render package name (which does not exist yet).
+        * Fetch dependencies, get render package name (which may not exist).
         * Get the Conductor package IDs and environment.
         * Get the task attribute, which will be expanded later per-chunk
 
@@ -164,7 +164,9 @@ class Job(object):
         Get the machine type, preemptible flag, and number of retries if
         preemptible. We use the key from the instance_type menu and look
         up the machine spec in the shared data where the full list of
-        instance_types is stored.
+        instance_types is stored. When exhaustion API is in effect, the
+        list of available types may be dynamic, so wetell the user to
+        refresh.
         """
         instance_types = ConductorDataBlock(
             product="clarisse").instance_types()
@@ -182,8 +184,7 @@ class Job(object):
                     it['description']) == label)
         except StopIteration:
             ix.log_error(
-                "Cannot find instance type \"{}\" in Conductor. Try a refresh.".format(label))
-            result
+                "Invalid instance type \"{}\". Try a refresh.".format(label))
 
         result.update(found)
         return result
@@ -221,8 +222,9 @@ class Job(object):
         tokens["CT_CORES"] = str(self.instance["cores"])
         tokens["CT_FLAVOR"] = self.instance["flavor"]
         tokens["CT_INSTANCE"] = self.instance["description"]
-        pindex = int(self.instance["preemptible"])
-        tokens["CT_PREEMPTIBLE"] = ["non-preemptible", "preemptible"][pindex]
+        pidx = int(self.instance["preemptible"])
+        tokens["CT_PREEMPTIBLE"] = (
+            "preemptible" if pidx else "non-preemptible")
         tokens["CT_RETRIES"] = str(self.instance["retries"])
         tokens["CT_JOB"] = self.node_name
         tokens["CT_DIRECTORIES"] = " ".join(self.output_paths)
@@ -242,9 +244,9 @@ class Job(object):
         result = {}
 
         result["upload_paths"] = sorted(list(self.dependencies))
-        result["autoretry_policy"] = {'preempted': {
-            'max_retries': self.instance["retries"]}
-        } if self.instance["preemptible"] else {}
+        result["autoretry_policy"] = (
+            {'preempted': {'max_retries': self.instance["retries"]}}
+            if self.instance["preemptible"] else {})
         result["software_package_ids"] = self.package_ids
         result["preemptible"] = self.instance["preemptible"]
         result["environment"] = dict(

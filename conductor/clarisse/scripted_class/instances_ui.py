@@ -1,5 +1,3 @@
-from conductor.native.lib.data_block import ConductorDataBlock
-
 
 def handle_instance_type(obj, attr):
     """When instance type changes, remember the string.
@@ -28,5 +26,5 @@ def update(obj, data_block):
     instance_types = data_block.instance_types()
     instance_type_att = obj.get_attribute("instance_type")
     instance_type_att.remove_all_presets()
-    for i, p in enumerate(instance_types):
-        instance_type_att.add_preset(_to_menu_item(p)[1], str(i))
+    for i, instance_type in enumerate(instance_types):
+        instance_type_att.add_preset(_to_menu_item(instance_type)[1], str(i))

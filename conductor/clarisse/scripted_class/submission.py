@@ -1,16 +1,23 @@
 """Build an object to represent a Conductor submission."""
 
 import datetime
-import os
 import errno
-import tempfile
+import os
+import sys
 import traceback
 
 import ix
-from conductor.clarisse.scripted_class import common, variables
+from conductor.clarisse.scripted_class import variables
 from conductor.clarisse.scripted_class.job import Job
-from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.lib import conductor_submit
+from conductor.native.lib.data_block import ConductorDataBlock
+
+
+def _get_render_package():
+    all_vars = ix.application.get_factory().get_vars()
+    pdir = all_vars.get("PDIR").get_string()
+    pname = all_vars.get("PNAME").get_string()
+    return"{}.render".format(os.path.join(pdir, pname))
 
 
 # logger = logging.getLogger('logger')
@@ -27,7 +34,7 @@ class Submission(object):
     as commands and job titles.
     """
 
-    def __init__(self, node):
+    def __init__(self, obj):
         """Collect data from the Clarisse UI.
 
         If the submission has been instantiated from a
@@ -47,18 +54,18 @@ class Submission(object):
         correctly resolve where those tokens have been used.
         """
 
-        self.node = node
+        self.node = obj
 
         if self.node.is_kindof("ConductorJob"):
-            self.nodes = [node]
+            self.nodes = [obj]
         else:
-            raise NotImplementedError
-            # When implemented, make sure its a ConductorSubmitter
-            # and fill self.nodes from its inputs
             self.nodes = []
+            raise NotImplementedError
+            # When implemented, make sure this is a ConductorSubmitter
+            # and fill self.nodes from its inputs
 
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self.render_package = self._get_render_package()
+        self.render_package = _get_render_package()
         self.delete_render_package = self.node.get_attribute(
             "clean_up_render_package").get_bool()
 
@@ -76,7 +83,7 @@ class Submission(object):
             self.jobs.append(job)
 
     def _get_project(self):
-        """Get the applied project.
+        """Get the project from the attr.
 
         Get its ID in case the current project is no longer in the list
         of projects at conductor, throw an error.
@@ -103,8 +110,11 @@ class Submission(object):
 
         result = {"email": {}}
         address_val = self.node.get_attribute("email_addresses").get_string()
-        result["email"]["addresses"] = [email.strip()
-                                        for email in address_val.split(",") if email]
+
+        result["email"]["addresses"] = []
+        for email in address_val.split(","):
+            if email:
+                result["email"]["addresses"].append(email.strip())
 
         return result
 
@@ -135,12 +145,6 @@ class Submission(object):
 
         return tokens
 
-    def _get_render_package(self):
-        all_vars = ix.application.get_factory().get_vars()
-        pdir = all_vars.get("PDIR").get_string()
-        pname = all_vars.get("PNAME").get_string()
-        return"{}.render".format(os.path.join(pdir, pname))
-
     def write_render_package(self):
         """Take the value of the render package att and save the file.
 
@@ -152,16 +156,6 @@ class Submission(object):
         for this reason we use this feature rather than send the project
         file itself.
         """
-        path = os.path.dirname(self.render_package)
-        try:
-            os.makedirs(path)
-        except OSError as ex:
-            if ex.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                ix.log_error(
-                    "Failed to make a directory for the render package {}".format(
-                        self.render_package))
 
         success = ix.application.export_render_archive(self.render_package)
         if not success:

@@ -28,8 +28,8 @@ class Job(object):
     def create(node, tokens, scene):
         """Factory makes a Job or ChunkedJob.
 
-        ChunkedJob makes a task per chunk. Job makes one
-        task representing the whole time range.
+        ChunkedJob makes a task per chunk. Job makes one task
+        representing the whole time range.
         """
         if driver_ui.is_simulation(driver_ui.get_driver_type(node)):
             return Job(node, tokens, scene)
@@ -85,10 +85,10 @@ class Job(object):
     def _get_resources(self, scene_file):
         """Collect dependencies and environment.
 
-        Dependency scan needs the sequence so that it scans
-        only the frame range we are using. Also, to
-        determine if a parm even needs scanning for all
-        frames, the user can specify to a few frames.
+        Dependency scan needs the sequence so that it scans only the
+        frame range we are using. Also, to determine if a parm even
+        needs scanning for all frames, the user can specify to a few
+        frames.
         """
         samples = self._node.parm("pre_sample_animation").eval(
         ) and self._node.parm("animation_samples").eval()
@@ -106,10 +106,9 @@ class Job(object):
     def _get_instance(self):
         """Get everything related to the instance.
 
-        Get the machine type, preemptible flag, and number
-        of retries if preemptible. We use the key from the
-        instance_type menu and look up the machine spec in
-        the shared data where the full list of
+        Get the machine type, preemptible flag, and number of retries if
+        preemptible. We use the key from the instance_type menu and look
+        up the machine spec in the shared data where the full list of
         instance_types is stored.
         """
         result = {
@@ -130,11 +129,10 @@ class Job(object):
     def _setenv(self, parent_tokens):
         """Env tokens common for all Job types.
 
-        First we collect up token values for the job and set
-        the env to those values. Then we merge with tokens
-        from the parent so that in the preview display the
-        user can see all tokens available at the Job level,
-        including those that were set at the submitter
+        First we collect up token values for the job and set the env to
+        those values. Then we merge with tokens from the parent so that
+        in the preview display the user can see all tokens available at
+        the Job level, including those that were set at the submitter
         level.
         """
         tokens = {}
@@ -146,7 +144,8 @@ class Job(object):
         tokens["CT_CORES"] = str(self._instance["cores"])
         tokens["CT_FLAVOR"] = self._instance["flavor"]
         tokens["CT_INSTANCE"] = self._instance["description"]
-        tokens["CT_PREEMPTIBLE"] = "preemptible" if self._instance["preemptible"] else "non-preemptible"
+        tokens["CT_PREEMPTIBLE"] = (
+            "preemptible" if self._instance["preemptible"] else "non-preemptible")
         tokens["CT_RETRIES"] = str(self._instance["retries"])
         tokens["CT_JOB"] = self.node_name
         tokens["CT_SOURCE"] = self.source_path
@@ -161,10 +160,9 @@ class Job(object):
     def get_args(self):
         """Prepare the args for submission to conductor.
 
-        This dict represents the args that are specific to
-        this job. It will be joined with the submission
-        level args like notifications, and project, before
-        submitting to Conductor.
+        This dict represents the args that are specific to this job. It
+        will be joined with the submission level args like
+        notifications, and project, before submitting to Conductor.
         """
         result = {}
 
@@ -237,11 +235,10 @@ class Job(object):
     def _get_sequence(self):
         """Create the sequence object.
 
-        In a simulation job, there is no need to duplicate
-        the frame range section in the conductor::job node.
-        Therefore it is hidden, and instead the frame range
-        comes directly from the driver node. Scout frames
-        will be None.
+        In a simulation job, there is no need to duplicate the frame
+        range section in the conductor::job node. Therefore it is
+        hidden, and instead the frame range comes directly from the
+        driver node. Scout frames will be None.
         """
         start, end, step = [
             self._source["node"].parm(parm).eval() for parm in [
@@ -258,17 +255,16 @@ class Job(object):
 class ChunkedJob(Job):
     """ChunkedJob contains one task for each chunk of frames.
 
-    It also contains a set of token variables relating to
-    the chunking strategy.
+    It also contains a set of token variables relating to the chunking
+    strategy.
     """
 
     def _get_sequence(self):
         """Create the sequence object from the job UI.
 
-        As this is not a simulation job, the frames UI is
-        visible and we use it. The Sequence contains chunk
-        information, and we also get a sequence describing
-        the scout frames.
+        As this is not a simulation job, the frames UI is visible and we
+        use it. The Sequence contains chunk information, and we also get
+        a sequence describing the scout frames.
         """
         return {
             "main": frame_spec_ui.main_frame_sequence(self._node),
@@ -278,9 +274,9 @@ class ChunkedJob(Job):
     def _setenv(self, parent_tokens):
         """Extra env tokens available to the user for a ChunkedJob.
 
-        These tokens include information such as chunk_count
-        and chunk_size in case the user wants to use them to
-        construct strings.
+        These tokens include information such as chunk_count and
+        chunk_size in case the user wants to use them to construct
+        strings.
         """
         tokens = {}
         tokens["CT_SCOUT"] = str(self._sequence["scout"])

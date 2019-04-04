@@ -9,7 +9,7 @@ from conductor.clarisse.scripted_class import (environment_ui,
                                                packages_ui, projects_ui,
                                                submit_actions, variables)
 from conductor.native.lib.data_block import ConductorDataBlock
-from ix.api import OfAttr, OfEnum, OfObjectFactory
+from ix.api import OfAttr
 
 
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
@@ -44,7 +44,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             elif action_name == "best_chunk_size":
                 frames_ui.handle_best_chunk_size(obj, data)
             elif action_name == "add_metadata":
-                raise NotImplemented
+                raise NotImplementedError
             elif action_name == "reload":
                 reload(reloader)
             else:
@@ -55,7 +55,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             else:
                 ix.log_warning(ex.message)
 
-    def on_attribute_change(self, obj, attr, dirtiness, dirtiness_flags):
+    def on_attribute_change(self, obj, attr, *_):
         """Handle attributes changing value.
 
         See on_action() docstring regarding exceptions.
@@ -90,7 +90,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             else:
                 ix.log_warning(ex.message)
 
-    def declare_attributes(self, cls):
+    def declare_attributes(self, s_class):
         """All attributes and actions are declatred here.
 
         We don't use CID to declare these, despite it being
@@ -99,25 +99,25 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         """
         variables.declare()
 
-        self.declare_actions(cls)
-        self.declare_general_attributes(cls)
-        self.declare_frames_attributes(cls)
-        self.declare_machines_attributes(cls)
-        self.declare_upload_attributes(cls)
-        self.declare_packages_attributes(cls)
-        self.declare_environment_attributes(cls)
-        self.declare_task_attributes(cls)
-        self.declare_notification_attributes(cls)
+        self.declare_actions(s_class)
+        self.declare_general_attributes(s_class)
+        self.declare_frames_attributes(s_class)
+        self.declare_machines_attributes(s_class)
+        self.declare_upload_attributes(s_class)
+        self.declare_packages_attributes(s_class)
+        self.declare_environment_attributes(s_class)
+        self.declare_task_attributes(s_class)
+        self.declare_notification_attributes(s_class)
 
-        self.declare_dev_attributes(cls)
+        self.declare_dev_attributes(s_class)
 
-        ConductorJob.set_doc_strings(cls)
+        ConductorJob.set_doc_strings(s_class)
 
-    def declare_dev_attributes(self, cls):
+    def declare_dev_attributes(self, s_class):
 
-        self.add_action(cls, "reload", "development")
+        self.add_action(s_class, "reload", "development")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "verbose_errors",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
@@ -125,38 +125,38 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "development")
         attr.set_bool(False)
 
-    def declare_actions(self, cls):
+    def declare_actions(self, s_class):
         """Attributes concerned with submission.
 
         Currently only buttons.
         """
 
-        self.add_action(cls, "preview", "actions")
-        self.add_action(cls, "submit", "actions")
+        self.add_action(s_class, "preview", "actions")
+        self.add_action(s_class, "submit", "actions")
 
-    def declare_general_attributes(self, cls):
+    def declare_general_attributes(self, s_class):
         """Most commonly accessed attributes."""
-        self.add_action(cls, "setup", "general")
+        self.add_action(s_class, "setup", "general")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "title",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "general")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "images",
             OfAttr.TYPE_REFERENCE,
             OfAttr.CONTAINER_LIST,
             OfAttr.VISUAL_HINT_DEFAULT,
             "general")
-        cs = ix.api.CoreString()
-        filters = ix.api.CoreStringBasicArray(cs, 1)
+        cstr = ix.api.CoreString()
+        filters = ix.api.CoreStringBasicArray(cstr, 1)
         filters.set_item(0, "Image")
         attr.set_object_filters(filters)
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "project", OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
@@ -164,7 +164,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_long(0)
         attr.add_preset("- Not set -", "0")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "last_project",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
@@ -172,10 +172,10 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "general")
         attr.set_hidden(True)
 
-    def declare_frames_attributes(self, cls):
+    def declare_frames_attributes(self, s_class):
         """All attributes concerned with the frame range to render."""
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "use_custom_frames",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
@@ -183,7 +183,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "frames")
         attr.set_bool(False)
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "custom_frames",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
@@ -192,16 +192,16 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_hidden(True)
         attr.set_string("2,4-8,10-50x2")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "chunk_size",
             OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "frames")
         attr.set_long(5)
-        self.add_action(cls, "best_chunk_size", "frames")
+        self.add_action(s_class, "best_chunk_size", "frames")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "use_scout_frames",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
@@ -209,7 +209,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "frames")
         attr.set_bool(False)
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "scout_frames",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
@@ -218,7 +218,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_hidden(True)
         attr.set_string("2,4-8,10-50x2")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "frames_info",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
@@ -227,10 +227,10 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_read_only(True)
         attr.set_string("- Please click setup -")
 
-    def declare_machines_attributes(self, cls):
+    def declare_machines_attributes(self, s_class):
         """Attributes related to setting the instance type."""
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "preemptible",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
@@ -238,7 +238,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "machines")
         attr.set_bool(True)
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "instance_type", OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
@@ -246,7 +246,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_long(0)
         attr.add_preset("- Please click setup -", "0")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "retries",
             OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
@@ -254,7 +254,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "machines")
         attr.set_long(3)
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "last_instance_type",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
@@ -262,7 +262,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "machines")
         attr.set_hidden(True)
 
-    def declare_upload_attributes(self, cls):
+    def declare_upload_attributes(self, s_class):
         """Specify options for dependency scanning.
 
         Set to no-scan: use only cached uploads.
@@ -271,7 +271,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         frame numbers that are being used.
         """
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "dependency_scan_policy", OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
@@ -281,7 +281,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.add_preset("Glob sequence", "1")
         attr.add_preset("Smart sequence", "2")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "local_upload",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
@@ -289,7 +289,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "upload")
         attr.set_bool(True)
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "force_upload",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
@@ -297,7 +297,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "upload")
         attr.set_bool(False)
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "upload_only",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
@@ -305,7 +305,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "upload")
         attr.set_bool(False)
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "clean_up_render_package",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
@@ -313,9 +313,9 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "upload")
         attr.set_bool(True)
 
-        self.add_action(cls, "manage_extra_uploads", "upload")
+        self.add_action(s_class, "manage_extra_uploads", "upload")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "extra_uploads",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_LIST,
@@ -323,14 +323,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "cached_upload_list")
         attr.set_read_only(True)
 
-    def declare_packages_attributes(self, cls):
+    def declare_packages_attributes(self, s_class):
         """Read only attribute to store package names.
 
         All editing of the packages list happens in the popped out UI.
         """
-        self.add_action(cls, "choose_packages", "packages")
+        self.add_action(s_class, "choose_packages", "packages")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "packages",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_LIST,
@@ -338,38 +338,28 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "packages")
         attr.set_read_only(True)
 
-    def declare_task_attributes(self, cls):
+    def declare_task_attributes(self, s_class):
         """This is the task command template.
 
         It will usually contain variables that will be replaced while
         generating tasks.
         """
 
-        # attr = cls.add_attribute(
-        #     "render_package",
-        #     OfAttr.TYPE_STRING,
-        #     OfAttr.CONTAINER_SINGLE,
-        #     OfAttr.VISUAL_HINT_FILENAME_SAVE,
-        #     "task")
-        # attr.set_hidden(True)
-        
-        attr = cls.add_attribute(
+        s_class.add_attribute(
             "task_template",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "task")
 
-
-
-    def declare_environment_attributes(self, cls):
+    def declare_environment_attributes(self, s_class):
         """Set up any extra environment.
 
         Vars set here will be merged with the package environments.
         """
-        self.add_action(cls, "manage_extra_environment", "environment")
+        self.add_action(s_class, "manage_extra_environment", "environment")
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "extra_environment",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_LIST,
@@ -377,9 +367,9 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "environment")
         attr.set_read_only(True)
 
-    def declare_notification_attributes(self, cls):
+    def declare_notification_attributes(self, s_class):
         """Set email addresses to be notified on job completion."""
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "notify",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
@@ -387,7 +377,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "notifications")
         attr.set_bool(False)
 
-        attr = cls.add_attribute(
+        attr = s_class.add_attribute(
             "email_addresses",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
@@ -410,7 +400,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         ix.application.get_factory().get_all_objects("ConductorJob", nodes)
 
         host = ClarisseInfo().get()
-        detected_host_paths = data_block.package_tree().get_all_paths_to(**host)
+        detected_host_paths = data_block.package_tree().get_all_paths_to(
+            **host)
 
         for obj in nodes:
 
@@ -423,22 +414,18 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 title_attr.set_expression(
                     '"Clarisse: {} "+$CT_SEQUENCE'.format(obj.get_name()))
 
-            # render_package_attr = obj.get_attribute("render_package")
-            # if not render_package_attr.get_string():
-            #     expr = "$PDIR+\"/\"+$PNAME+\".render\""
-            #     render_package_attr.set_expression(expr)
-            # render_package_attr.set_locked(True)
-
             task_template_attr = obj.get_attribute("task_template")
             if not task_template_attr.get_string():
-                expr = '"ct_cnode "+$PDIR+"/"+$PNAME+".render -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
+                expr = '"ct_cnode "+$PDIR+"/"+$PNAME+".render -image "'
+                expr += '+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +'
+                expr += '" -directories "+$CT_DIRECTORIES'
                 task_template_attr.set_expression(expr)
             task_template_attr.set_locked(True)
 
             packages_attr = obj.get_attribute("packages")
             if not packages_attr.get_value_count():
                 for path in detected_host_paths:
-                    packages.add_string(path)
+                    packages_attr.add_string(path)
 
             inst_type_attr = obj.get_attribute("instance_type")
             if not inst_type_attr.get_long():
@@ -449,39 +436,42 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 project_attr.set_long(1)
 
     @staticmethod
-    def set_doc_strings(cls):
+    def set_doc_strings(s_class):
         """Document all the attributes here."""
 
-        cls.set_attr_doc(
+        s_class.set_attr_doc(
             "setup",
-            """Press to update the available projects and machine types. Sign in may be required.
-            This operation will also update any empty string attributes with sensible defaults.""")
+            """Press to update the available projects and machine types.
+            Sign in may be required.
+            This operation will also update any empty string attributes
+            with sensible defaults.""")
 
-        cls.set_attr_doc(
+        s_class.set_attr_doc(
             "title",
             "The title that will appear in the Conductor dashboard.")
-        cls.set_attr_doc(
+        s_class.set_attr_doc(
             "source",
             "A reference to the image that will be rendered.")
-        cls.set_attr_doc("project", "The Conductor project to render into.")
+        s_class.set_attr_doc(
+            "project", "The Conductor project to render into.")
 
-        cls.set_attr_doc(
+        s_class.set_attr_doc(
             "use_custom_frames",
             "Override the frame range specified in the image node.")
-        cls.set_attr_doc("custom_frames", "Frames to submit.")
-        cls.set_attr_doc("chunk_size", "Number of frames in a task.")
-        cls.set_attr_doc(
+        s_class.set_attr_doc("custom_frames", "Frames to submit.")
+        s_class.set_attr_doc("chunk_size", "Number of frames in a task.")
+        s_class.set_attr_doc(
             "use_scout_frames",
             "Render a subset of frames first.")
-        cls.set_attr_doc(
+        s_class.set_attr_doc(
             "scout_frames",
             "Scout frames to render. Others will be set to on-hold.")
 
-        cls.set_attr_doc(
+        s_class.set_attr_doc(
             "preemptible",
             "Preemptible instances are less expensive, but might be \
             interrupted and retried.")
-        cls.set_attr_doc("instance_type", "Machine spec.")
-        cls.set_attr_doc(
+        s_class.set_attr_doc("instance_type", "Machine spec.")
+        s_class.set_attr_doc(
             "retries",
             "How many times to retry a failed task before giving up.")
