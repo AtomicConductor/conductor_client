@@ -265,7 +265,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def declare_upload_attributes(self, cls):
         """Specify options for dependency scanning.
 
-        Set to no-scan: use only cached uploads,
+        Set to no-scan: use only cached uploads.
         Glob-scan: If filenames contain "##" or <UDIM>. They will be globbed.
         Smart-scan If filenames contain "##" the hashes will be replaced with
         frame numbers that are being used.
@@ -305,6 +305,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "upload")
         attr.set_bool(False)
 
+        attr = cls.add_attribute(
+            "clean_up_render_package",
+            OfAttr.TYPE_BOOL,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "upload")
+        attr.set_bool(True)
+
         self.add_action(cls, "manage_extra_uploads", "upload")
 
         attr = cls.add_attribute(
@@ -337,19 +345,22 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         generating tasks.
         """
 
-        attr = cls.add_attribute(
-            "render_package",
-            OfAttr.TYPE_STRING,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_FILENAME_SAVE,
-            "task")
-
+        # attr = cls.add_attribute(
+        #     "render_package",
+        #     OfAttr.TYPE_STRING,
+        #     OfAttr.CONTAINER_SINGLE,
+        #     OfAttr.VISUAL_HINT_FILENAME_SAVE,
+        #     "task")
+        # attr.set_hidden(True)
+        
         attr = cls.add_attribute(
             "task_template",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "task")
+
+
 
     def declare_environment_attributes(self, cls):
         """Set up any extra environment.
@@ -412,15 +423,15 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 title_attr.set_expression(
                     '"Clarisse: {} "+$CT_SEQUENCE'.format(obj.get_name()))
 
-            render_package_attr = obj.get_attribute("render_package")
-            if not render_package_attr.get_string():
-                expr = "$CDIR+\"/conductor/\"+$PNAME+\".render\""
-                render_package_attr.set_expression(expr)
-            render_package_attr.set_locked(True)
+            # render_package_attr = obj.get_attribute("render_package")
+            # if not render_package_attr.get_string():
+            #     expr = "$PDIR+\"/\"+$PNAME+\".render\""
+            #     render_package_attr.set_expression(expr)
+            # render_package_attr.set_locked(True)
 
             task_template_attr = obj.get_attribute("task_template")
             if not task_template_attr.get_string():
-                expr = '"ct_cnode "+get_string("render_package[0]")+" -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
+                expr = '"ct_cnode "+$PDIR+"/"+$PNAME+".render -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +" -directories "+$CT_DIRECTORIES'
                 task_template_attr.set_expression(expr)
             task_template_attr.set_locked(True)
 

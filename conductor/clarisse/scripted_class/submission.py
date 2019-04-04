@@ -58,8 +58,10 @@ class Submission(object):
             self.nodes = []
 
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self.render_package = self.node.get_attribute(
-            "render_package").get_string()
+        self.render_package = self._get_render_package()
+        self.delete_render_package = self.node.get_attribute(
+            "clean_up_render_package").get_bool()
+
         self.local_upload = self.node.get_attribute("local_upload").get_bool()
         self.force_upload = self.node.get_attribute("force_upload").get_bool()
         self.upload_only = self.node.get_attribute("upload_only").get_bool()
@@ -133,11 +135,22 @@ class Submission(object):
 
         return tokens
 
+    def _get_render_package(self):
+        all_vars = ix.application.get_factory().get_vars()
+        pdir = all_vars.get("PDIR").get_string()
+        pname = all_vars.get("PNAME").get_string()
+        return"{}.render".format(os.path.join(pdir, pname))
+
     def write_render_package(self):
         """Take the value of the render package att and save the file.
 
-        The user could use an SeExpr to set this to the clarisse tmp
-        directory, or to save it in the project.
+        A render package is a binary representation of the project
+        designed for rendering. It must be saved in the same directory
+        as the project due to the way Clarisse handles relative
+        dependencies. Currently it does not make references local,
+        however localized refs are a planned feature for Isotropix, and
+        for this reason we use this feature rather than send the project
+        file itself.
         """
         path = os.path.dirname(self.render_package)
         try:
@@ -186,6 +199,10 @@ class Submission(object):
         return result
 
     def submit(self):
+        """Submit all jobs.
+
+        Collect their responses and show them in the log.
+        """
         self.write_render_package()
         results = []
         for job_args in self.get_args():
@@ -198,6 +215,10 @@ class Submission(object):
                     traceback.format_exception(*sys.exc_info()))})
         for result in results:
             ix.log_info(result)
+
+        if self.delete_render_package:
+            if os.path.exists(self.render_package):
+                os.remove(self.render_package)
 
     @property
     def node_name(self):
