@@ -111,7 +111,7 @@ class Sequence(object):
         elements. A Progression, which is a subclass of Sequence, can be
         expressed as an arithmetic progression: i.e. start, end, step.
         """
-        if len(args) == 0:
+        if not args:
             raise TypeError("Sequence#create needs at least one arg")
         if len(args) > 1:
             # its a start, end, step - so return a Progression
@@ -133,10 +133,18 @@ class Sequence(object):
     def __init__(self, iterable, **kw):
         """Instantiate from list of ints.
 
-        This method will usually be called by a factory.
+        This method will usually be called by a factory. chunk size
+        defaults to the length of the sequence if missing or if -1 is
+        given. It is also clamped.
         """
         self._iterable = iterable
-        self.chunk_size = kw.get("chunk_size", -1)
+
+        num = len(self._iterable)
+        chunk_size = kw.get("chunk_size", num)
+        self._chunk_size = (
+            num if chunk_size < 1 else sorted([num, chunk_size])[0]
+        )
+
         self._chunk_strategy = kw.get("chunk_strategy", "linear")
 
     @property
@@ -239,7 +247,6 @@ class Sequence(object):
         output ranges.
         """
         union_frames = set(self._iterable).union(set(iterable))
-        result = Sequence.create(union_frames)
 
         return Sequence.create(
             union_frames,
@@ -335,8 +342,8 @@ class Sequence(object):
         is given, set it to max, which means the default is to output 1
         chunk.
         """
-        n = len(self._iterable)
-        self._chunk_size = n if value < 1 else sorted([n, value])[0]
+        num = len(self._iterable)
+        self._chunk_size = num if value < 1 else sorted([num, value])[0]
 
     @property
     def chunk_strategy(self):
@@ -405,7 +412,7 @@ class Progression(Sequence):
         iterable = sorted(iterable)
 
         if max_size == 1:
-            return [Sequence.create(p) for p in iterable]
+            return [Sequence.create(prog) for prog in iterable]
 
         if max_size < 1:
             max_size = len(iterable)
@@ -414,12 +421,12 @@ class Progression(Sequence):
 
         # add a sentinel to the end - see below
         iterable.append(-1)
-        p = 0
+        prog = 0
         for element in iterable:
             # if not adding to current progression, create a new progression.
-            if not _should_add(element, results[p], max_size):
-                lastp = p
-                p += 1
+            if not _should_add(element, results[prog], max_size):
+                last_prog = prog
+                prog += 1
                 results.append([])
 
                 # if the last progression only has 2 elements, then steal
@@ -429,18 +436,19 @@ class Progression(Sequence):
                 # then pair up the straggling singles later.
                 # Note that the sentinel added above ensures this rule also
                 # works on the original last element.
-                if len(results[lastp]) == 2:
-                    results[p].append(results[lastp][1])
-                    results[lastp] = results[lastp][:1]
+                if len(results[last_prog]) == 2:
+                    results[prog].append(results[last_prog][1])
+                    results[last_prog] = results[last_prog][:1]
 
-            results[p].append(element)
+            results[prog].append(element)
 
-        # remove the sentinel from the last progression, or remove the whole last
+        # remove the sentinel from the last progression,
+        # or remove the whole last
         # progression if it contains only the sentinel.
-        if len(results[p]) == 1:
+        if len(results[prog]) == 1:
             results = results[:-1]
         else:
-            results[p] = results[p][:-1]
+            results[prog] = results[prog][:-1]
 
         # Now join straggling singles into pairs if possible. Loop
         # through the singles, joining every other one to the one
@@ -454,15 +462,15 @@ class Progression(Sequence):
             else:
                 j += 1
 
-        for i, s in enumerate(singles):
+        for i, single in enumerate(singles):
             if i % 2 == 0:
-                results.append([s])
+                results.append([single])
             else:
-                results[-1].append(s)
+                results[-1].append(single)
 
         results.sort(key=lambda v: v[0])
 
-        return [Sequence.create(p) for p in results]
+        return [Sequence.create(prg) for prg in results]
 
 
 def _should_add(element, progression, max_size):

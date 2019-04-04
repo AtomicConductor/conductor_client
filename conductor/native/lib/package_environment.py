@@ -2,8 +2,7 @@
 class PackageEnvironment(object):
     """Encapsulate the submission environment vars.
 
-    Handle building up the env with a single call to
-    extend()
+    Handle building up the env with a single call to extend()
     """
 
     def __init__(self, base=None):
@@ -82,12 +81,12 @@ class PackageEnvironment(object):
     def __iter__(self):
         """Cast the object as a dict.
 
-        See the tests /tests/test_package_environment.py for
-        example use.
+        See the tests /tests/test_package_environment.py for example
+        use.
         """
-        for k, v in self._env.iteritems():
-            yield k, v
+        for key, val in self._env.iteritems():
+            yield key, val
 
-    def __getitem__(self, k):
+    def __getitem__(self, key):
         """Allow access by key."""
-        return self._env.__getitem__(k)
+        return self._env.__getitem__(key)

@@ -7,13 +7,11 @@ There are currently 3 pieces of data we get from api calls.
 
 Instance types doesn't yet come from an api call but maybe it will in future.
 
-Set the env var CONDUCTOR_MOCK_API_CLIENT in iorder to avoid hitting the DB 
+Set the env var CONDUCTOR_MOCK_API_CLIENT in iorder to avoid hitting the DB
 while developing
 """
-import os
 import json
-
-
+import os
 
 from conductor.lib import common
 from conductor.native.lib import package_tree as ptree
@@ -24,17 +22,14 @@ else:
     from conductor.lib.api_client import ApiClient
 
 
-
- 
 def _projects():
     """Get active projects from the server.
 
-    If there is a problem of any kind (exception, empty
-    list) just return the single object to signify not set,
-    otherwise prepend "not set to the list of projects". In
-    this way we can populate the menu with at least one item
-    and disable submit button(s) if not set, rather than
-    interrupting flow with an error.
+    If there is a problem of any kind (exception, empty list) just
+    return the single object to signify not set, otherwise prepend "not
+    set to the list of projects". In this way we can populate the menu
+    with at least one item and disable submit button(s) if not set,
+    rather than interrupting flow with an error.
     """
     notset = [{"id": "notset", "name": "- Not set -"}]
 
@@ -72,12 +67,11 @@ def _packages():
 class ConductorDataBlock:
     """Singleton to keep some common data accessible.
 
-    We store the list of instance types, projects, and the
-    package tree here. This data is fetched once and then
-    all the job & submitter nodes have access to it. User
-    can force an update, which might be handy if they
-    started working when offline, and then need to get real
-    before submitting.
+    We store the list of instance types, projects, and the package tree
+    here. This data is fetched once and then all the job & submitter
+    nodes have access to it. User can force an update, which might be
+    handy if they started working when offline, and then need to get
+    real before submitting.
     """
     instance = None
 
@@ -117,14 +111,13 @@ class ConductorDataBlock:
             ConductorDataBlock.clear()
 
         if not ConductorDataBlock.instance:
-            ConductorDataBlock.instance = ConductorDataBlock.__ConductorDataBlock(
-                **kw)
+            ConductorDataBlock.instance =
+            ConductorDataBlock.__ConductorDataBlock(**kw)
 
     def __getattr__(self, name):
         """Delegate method calls to the singleton.
 
-        For example, if you call
-        ConductorDataBlock.projects(), then
+        For example, if you call ConductorDataBlock.projects(), then
         __ConductorDataBlock.projects() will be called.
         """
         return getattr(self.instance, name)
@@ -133,9 +126,8 @@ class ConductorDataBlock:
 def for_houdini(force=False):
     """Factory to create or get data required by Houdini.
 
-    By specifying the product, we filter the list of
-    packages that are stored. This factory means the code
-    base does not need to be littered with calls that
-    specify the product keyword.
+    By specifying the product, we filter the list of packages that are
+    stored. This factory means the code base does not need to be
+    littered with calls that specify the product keyword.
     """
     return ConductorDataBlock(product="houdini", force=force)
