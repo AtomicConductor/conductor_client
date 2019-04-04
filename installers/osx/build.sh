@@ -44,6 +44,6 @@ pushd ${BUILD_DIR}
 ( cd root && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > flat/base.pkg/Payload
 ( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > flat/base.pkg/Scripts
 ${UTIL_DIR}/mkbom -u 0 -g 80 root flat/base.pkg/Bom
-( cd flat && ${UTIL_DIR}/xar --compression none -cf "/artifacts/conductor-${RELEASE_VERSION}.pkg" * )
+( cd flat && xar --compression none -cf "/artifacts/conductor-${RELEASE_VERSION}.pkg" * )
 popd
 popd
