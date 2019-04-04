@@ -25,7 +25,6 @@ class Task(object):
 
         # This is insane!! - I here you scream.
         # Well try reducing it and see what happens.
-        command_attr.activate_expression(False)
         command_attr.activate_expression(True)
         command_attr.activate_expression(False)
         command_attr.activate_expression(True)

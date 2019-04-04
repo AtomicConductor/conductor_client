@@ -35,15 +35,6 @@ class Job(object):
         valid and calls to evaluate string attributes will correctly resolve
         where those tokens have been used.  This is why we evaluate title,
         out_directory, metadata, and tasks after the call to _setenv()
-
-        Notes about scene_file. We could have omitted to pass the scene
-        file as an arg, and instead used the scene file contained in the
-        tokens from the parent (CT_RENDER_PACKAGE). The reason for not doing so
-        is that tokens are intended for use as variables by the user
-        only. So passing it separately signals that it is needed to
-        construct the job proper. Specifically, it is needed to append
-        to the dependency list as it is not picked up automatically by
-        the scan.
         """
 
         self.node = node
