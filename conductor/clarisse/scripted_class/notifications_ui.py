@@ -11,7 +11,7 @@ import ix
 SIMPLE_EMAIL_RE = re.compile(r"^\S+@\S+$")
 
 
-def handle_email_addresses(obj, attr):
+def handle_email_addresses(obj, _):
     """Validate email addresses when attribute changes."""
     val = obj.get_attribute("email_addresses").get_string().strip(',').strip()
     result = bool(val)
@@ -24,5 +24,5 @@ def handle_email_addresses(obj, attr):
 
 
 def notify_changed(obj, attr):
-    """If notify toggle is off, then dim out the email field."""
+    """Dim the email field based on toggle value."""
     obj.get_attribute("email_addresses").set_read_only(not attr.get_bool())

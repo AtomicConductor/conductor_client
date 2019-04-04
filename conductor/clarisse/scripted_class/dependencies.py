@@ -1,12 +1,14 @@
-import ix
 import re
+
+import ix
+from conductor.clarisse.scripted_class import frames_ui
 from conductor.native.lib.dependency_list import DependencyList
 from conductor.native.lib.sequence import Sequence
-import conductor.lib.file_utils
-from conductor.clarisse.scripted_class import frames_ui
 
 RX_HASH = re.compile("#+")
 RX_UDIM = re.compile("<UDIM>")
+GLOB = 1
+SMART = 2
 
 
 def collect(obj):
@@ -14,11 +16,9 @@ def collect(obj):
 
     Always add any extra uploads the user has chosen. Then do a scan if
     the policy is is not none.
-
     """
 
-    index = obj.get_attribute("dependency_scan_policy").get_long()
-    policy = [None, "GLOB", "SMART"][index]
+    policy = obj.get_attribute("dependency_scan_policy").get_long()
 
     result = DependencyList()
 
@@ -41,7 +41,7 @@ def collect(obj):
 
 
 def get_scan(obj, policy):
-    """Make a dependencyList according to the policy"""
+    """Make a dependencyList according to the policy."""
     result = DependencyList()
     result.add(*_resolve_file_paths(obj, policy), must_exist=False)
     result.add(*_get_references(obj, policy), must_exist=True)
@@ -64,7 +64,7 @@ def _resolve_file_paths(obj, policy):
     If policy is GLOB, then hashes in filenames will be replaced by a
     "*" and globbed later. If policy is SMART then for each filename, we
     look at its sequence definition and calculate the frames that will
-    be needed for the frame range we are rendering.
+    be needed for the frame range being rendered.
     """
     result = []
     if not policy:
@@ -81,13 +81,13 @@ def _resolve_file_paths(obj, policy):
         filename = RX_UDIM.sub("*", filename)
 
         if RX_HASH.search(filename):
-            if policy is "SMART":
+            if policy is SMART:
                 main_seq = frames_ui.main_frame_sequence(obj)
                 attr_seq = _attribute_sequence(attr, intersector=main_seq)
                 if attr_seq:
                     seq_paths = attr_seq.expand(filename)
                     result += seq_paths
-            else:  # policy is "GLOB"
+            else:  # policy is GLOB
                 result.append(re.sub(r'(#+)', "*", filename))
         else:
             result.append(filename)
@@ -136,7 +136,7 @@ def _attribute_sequence(attr, **kw):
 
     global_frame_rate = ix.application.get_prefs(
         ix.api.AppPreferences.MODE_APPLICATION).get_long_value(
-        "animation", "frames_per_second")
+            "animation", "frames_per_second")
     attr_frame_rate = obj.get_attribute("frame_rate").get_long()
     if not attr_frame_rate == global_frame_rate:
         ix.log_error(

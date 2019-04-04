@@ -9,8 +9,7 @@ geometry on demand.
 """
 import ix
 from conductor.clarisse.clarisse_info import ClarisseInfo
-from conductor.clarisse.scripted_class import (frames_ui, instances_ui,
-                                               projects_ui, variables, common)
+from conductor.clarisse.scripted_class import common
 from conductor.native.lib import package_tree as pt
 from conductor.native.lib.data_block import ConductorDataBlock
 
@@ -56,8 +55,8 @@ class PackageTreeWidget(ix.api.GuiTree):
     geometry at rendertime.
     """
 
-    def __init__(self, parent, x, y, w, h):
-        ix.api.GuiTree.__init__(self, parent, x, y, w, h)
+    def __init__(self, parent, x_val, y_val, width, height):
+        ix.api.GuiTree.__init__(self, parent, x_val, y_val, width, height)
         self.set_border_style(ix.api.GuiTree.BORDER_STYLE_FLAT)
         self.set_shaded_entries(True)
         self.enable_multi_selection(True)
@@ -75,7 +74,7 @@ class PackageTreeWidget(ix.api.GuiTree):
         self._deselect_all(self)
         self._conform(self)
 
-    def on_selection(self, sender, evtid):
+    def on_selection(self, *_):
         """Make sure only one item of each product is selected.
 
         For example, if user selects arnold 2.0, deselect arnold 3.0
@@ -109,7 +108,8 @@ class PackageTreeWidget(ix.api.GuiTree):
             child.set_is_selected(False)
             self._deselect_all(child)
 
-    def _remove_products(self, items, products):
+    @staticmethod
+    def _remove_products(items, products):
         """Make new list of items containing only those not in procucts.
 
         For example, if products contains arnold and clarisse, and items
@@ -123,7 +123,8 @@ class PackageTreeWidget(ix.api.GuiTree):
                 result.append(item)
         return result
 
-    def _unique_product(self, items):
+    @staticmethod
+    def _unique_product(items):
         """Find first item of some product.
 
         For example if if items contains 2 versions of arnold, get the
@@ -269,19 +270,19 @@ class PackageChooser(ix.api.GuiWindow):
         self.go_but.set_constraints(C_COUNT, C_BOTTOM, C_RIGHT, C_BOTTOM)
         self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
 
-    def on_clear_but(self, sender, evtid):
+    def on_clear_but(self, *_):
         self.tree_widget.clear()
 
-    def on_detect_but(self, sender, evtid):
+    def on_detect_but(self, *_):
         """Select the current package if available in the list."""
         host = ClarisseInfo().get()
         paths = ConductorDataBlock(
             product="clarisse").package_tree().get_all_paths_to(
-            **host)
+                **host)
 
         self.tree_widget.select_path_leaves(paths)
 
-    def on_cancel_but(self, sender, evtid):
+    def on_cancel_but(self, *_):
         self.hide()
 
     def _get_selected(self, item, selected_paths, path=None):
@@ -293,7 +294,7 @@ class PackageChooser(ix.api.GuiWindow):
                 selected_paths.append(child_path)
             self._get_selected(child, selected_paths, child_path)
 
-    def on_go_but(self, sender, evtid):
+    def on_go_but(self, *_):
         """Save the selected packages on the CobnductorJob node."""
         selected_items = []
         self._get_selected(self.tree_widget, selected_items)

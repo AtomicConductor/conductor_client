@@ -1,5 +1,3 @@
-import os
-
 
 def force_ae_refresh(node):
     """Trigger an attribute editor refresh.

@@ -119,6 +119,7 @@ def resolved_scout_sequence(obj):
         scout_seq = scout_frame_sequence(obj)
         if scout_seq:
             return main_seq.intersection(scout_seq)
+    return None
 
 
 def update_frame_stats_message(obj):

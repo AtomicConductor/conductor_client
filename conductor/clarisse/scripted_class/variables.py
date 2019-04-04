@@ -42,25 +42,24 @@ CONDUCTOR_VARS = [
 
 
 def declare():
-    """Make sure they are all present and have a value"""
+    """Make sure they are all present and have a value."""
     for varname in CONDUCTOR_VARS:
         put(varname, "deferred")
 
 
 def put(varname, value):
-    """Take the pain out of setting an envvar in Clarisse"""
+    """Take the pain out of setting an envvar in Clarisse."""
     all_vars = ix.application.get_factory().get_vars()
-    v = all_vars.get(varname)
-    if not v:
-        v = all_vars.add(
+    var = all_vars.get(varname)
+    if not var:
+        var = all_vars.add(
             ix.api.OfVars.TYPE_CUSTOM,
             varname,
             ix.api.OfAttr.TYPE_STRING)
-    v.set_string(value)
+    var.set_string(value)
 
 
 def get(varname):
-    """Take the pain out of getting an envvar in Clarisse"""
-    v = ix.application.get_factory().get_vars().get(varname)
-    if v:
-        return v.get_string()
+    """Take the pain out of getting an envvar in Clarisse."""
+    var = ix.application.get_factory().get_vars().get(varname)
+    return var.get_string() if var else None

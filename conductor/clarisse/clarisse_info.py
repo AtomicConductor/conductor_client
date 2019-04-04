@@ -1,5 +1,3 @@
-import os
-import re
 import ix
 from conductor.lib import package_utils
 
@@ -21,7 +19,7 @@ class ClarisseInfo(package_utils.ProductInfo):
     def get_major_version(cls):
         """e.g. 3."""
         parts = ClarisseInfo.get_version().split(".")
-        return parts[0] if len(parts) else None
+        return parts[0] if parts else None
 
     @classmethod
     def get_minor_version(cls):

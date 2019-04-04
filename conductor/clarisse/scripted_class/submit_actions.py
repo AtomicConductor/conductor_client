@@ -6,15 +6,11 @@ that will be sent to Conductor.
 
 Submit, send jobs straight to Conductor.
 """
-import json
-import os
-import sys
-import traceback
+ 
 import ix
-from conductor import CONFIG
 from conductor.clarisse.scripted_class.submission import Submission
 from conductor.clarisse.scripted_class import preview_ui
-from conductor.lib import conductor_submit
+
 
 SUCCESS_CODES_SUBMIT = [201, 204]
 
@@ -35,7 +31,7 @@ def preview(obj, _):
     _validate_images(obj)
     _validate_packages(obj)
     submission = Submission(obj)
-    ui = preview_ui.build(submission)
+    preview_ui.build(submission)
 
 
 def _validate_images(obj):

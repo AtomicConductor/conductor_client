@@ -35,27 +35,22 @@ class VarWidget(ix.api.GuiWidget):
     have a way to store the children.
     """
 
-    def __init__(self, parent, y, entry):
+    def __init__(self, parent, y_val, entry):
         super(
             VarWidget,
-            self).__init__(
-            parent,
-            PADDING,
-            y,
-            WIDTH,
-            BTN_HEIGHT)
-        x = PADDING
+            self).__init__(parent, PADDING, y_val, WIDTH, BTN_HEIGHT)
+        x_val = PADDING
         self.var_widget = ix.api.GuiLineEdit(
-            self, x, y, VAR_WDG_WIDTH, BTN_HEIGHT)
-        x += (VAR_WDG_WIDTH + PADDING)
+            self, x_val, y_val, VAR_WDG_WIDTH, BTN_HEIGHT)
+        x_val += (VAR_WDG_WIDTH + PADDING)
         self.val_widget = ix.api.GuiLineEdit(
-            self, x, y, VAL_WDG_WIDTH, BTN_HEIGHT)
-        x += (VAL_WDG_WIDTH + PADDING)
+            self, x_val, y_val, VAL_WDG_WIDTH, BTN_HEIGHT)
+        x_val += (VAL_WDG_WIDTH + PADDING)
         self.excl_cbx = ix.api.GuiCheckbox(
-            self, x, y, "excl")
-        x += (CHECKBOX_WIDTH + PADDING)
+            self, x_val, y_val, "excl")
+        x_val += (CHECKBOX_WIDTH + PADDING)
         self.delete_btn = ix.api.GuiPushButton(
-            self, x, y, SYMBOL_BUT_WIDTH, BTN_HEIGHT, "X")
+            self, x_val, y_val, SYMBOL_BUT_WIDTH, BTN_HEIGHT, "X")
 
         self.var_widget.set_text(str(entry.get("key", "VARNAME")))
         self.val_widget.set_text(str(entry.get("value", "/some/value")))
@@ -81,11 +76,11 @@ class VarWidget(ix.api.GuiWidget):
         parent. In fact the only reason to set the parent's position is
         OCD.
         """
-        y = ((index + 1) * BTN_HEIGHT) + PADDING
-        self.set_position(self.get_x(), y)
-        self.var_widget.set_position(self.var_widget.get_x(), y)
-        self.val_widget.set_position(self.val_widget.get_x(), y)
-        self.delete_btn.set_position(self.delete_btn.get_x(), y)
+        y_val = ((index + 1) * BTN_HEIGHT) + PADDING
+        self.set_position(self.get_x(), y_val)
+        self.var_widget.set_position(self.var_widget.get_x(), y_val)
+        self.val_widget.set_position(self.val_widget.get_x(), y_val)
+        self.delete_btn.set_position(self.delete_btn.get_x(), y_val)
 
     def to_json(self):
         """Serialize for storage in the node's attribute."""
@@ -100,14 +95,14 @@ class VarWidget(ix.api.GuiWidget):
 class EnvListWidget(ix.api.GuiPanel):
     """The panel within the window that provides scrollbars."""
 
-    def __init__(self, parent, y):
+    def __init__(self, parent, y_val):
         """Configure the panel and initialize an item_list.
 
         Since the GuiPanel::get_child_items is broken, we have to
         maintain our own list of children, and in fact this is the only
         reason for inheriting rather than using GuiPanel directly.
         """
-        super(EnvListWidget, self).__init__(parent, 0, y, WIDTH, HEIGHT)
+        super(EnvListWidget, self).__init__(parent, 0, y_val, WIDTH, HEIGHT)
         self.set_scroll_enabled(True)
         self.set_bottom_toolbar_visible(False)
         self.set_top_toolbar_visible(False)
@@ -123,11 +118,9 @@ class EnvListWidget(ix.api.GuiPanel):
 
     def add_entries(self, *entries):
         """Add a line and hook up the delete button event."""
-        num_existing = len(self.item_list)
-
         for entry in entries:
-            y = self._items_height()
-            wdg = VarWidget(self, y, entry)
+            y_val = self._items_height()
+            wdg = VarWidget(self, y_val, entry)
             self.item_list.append(wdg)
             self.connect(
                 wdg.delete_btn,
@@ -136,19 +129,19 @@ class EnvListWidget(ix.api.GuiPanel):
 
         self.set_virtual_size(self.get_width(), self._items_height())
 
-    def on_remove_but(self, sender, evtid):
+    def on_remove_but(self, sender, _):
         """Remove from view.
 
         We have to keep the item_list in sync.
         """
-        p = sender.get_parent()
-        i = p.index()
-        p.hide()
-        p.destroy()
+        parent = sender.get_parent()
+        i = parent.index()
+        parent.hide()
+        parent.destroy()
         self.item_list.pop(i)
         self._arrange_items()
 
-    def _arrange_items(self, **kw):
+    def _arrange_items(self):
         for i, item in enumerate(self.item_list):
             item.set_y_index(i)
 
@@ -207,10 +200,10 @@ class EnvWindow(ix.api.GuiWindow):
             "Go")
         self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
 
-    def on_add_but(self, sender, evtid):
+    def on_add_but(self, *_):
         self.panel.add_entries({})
 
-    def on_close_but(self, sender, evtid):
+    def on_close_but(self, *_):
         """Hide only.
 
         Don't destroy because hide will cause the event loop to end and
@@ -218,11 +211,11 @@ class EnvWindow(ix.api.GuiWindow):
         """
         self.hide()
 
-    def on_apply_but(self, sender, evtid):
+    def on_apply_but(self, *_):
         """Save values on the attribute and keep the window visible."""
         self._apply()
 
-    def on_go_but(self, sender, evtid):
+    def on_go_but(self, *_):
         """Save values on the attribute and hide(destroy) the window."""
         self._apply()
         self.hide()

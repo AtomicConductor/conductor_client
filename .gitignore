@@ -59,3 +59,7 @@ conductor_client.sublime-*
 build.env
 tmp/
 codeship.aes
+
+
+# analysis
+.prospector.yaml

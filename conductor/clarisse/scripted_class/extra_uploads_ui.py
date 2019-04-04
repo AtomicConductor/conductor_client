@@ -1,8 +1,7 @@
+import conductor.clarisse.scripted_class.dependencies as deps
 import ix
 from conductor.clarisse.scripted_class import common
-import conductor.clarisse.scripted_class.dependencies as deps
 from conductor.native.lib.dependency_list import DependencyList
-
 
 BTN_HEIGHT = 22
 BTN_WIDTH = 100
@@ -19,13 +18,13 @@ class FileListWidget(ix.api.GuiTree):
     clarisse.
     """
 
-    def __init__(self, parent, y):
+    def __init__(self, parent, y_val):
         """Set up the tree config.
 
         We inherit so that we can keep a list of children, due to
         GuiWidget,get_child_items being broken.
         """
-        ix.api.GuiTree.__init__(self, parent, 0, y, WIDTH, HEIGHT)
+        ix.api.GuiTree.__init__(self, parent, 0, y_val, WIDTH, HEIGHT)
         self.set_border_style(ix.api.GuiTree.BORDER_STYLE_FLAT)
         self.set_shaded_entries(True)
         self.enable_multi_selection(True)
@@ -71,7 +70,7 @@ class FileListWidget(ix.api.GuiTree):
             return
         self.destroy_selected_items()
         self.refresh()
-        self._remove_entries_from_sync_item_list(indices)
+        self._remove_from_sync_itet(indices)
 
     def destroy_all(self):
         """Clear all items."""
@@ -89,7 +88,7 @@ class FileListWidget(ix.api.GuiTree):
         indices.reverse()
         return indices
 
-    def _remove_entries_from_sync_item_list(self, indices):
+    def _remove_from_sync_list(self, indices):
         for index in indices:
             self.item_list.pop(index)
 
@@ -184,7 +183,7 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
             "Go")
         self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
 
-    def on_browse_but(self, sender, evtid):
+    def on_browse_but(self, *_):
         """User may browse for files."""
         app = ix.application
         title = "Select extra uploads..."
@@ -192,33 +191,33 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         filenames = ix.api.GuiWidget.open_files(app, "", title, mask)
         self.file_list_wdg.add_entries(sorted(filenames))
 
-    def on_smart_scan_but(self, sender, evtid):
+    def on_smart_scan_but(self, *_):
         filenames = deps.get_scan(self.node, "SMART")
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 
-    def on_glob_scan_but(self, sender, evtid):
+    def on_glob_scan_but(self, *_):
         filenames = deps.get_scan(self.node, "GLOB")
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 
-    def on_remove_sel_but(self, sender, evtid):
+    def on_remove_sel_but(self, *_):
         self.file_list_wdg.destroy_selelcted()
 
-    def on_remove_all_but(self, sender, evtid):
+    def on_remove_all_but(self, *_):
         self.file_list_wdg.destroy_all()
 
-    def on_close_but(self, sender, evtid):
+    def on_close_but(self, *_):
         """Hide the widget.
 
         Destruction will be be triggered as the event loop ends.
         """
         self.hide()
 
-    def on_apply_but(self, sender, evtid):
+    def on_apply_but(self, *_):
         self._apply()
 
-    def on_go_but(self, sender, evtid):
+    def on_go_but(self, *_):
         self._apply()
         self.hide()
 
