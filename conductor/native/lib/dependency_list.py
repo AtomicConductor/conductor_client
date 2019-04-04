@@ -1,6 +1,5 @@
 
 import os
-import random
 from itertools import takewhile
 import glob
 
@@ -30,8 +29,8 @@ class DependencyList(object):
         no deduplication will happen at this time.
         """
         must_exist = kw.get("must_exist", True)
-        for f in files:
-            self._add_a_file(f, must_exist)
+        for file in files:
+            self._add_a_file(file, must_exist)
 
     def _deduplicate(self):
         """Deduplicate if it has become dirty.
@@ -89,7 +88,7 @@ class DependencyList(object):
 
         If the filesystem root is the common path, return os.sep.
         """
-        if not len(self._entries):
+        if not self._entries:
             return None
 
         def _all_the_same(rhs):
