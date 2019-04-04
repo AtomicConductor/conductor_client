@@ -146,7 +146,11 @@ def _attribute_sequence(attr, **kw):
     start = obj.get_attribute("start_frame").get_long()
     end = obj.get_attribute("end_frame").get_long()
 
+
+
     if intersector:
+        # If there's a frame offset on the attribute, then we need to 
+        # do the intersection in the context of that offset.
         offset = obj.get_attribute("frame_offset").get_long()
         return Sequence.create(start, end, 1).offset(
             offset).intersection(intersector).offset(-offset)
