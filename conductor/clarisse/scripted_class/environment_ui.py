@@ -200,10 +200,10 @@ class EnvWindow(ix.api.GuiWindow):
             "Go")
         self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
 
-    def on_add_but(self, *_):
+    def on_add_but(self, sender, eventid):
         self.panel.add_entries({})
 
-    def on_close_but(self, *_):
+    def on_close_but(self, sender, eventid):
         """Hide only.
 
         Don't destroy because hide will cause the event loop to end and
@@ -211,11 +211,11 @@ class EnvWindow(ix.api.GuiWindow):
         """
         self.hide()
 
-    def on_apply_but(self, *_):
+    def on_apply_but(self, sender, eventid):
         """Save values on the attribute and keep the window visible."""
         self._apply()
 
-    def on_go_but(self, *_):
+    def on_go_but(self, sender, eventid):
         """Save values on the attribute and hide(destroy) the window."""
         self._apply()
         self.hide()

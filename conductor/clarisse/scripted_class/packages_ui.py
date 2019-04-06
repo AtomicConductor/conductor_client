@@ -74,7 +74,7 @@ class PackageTreeWidget(ix.api.GuiTree):
         self._deselect_all(self)
         self._conform(self)
 
-    def on_selection(self, *_):
+    def on_selection(self, sender, eventid):
         """Make sure only one item of each product is selected.
 
         For example, if user selects arnold 2.0, deselect arnold 3.0
@@ -270,10 +270,10 @@ class PackageChooser(ix.api.GuiWindow):
         self.go_but.set_constraints(C_COUNT, C_BOTTOM, C_RIGHT, C_BOTTOM)
         self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
 
-    def on_clear_but(self, *_):
+    def on_clear_but(self, sender, eventid):
         self.tree_widget.clear()
 
-    def on_detect_but(self, *_):
+    def on_detect_but(self, sender, eventid):
         """Select the current package if available in the list."""
         host = ClarisseInfo().get()
         paths = ConductorDataBlock(
@@ -282,7 +282,7 @@ class PackageChooser(ix.api.GuiWindow):
 
         self.tree_widget.select_path_leaves(paths)
 
-    def on_cancel_but(self, *_):
+    def on_cancel_but(self, sender, eventid):
         self.hide()
 
     def _get_selected(self, item, selected_paths, path=None):
@@ -294,7 +294,7 @@ class PackageChooser(ix.api.GuiWindow):
                 selected_paths.append(child_path)
             self._get_selected(child, selected_paths, child_path)
 
-    def on_go_but(self, *_):
+    def on_go_but(self, sender, eventid):
         """Save the selected packages on the CobnductorJob node."""
         selected_items = []
         self._get_selected(self.tree_widget, selected_items)

@@ -85,10 +85,10 @@ class PreviewWindow(ix.api.GuiWindow):
         json_jobs = json.dumps(submission_args, indent=3, sort_keys=True)
         self.text_widget.set_text(json_jobs)
 
-    def on_add_but(self, *_):
+    def on_add_but(self, sender, eventid):
         self.panel.add_entries({})
 
-    def on_close_but(self, *_):
+    def on_close_but(self, sender, eventid):
         """Hide only.
 
         Don't destroy because hide will cause the event loop to end and
@@ -96,11 +96,11 @@ class PreviewWindow(ix.api.GuiWindow):
         """
         self.hide()
 
-    def on_apply_but(self, *_):
+    def on_apply_but(self, sender, eventid):
         """Submit and keep the window visible."""
         self.submission.submit()
 
-    def on_go_but(self, *_):
+    def on_go_but(self, sender, eventid):
         """Submit and hide(destroy) the window."""
         self.submission.submit()
         self.hide()

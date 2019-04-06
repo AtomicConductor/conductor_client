@@ -111,8 +111,7 @@ class ConductorDataBlock:
             ConductorDataBlock.clear()
 
         if not ConductorDataBlock.instance:
-            ConductorDataBlock.instance =
-            ConductorDataBlock.__ConductorDataBlock(**kw)
+            ConductorDataBlock.instance = ConductorDataBlock.__ConductorDataBlock(**kw)
 
     def __getattr__(self, name):
         """Delegate method calls to the singleton.
