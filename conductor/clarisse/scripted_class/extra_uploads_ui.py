@@ -183,7 +183,7 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
             "Go")
         self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
 
-    def on_browse_but(self, *_):
+    def on_browse_but(self, sender, eventid):
         """User may browse for files."""
         app = ix.application
         title = "Select extra uploads..."
@@ -191,33 +191,33 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         filenames = ix.api.GuiWidget.open_files(app, "", title, mask)
         self.file_list_wdg.add_entries(sorted(filenames))
 
-    def on_smart_scan_but(self, *_):
+    def on_smart_scan_but(self, sender, eventid):
         filenames = deps.get_scan(self.node, "SMART")
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 
-    def on_glob_scan_but(self, *_):
+    def on_glob_scan_but(self, sender, eventid):
         filenames = deps.get_scan(self.node, "GLOB")
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 
-    def on_remove_sel_but(self, *_):
+    def on_remove_sel_but(self, sender, eventid):
         self.file_list_wdg.destroy_selelcted()
 
-    def on_remove_all_but(self, *_):
+    def on_remove_all_but(self, sender, eventid):
         self.file_list_wdg.destroy_all()
 
-    def on_close_but(self, *_):
+    def on_close_but(self, sender, eventid):
         """Hide the widget.
 
         Destruction will be be triggered as the event loop ends.
         """
         self.hide()
 
-    def on_apply_but(self, *_):
+    def on_apply_but(self, sender, eventid):
         self._apply()
 
-    def on_go_but(self, *_):
+    def on_go_but(self, sender, eventid):
         self._apply()
         self.hide()
 
