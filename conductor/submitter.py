@@ -10,6 +10,7 @@ from pprint import pformat
 from Qt import QtGui, QtCore, QtWidgets
 import sys
 import traceback
+from conductor.lib.lsseq import seqLister
 
 try:
     imp.find_module('conductor')
@@ -24,6 +25,7 @@ from conductor import submitter_resources  # This is a required import  so that 
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
 SUCCESS_CODES_SUBMIT = [201, 204]
+TASK_CONFIRMATION_THRESHOLD = 1000
 
 logger = logging.getLogger(__name__)
 
@@ -824,6 +826,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         try:
             if not self.validateJobPackages():
                 return
+            if not self.checkJobSize():
+                return
+            
             data = self.runPreSubmission()
             if data:
                 response_code, response = self.runConductorSubmission(data)
@@ -1068,6 +1073,48 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         if self.getPreemptibleCheckbox():
             max_retries = self.getAutoretryCount()
             return {"preempted": {"max_retries": max_retries}}
+
+
+
+    def checkJobSize(self):
+        """
+        Make sure the user is aware they are about submit a large job.
+
+        If a large job is submiited by mistake, it can be difficult to 
+        kill it. Or worse, if the customer fails to check the dashboard 
+        they could run up thousands of dollars rendering black.
+        """
+        logger.debug("Check job size")
+        frames_str = self.getFrameRangeString()
+        frames = seqLister.expandSeq(frames_str.split(","), None)
+        chunk_size = self.getChunkSize()
+        task_count = len(TaskFramesGenerator(
+            frames, chunk_size=chunk_size, uniform_chunk_step=True))
+        if task_count < TASK_CONFIRMATION_THRESHOLD:
+            return True
+
+        logger.debug("{} is {:d} frames divided into chunks of {:d}".format(
+            frames_str, 
+            len(frames),
+            chunk_size)
+        )
+        logger.debug("Confirm submission of {} tasks".format(task_count))
+    
+        title = "Warning: Large Job!"
+
+        message = """<html><head/><body>
+        <p>You are about to submit {} tasks.</p>
+        <p><strong>Are you sure?</strong></p>
+        </body></html>
+        """.format(task_count)
+
+        sure, _ = pyside_utils.launch_yes_no_dialog(
+            title, message, show_not_again_checkbox=False, parent=None)
+
+        log_msg = "Confirmed submission of a very large job" if sure else "Canceled large job"
+        logger.info(log_msg)
+        return sure
+
 
     def launchScoutFramesDialog(self, default_scout_frames):
         '''
@@ -1854,7 +1901,7 @@ class TaskFramesGenerator(object):
         frames have been dispensed/allocated).
         '''
 
-        # Get the list of frames that is appriate for the chunk size
+        # Get the list of frames that is appropriate for the chunk size
         task_frames = self.get_next_frames_chunk(chunk_size, uniform_chunk_step)
         logger.debug("task_frames: %s", task_frames)
 
@@ -1935,6 +1982,16 @@ class TaskFramesGenerator(object):
                 break
 
         return task_frames
+
+
+    def  __len__(self):
+        '''
+        Support len().
+
+        Count the number of generated tasks by iterating.
+        '''
+        return sum([1 for _a, _b, _c, _d in self])
+
 
     @classmethod
     def derive_steps(cls, frames):
