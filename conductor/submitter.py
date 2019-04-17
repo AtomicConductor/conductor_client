@@ -1080,13 +1080,18 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         """
         Make sure the user is aware they are about submit a large job.
 
-        If a large job is submiited by mistake, it can be difficult to 
-        kill it. Or worse, if the customer fails to check the dashboard 
-        they could run up thousands of dollars rendering black.
+        A large job has more tasks than a threshold. 
+        We first test the number of frames, because calculating 
+        the number of tasks is slow. If frames length is below the
+        threshold, then there can't possibly be too many tasks. If 
+        there are too many tasks, then show the confirmation dialog.
+
         """
         logger.debug("Check job size")
         frames_str = self.getFrameRangeString()
         frames = seqLister.expandSeq(frames_str.split(","), None)
+        if len(frames) < TASK_CONFIRMATION_THRESHOLD:
+            return True
         chunk_size = self.getChunkSize()
         task_count = len(TaskFramesGenerator(
             frames, chunk_size=chunk_size, uniform_chunk_step=True))
