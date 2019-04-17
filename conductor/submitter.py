@@ -1094,8 +1094,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             return True
         chunk_size = self.getChunkSize()
 
+        # To count the tasks, we have to make a generator and sum 1 for every yield
         task_counter =  TaskFramesGenerator( frames, chunk_size=chunk_size, uniform_chunk_step=True)
-        task_count = sum((1 for _ in task_counter))
+        task_count = sum(1 for _ in task_counter)
 
 
         if task_count < TASK_CONFIRMATION_THRESHOLD:
