@@ -1093,8 +1093,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         if len(frames) < TASK_CONFIRMATION_THRESHOLD:
             return True
         chunk_size = self.getChunkSize()
-        task_count = len(TaskFramesGenerator(
-            frames, chunk_size=chunk_size, uniform_chunk_step=True))
+
+        task_counter =  TaskFramesGenerator( frames, chunk_size=chunk_size, uniform_chunk_step=True)
+        task_count = sum((1 for _ in task_counter))
+
+
         if task_count < TASK_CONFIRMATION_THRESHOLD:
             return True
 
@@ -1987,16 +1990,6 @@ class TaskFramesGenerator(object):
                 break
 
         return task_frames
-
-
-    def  __len__(self):
-        '''
-        Support len().
-
-        Count the number of generated tasks by iterating.
-        '''
-        return sum([1 for _a, _b, _c, _d in self])
-
 
     @classmethod
     def derive_steps(cls, frames):
