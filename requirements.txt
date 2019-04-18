@@ -1,3 +1,4 @@
+fileseq==1.7.1
 pyaml
 requests
 urllib3
