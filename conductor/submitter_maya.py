@@ -1,11 +1,12 @@
 
 from conductor.lib import maya_utils, pyside_utils, file_utils, common, exceptions, package_utils
 from conductor import CONFIG, submitter
-from conductor.lib.lsseq import seqLister
+
 from maya import OpenMayaUI
 import os
 import imp
 import logging
+import fileseq
 import sys
 import traceback
 import uuid
@@ -268,12 +269,12 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         chunk_size = self.getChunkSize()
         frames_str = self.getFrameRangeString()
-        frames = seqLister.expandSeq(frames_str.split(","), None)
+        frame_ints = list(fileseq.FrameSet(frames_str))
 
         # Use the task frames generator to dispense the appropriate amount of
         # frames per task, generating a command for each task to execute
         tasks_data = []
-        frames_generator = submitter.TaskFramesGenerator(frames, chunk_size=chunk_size, uniform_chunk_step=True)
+        frames_generator = submitter.TaskFramesGenerator(frame_ints, chunk_size=chunk_size, uniform_chunk_step=True)
         for start_frame, end_frame, step, task_frames in frames_generator:
             task_cmd = cmd_template % (renderer_arg,
                                        start_frame,
@@ -286,7 +287,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             # Generate tasks data
             # convert the list of frame ints into a single string expression
             # TODO:(lws) this is silly. We should keep this as a native int list.
-            task_frames_str = ", ".join(seqLister.condenseSeq(task_frames))
+            task_frames_str = fileseq.FrameSet.framesToFrameRange(task_frames)
             tasks_data.append({"command": task_cmd,
                                "frames": task_frames_str})
         return tasks_data

@@ -1,3 +1,4 @@
+import fileseq
 import logging
 import os
 import sys
@@ -13,7 +14,6 @@ except ImportError, e:
 
 from conductor import CONFIG, submitter
 from conductor.lib import file_utils, nuke_utils, pyside_utils, common, exceptions, package_utils
-from conductor.lib.lsseq import seqLister
 
 logger = logging.getLogger(__name__)
 
@@ -164,12 +164,12 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
 
         chunk_size = self.getChunkSize()
         frames_str = self.getFrameRangeString()
-        frames = seqLister.expandSeq(frames_str.split(","), None)
+        frame_ints = list(fileseq.FrameSet(frames_str))
 
         # Use the task frames generator to dispense the appropriate amount of
         # frames per task, generating a command for each task to execute
         tasks_data = []
-        frames_generator = submitter.TaskFramesGenerator(frames, chunk_size=chunk_size, uniform_chunk_step=True)
+        frames_generator = submitter.TaskFramesGenerator(frame_ints, chunk_size=chunk_size, uniform_chunk_step=True)
         for start_frame, end_frame, step, task_frames in frames_generator:
             task_cmd = cmd_template % (view_args,
                                        write_nodes_args,
@@ -181,7 +181,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             # generate tasks data
             # convert the list of frame ints into a single string expression
             # TODO:(lws) this is silly. We should keep this as a native int list.
-            task_frames_str = ", ".join(seqLister.condenseSeq(task_frames))
+            task_frames_str = fileseq.FrameSet.framesToFrameRange(task_frames)
             tasks_data.append({"command": task_cmd,
                                "frames": task_frames_str})
 

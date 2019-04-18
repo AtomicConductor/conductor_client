@@ -365,11 +365,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             1001x3
             1001,1004x3
         '''
-        # Establish regex "building blocks" to form full reg ex
-        rx_number = "\d+"  # The "number" building block, eg.  acceptes 1001, or 1, or 002
-        rx_step = "x\d"  # the "step" building block, e.g. accepts x1000, or x1, or x002
-        rx_range_w_step = r"(?:%s-%s(?:%s)?)+" % (rx_number, rx_number, rx_step)  # the "range w option step" building block, e.g 100-100, or 100-100x3, oor
-        rx_validation = "((%s|%s), +)+" % (rx_number, rx_range_w_step)  # The final regex which uses a space and comma as a delimeter between multiple frame strings
+        # Establish regex "building blocks"...
+        rx_number = r"-?\d+"  # The "number" building block, e.g.  "1001" , "1",  "-1" , "-002"
+        rx_step = r"x\d"  # the "step" building block, e.g. "x1000", "x1", "x002"
+        rx_range_w_step = r"(?:%s-%s(?:%s)?)+" % (rx_number, rx_number, rx_step)  # the "range w option step" building block, e.g 100-100, or 100-100x3
+        rx_validation = r"((%s|%s),)+" % (rx_number, rx_range_w_step)  # The final regex which uses a comma as a delimiter between multiple frame strings
         self.frame_str_validator = QtGui.QRegExpValidator(QtCore.QRegExp(rx_validation), None)
 
     def setupMenuBar(self):
@@ -1026,7 +1026,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                 end = self.getEndFrame()
                 middle = int((float(start) + float(end)) / 2)
                 frames = sorted(set([int(start), int(middle), int(end)]))
-                scout_frames_str = ", ".join([str(f) for f in frames])
+                scout_frames_str = ",".join([str(f) for f in frames])
                 return scout_frames_str
         except:
             logger.warning("Failed to load default scout frames\n%s", traceback.format_exc())
@@ -1076,10 +1076,10 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         been submitted previous for the current file (read from preferences).
         '''
         lineedit_tooltip = ("Specify desired scout frames:\n"
-                            "    - individual frame(s), e.g \"1001, 1006\"\n"
+                            "    - individual frame(s), e.g \"1001,1006\"\n"
                             "    - frame range, e.g \"1001-1006\"\n"
                             "    - frame range with frame skipping. e.g: \"1001-1006x2\"\n"
-                            "    - or a mixture, e.g \"1001, 1005-1010, 1020-1030x5\"")
+                            "    - or a mixture, e.g \"1001,1005-1010,1020-1030x5\"")
 
         title = "Scout Frames"
         label_txt = "Designate Scout frames"

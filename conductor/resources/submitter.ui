@@ -280,7 +280,7 @@
     - individual frame(s), e.g &quot;1001, 1006&quot;
     - frame range, e.g &quot;1001-1006&quot;
     - frame range with frame skipping. e.g: &quot;1001-1006x2&quot;
-    - or a mixture, e.g &quot;1001, 1005-1010, 1020-1030x5&quot;</string>
+    - or a mixture, e.g &quot;1001,1005-1010,1020-1030x5&quot;</string>
                    </property>
                    <property name="text">
                     <string>Custom</string>
@@ -450,10 +450,10 @@
                      <widget class="QLineEdit" name="ui_custom_lnedt">
                       <property name="toolTip">
                        <string>Use a custom frame range string. Specify...
-    - individual frame(s), e.g &quot;1001, 1006&quot;
+    - individual frame(s), e.g &quot;1001,1006&quot;
     - frame range, e.g &quot;1001-1006&quot;
     - frame range with frame skipping. e.g: &quot;1001-1006x2&quot;
-    - or a mixture, e.g &quot;1001, 1005-1010, 1020-1030x5&quot;</string>
+    - or a mixture, e.g &quot;1001,1005-1010,1020-1030x5&quot;</string>
                       </property>
                       <property name="isFileUserPref" stdset="0">
                        <bool>true</bool>
