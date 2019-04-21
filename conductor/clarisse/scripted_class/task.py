@@ -22,8 +22,11 @@ class Task(object):
 
         self.tokens = self._setenv(parent_tokens)
 
-        # This is insane!! - I here you scream.
-        # Well try reducing it and see what happens.
+        # The command expression referred to another attribute 
+        # with an expression on it. In order to force it to
+        # evaluate correctly, it needs to be turned on then off 
+        # then back on. If this is not done, all the frames 
+        # have the same range,
         command_attr.activate_expression(True)
         command_attr.activate_expression(False)
         command_attr.activate_expression(True)

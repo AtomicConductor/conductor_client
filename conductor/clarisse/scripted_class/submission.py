@@ -20,9 +20,6 @@ def _get_render_package():
     return"{}.render".format(os.path.join(pdir, pname))
 
 
-# logger = logging.getLogger('logger')
-# logger.warning('The system may break down')
-
 class Submission(object):
     """class Submission holds all data needed for a submission.
 
@@ -59,10 +56,7 @@ class Submission(object):
         if self.node.is_kindof("ConductorJob"):
             self.nodes = [obj]
         else:
-            self.nodes = []
             raise NotImplementedError
-            # When implemented, make sure this is a ConductorSubmitter
-            # and fill self.nodes from its inputs
 
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.render_package = _get_render_package()

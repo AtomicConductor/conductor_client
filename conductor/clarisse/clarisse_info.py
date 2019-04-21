@@ -40,7 +40,7 @@ class ClarisseInfo(package_utils.ProductInfo):
 
     @classmethod
     def get_vendor(cls):
-        """isotropix make Clarisse."""
+        """isotropix makes Clarisse."""
         return "isotropix"
 
 
