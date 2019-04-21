@@ -10,6 +10,7 @@ from pprint import pformat
 from Qt import QtGui, QtCore, QtWidgets
 import sys
 import traceback
+from conductor.lib.lsseq import seqLister
 
 try:
     imp.find_module('conductor')
@@ -29,6 +30,7 @@ from conductor import submitter_resources
 PACKAGE_DIRPATH = os.path.dirname(__file__)
 RESOURCES_DIRPATH = os.path.join(PACKAGE_DIRPATH, "resources")
 SUCCESS_CODES_SUBMIT = [201, 204]
+TASK_CONFIRMATION_THRESHOLD = 1000
 
 logger = logging.getLogger(__name__)
 
@@ -807,6 +809,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         try:
             if not self.validateJobPackages():
                 return
+            if not self.checkJobSize():
+                return
+            
             data = self.runPreSubmission()
             if data:
                 response_code, response = self.runConductorSubmission(data)
@@ -1063,6 +1068,57 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         if self.getPreemptibleCheckbox():
             max_retries = self.getAutoretryCount()
             return {"preempted": {"max_retries": max_retries}}
+
+
+
+    def checkJobSize(self):
+        """
+        Make sure the user is aware they are about submit a large job.
+
+        A large job has more tasks than a threshold. 
+        We first test the number of frames, because calculating 
+        the number of tasks is slow. If frames length is below the
+        threshold, then there can't possibly be too many tasks. If 
+        there are too many tasks, then show the confirmation dialog.
+
+        """
+        logger.debug("Check job size")
+        frames_str = self.getFrameRangeString()
+        frames = seqLister.expandSeq(frames_str.split(","), None)
+        if len(frames) < TASK_CONFIRMATION_THRESHOLD:
+            return True
+        chunk_size = self.getChunkSize()
+
+        # To count the tasks, we have to make a generator and sum 1 for every yield
+        task_counter =  TaskFramesGenerator( frames, chunk_size=chunk_size, uniform_chunk_step=True)
+        task_count = sum(1 for _ in task_counter)
+
+
+        if task_count < TASK_CONFIRMATION_THRESHOLD:
+            return True
+
+        logger.debug("{} is {:d} frames divided into chunks of {:d}".format(
+            frames_str, 
+            len(frames),
+            chunk_size)
+        )
+        logger.debug("Confirm submission of {} tasks".format(task_count))
+    
+        title = "Warning: Large Job!"
+
+        message = """<html><head/><body>
+        <p>You are about to submit {} tasks.</p>
+        <p><strong>Are you sure?</strong></p>
+        </body></html>
+        """.format(task_count)
+
+        sure, _ = pyside_utils.launch_yes_no_dialog(
+            title, message, show_not_again_checkbox=False, parent=None)
+
+        log_msg = "Confirmed submission of a very large job" if sure else "Canceled large job"
+        logger.info(log_msg)
+        return sure
+
 
     def launchScoutFramesDialog(self, default_scout_frames):
         """Launch a dialog box to prompt the user to enter their desired scout
@@ -1907,6 +1963,7 @@ class TaskFramesGenerator(object):
         # Get the list of frames that is appriate for the chunk size
         task_frames = self.get_next_frames_chunk(
             chunk_size, uniform_chunk_step)
+
         logger.debug("task_frames: %s", task_frames)
 
         if task_frames:
