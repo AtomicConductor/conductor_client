@@ -59,7 +59,7 @@ class FileListWidget(ix.api.GuiTree):
             self.item_list.append(item)
         self.refresh()
 
-    def destroy_selelcted(self):
+    def destroy_selected(self):
         """Remove the selected items.
 
         Also remove from the item_list.
@@ -202,7 +202,7 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_remove_sel_but(self, sender, eventid):
-        self.file_list_wdg.destroy_selelcted()
+        self.file_list_wdg.destroy_selected()
 
     def on_remove_all_but(self, sender, eventid):
         self.file_list_wdg.destroy_all()
@@ -233,8 +233,9 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         common.force_ae_refresh(self.node)
 
 
-def build(node, _):
+def build(*args):
     """Pop up a window to choose extra upload files."""
+    node = args[0]
     win = ExtraUploadsWindow(node)
     win.show_modal()
 

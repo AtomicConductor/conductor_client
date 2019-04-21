@@ -229,13 +229,14 @@ class EnvWindow(ix.api.GuiWindow):
         common.force_ae_refresh(self.node)
 
 
-def build(node, _):
+def build(*args):
     """Show the window.
 
     Populate it with existing entries from the extra_env attribute. The
     window is shown in modal mode so we don't keep losing the damn thing
     behind other stuff. Listen for events until the window is hidden.
     """
+    node = args[0]
     win = EnvWindow(node)
 
     attr = node.get_attribute("extra_environment")
@@ -250,6 +251,3 @@ def build(node, _):
     while win.is_shown():
         ix.application.check_for_events()
 
-    # win.destroy is recommended here but makes Clarisse crash
-    # when saving the scene
-    # win.destroy()

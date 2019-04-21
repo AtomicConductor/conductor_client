@@ -55,7 +55,6 @@ Unfortunately, there seems to be a bug in Clarisse on OSX where environment vari
 * Click the Setup button.
 * .
 * Add images to the images section in the attribute editor.
-* Add images to the images section in the attribute editor.
 
 *docs in progress*
 
@@ -71,9 +70,6 @@ A custom frame spec may be useful when a previous render failed on certain frame
 #### Chunking
 If a scene renders fast but is slow to load, it can make sense to render many frames in each task. A ConductorJob can break the frame range into chunks so that tasks may be distributed to machines in the cloud. When you set the desired size of chunks, the resulting number of chunks will be displayed in the UI.
 
-#### Custom submission scripts
-
-*in progress*
 
 
 

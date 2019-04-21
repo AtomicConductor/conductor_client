@@ -96,7 +96,7 @@ A custom frame spec may be useful when a previous render failed on certain frame
 #### Chunking
 If a scene renders fast but is slow to load, it can make sense to render many frames in each task. A Conductor job can break the frame range into chunks so that tasks may be distributed to machines in the cloud. When you set the desired size of chunks, the resulting number of chunks will be displayed in the UI.
 
-> By default, chunks will be arithmetic progressions. An arithmetic progression is a set of frames that can be expressed as start/end/step. Unless you are providing a custom render script that can handle an arbitrary frame spec, you should leave the `progressions` checkbox on. 
+By default, chunks will be arithmetic progressions. An arithmetic progression is a set of frames that can be expressed as start/end/step. Unless you are providing a custom render script that can handle an arbitrary frame spec, you should leave the `progressions` checkbox on. 
 
 
 ### Simulations
@@ -104,11 +104,7 @@ If a scene renders fast but is slow to load, it can make sense to render many fr
 To cache a simulation, simply connect a Dynamics ROP. You'll notice the `frames` section disappears from the UI. A simulation is always run on one task and the frame range is always derived from the input ROP. You still have access to variables relating to the frame range in case you want to use them in the job title an so on.
 
 
-#### Custom submission scripts
-
-*in progress*
-
-----
+ 
 
 ### Reference: Conductor job
 
@@ -258,13 +254,7 @@ Choose the Conductor project in which to run the job.
 **On failure** `email_on_failure`
     Currently not used
  
-
-
-### Reference: Conductor submitter
-
-*wip*
-
-
+ 
 
 
 

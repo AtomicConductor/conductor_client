@@ -15,19 +15,21 @@ from conductor.clarisse.scripted_class import preview_ui
 SUCCESS_CODES_SUBMIT = [201, 204]
 
 
-def submit(obj, _):
+def submit(*args):
     """Validate and submit."""
+    obj = args[0]
     _validate_images(obj)
     _validate_packages(obj)
     submission = Submission(obj)
     submission.submit()
 
 
-def preview(obj, _):
-    """Validate and show the scrip in a panel.
+def preview(*args):
+    """Validate and show the script in a panel.
 
     Submission can be invoked from the preview panel.
     """
+    obj = args[0]
     _validate_images(obj)
     _validate_packages(obj)
     submission = Submission(obj)

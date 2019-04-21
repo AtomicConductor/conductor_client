@@ -62,9 +62,8 @@ def main():
         if match:
             prog = "{} {}%\n".format(match.group(1), match.group(2))
             sys.stdout.write(prog)
-            sys.stdout.flush()
         else:
             sys.stderr.write(">>> {}\n".format(stripped_line))
-
+    sys.stdout.flush()
 
 main()

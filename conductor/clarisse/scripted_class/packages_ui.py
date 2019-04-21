@@ -310,11 +310,12 @@ class PackageChooser(ix.api.GuiWindow):
         common.force_ae_refresh(self.node)
 
 
-def build(node, _):
+def build(*args):
     """Called from the attribute editor to build the window.
 
     Highlight any existing packages entries for the node.
     """
+    node = args[0]
     window = PackageChooser(node)
 
     attr = node.get_attribute("packages")

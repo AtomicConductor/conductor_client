@@ -7,7 +7,7 @@ export XBMLANGPATH=$XBMLANGPATH:/opt/conductor/conductor/resources/%B
 export HOUDINI_PATH=$HOUDINI_PATH:/opt/conductor/houdini
 export NUKE_PATH=$NUKE_PATH:/opt/conductor/nuke_menu
 export CONDUCTOR_CONFIG=$HOME/.conductor/config.yml
-export CONDUCTOR_LOCATION /opt/conductor
+export CONDUCTOR_LOCATION=/opt/conductor
 
 
 export PATH=$PATH:/opt/conductor/bin

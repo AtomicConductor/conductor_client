@@ -15,18 +15,13 @@ def collect(obj):
     """Collect all upload files.
 
     Always add any extra uploads the user has chosen. Then do a scan if
-    the policy is is not none.
+    the policy is not none.
     """
 
     policy = obj.get_attribute("dependency_scan_policy").get_long()
 
     result = DependencyList()
 
-    # I think we'll just add the ct_cnode node script regardless
-    # or whether it's being used
-    # task_att = obj.get_attribute("task_template")
-    # parts = task_att.get_string().split(" ")
-    # if parts and parts[0] == "ct_cnode":
     result.add(
         "$CONDUCTOR_LOCATION/conductor/clarisse/bin/ct_cnode",
         must_exist=True)
