@@ -192,12 +192,12 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_smart_scan_but(self, sender, eventid):
-        filenames = deps.get_scan(self.node, "SMART")
+        filenames = deps.get_scan(self.node, deps.SMART)
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_glob_scan_but(self, sender, eventid):
-        filenames = deps.get_scan(self.node, "GLOB")
+        filenames = deps.get_scan(self.node,  deps.GLOB)
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 

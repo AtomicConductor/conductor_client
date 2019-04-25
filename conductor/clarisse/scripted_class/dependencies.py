@@ -65,28 +65,41 @@ def _resolve_file_paths(obj, policy):
     if not policy:
         return result
     for attr in ix.api.OfAttr.get_path_attrs():
+        print "- "* 40
+        print "ATTR NAME",  attr.get_parent_object().get_name(), attr.get_name()
+        print "FLAGS", attr.get_flags_names()
         if attr.get_parent_object().is_disabled():
             continue
         hint = ix.api.OfAttr.get_visual_hint_name(attr.get_visual_hint())
         # we want dependencies, not dependents
+        print "HINT", hint
+        if attr.is_private():
+            continue
         if hint == "VISUAL_HINT_FILENAME_SAVE":
             continue
 
         filename = attr.get_string()
         filename = RX_UDIM.sub("*", filename)
-
+        print "FILENAME", filename
         if RX_HASH.search(filename):
-            if policy is SMART:
+            print "Filename has hashes", filename
+            if policy == SMART:
+                print "Policy is smart!"
+                # The intersection of the sequence being rendered, and 
+                # sequence defined by this attribute
                 main_seq = frames_ui.main_frame_sequence(obj)
+                print "MAIN SEQ", main_seq
                 attr_seq = _attribute_sequence(attr, intersector=main_seq)
+                print "ATTR SEQ", attr_seq
                 if attr_seq:
                     seq_paths = attr_seq.expand(filename)
                     result += seq_paths
             else:  # policy is GLOB
+                print "Policy is glob!"
                 result.append(re.sub(r'(#+)', "*", filename))
         else:
             result.append(filename)
-
+    print result
     return result
 
 

@@ -3,8 +3,10 @@ import os
 from itertools import takewhile
 import glob
 
+from conductor.native.lib.gpath import Path
 
-class DependencyList(object):
+
+class PathList(object):
     """A list of files with lazy deduplication.
 
     Every time the private entrylist is accessed with an accessor such
@@ -21,16 +23,29 @@ class DependencyList(object):
         self._clean = False
         self._current = 0
 
-    def add(self, *files, **kw):
+    def add(self, *paths):
         """Add one or more files.
 
-        Files will be added according to the must_exist check. Duplicate
-        files and directories that contain other files may be added and
-        no deduplication will happen at this time.
+        Duplicate files and directories that contain other files may be
+        added and no deduplication will happen at this time.
         """
-        must_exist = kw.get("must_exist", True)
-        for file in files:
-            self._add_a_file(file, must_exist)
+        for path in paths:
+            self._add_one(path)
+
+    def _add_one(self, path):
+        """Add a single file.
+
+        Note that when
+        an element is added, it may cause the list to change next time
+        it is deduplicated, which includes getting shorter. This could
+        happen if a containing directory is added. Therefore we have to
+        set the peg position to zero.
+        """
+        if not isinstance(path, Path):
+            path = Path(path)
+        self._entries.append(path)
+        self._clean = False
+        self._current = 0
 
     def _deduplicate(self):
         """Deduplicate if it has become dirty.
@@ -42,9 +57,9 @@ class DependencyList(object):
             return
 
         sorted_entries = sorted(
-            self._entries, key=lambda entry: (
-                entry.count(
-                    os.sep), -len(entry)))
+            self._entries, key=lambda entry: ( entry.depth , -len(entry.tail)))
+        # print [e.posix_path() for e in sorted_entries]
+
         self._entries = []
         for entry in sorted_entries:
             if any(entry.startswith(p) for p in self._entries):
@@ -52,22 +67,15 @@ class DependencyList(object):
             self._entries.append(entry)
         self._clean = True
 
-    def _add_a_file(self, f, must_exist):
-        """Add a single file.
 
-        If necessary, expand the user, expand env vars, and get the abs
-        path. Note that when an element is added, it may cause the list
-        to change next time it is deduplicated, which includes getting
-        shorter. This could happen if a containing directory is added.
-        Therefore we have to set the peg position to zero.
-        """
-        f = os.path.abspath(
-            os.path.expanduser(
-                os.path.expandvars(f)))
-        if not must_exist or os.path.exists(f):
-            self._entries.append(f)
-            self._clean = False
-        self._current = 0
+
+    def __contains__(self, key):
+        if not isinstance(key, Path):
+            key = Path(key)
+
+        return key in self._entries
+
+
 
     def common_path(self):
         """Find the common path among entries.
@@ -93,20 +101,25 @@ class DependencyList(object):
 
         def _all_the_same(rhs):
             return all(n == rhs[0] for n in rhs[1:])
-        levels = zip(*[p.split(os.sep) for p in self._entries])
-        return os.sep.join(
-            x[0] for x in takewhile(
-                _all_the_same, levels)) or os.sep
+ 
+        levels = zip(*[p.all_components for p in self._entries])
+
+        # print levels
+        common = [x[0] for x in takewhile(_all_the_same, levels)]
+        return Path(common or "/")
+
+        # return os.sep.join(
+        #     x[0] for x in takewhile(
+        #         _all_the_same, levels)) or os.sep
 
     def glob(self):
         self._deduplicate()
         globbed = []
         for entry in self._entries:
-            globbed += glob.glob(entry)
-        self._entries = globbed
+            globbed += glob.glob(entry.posix_path())
+        self._entries = [Path(g) for g in  globbed]
         self._clean = False
         self._current = 0
-        
 
     def __iter__(self):
         """Get an iterator to entries.

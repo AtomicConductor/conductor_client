@@ -1,11 +1,14 @@
 
 
-from conductor.native.lib.dependency_list import DependencyList
-import glob
-"""Test DependencyList. Assume run on posix filesystem"""
+import sys
+
+sys.modules['glob'] = __import__(
+    'conductor.native.lib.mocks.glob', fromlist=['dummy'])
 
 import os
-import sys
+import glob
+from conductor.native.lib.dependency_list import DependencyList
+
 import unittest
 import mock
 
@@ -17,8 +20,6 @@ NATIVE_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if NATIVE_MODULE not in sys.path:
     sys.path.insert(0, NATIVE_MODULE)
 
-sys.modules['glob'] = __import__(
-    'conductor.native.lib.mocks.glob', fromlist=['dummy'])
 
 
 @mock.patch.dict(os.environ, {
