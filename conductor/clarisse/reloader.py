@@ -4,7 +4,8 @@ It reloads files imported by ConductorJob. Not ConductorJob itself.
 """
 from conductor.clarisse.scripted_class import common
 from conductor.clarisse.scripted_class import dependencies
-from conductor.native.lib import dependency_list
+from conductor.native.lib import gpath_list
+from conductor.native.lib import gpath
 from conductor.clarisse.scripted_class import environment_ui
 from conductor.clarisse.scripted_class import extra_uploads_ui
 from conductor.clarisse.scripted_class import frames_ui
@@ -23,6 +24,8 @@ from conductor.clarisse.scripted_class import preview_ui
 reload(common)
 reload(dependencies)
 reload(dependency_list)
+reload(gpath_list)
+reload(gpath)
 reload(environment_ui)
 reload(extra_uploads_ui)
 reload(frames_ui)

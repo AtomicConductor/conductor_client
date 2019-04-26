@@ -17,10 +17,7 @@ NATIVE_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if NATIVE_MODULE not in sys.path:
     sys.path.insert(0, NATIVE_MODULE)
 
-# @mock.patch.dict(os.environ, {
-#     "HOME": "/users/joebloggs",
-#     "SHOT": "/metropolis/shot01"
-# })
+
 class PathListTest(unittest.TestCase):
     
     def setUp(self):

@@ -57,8 +57,7 @@ class PathList(object):
             return
 
         sorted_entries = sorted(
-            self._entries, key=lambda entry: ( entry.depth , -len(entry.tail)))
-        # print [e.posix_path() for e in sorted_entries]
+            self._entries, key=lambda entry: (entry.depth , -len(entry.tail)))
 
         self._entries = []
         for entry in sorted_entries:
@@ -72,7 +71,6 @@ class PathList(object):
     def __contains__(self, key):
         if not isinstance(key, Path):
             key = Path(key)
-
         return key in self._entries
 
 
@@ -94,7 +92,9 @@ class PathList(object):
 
         If no files exist return None.
 
-        If the filesystem root is the common path, return os.sep.
+        If the filesystem root is the common path, return root path, which is
+        not entirely correct on windows with drive letters.
+
         """
         if not self._entries:
             return None
