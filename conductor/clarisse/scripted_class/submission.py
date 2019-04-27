@@ -11,13 +11,14 @@ from conductor.clarisse.scripted_class import variables
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
+from conductor.native.lib.gpath import Path
 
 
 def _get_render_package():
     all_vars = ix.application.get_factory().get_vars()
     pdir = all_vars.get("PDIR").get_string()
     pname = all_vars.get("PNAME").get_string()
-    return"{}.render".format(os.path.join(pdir, pname))
+    return Path("{}.render".format(os.path.join(pdir, pname)))
 
 
 class Submission(object):
@@ -129,9 +130,10 @@ class Submission(object):
         reason we store them is to display them in a dry-run scenario.
         """
         tokens = {}
+        tokens["CT_PDIR"] =  Path(variables.get("PDIR")).posix_path(with_drive=False)
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
-        tokens["CT_RENDER_PACKAGE"] = self.render_package
+        tokens["CT_RENDER_PACKAGE"] = self.render_package.posix_path()
         tokens["CT_PROJECT"] = self.project["name"]
 
         for token in tokens:
@@ -150,12 +152,12 @@ class Submission(object):
         for this reason we use this feature rather than send the project
         file itself.
         """
-
-        success = ix.application.export_render_archive(self.render_package)
+        # TODO DETECT PLATFORM ??
+        package_path = self.render_package.posix_path()
+        success = ix.application.export_render_archive(package_path)
         if not success:
             ix.log_error(
-                "Failed to export render archive {}".format(
-                    self.render_package))
+                "Failed to export render archive {}".format(package_path))
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -203,10 +205,11 @@ class Submission(object):
                     traceback.format_exception(*sys.exc_info()))})
         for result in results:
             ix.log_info(result)
-
+         # TODO DETECT PLATFORM ??
         if self.delete_render_package:
-            if os.path.exists(self.render_package):
-                os.remove(self.render_package)
+            render_package_path = self.render_package.posix_path()
+            if os.path.exists(render_package_path):
+                os.remove(render_package_path)
 
     @property
     def node_name(self):

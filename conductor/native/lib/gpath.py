@@ -50,19 +50,22 @@ class Path(object):
             result = "{}:{}".format(self._drive_letter, result)
         return result
 
-    def posix_path(self, with_drive_letter=True):
+    def posix_path(self, **kw):
         """Path with forward slashes. Can include drive letter."""
+        with_drive_letter = kw.get("with_drive", True)
         return self._construct_path("/", with_drive_letter)
 
-    def windows_path(self, with_drive_letter=True):
+    def windows_path(self, **kw):
         """Path with back slashes. Can include drive letter."""
+        with_drive_letter = kw.get("with_drive", True)
         return self._construct_path("\\", with_drive_letter)
 
-    def os_path(self, with_drive_letter=True):
+    def os_path(self,  **kw):
         """Path with slashes for current os. Can include drive letter."""
+        with_drive = kw.get("with_drive", True)
         if os.name == "nt":
-            return self.windows_path(with_drive_letter)
-        return self.posix_path(with_drive_letter)
+            return self.windows_path(with_drive=with_drive)
+        return self.posix_path(with_drive=with_drive)
 
     def startswith(self, path):
         return self.posix_path().startswith(path.posix_path())

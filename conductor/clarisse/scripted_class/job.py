@@ -7,7 +7,8 @@ import json
 import ix
 from conductor.clarisse.scripted_class import frames_ui, variables
 from conductor.native.lib.data_block import ConductorDataBlock
-from conductor.native.lib.dependency_list import DependencyList
+from conductor.native.lib.gpath import Path
+from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence
 from conductor.clarisse.scripted_class.task import Task
 import conductor.clarisse.scripted_class.dependencies as deps
@@ -52,7 +53,7 @@ class Job(object):
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
         self.dependencies = deps.collect(self.node)
-        self.dependencies.add(self.render_package, must_exist=False)
+        self.dependencies.add(self.render_package)
         self.title = self.node.get_attribute("title").get_string()
         self.metadata = None
 
@@ -100,8 +101,7 @@ class Job(object):
 
         result.append({
             "name": "PATH",
-            "value": os.path.expandvars(
-                "$CONDUCTOR_LOCATION/conductor/clarisse/bin"),
+            "value": Path("$CONDUCTOR_LOCATION/conductor/clarisse/bin").posix_path(with_drive=False),
             "merge_policy": "append"
         })
         return result
@@ -143,7 +143,7 @@ class Job(object):
 
         Also return the individual paths as they may need to be created.
         """
-        out_paths = DependencyList()
+        out_paths = PathList()
 
         images = ix.api.OfObjectArray()
         self.node.get_attribute("images").get_values(images)
@@ -151,11 +151,11 @@ class Job(object):
         for image in images:
             directory = os.path.dirname(
                 image.get_attribute("save_as").get_string())
-            out_paths.add(directory, must_exist=False)
+            out_paths.add(directory)
 
         return {
             "common_path": out_paths.common_path(),
-            "output_paths": list(out_paths)
+            "output_paths":  out_paths
         }
 
     def _get_instance(self):
@@ -227,7 +227,9 @@ class Job(object):
             "preemptible" if pidx else "non-preemptible")
         tokens["CT_RETRIES"] = str(self.instance["retries"])
         tokens["CT_JOB"] = self.node_name
-        tokens["CT_DIRECTORIES"] = " ".join(self.output_paths)
+
+        # TODO DETECT PLATFORM ??
+        tokens["CT_DIRECTORIES"] = " ".join(p.posix_path(with_drive=False) for p in self.output_paths)
 
         for token in tokens:
             variables.put(token, tokens[token])
@@ -242,8 +244,8 @@ class Job(object):
         notifications, and project, before submitting to Conductor.
         """
         result = {}
-
-        result["upload_paths"] = sorted(list(self.dependencies))
+        # TODO DETECT PLATFORM ??
+        result["upload_paths"] = sorted([d.posix_path() for d in self.dependencies])
         result["autoretry_policy"] = (
             {'preempted': {'max_retries': self.instance["retries"]}}
             if self.instance["preemptible"] else {})
@@ -254,7 +256,7 @@ class Job(object):
         result["enforced_md5s"] = {}
         result["scout_frames"] = ", ".join([str(s) for s in
                                             self.sequence["scout"] or []])
-        result["output_path"] = self.common_output_path
+        result["output_path"] = self.common_output_path.posix_path()
         result["chunk_size"] = self.sequence["main"].chunk_size
         result["machine_type"] = self.instance["flavor"]
         result["cores"] = self.instance["cores"]

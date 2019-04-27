@@ -23,7 +23,6 @@ from conductor.clarisse.scripted_class import preview_ui
 
 reload(common)
 reload(dependencies)
-reload(dependency_list)
 reload(gpath_list)
 reload(gpath)
 reload(environment_ui)

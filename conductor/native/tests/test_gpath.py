@@ -54,6 +54,21 @@ class RootPath(unittest.TestCase):
         self.assertEqual(self.p.posix_path(), "C:/")
         self.assertEqual(self.p.windows_path(), "C:\\")
 
+
+class SpecifyDriveLetterUse(unittest.TestCase):
+    
+    def test_remove_from_path(self):
+        self.p = Path("C:\\a\\b\\c")
+        self.assertEqual(self.p.posix_path(with_drive=False), "/a/b/c")
+        self.assertEqual(self.p.windows_path(with_drive=False), "\\a\\b\\c")
+
+    def test_remove_from_root_path(self):
+        self.p = Path("C:\\")
+        self.assertEqual(self.p.posix_path(with_drive=False), "/")
+        self.assertEqual(self.p.windows_path(with_drive=False), "\\")
+
+
+
 class AbsPosixPathTest(unittest.TestCase):
 
     def setUp(self):
@@ -75,11 +90,7 @@ class AbsWindowsPathTest(unittest.TestCase):
 
     def test_win_path_out(self):
         self.assertEqual(self.p.windows_path(), "C:\\a\\b\\c")
-
-    def test_win_path_out_remove_drive_letter(self):
-        self.assertEqual(self.p.windows_path(False), "\\a\\b\\c")
-
-
+ 
     # consider just testing on both platforms
     def test_os_path_out(self):
         with mock.patch('os.name', 'posix'):

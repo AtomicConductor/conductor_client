@@ -1,7 +1,7 @@
 import conductor.clarisse.scripted_class.dependencies as deps
 import ix
 from conductor.clarisse.scripted_class import common
-from conductor.native.lib.dependency_list import DependencyList
+from conductor.native.lib.gpath_list import PathList
 
 BTN_HEIGHT = 22
 BTN_WIDTH = 100
@@ -34,19 +34,20 @@ class FileListWidget(ix.api.GuiTree):
     def add_entries(self, entries):
         """Add a line item for each entry.
 
-        Use DependencyList to deduplicate on the fly. As the addition of
+        Use PathList to deduplicate on the fly. As the addition of
         entries may completely change the list (grow or shrink) we
-        delete and rebuild the list of entries each time.
+        delete and rebuild the list of entries each time a batch is
+        added.
         """
         if not entries:
             return
 
         root_item = self.get_root()
 
-        deduped = DependencyList()
+        deduped = PathList()
         for item in self.item_list:
             # no need to stat as we must have once already
-            deduped.add(item.get_name(), must_exist=False)
+            deduped.add(item.get_name())
 
         for entry in entries:
             deduped.add(entry)
@@ -55,7 +56,7 @@ class FileListWidget(ix.api.GuiTree):
         del self.item_list[:]
 
         for entry in deduped:
-            item = ix.api.GuiTreeItemBasic(root_item, entry)
+            item = ix.api.GuiTreeItemBasic(root_item, entry.posix_path())
             self.item_list.append(item)
         self.refresh()
 
@@ -197,7 +198,7 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_glob_scan_but(self, sender, eventid):
-        filenames = deps.get_scan(self.node,  deps.GLOB)
+        filenames = deps.get_scan(self.node, deps.GLOB)
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 

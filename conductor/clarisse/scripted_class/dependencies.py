@@ -2,7 +2,7 @@ import re
 
 import ix
 from conductor.clarisse.scripted_class import frames_ui
-from conductor.native.lib.dependency_list import DependencyList
+from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence
 
 RX_HASH = re.compile("#+")
@@ -20,15 +20,14 @@ def collect(obj):
 
     policy = obj.get_attribute("dependency_scan_policy").get_long()
 
-    result = DependencyList()
+    result = PathList()
 
     result.add(
-        "$CONDUCTOR_LOCATION/conductor/clarisse/bin/ct_cnode",
-        must_exist=True)
+        "$CONDUCTOR_LOCATION/conductor/clarisse/bin/ct_cnode")
 
-    result.add(*_get_extra_uploads(obj), must_exist=True)
+    result.add(*_get_extra_uploads(obj))
 
-    result.add(*get_scan(obj, policy), must_exist=False)
+    result.add(*get_scan(obj, policy))
 
     # tell the list to expand  any "*" or <UDIM> in place
     result.glob()
@@ -37,9 +36,9 @@ def collect(obj):
 
 def get_scan(obj, policy):
     """Make a dependencyList according to the policy."""
-    result = DependencyList()
-    result.add(*_resolve_file_paths(obj, policy), must_exist=False)
-    result.add(*_get_references(obj, policy), must_exist=True)
+    result = PathList()
+    result.add(*_resolve_file_paths(obj, policy))
+    result.add(*_get_references(obj, policy))
     return result
 
 
@@ -66,13 +65,13 @@ def _resolve_file_paths(obj, policy):
         return result
     for attr in ix.api.OfAttr.get_path_attrs():
         print "- "* 40
-        print "ATTR NAME",  attr.get_parent_object().get_name(), attr.get_name()
-        print "FLAGS", attr.get_flags_names()
+        # print "ATTR NAME",  attr.get_parent_object().get_name(), attr.get_name()
+        # print "FLAGS", attr.get_flags_names()
         if attr.get_parent_object().is_disabled():
             continue
         hint = ix.api.OfAttr.get_visual_hint_name(attr.get_visual_hint())
         # we want dependencies, not dependents
-        print "HINT", hint
+        # print "HINT", hint
         if attr.is_private():
             continue
         if hint == "VISUAL_HINT_FILENAME_SAVE":
@@ -80,26 +79,26 @@ def _resolve_file_paths(obj, policy):
 
         filename = attr.get_string()
         filename = RX_UDIM.sub("*", filename)
-        print "FILENAME", filename
+        # print "FILENAME", filename
         if RX_HASH.search(filename):
-            print "Filename has hashes", filename
+            # print "Filename has hashes", filename
             if policy == SMART:
-                print "Policy is smart!"
+                # print "Policy is smart!"
                 # The intersection of the sequence being rendered, and 
                 # sequence defined by this attribute
                 main_seq = frames_ui.main_frame_sequence(obj)
-                print "MAIN SEQ", main_seq
+                # print "MAIN SEQ", main_seq
                 attr_seq = _attribute_sequence(attr, intersector=main_seq)
-                print "ATTR SEQ", attr_seq
+                # print "ATTR SEQ", attr_seq
                 if attr_seq:
                     seq_paths = attr_seq.expand(filename)
                     result += seq_paths
             else:  # policy is GLOB
-                print "Policy is glob!"
+                # print "Policy is glob!"
                 result.append(re.sub(r'(#+)', "*", filename))
         else:
             result.append(filename)
-    print result
+    # print result
     return result
 
 
@@ -140,7 +139,7 @@ def _attribute_sequence(attr, **kw):
     obj = attr.get_parent_object()
     mode_attr = obj.attribute_exists("sequence_mode")
     if not (mode_attr and mode_attr.get_long()):
-        ix.log_error("Attribute is not a sequence mode")
+        ix.log_error("Attribute is not in sequence mode {}")
 
     global_frame_rate = ix.application.get_prefs(
         ix.api.AppPreferences.MODE_APPLICATION).get_long_value(
