@@ -101,7 +101,7 @@ class Job(object):
 
         result.append({
             "name": "PATH",
-            "value": Path("$CONDUCTOR_LOCATION/conductor/clarisse/bin").posix_path(with_drive=False),
+            "value": Path("$CONDUCTOR_LOCATION/conductor/clarisse/scripts").posix_path(with_drive=False),
             "merge_policy": "append"
         })
         return result

@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+import os
+import re
+import errno
+import sys
+import argparse
+import subprocess
+
+
+def mkdir_p(dirs):
+    """Make directories unless they already exist."""
+    for d in dirs:
+        try:
+            os.makedirs(d)
+            sys.stdout.write("Made Directory:{}\n".format(d))
+        except OSError as ex:
+            if ex.errno == errno.EEXIST and os.path.isdir(d):
+                pass
+            else:
+                raise
+
+
+def main():
+    """Wrapper to run cnode while making directories first.
+
+    Needed because clarisse allows multiple images to be rendered, and
+    each may have a different save_as destination. Arg parser splits the
+    args into -directory args and other args. It then makes the
+    directories and sends all other args on to cnode.  At some point we
+    may display task progress, so this script does some rudimentary
+    formatting, which can be changed when its needed for real.
+    """
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('-directories', nargs='*', required=False)
+    args, pass_through_args = parser.parse_known_args()
+    if args.directories:
+        mkdir_p(args.directories)
+
+    cnode_args = ["cnode.bin"]
+    if pass_through_args:
+        cnode_args += pass_through_args
+
+    sys.stdout.write("Cmd will be:{}\n".format(" ".join(cnode_args)))
+
+    modified_env = os.environ.copy()
+    # modified_env["LD_LIBRARY_PATH"] = "/opt/isotropix/clarisse/3/clarisse3.6.sp5/clarisse:/opt/isotropix/clarisse/3/clarisse3.6.sp5/clarisse/python:{}".format(os.environ.get("LD_LIBRARY_PATH", ""))
+    modified_env["LD_PRELOAD"] = ""
+    modified_env["CONDUCTOR_PATHHELPER"] = 0
+    del modified_env["LD_PRELOAD"]
+    del modified_env["CONDUCTOR_PATHHELPER"]
+
+    print "MODIFIED ENV IS"
+    print modified_env
+
+    p = subprocess.Popen(
+        cnode_args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=modified_env)
+
+    stdout, stderr = p.communicate()
+    print 'STDOUT:{}'.format(stdout)
+    print 'STDERR:{}'.format(stderr)
+
+    # sys.stdout.write("Executed cmd :\n")
+
+    # progress_re = re.compile(r'.*Progress for \'(.*)\' : ([\d\.]+)%$')
+    # subprogress_re = re.compile(r'.*Subprogress.*$')
+
+    # sys.stdout.flush()
+    # for line in iter(p.stdout.readline, b''):
+    #     stripped_line = line.strip()
+    #     # Ignore empty lines and Subprogress lines.
+    #     if not stripped_line:
+    #         continue
+    #     if re.match(subprogress_re, stripped_line):
+    #         continue
+
+    #     match = re.match(progress_re, stripped_line)
+    #     if match:
+    #         prog = "{} {}%\n".format(match.group(1), match.group(2))
+    #         sys.stdout.write(prog)
+    #         sys.stdout.flush()
+    #     else:
+    #         sys.stderr.write(">>> {}\n".format(stripped_line))
+    
+
+main()

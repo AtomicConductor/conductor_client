@@ -38,7 +38,8 @@ CONDUCTOR_VARS = [
     "CT_CHUNKEND",
     "CT_CHUNKSTEP",
     "CT_DIRECTORIES",
-    "CT_PDIR"
+    "CT_PDIR",
+    "CT_SCRIPT_DIR"    
 ]
 
 

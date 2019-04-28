@@ -131,6 +131,7 @@ class Submission(object):
         """
         tokens = {}
         tokens["CT_PDIR"] =  Path(variables.get("PDIR")).posix_path(with_drive=False)
+        tokens["CT_SCRIPT_DIR"] = Path("$CONDUCTOR_LOCATION/conductor/clarisse/scripts").posix_path(with_drive=False)
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
         tokens["CT_RENDER_PACKAGE"] = self.render_package.posix_path()
@@ -154,7 +155,9 @@ class Submission(object):
         """
         # TODO DETECT PLATFORM ??
         package_path = self.render_package.posix_path()
-        success = ix.application.export_render_archive(package_path)
+        # success = ix.application.export_render_archive(package_path)
+        success = ix.application.save_project(package_path)
+        
         if not success:
             ix.log_error(
                 "Failed to export render archive {}".format(package_path))

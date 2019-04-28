@@ -15,7 +15,7 @@ def collect(obj):
     """Collect all upload files.
 
     Always add any extra uploads the user has chosen. Then do a scan if
-    the policy is not none.
+    the policy is not None.
     """
 
     policy = obj.get_attribute("dependency_scan_policy").get_long()
@@ -23,7 +23,7 @@ def collect(obj):
     result = PathList()
 
     result.add(
-        "$CONDUCTOR_LOCATION/conductor/clarisse/bin/ct_cnode")
+        "$CONDUCTOR_LOCATION/conductor/clarisse/scripts")
 
     result.add(*_get_extra_uploads(obj))
 
