@@ -27,10 +27,10 @@ class Task(object):
         # evaluate correctly, it needs to be turned on then off 
         # then back on. If this is not done, all the frames 
         # have the same range,
-        command_attr.activate_expression(False)
         command_attr.activate_expression(True)
         command_attr.activate_expression(False)
         command_attr.activate_expression(True)
+        command_attr.activate_expression(False)
 
         self.command = command_attr.get_string()
 

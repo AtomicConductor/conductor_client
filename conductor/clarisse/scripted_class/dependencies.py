@@ -1,5 +1,5 @@
 import re
-
+import os
 import ix
 from conductor.clarisse.scripted_class import frames_ui
 from conductor.native.lib.gpath_list import PathList
@@ -38,7 +38,7 @@ def get_scan(obj, policy):
     """Make a dependencyList according to the policy."""
     result = PathList()
     result.add(*_resolve_file_paths(obj, policy))
-    result.add(*_get_references(obj, policy))
+    # result.add(*_get_references(obj, policy))
     return result
 
 
@@ -48,6 +48,36 @@ def _get_extra_uploads(obj):
     paths = ix.api.CoreStringArray()
     extras_attr.get_values(paths)
     return paths
+
+
+def _is_project_reference(attr):
+    """Does the attribute reference a clarisse project?
+
+    If so, we don't include it in the depedency scan because it will
+    ultimately be made local. Check the extension, because Alembic
+    and pixar formats are also possible.
+    """
+    obj = attr.get_parent_object()
+    if obj.get_class_name() == "Generic":
+        if obj.get_name() == "__context_options__":
+            path = attr.get_string()
+            _, ext = os.path.splitext(path)
+            if ext == ".project":
+                return True
+    return False
+
+
+def _should_ignore(attr):
+    if attr.get_parent_object().is_disabled():
+        return True
+    if attr.is_private():
+        return True
+    hint = ix.api.OfAttr.get_visual_hint_name(attr.get_visual_hint())
+    if hint == "VISUAL_HINT_FILENAME_SAVE":
+        return True
+    if _is_project_reference(attr):
+        return True
+    return False
 
 
 def _resolve_file_paths(obj, policy):
@@ -64,17 +94,9 @@ def _resolve_file_paths(obj, policy):
     if not policy:
         return result
     for attr in ix.api.OfAttr.get_path_attrs():
-        print "- "* 40
         # print "ATTR NAME",  attr.get_parent_object().get_name(), attr.get_name()
         # print "FLAGS", attr.get_flags_names()
-        if attr.get_parent_object().is_disabled():
-            continue
-        hint = ix.api.OfAttr.get_visual_hint_name(attr.get_visual_hint())
-        # we want dependencies, not dependents
-        # print "HINT", hint
-        if attr.is_private():
-            continue
-        if hint == "VISUAL_HINT_FILENAME_SAVE":
+        if _should_ignore(attr):
             continue
 
         filename = attr.get_string()
@@ -84,7 +106,7 @@ def _resolve_file_paths(obj, policy):
             # print "Filename has hashes", filename
             if policy == SMART:
                 # print "Policy is smart!"
-                # The intersection of the sequence being rendered, and 
+                # The intersection of the sequence being rendered, and
                 # sequence defined by this attribute
                 main_seq = frames_ui.main_frame_sequence(obj)
                 # print "MAIN SEQ", main_seq
@@ -102,23 +124,23 @@ def _resolve_file_paths(obj, policy):
     return result
 
 
-def _get_references(_, policy):
-    """Get referenced files from contexts.
+# def _get_references(_, policy):
+#     """Get referenced files from contexts.
 
-    We handle contexts separately because Clarisse has a bug where
-    get_path_attrs() doesn't find all the attrs in a series of nested
-    references. References do not have any wildcards in their names, so
-    no need to do any expansion.
-    """
-    result = []
-    if not policy:
-        return result
-    contexts = ix.api.OfContextSet()
-    ix.application.get_factory().get_root().resolve_all_contexts(contexts)
-    for context in contexts:
-        if context.is_reference() and not context.is_disabled():
-            result.append(context.get_attribute("filename").get_string())
-    return result
+#     We handle contexts separately because Clarisse has a bug where
+#     get_path_attrs() doesn't find all the attrs in a series of nested
+#     references. References do not have any wildcards in their names, so
+#     no need to do any expansion.
+#     """
+#     result = []
+#     if not policy:
+#         return result
+#     contexts = ix.api.OfContextSet()
+#     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
+#     for context in contexts:
+#         if context.is_reference() and not context.is_disabled():
+#             result.append(context.get_attribute("filename").get_string())
+#     return result
 
 
 def _attribute_sequence(attr, **kw):
@@ -153,10 +175,8 @@ def _attribute_sequence(attr, **kw):
     start = obj.get_attribute("start_frame").get_long()
     end = obj.get_attribute("end_frame").get_long()
 
-
-
     if intersector:
-        # If there's a frame offset on the attribute, then we need to 
+        # If there's a frame offset on the attribute, then we need to
         # do the intersection in the context of that offset.
         offset = obj.get_attribute("frame_offset").get_long()
         return Sequence.create(start, end, 1).offset(

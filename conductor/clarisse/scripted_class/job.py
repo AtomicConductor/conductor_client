@@ -106,6 +106,18 @@ class Job(object):
         })
         return result
 
+    def _get_lib_path_env(self, clarisse_path):
+        result = []
+        paths = ["/usr/lib/python2.7/config-x86_64-linux-gnu", clarisse_path, "{}/python".format(clarisse_path)]
+        for path in paths:
+            result.append({
+                "name": "LD_LIBRARY_PATH",
+                "value": path,
+                "merge_policy": "append"
+            })
+        return result
+
+
     def _get_environment(self):
         """Collect all environment variables.
 
@@ -119,8 +131,13 @@ class Job(object):
         paths = list(paths)
         package_env = package_tree.get_environment(paths)
 
+
+        libs = self._get_lib_path_env(package_env["PATH"].split(":")[0])
+        package_env.extend(libs)
+
         extra_vars = self._get_extra_env_vars()
         package_env.extend(extra_vars)
+
         return package_env
 
     def _get_package_ids(self):

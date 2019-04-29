@@ -1,4 +1,4 @@
-"""Build an object to represent a Conductor submission."""
+"""Build an object to represent a Clarisse Conductor submission."""
 
 import datetime
 import errno
@@ -14,11 +14,37 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 
 
+RENDER_PACKAGE_BINARY = 0
+RENDER_PACKAGE_ASCII = 1
+
 def _get_render_package():
-    all_vars = ix.application.get_factory().get_vars()
-    pdir = all_vars.get("PDIR").get_string()
-    pname = all_vars.get("PNAME").get_string()
-    return Path("{}.render".format(os.path.join(pdir, pname)))
+    basename = os.path.splitext( ix.application.get_current_project_filename())[0]
+    return Path("{}.render".format(basename))
+
+def _localize_contexts():
+    contexts = ix.api.OfContextSet()
+    ix.application.get_factory().get_root().resolve_all_contexts(contexts)
+    for ctx in contexts:
+        if ctx.is_reference():
+            path = ctx.get_attribute("filename").get_string()
+            fn, ext =  os.path.splitext(path)
+            if ext == ".project":
+                ix.cmds.MakeLocalContext(ctx)
+
+def _remove_drive_letters():
+    
+    for attr in ix.api.OfAttr.get_path_attrs():
+        try:
+            attr.set_string(Path(attr.get_string()).posix_path(with_drive=False))
+        except Exception:
+            pass
+
+def _remove_conductor():
+    objects = ix.api.OfObjectArray()
+    ix.application.get_factory().get_objects("ConductorJob", objects)
+    for item in list(objects):
+        ix.application.get_factory().remove_item(item.get_full_name())
+    variables.remove()
 
 
 class Submission(object):
@@ -58,6 +84,12 @@ class Submission(object):
             self.nodes = [obj]
         else:
             raise NotImplementedError
+
+        self.project_filename = ix.application.get_current_project_filename()
+
+        self.render_package_format = self.node.get_attribute("render_package_format").get_long()
+
+        self._dev_do_submission = self.node.get_attribute("do_submission").get_bool()
 
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.render_package = _get_render_package()
@@ -130,8 +162,13 @@ class Submission(object):
         reason we store them is to display them in a dry-run scenario.
         """
         tokens = {}
-        tokens["CT_PDIR"] =  Path(variables.get("PDIR")).posix_path(with_drive=False)
-        tokens["CT_SCRIPT_DIR"] = Path("$CONDUCTOR_LOCATION/conductor/clarisse/scripts").posix_path(with_drive=False)
+        tokens["CT_PDIR"] = Path(
+            variables.get("PDIR")).posix_path(
+            with_drive=False)
+
+
+        tokens["CT_SCRIPT_DIR"] = Path(
+            "$CONDUCTOR_LOCATION/conductor/clarisse/scripts").posix_path(with_drive=False)
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
         tokens["CT_RENDER_PACKAGE"] = self.render_package.posix_path()
@@ -142,7 +179,7 @@ class Submission(object):
 
         return tokens
 
-    def write_render_package(self):
+    def _write_render_package(self):
         """Take the value of the render package att and save the file.
 
         A render package is a binary representation of the project
@@ -154,13 +191,24 @@ class Submission(object):
         file itself.
         """
         # TODO DETECT PLATFORM ??
-        package_path = self.render_package.posix_path()
-        # success = ix.application.export_render_archive(package_path)
-        success = ix.application.save_project(package_path)
+
+        # make contexts local
+        #
         
+        _localize_contexts()
+        _remove_drive_letters()
+        _remove_conductor()
+        
+        
+        package_path = self.render_package.posix_path()
+        if self.render_package_format == RENDER_PACKAGE_BINARY:
+            success = ix.application.export_render_archive(package_path)
+        else: 
+            success = ix.application.save_project(package_path)
+
         if not success:
             ix.log_error(
-                "Failed to export render archive {}".format(package_path))
+                "Failed to export render package {}".format(package_path))
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -194,25 +242,52 @@ class Submission(object):
     def submit(self):
         """Submit all jobs.
 
-        Collect their responses and show them in the log.
+        Collect responses and show them in the log.
         """
-        self.write_render_package()
-        results = []
-        for job_args in self.get_args():
-            try:
-                remote_job = conductor_submit.Submit(job_args)
-                response, response_code = remote_job.main()
-                results.append({"code": response_code, "response": response})
-            except BaseException:
-                results.append({"code": "undefined", "response": "".join(
-                    traceback.format_exception(*sys.exc_info()))})
-        for result in results:
-            ix.log_info(result)
+
+        self._write_render_package()
+
+        if self._dev_do_submission:
+            results = []
+            for job_args in self.get_args():
+                try:
+                    remote_job = conductor_submit.Submit(job_args)
+                    response, response_code = remote_job.main()
+                    results.append({"code": response_code, "response": response})
+                except BaseException:
+                    results.append({"code": "undefined", "response": "".join(
+                        traceback.format_exception(*sys.exc_info()))})
+            for result in results:
+                ix.log_info(result)
+        else:
+            ix.log_info("Dev option: submission suppressed")
+
+        self._post_submit()
+
+    def _post_submit(self):
          # TODO DETECT PLATFORM ??
+        self._do_delete_render_package()
+        self._revert_to_saved_scene()
+
+
+    def _do_delete_render_package(self):
         if self.delete_render_package:
             render_package_path = self.render_package.posix_path()
             if os.path.exists(render_package_path):
                 os.remove(render_package_path)
+
+
+    def _revert_to_saved_scene(self):
+        clarisse_win = ix.application.get_event_window()
+        old_cursor = clarisse_win.get_mouse_cursor()
+        clarisse_win.set_mouse_cursor(ix.api.Gui.MOUSE_CURSOR_WAIT)
+        ix.application.disable()
+        ix.application.load_project(self.project_filename)
+        ix.application.enable()
+        clarisse_win.set_mouse_cursor(old_cursor)
+
+
+
 
     @property
     def node_name(self):

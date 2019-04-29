@@ -49,6 +49,12 @@ def declare():
         put(varname, "deferred")
 
 
+def remove():
+    all_vars = ix.application.get_factory().get_vars()
+    for varname in CONDUCTOR_VARS:
+        all_vars.remove(varname)
+
+
 def put(varname, value):
     """Take the pain out of setting an envvar in Clarisse."""
     all_vars = ix.application.get_factory().get_vars()

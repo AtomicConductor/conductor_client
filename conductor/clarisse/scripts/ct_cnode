@@ -21,14 +21,13 @@ def mkdir_p(dirs):
 
 
 def main():
-    """Wrapper to run cnode while making directories first.
+    """Wrapper to run cnode with conductor adjustments.
 
-    Needed because clarisse allows multiple images to be rendered, and
-    each may have a different save_as destination. Arg parser splits the
+    Clarisse allows multiple images to be rendered, and
+    each may have a different save_as destination. If the destination folders don't exist
+    then the cnode will fail. So here, argparse splits the
     args into -directory args and other args. It then makes the
-    directories and sends all other args on to cnode.  At some point we
-    may display task progress, so this script does some rudimentary
-    formatting, which can be changed when its needed for real.
+    directories and sends all other args on to cnode.
     """
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('-directories', nargs='*', required=False)
@@ -49,7 +48,13 @@ def main():
     del modified_env["LD_PRELOAD"]
     del modified_env["CONDUCTOR_PATHHELPER"]
 
-    print "MODIFIED ENV IS"
+    # lib_path = os.environ.get("LD_LIBRARY_PATH", "")
+    # lib_path = "/usr/lib/python2.7/config-x86_64-linux-gnu:" + lib_path
+    # lib_path = "/opt/isotropix/clarisse/3/clarisse3.6.sp5/clarisse:" + lib_path
+    # lib_path = "/opt/isotropix/clarisse/3/clarisse3.6.sp5/clarisse/python:" + lib_path
+    # modified_env["LD_LIBRARY_PATH"] = lib_path
+ 
+    print "MODIFIED ENV IS:"
     print modified_env
 
     p = subprocess.Popen(

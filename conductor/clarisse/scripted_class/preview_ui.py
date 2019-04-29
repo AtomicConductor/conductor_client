@@ -7,7 +7,7 @@ custom UI to be embedded.
 import json
 
 import ix
- 
+
 C_LEFT = ix.api.GuiWidget.CONSTRAINT_LEFT
 C_TOP = ix.api.GuiWidget.CONSTRAINT_TOP
 C_RIGHT = ix.api.GuiWidget.CONSTRAINT_RIGHT
@@ -33,7 +33,7 @@ class PreviewWindow(ix.api.GuiWindow):
     Holds the panel plus buttons to Submit or Cancel and so on.
     """
 
-    def __init__(self, submission):
+    def __init__(self, submission, can_submit):
         window_height = HEIGHT + BTN_HEIGHT
 
         super(PreviewWindow, self).__init__(ix.application.get_event_window(),
@@ -62,10 +62,7 @@ class PreviewWindow(ix.api.GuiWindow):
             BTN_HEIGHT,
             "Submit")
         self.apply_but.set_constraints(C_LEFT, C_BOTTOM, C_RIGHT, C_BOTTOM)
-        self.connect(
-            self.apply_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_apply_but)
+        self.apply_but.set_enable(can_submit)
 
         self.go_but = ix.api.GuiPushButton(
             self,
@@ -75,7 +72,17 @@ class PreviewWindow(ix.api.GuiWindow):
             BTN_HEIGHT,
             "Submit and close")
         self.go_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
-        self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
+        self.go_but.set_enable(can_submit)
+
+        if can_submit:
+            self.connect(
+                self.apply_but,
+                'EVT_ID_PUSH_BUTTON_CLICK',
+                self.on_apply_but)
+            self.connect(
+                self.go_but,
+                'EVT_ID_PUSH_BUTTON_CLICK',
+                self.on_go_but)
 
         self._populate()
 
@@ -106,13 +113,13 @@ class PreviewWindow(ix.api.GuiWindow):
         self.hide()
 
 
-def build(submission):
+def build(submission, can_submit):
     """Show the window.
 
     Populate it with submission args for each job. Listen for events
     until the window is hidden.
     """
-    win = PreviewWindow(submission)
+    win = PreviewWindow(submission, can_submit)
 
     win.show_modal()
     while win.is_shown():

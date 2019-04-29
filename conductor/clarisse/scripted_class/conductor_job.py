@@ -125,14 +125,41 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "development")
         attr.set_bool(False)
 
+        attr = s_class.add_attribute(
+            "do_submission",
+            OfAttr.TYPE_BOOL,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "development")
+        attr.set_bool(True)
+
+        
+
     def declare_actions(self, s_class):
         """Attributes concerned with submission.
 
         Currently only buttons.
         """
 
-        self.add_action(s_class, "preview", "actions")
-        self.add_action(s_class, "submit", "actions")
+        self.add_action(s_class, "preview", "submit")
+        self.add_action(s_class, "submit", "submit")
+
+        attr = s_class.add_attribute(
+            "render_package_format", OfAttr.TYPE_LONG,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "submit")
+        attr.set_long(0)
+        attr.add_preset("Binary archive", "0")
+        attr.add_preset("Regular project", "1")
+
+        attr = s_class.add_attribute(
+            "clean_up_render_package",
+            OfAttr.TYPE_BOOL,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "submit")
+        attr.set_bool(True)
 
     def declare_general_attributes(self, s_class):
         """Most commonly accessed attributes."""
@@ -304,14 +331,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "upload")
         attr.set_bool(False)
-
-        attr = s_class.add_attribute(
-            "clean_up_render_package",
-            OfAttr.TYPE_BOOL,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "upload")
-        attr.set_bool(True)
 
         self.add_action(s_class, "manage_extra_uploads", "upload")
 
