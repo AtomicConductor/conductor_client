@@ -17,10 +17,6 @@ from conductor.native.lib.gpath import Path
 RENDER_PACKAGE_BINARY = 0
 RENDER_PACKAGE_ASCII = 1
 
-def _get_render_package():
-    basename = os.path.splitext( ix.application.get_current_project_filename())[0]
-    return Path("{}.render".format(basename))
-
 def _localize_contexts():
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
@@ -92,7 +88,7 @@ class Submission(object):
         self._dev_do_submission = self.node.get_attribute("do_submission").get_bool()
 
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self.render_package = _get_render_package()
+        self.render_package = self._get_render_package()
         self.delete_render_package = self.node.get_attribute(
             "clean_up_render_package").get_bool()
 
@@ -178,6 +174,15 @@ class Submission(object):
             variables.put(token, tokens[token])
 
         return tokens
+
+
+
+    def _get_render_package(self):
+        basename = os.path.splitext( ix.application.get_current_project_filename())[0]
+        if self.render_package_format == RENDER_PACKAGE_BINARY:
+            return Path("{}.render".format(basename))
+        else:
+            return Path("{}.render.project".format(basename))
 
     def _write_render_package(self):
         """Take the value of the render package att and save the file.
