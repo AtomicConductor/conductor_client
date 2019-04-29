@@ -21,13 +21,27 @@ def mkdir_p(dirs):
 
 
 def main():
-    """Wrapper to run cnode with conductor adjustments.
+    """Wrapper to run cnode with Conductor adjustments.
 
-    Clarisse allows multiple images to be rendered, and
-    each may have a different save_as destination. If the destination folders don't exist
-    then the cnode will fail. So here, argparse splits the
-    args into -directory args and other args. It then makes the
-    directories and sends all other args on to cnode.
+    Directories.
+    Clarisse allows multiple images to be rendered, and each may have a
+    different save_as destination. If the destination folders don't
+    exist then the cnode will fail. So here, argparse splits the args
+    into -directory args and other args. It then makes the directories
+    and sends all other args on to cnode.
+    
+    Cnode.bin
+    The standard cnode is a wrapper around cnode.bin. When submitting 
+    from windows, it fails to find cnode.bin for some reason. It thniks
+    it's in /cnode.bin as opposed to the same directory. All it does is 
+    set some env vars, so instead we remove that layer or wrapper and 
+    modify the env in here instead.
+
+    Env.
+    On windows there's a library that gets loaded to handle drive letter
+    removal at the os level. It conflicts with glibc while running
+    Clarisse. Therefore we remove it here.
+
     """
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('-directories', nargs='*', required=False)
@@ -42,18 +56,11 @@ def main():
     sys.stdout.write("Cmd will be:{}\n".format(" ".join(cnode_args)))
 
     modified_env = os.environ.copy()
-    # modified_env["LD_LIBRARY_PATH"] = "/opt/isotropix/clarisse/3/clarisse3.6.sp5/clarisse:/opt/isotropix/clarisse/3/clarisse3.6.sp5/clarisse/python:{}".format(os.environ.get("LD_LIBRARY_PATH", ""))
     modified_env["LD_PRELOAD"] = ""
     modified_env["CONDUCTOR_PATHHELPER"] = 0
     del modified_env["LD_PRELOAD"]
     del modified_env["CONDUCTOR_PATHHELPER"]
 
-    # lib_path = os.environ.get("LD_LIBRARY_PATH", "")
-    # lib_path = "/usr/lib/python2.7/config-x86_64-linux-gnu:" + lib_path
-    # lib_path = "/opt/isotropix/clarisse/3/clarisse3.6.sp5/clarisse:" + lib_path
-    # lib_path = "/opt/isotropix/clarisse/3/clarisse3.6.sp5/clarisse/python:" + lib_path
-    # modified_env["LD_LIBRARY_PATH"] = lib_path
- 
     print "MODIFIED ENV IS:"
     print modified_env
 
@@ -88,6 +95,6 @@ def main():
     #         sys.stdout.flush()
     #     else:
     #         sys.stderr.write(">>> {}\n".format(stripped_line))
-    
+
 
 main()
