@@ -2,13 +2,15 @@ import traceback
 
 import ix
 from conductor.clarisse import reloader
-from conductor.clarisse.clarisse_info import ClarisseInfo
+
 from conductor.clarisse.scripted_class import (environment_ui,
                                                extra_uploads_ui, frames_ui,
-                                               instances_ui, notifications_ui,
+                                               notifications_ui,
                                                packages_ui, projects_ui,
-                                               submit_actions, variables)
-from conductor.native.lib.data_block import ConductorDataBlock
+                                               submit_actions, variables, 
+                                               common,
+                                               attr_docs)
+
 from ix.api import OfAttr
 
 
@@ -34,13 +36,13 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             elif action_name == "manage_extra_environment":
                 environment_ui.build(obj, data)
             elif action_name == "preview":
-                self.refresh(obj)
+                common.refresh(obj)
                 submit_actions.preview(obj, data)
             elif action_name == "submit":
-                self.refresh(obj)
+                common.refresh(obj)
                 submit_actions.submit(obj, data)
             elif action_name == "setup":
-                self.refresh(obj, force=True)
+                common.refresh(obj, force=True)
             elif action_name == "best_chunk_size":
                 frames_ui.handle_best_chunk_size(obj, data)
             elif action_name == "add_metadata":
@@ -111,7 +113,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
         self.declare_dev_attributes(s_class)
 
-        ConductorJob.set_doc_strings(s_class)
+        attr_docs.set(s_class)
+        # ConductorJob.set_doc_strings(s_class)
 
     def declare_dev_attributes(self, s_class):
 
@@ -404,93 +407,5 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "notifications")
         attr.set_read_only(True)
 
-    @staticmethod
-    def refresh(_, **kw):
-        """Respond to do_setup button click.
 
-        Update UI for projects and instances from the data block. kwargs
-        may contain the force keyword, which will invalidate the
-        datablock and fetch fresh from Conductor. We may as well update
-        all ConductorJob nodes.
-        """
-        kw["product"] = "clarisse"
-        data_block = ConductorDataBlock(**kw)
-        nodes = ix.api.OfObjectArray()
-        ix.application.get_factory().get_all_objects("ConductorJob", nodes)
-
-        host = ClarisseInfo().get()
-        detected_host_paths = data_block.package_tree().get_all_paths_to(
-            **host)
-
-        for obj in nodes:
-
-            projects_ui.update(obj, data_block)
-            instances_ui.update(obj, data_block)
-            frames_ui.update_frame_stats_message(obj)
-
-            title_attr = obj.get_attribute("title")
-            if not title_attr.get_string():
-                title_attr.set_expression(
-                    '"Clarisse: {} "+$CT_SEQUENCE'.format(obj.get_name()))
-
-            task_template_attr = obj.get_attribute("task_template")
-            if not task_template_attr.get_string():
-                expr = '"ct_cnode "+$PDIR+"/"+$PNAME+".render -image "'
-                expr += '+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +'
-                expr += '" -directories "+$CT_DIRECTORIES'
-                task_template_attr.set_expression(expr)
-            task_template_attr.set_locked(True)
-
-            packages_attr = obj.get_attribute("packages")
-            if not packages_attr.get_value_count():
-                for path in detected_host_paths:
-                    packages_attr.add_string(path)
-
-            inst_type_attr = obj.get_attribute("instance_type")
-            if not inst_type_attr.get_long():
-                inst_type_attr.set_long(1)
-
-            project_attr = obj.get_attribute("project")
-            if not project_attr.get_long():
-                project_attr.set_long(1)
-
-    @staticmethod
-    def set_doc_strings(s_class):
-        """Document all the attributes here."""
-
-        s_class.set_attr_doc(
-            "setup",
-            """Press to update the available projects and machine types.
-            Sign in may be required.
-            This operation will also update any empty string attributes
-            with sensible defaults.""")
-
-        s_class.set_attr_doc(
-            "title",
-            "The title that will appear in the Conductor dashboard.")
-        s_class.set_attr_doc(
-            "source",
-            "A reference to the image that will be rendered.")
-        s_class.set_attr_doc(
-            "project", "The Conductor project to render into.")
-
-        s_class.set_attr_doc(
-            "use_custom_frames",
-            "Override the frame range specified in the image node.")
-        s_class.set_attr_doc("custom_frames", "Frames to submit.")
-        s_class.set_attr_doc("chunk_size", "Number of frames in a task.")
-        s_class.set_attr_doc(
-            "use_scout_frames",
-            "Render a subset of frames first.")
-        s_class.set_attr_doc(
-            "scout_frames",
-            "Scout frames to render. Others will be set to on-hold.")
-
-        s_class.set_attr_doc(
-            "preemptible",
-            "Preemptible instances are less expensive, but might be \
-            interrupted and retried.")
-        s_class.set_attr_doc("instance_type", "Machine spec.")
-        s_class.set_attr_doc(
-            "retries",
-            "How many times to retry a failed task before giving up.")
+ 
