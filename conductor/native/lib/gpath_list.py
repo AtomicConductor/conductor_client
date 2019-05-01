@@ -41,8 +41,15 @@ class PathList(object):
         happen if a containing directory is added. Therefore we have to
         set the peg position to zero.
         """
-        if not isinstance(path, Path):
+        # print "isinstance(path, Path) ", isinstance(path, Path)
+        if not type(path).__name__ == "Path":
+
+        # if not isinstance(path, Path):
             path = Path(path)
+            # print "PATH IS NOT A Path"
+        # else:
+            # print "PATH IS A Path"
+        # print "PATH: ", path.posix_path()
         self._entries.append(path)
         self._clean = False
         self._current = 0

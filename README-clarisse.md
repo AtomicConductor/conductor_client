@@ -10,7 +10,7 @@ The Conductor submitter for Clarisse is an item in your that allows you to ship 
 See the documentation for Installing Conductor Client Tools.
 
 ### Register the submitter
-The submitter a Scripted Class whose type is `ConductorJob`. It must be registered in Clarisse and the simplest way to do this is in a startup script.
+The simplest way to register the submitter is to add it to your startup script.
 
 Open Clarisse preferences and enter the following path in the *Startup script* section:
 
@@ -20,13 +20,15 @@ or on Windows:
 
 `$CONDUCTOR_LOCATION\conductor\clarisse\startup.py`
 
-This will come into effect the next time you start Clarisse.
+This will kick in the next time you start Clarisse.
 
-If you just want to try it out without adding to your startup, then import the startup file:
+If you just want to try it out quickly, then import the startup file:
 
 `from conductor.clarisse import startup`
 
-Now look in the `Create` menu in Clarisse and you should see the `ConductorJob` option.
+Now look in the `Create` menu in Clarisse and you should see the `ConductorJob` option. 
+
+If not, make sure `CONDUCTOR_LOCATION` is set and 
 
 
 # To create a submission to Conductor:

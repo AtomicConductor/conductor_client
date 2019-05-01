@@ -2,15 +2,12 @@ import traceback
 
 import ix
 from conductor.clarisse import reloader
-
-from conductor.clarisse.scripted_class import (environment_ui,
+from conductor.clarisse.scripted_class import (attr_docs, common,
+                                               environment_ui,
                                                extra_uploads_ui, frames_ui,
-                                               notifications_ui,
-                                               packages_ui, projects_ui,
-                                               submit_actions, variables, 
-                                               common,
-                                               attr_docs)
-
+                                               notifications_ui, packages_ui,
+                                               projects_ui, submit_actions,
+                                               variables)
 from ix.api import OfAttr
 
 
@@ -22,8 +19,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def on_action(self, action, obj, data):
         """Handle any button press in the UI.
 
-        We need to wrap everything in a try because Clarisse crashes if
-        an exception is thrown from a scripted class. See
+        We need to wrap everything in a try/except because Clarisse
+        crashes if an exception is thrown from a scripted class. See
         https://www.isotropix.com/user/bugtracker/363 .
         """
         action_name = action.get_name()
@@ -111,10 +108,10 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         self.declare_task_attributes(s_class)
         self.declare_notification_attributes(s_class)
 
-        self.declare_dev_attributes(s_class)
+        if os.environ.get("CONDUCTOR_MODE") == "dev":
+            self.declare_dev_attributes(s_class)
 
         attr_docs.set(s_class)
-        # ConductorJob.set_doc_strings(s_class)
 
     def declare_dev_attributes(self, s_class):
 
@@ -136,12 +133,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "development")
         attr.set_bool(True)
 
-        
-
     def declare_actions(self, s_class):
         """Attributes concerned with submission.
-
-        Currently only buttons.
         """
 
         self.add_action(s_class, "preview", "submit")
@@ -406,6 +399,3 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "notifications")
         attr.set_read_only(True)
-
-
- 

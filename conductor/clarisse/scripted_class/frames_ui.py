@@ -134,7 +134,7 @@ def update_frame_stats_message(obj):
     num_frames = len(main_seq)
     scout_seq = resolved_scout_sequence(obj)
     if scout_seq:
-        frame_info = "%d/%d Frames" % (len(scout_seq), num_frames)
+        frame_info = "%d/%d Scout/Frames" % (len(scout_seq), num_frames)
     else:
         frame_info = "%d Frames" % num_frames
 

@@ -22,20 +22,13 @@ class Job(object):
     tokens the user can access as clarisse variables in expressions.
     """
 
-    def __init__(self, node, parent_tokens):
+    def __init__(self, node, parent_tokens, render_package):
         """Build job object for a ConductorJob node.
-
-        * Get the sources.
-        * Get the instance type, retries, and preemptible flag.
-        * Get the sequence.
-        * Fetch dependencies, get render package name (which may not exist).
-        * Get the Conductor package IDs and environment.
-        * Get the task attribute, which will be expanded later per-chunk
 
         After _setenv has been called, the Job level token variables are
         valid and calls to evaluate string attributes will correctly resolve
-        where those tokens have been used.  This is why we evaluate title,
-        out_directory, metadata, and tasks after the call to _setenv()
+        where those tokens have been used.  This is why we evaluate title, 
+        tasks, after the call to _setenv()
         """
 
         self.node = node
@@ -43,17 +36,17 @@ class Job(object):
         self.sequence = self._get_sequence()
         self.sources = self._get_sources()
         self.instance = self._get_instance()
+
         out = self._get_output_directory()
         self.common_output_path = out["common_path"]
         self.output_paths = out["output_paths"]
 
         self.tokens = self._setenv(parent_tokens)
 
-        self.render_package = parent_tokens["CT_RENDER_PACKAGE"]
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
         self.dependencies = deps.collect(self.node)
-        self.dependencies.add(self.render_package)
+        self.dependencies.add(render_package)
         self.title = self.node.get_attribute("title").get_string()
         self.metadata = None
 
@@ -106,16 +99,17 @@ class Job(object):
         })
         return result
 
-    def _get_lib_path_env(self, clarisse_path):
-        result = []
-        paths = ["/usr/lib/python2.7/config-x86_64-linux-gnu", clarisse_path, "{}/python".format(clarisse_path)]
-        for path in paths:
-            result.append({
-                "name": "LD_LIBRARY_PATH",
-                "value": path,
-                "merge_policy": "append"
-            })
-        return result
+    # NOTE: This function will not be needed after the next sidecar build.
+    # def _get_lib_path_env(self, clarisse_path):
+    #     result = []
+    #     paths = ["/usr/lib/python2.7/config-x86_64-linux-gnu", clarisse_path, "{}/python".format(clarisse_path)]
+    #     for path in paths:
+    #         result.append({
+    #             "name": "LD_LIBRARY_PATH",
+    #             "value": path,
+    #             "merge_policy": "append"
+    #         })
+    #     return result
 
 
     def _get_environment(self):
@@ -131,9 +125,9 @@ class Job(object):
         paths = list(paths)
         package_env = package_tree.get_environment(paths)
 
-
-        libs = self._get_lib_path_env(package_env["PATH"].split(":")[0])
-        package_env.extend(libs)
+        # NOTE: The next lines will not be needed after the next sidecar build.
+        # libs = self._get_lib_path_env(package_env["PATH"].split(":")[0])
+        # package_env.extend(libs)
 
         extra_vars = self._get_extra_env_vars()
         package_env.extend(extra_vars)
@@ -261,7 +255,6 @@ class Job(object):
         notifications, and project, before submitting to Conductor.
         """
         result = {}
-        # TODO DETECT PLATFORM ??
         result["upload_paths"] = sorted([d.posix_path() for d in self.dependencies])
         result["autoretry_policy"] = (
             {'preempted': {'max_retries': self.instance["retries"]}}

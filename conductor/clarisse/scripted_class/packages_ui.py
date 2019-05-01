@@ -1,12 +1,3 @@
-"""Also, starting to think the idea of plugin packages belonging to host
-packages in a tree like fashion is fundamentally wrong and overcomplicates
-things.
-
-The only constraint should be that at most one version of each software
-can be chosen. No reason a customer can't have a Houdini session with a
-renderman procedural that calls out to Maya in library mode to provide
-geometry on demand.
-"""
 import ix
 from conductor.clarisse.clarisse_info import ClarisseInfo
 from conductor.clarisse.scripted_class import common
@@ -19,7 +10,6 @@ WINDOW_HEIGHT = 600
 WINDOW_WIDTH = 300
 HALF_WIDTH = WINDOW_WIDTH / 2
 BTN_HEIGHT = 20
-
 
 C_LEFT = ix.api.GuiWidget.CONSTRAINT_LEFT
 C_TOP = ix.api.GuiWidget.CONSTRAINT_TOP
@@ -45,14 +35,13 @@ class PackageTreeWidget(ix.api.GuiTree):
     See here:
     https://forum.isotropix.com/viewtopic.php?f=21&t=5391&p=19440#p19440
 
-    Also, starting to think the idea of plugin packages belonging to host
-    packages in a tree like fashion is fundamentally wrong anyway and
-    overcomplicates everything.
+    I'm starting to think the idea of plugin packages belonging to host
+    packages in a tree like fashion is incorrect.
 
     The only constraint should be that at most one version of each software
-    can be chosen. No reason a customer can't have a Houdini session with a
-    renderman procedural that calls out to Maya in library mode to provide
-    geometry at rendertime.
+    can be chosen. There's no reason a customer can't have a Houdini session 
+    with a renderman procedural that calls out to Maya in library mode to 
+    provide geometry at rendertime.
     """
 
     def __init__(self, parent, x_val, y_val, width, height):
@@ -326,7 +315,4 @@ def build(*args):
     window.show_modal()
     while window.is_shown():
         ix.application.check_for_events()
-
-    # win.destroy is recommended but it makes Clarisse crash
-    # when saving the scene :/
-    # win.destroy()
+ 

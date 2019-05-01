@@ -125,6 +125,4 @@ def build(submission, can_submit):
     while win.is_shown():
         ix.application.check_for_events()
 
-    # win.destroy is recommended but makes Clarisse crash
-    # when saving the scene
-    # win.destroy()
+ 
