@@ -37,7 +37,7 @@ def get_scan(obj, policy):
     """Make a dependencyList according to the policy."""
     result = PathList()
     result.add(*_resolve_file_paths(obj, policy))
-    # result.add(*_get_references(obj, policy))
+    result.add(*_get_references(obj, policy))
     return result
 
 
@@ -118,6 +118,24 @@ def _resolve_file_paths(obj, policy):
                 result.append(re.sub(r'(#+)', "*", filename))
         else:
             result.append(filename)
+    return result
+
+def _get_references(_, policy):
+    """Get referenced files from contexts.
+
+    We handle contexts separately because Clarisse has a bug where
+    get_path_attrs() doesn't find all the attrs in a series of nested
+    references. References do not have any wildcards in their names, so
+    no need to do any expansion.
+    """
+    result = []
+    if not policy:
+        return result
+    contexts = ix.api.OfContextSet()
+    ix.application.get_factory().get_root().resolve_all_contexts(contexts)
+    for context in contexts:
+        if context.is_reference() and not context.is_disabled():
+            result.append(context.get_attribute("filename").get_string())
     return result
 
 

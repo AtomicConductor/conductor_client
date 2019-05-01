@@ -53,8 +53,9 @@ def refresh(_, **kw):
 
         task_template_attr = obj.get_attribute("task_template")
         if not task_template_attr.get_string(): 
-            expr = '"ct_cnode "+$CT_RENDER_PACKAGE+"  -log_level Debug5  -image "'
-            expr += '+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +'
+            expr = '"ct_cnode "+$CT_RENDER_PACKAGE+"  -log_level Debug5 '
+            expr += ' -script "+$CT_SCRIPT_DIR+ "/ct_prep.py '
+            expr += ' -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +'
             expr += '" -directories "+$CT_DIRECTORIES'
             task_template_attr.set_expression(expr)
         task_template_attr.set_locked(True)

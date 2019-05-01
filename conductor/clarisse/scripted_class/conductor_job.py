@@ -1,5 +1,5 @@
+import os
 import traceback
-
 import ix
 from conductor.clarisse import reloader
 from conductor.clarisse.scripted_class import (attr_docs, common,
@@ -107,15 +107,18 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         self.declare_environment_attributes(s_class)
         self.declare_task_attributes(s_class)
         self.declare_notification_attributes(s_class)
-
-        if os.environ.get("CONDUCTOR_MODE") == "dev":
-            self.declare_dev_attributes(s_class)
+        
+        self.declare_dev_attributes(s_class)
 
         attr_docs.set(s_class)
 
     def declare_dev_attributes(self, s_class):
 
-        self.add_action(s_class, "reload", "development")
+
+        hidden =  os.environ.get("CONDUCTOR_MODE") != "dev"
+
+        if not hidden:
+            self.add_action(s_class, "reload", "development")
 
         attr = s_class.add_attribute(
             "verbose_errors",
@@ -124,6 +127,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "development")
         attr.set_bool(False)
+        attr.set_hidden(hidden)
 
         attr = s_class.add_attribute(
             "do_submission",
@@ -132,6 +136,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "development")
         attr.set_bool(True)
+        attr.set_hidden(hidden)
+
 
     def declare_actions(self, s_class):
         """Attributes concerned with submission.
@@ -140,14 +146,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         self.add_action(s_class, "preview", "submit")
         self.add_action(s_class, "submit", "submit")
 
-        attr = s_class.add_attribute(
-            "render_package_format", OfAttr.TYPE_LONG,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "submit")
-        attr.set_long(0)
-        attr.add_preset("Binary archive", "0")
-        attr.add_preset("Regular project", "1")
+        # attr = s_class.add_attribute(
+        #     "render_package_format", OfAttr.TYPE_LONG,
+        #     OfAttr.CONTAINER_SINGLE,
+        #     OfAttr.VISUAL_HINT_DEFAULT,
+        #     "submit")
+        # attr.set_long(0)
+        # attr.add_preset("Binary archive", "0")
+        # attr.add_preset("Regular project", "1")
 
         attr = s_class.add_attribute(
             "clean_up_render_package",

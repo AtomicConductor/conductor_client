@@ -1,7 +1,6 @@
 """Build an object to represent a Clarisse Conductor submission."""
 
 import datetime
-import errno
 import os
 import sys
 import traceback
@@ -40,7 +39,6 @@ def _remove_drive_letters():
         except Exception:
             pass
 
-
 def _remove_conductor():
     objects = ix.api.OfObjectArray()
     ix.application.get_factory().get_objects("ConductorJob", objects)
@@ -78,8 +76,8 @@ class Submission(object):
 
         self.project_filename = ix.application.get_current_project_filename()
 
-        self.render_package_format = self.node.get_attribute(
-            "render_package_format").get_long()
+        # self.render_package_format = self.node.get_attribute(
+        #     "render_package_format").get_long()
 
         self._dev_do_submission = self.node.get_attribute(
             "do_submission").get_bool()
@@ -175,10 +173,10 @@ class Submission(object):
     def _get_render_package(self):
         basename = os.path.splitext(
             ix.application.get_current_project_filename())[0]
-        if self.render_package_format == RENDER_PACKAGE_BINARY:
-            return Path("{}.render".format(basename))
-        else:
-            return Path("{}.render.project".format(basename))
+        # if self.render_package_format == RENDER_PACKAGE_BINARY:
+        return Path("{}.render".format(basename))
+        # else:
+        #     return Path("{}.render.project".format(basename))
 
     def _write_render_package(self):
         """Take the value of the render package att and save the file.
@@ -192,15 +190,15 @@ class Submission(object):
         file itself.
         """
  
-        _localize_contexts()
-        _remove_drive_letters()
-        _remove_conductor()
+        # _localize_contexts()
+        # _remove_drive_letters()
+        # _remove_conductor()
 
         package_path = self.render_package.posix_path()
-        if self.render_package_format == RENDER_PACKAGE_BINARY:
-            success = ix.application.export_render_archive(package_path)
-        else:
-            success = ix.application.save_project(package_path)
+        # if self.render_package_format == RENDER_PACKAGE_BINARY:
+        success = ix.application.export_render_archive(package_path)
+        # else:
+        #     success = ix.application.save_project(package_path)
 
         if not success:
             ix.log_error(
@@ -264,7 +262,7 @@ class Submission(object):
     def _post_submit(self):
          # TODO DETECT PLATFORM ??
         self._do_delete_render_package()
-        self._revert_to_saved_scene()
+        # self._revert_to_saved_scene()
 
     def _do_delete_render_package(self):
         if self.delete_render_package:

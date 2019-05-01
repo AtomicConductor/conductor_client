@@ -33,7 +33,7 @@ class PreviewWindow(ix.api.GuiWindow):
     Holds the panel plus buttons to Submit or Cancel and so on.
     """
 
-    def __init__(self, submission, can_submit):
+    def __init__(self, submission, can_submit=True):
         window_height = HEIGHT + BTN_HEIGHT
 
         super(PreviewWindow, self).__init__(ix.application.get_event_window(),
@@ -113,13 +113,13 @@ class PreviewWindow(ix.api.GuiWindow):
         self.hide()
 
 
-def build(submission, can_submit):
+def build(submission):
     """Show the window.
 
     Populate it with submission args for each job. Listen for events
     until the window is hidden.
     """
-    win = PreviewWindow(submission, can_submit)
+    win = PreviewWindow(submission)
 
     win.show_modal()
     while win.is_shown():

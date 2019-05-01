@@ -82,10 +82,10 @@ def check_need_save(which):
 
 def submit(*args):
     """Validate and submit directly."""
-    state, fn = check_need_save(SUBMIT_DIRECT)
-    if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]:
-        ix.log_warning("Submission cancelled.")
-        return
+    # state, fn = check_need_save(SUBMIT_DIRECT)
+    # if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]:
+    #     ix.log_warning("Submission cancelled.")
+    #     return
 
     obj = args[0]
     _validate_images(obj)
@@ -99,16 +99,16 @@ def preview(*args):
 
     Submission can be invoked from the preview panel.
     """
-    state, fn = check_need_save(PREVIEW_FIRST)
-    if state == SAVE_STATE_CANCELLED:
-        ix.log_warning("Submission cancelled.")
-        return
-    can_submit = state in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]
+    # state, fn = check_need_save(PREVIEW_FIRST)
+    # if state == SAVE_STATE_CANCELLED:
+    #     ix.log_warning("Submission cancelled.")
+    #     return
+    # can_submit = state in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]
     obj = args[0]
     _validate_images(obj)
     _validate_packages(obj)
     submission = Submission(obj)
-    preview_ui.build(submission, can_submit)
+    preview_ui.build(submission)
 
 
 def _validate_images(obj):
