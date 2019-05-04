@@ -171,13 +171,19 @@ class PackageTreeWidget(ix.api.GuiTree):
             parent_item.expand()
 
     def _select_leaf(self, parent_item, *nodes):
+        print "NODES:", nodes
         try:
             children = parent_item.child_list
             child_item = next(c for c in children if c.get_name() == nodes[0])
         except StopIteration:
             return
+
         if len(nodes) == 1:
+            print "LEN NODES ONE set_is_selected", child_item.get_name()
             child_item.set_is_selected(True)
+            child_item.set_is_dirty(True)
+            # child_item.select(True)
+
             return
         self._select_leaf(child_item, *nodes[1:])
 
@@ -219,7 +225,8 @@ class PackageChooser(ix.api.GuiWindow):
             self.clear_but,
             'EVT_ID_PUSH_BUTTON_CLICK',
             self.on_clear_but)
-
+        self.clear_but.set_enable(False)
+        
         self.detect_but = ix.api.GuiPushButton(
             self,
             HALF_WIDTH,
@@ -232,6 +239,7 @@ class PackageChooser(ix.api.GuiWindow):
             self.detect_but,
             'EVT_ID_PUSH_BUTTON_CLICK',
             self.on_detect_but)
+        self.detect_but.set_enable(False)
 
     def _build_bottom_row(self):
         self.cancel_but = ix.api.GuiPushButton(
@@ -264,11 +272,14 @@ class PackageChooser(ix.api.GuiWindow):
 
     def on_detect_but(self, sender, eventid):
         """Select the current package if available in the list."""
+        print "-" * 80
         host = ClarisseInfo().get()
+        print host
         paths = ConductorDataBlock(
             product="clarisse").package_tree().get_all_paths_to(
                 **host)
-
+        print paths
+        print "-" * 80
         self.tree_widget.select_path_leaves(paths)
 
     def on_cancel_but(self, sender, eventid):
@@ -310,6 +321,7 @@ def build(*args):
     attr = node.get_attribute("packages")
     paths = ix.api.CoreStringArray()
     attr.get_values(paths)
+    print "in build", list(paths)
     window.tree_widget.select_path_leaves(paths)
 
     window.show_modal()

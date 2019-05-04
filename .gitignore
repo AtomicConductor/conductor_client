@@ -63,3 +63,7 @@ codeship.aes
 
 # analysis
 .prospector.yaml
+
+# mkdocs
+site/
+unused_css/

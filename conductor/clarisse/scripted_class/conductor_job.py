@@ -38,7 +38,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             elif action_name == "submit":
                 common.refresh(obj)
                 submit_actions.submit(obj, data)
-            elif action_name == "setup":
+            elif action_name == "refresh":
                 common.refresh(obj, force=True)
             elif action_name == "best_chunk_size":
                 frames_ui.handle_best_chunk_size(obj, data)
@@ -142,9 +142,9 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def declare_actions(self, s_class):
         """Attributes concerned with submission.
         """
-
-        self.add_action(s_class, "preview", "submit")
-        self.add_action(s_class, "submit", "submit")
+        self.add_action(s_class, "refresh", "actions")
+        self.add_action(s_class, "preview", "actions")
+        self.add_action(s_class, "submit", "actions")
 
         # attr = s_class.add_attribute(
         #     "render_package_format", OfAttr.TYPE_LONG,
@@ -165,8 +165,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
     def declare_general_attributes(self, s_class):
         """Most commonly accessed attributes."""
-        self.add_action(s_class, "setup", "general")
-
+  
         attr = s_class.add_attribute(
             "title",
             OfAttr.TYPE_STRING,
@@ -254,7 +253,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "frames")
         attr.set_read_only(True)
-        attr.set_string("- Please click setup -")
+        attr.set_string("- Please click refresh -")
 
     def declare_machines_attributes(self, s_class):
         """Attributes related to setting the instance type."""
@@ -273,7 +272,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "machines")
         attr.set_long(0)
-        attr.add_preset("- Please click setup -", "0")
+        attr.add_preset("- Please click refresh -", "0")
 
         attr = s_class.add_attribute(
             "retries",
