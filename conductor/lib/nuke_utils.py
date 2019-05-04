@@ -148,15 +148,28 @@ def resolve_knob_path(knob):
     return: str. the resolved path value
 
     example paths:
-        '[python {nuke.script_directory()}]/../images/sequences/02/image.%04d.jpg'
-        '../images/sequences/[value this.name]/image.%04d.jpg'
-        '../images/sequences/03/image.%04d.jpg'
-        '../images/sequences/../sequences/03/image.%04d.jpg'
+        '[python {nuke.script_directory()}]/../images/image.%04d.jpg'
+        '../images/[value this.name]/image.%04d.jpg'
+        '../images/image.%04d.jpg'
+        'images/../images/image.%04d.jpg'
+        '../worst\"file path'sEver$.%04d.jpg
         ''
     '''
     raw_value = knob.value()
     logger.debug("Resolving tcl expressions (if any) on %s value: %r", knob.fullyQualifiedName(), raw_value)
-    path = nuke.runIn(knob.node().fullName(), "nuke.tcl('return %s')" % raw_value.replace("'", "\\'"))
+
+    # In order to resolve any tcl expressions, we'll need to invoke the tcl interpreter. ugly :( .
+    # To complicate things further, we need to make the tcl call from within the context of the node
+    # we're currently evaluating. So ultimately there are three call layers we have to go through:
+    # 1. call the tcl command (subst)
+    # 2. via a python call string (nuke.tcl)
+    # 3. that is evaluated/called from within the context of the the given node (nuke.runIn)
+
+    # Construct a python command string that will invoke tcl's "subst" command in order to evaluate the knob value.
+    # Use the %r substitution so that the string is self-quoted and escaped properly.
+    command = "nuke.tcl('subst', '-nobackslashes', %r)" % raw_value
+    # run the tcl command within the context of the node.
+    path = nuke.runIn(knob.node().fullName(), command)
 
     # If the path is empty/none, simply return.  no further processing necessary
     if not path:
