@@ -22,7 +22,6 @@ cp -r ../../bin \
       ../../conductor \
       ../../maya_shelf \
       ../../nuke_menu \
-      ../../clarisse_shelf \
       ./python \
       ${BUILD_DIR}/root/Applications/Conductor.app/Contents/MacOS
 cp setenv ${BUILD_DIR}/root/Applications/Conductor.app/Contents/MacOS
