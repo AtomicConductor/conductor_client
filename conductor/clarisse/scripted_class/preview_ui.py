@@ -54,15 +54,16 @@ class PreviewWindow(ix.api.GuiWindow):
             'EVT_ID_PUSH_BUTTON_CLICK',
             self.on_close_but)
 
-        self.apply_but = ix.api.GuiPushButton(
+        self.write_but = ix.api.GuiPushButton(
             self,
             BOTTOM_BUT_WIDTH,
             HEIGHT,
             BOTTOM_BUT_WIDTH,
             BTN_HEIGHT,
-            "Submit")
-        self.apply_but.set_constraints(C_LEFT, C_BOTTOM, C_RIGHT, C_BOTTOM)
-        self.apply_but.set_enable(can_submit)
+            "Write package only")
+        self.write_but.set_constraints(C_LEFT, C_BOTTOM, C_RIGHT, C_BOTTOM)
+        self.write_but.set_enable(can_submit)
+
 
         self.go_but = ix.api.GuiPushButton(
             self,
@@ -70,15 +71,15 @@ class PreviewWindow(ix.api.GuiWindow):
             HEIGHT,
             BOTTOM_BUT_WIDTH,
             BTN_HEIGHT,
-            "Submit and close")
+            "Submit")
         self.go_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
         self.go_but.set_enable(can_submit)
 
         if can_submit:
             self.connect(
-                self.apply_but,
+                self.write_but,
                 'EVT_ID_PUSH_BUTTON_CLICK',
-                self.on_apply_but)
+                self.on_write_but)
             self.connect(
                 self.go_but,
                 'EVT_ID_PUSH_BUTTON_CLICK',
@@ -103,14 +104,16 @@ class PreviewWindow(ix.api.GuiWindow):
         """
         self.hide()
 
-    def on_apply_but(self, sender, eventid):
+    def on_write_but(self, sender, eventid):
         """Submit and keep the window visible."""
-        self.submission.submit()
+        self.submission.write_render_package()
+        ix.log_info("Wrote package to {}".format(package_path))
 
     def on_go_but(self, sender, eventid):
         """Submit and hide(destroy) the window."""
         self.submission.submit()
-        self.hide()
+        
+        # self.hide()
 
 
 def build(submission):

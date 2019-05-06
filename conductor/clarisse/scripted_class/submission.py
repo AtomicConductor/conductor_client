@@ -79,9 +79,6 @@ class Submission(object):
         # self.render_package_format = self.node.get_attribute(
         #     "render_package_format").get_long()
 
-        self._dev_do_submission = self.node.get_attribute(
-            "do_submission").get_bool()
-
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.render_package = self._get_render_package()
         self.delete_render_package = self.node.get_attribute(
@@ -178,7 +175,7 @@ class Submission(object):
         # else:
         #     return Path("{}.render.project".format(basename))
 
-    def _write_render_package(self):
+    def write_render_package(self):
         """Take the value of the render package att and save the file.
 
         A render package may be ascii or binary
@@ -189,20 +186,14 @@ class Submission(object):
         for this reason we use this feature rather than send the project
         file itself.
         """
- 
-        # _localize_contexts()
-        # _remove_drive_letters()
-        # _remove_conductor()
 
         package_path = self.render_package.posix_path()
-        # if self.render_package_format == RENDER_PACKAGE_BINARY:
         success = ix.application.export_render_archive(package_path)
-        # else:
-        #     success = ix.application.save_project(package_path)
 
         if not success:
             ix.log_error(
                 "Failed to export render package {}".format(package_path))
+        return package_path
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -239,30 +230,26 @@ class Submission(object):
         Collect responses and show them in the log.
         """
 
-        self._write_render_package()
+        self.write_render_package()
 
-        if self._dev_do_submission:
-            results = []
-            for job_args in self.get_args():
-                try:
-                    remote_job = conductor_submit.Submit(job_args)
-                    response, response_code = remote_job.main()
-                    results.append(
-                        {"code": response_code, "response": response})
-                except BaseException:
-                    results.append({"code": "undefined", "response": "".join(
-                        traceback.format_exception(*sys.exc_info()))})
-            for result in results:
-                ix.log_info(result)
-        else:
-            ix.log_info("Dev option: submission suppressed")
+        results = []
+        for job_args in self.get_args():
+            try:
+                remote_job = conductor_submit.Submit(job_args)
+                response, response_code = remote_job.main()
+                results.append(
+                    {"code": response_code, "response": response})
+            except BaseException:
+                results.append({"code": "undefined", "response": "".join(
+                    traceback.format_exception(*sys.exc_info()))})
+        for result in results:
+            ix.log_info(result)
 
         self._post_submit()
 
     def _post_submit(self):
-         # TODO DETECT PLATFORM ??
+        """Cleanup."""
         self._do_delete_render_package()
-        # self._revert_to_saved_scene()
 
     def _do_delete_render_package(self):
         if self.delete_render_package:

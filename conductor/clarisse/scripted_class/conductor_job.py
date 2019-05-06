@@ -129,14 +129,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_bool(False)
         attr.set_hidden(hidden)
 
-        attr = s_class.add_attribute(
-            "do_submission",
-            OfAttr.TYPE_BOOL,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "development")
-        attr.set_bool(True)
-        attr.set_hidden(hidden)
+        # attr = s_class.add_attribute(
+        #     "do_submission",
+        #     OfAttr.TYPE_BOOL,
+        #     OfAttr.CONTAINER_SINGLE,
+        #     OfAttr.VISUAL_HINT_DEFAULT,
+        #     "development")
+        # attr.set_bool(True)
+        # attr.set_hidden(hidden)
 
 
     def declare_actions(self, s_class):
