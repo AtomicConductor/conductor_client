@@ -22,7 +22,6 @@ CONDUCTOR_VARS = [
     "CT_RETRIES",
     "CT_JOB",
     "CT_SOURCES",
-    "CT_TYPE",
     "CT_SCOUT",
     "CT_CHUNKSIZE",
     "CT_CHUNKCOUNT",

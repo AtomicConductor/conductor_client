@@ -97,12 +97,13 @@ def refresh(_, **kw):
         packages_attr = obj.get_attribute("packages")
         if not packages_attr.get_value_count():
             for path in detected_host_paths:
+                print detected_host_paths
                 packages_attr.add_string(path)
 
         inst_type_attr = obj.get_attribute("instance_type")
-        if not inst_type_attr.get_long():
-            inst_type_attr.set_long(1)
+        # if not inst_type_attr.get_long():
+        #     inst_type_attr.set_long(0)
 
         project_attr = obj.get_attribute("project")
-        if not project_attr.get_long():
-            project_attr.set_long(1)
+        # if not project_attr.get_long():
+        #     project_attr.set_long(0)

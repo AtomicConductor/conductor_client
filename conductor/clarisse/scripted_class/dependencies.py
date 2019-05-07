@@ -143,7 +143,7 @@ def _attribute_sequence(attr, **kw):
     """Get the sequence associated with a filename attribute.
 
     Many attributes have an associated sequence_mode attribute, which
-    when set to 1 signifies varying frames, and makes availabel start,
+    when set to 1 signifies varying frames, and makes available start,
     end, and offset attributes to help specify the sequence.
 
     If the keyword intersector is given, then work out the intersection
@@ -175,7 +175,10 @@ def _attribute_sequence(attr, **kw):
         # If there's a frame offset on the attribute, then we need to
         # do the intersection in the context of that offset.
         offset = obj.get_attribute("frame_offset").get_long()
-        return Sequence.create(start, end, 1).offset(
-            offset).intersection(intersector).offset(-offset)
 
+        seq = Sequence.create(start, end, 1).offset(offset)
+        seq = seq.intersection(intersector)
+        if not seq:
+            return
+        return seq.offset(-offset)
     return Sequence.create(start, end, 1)
