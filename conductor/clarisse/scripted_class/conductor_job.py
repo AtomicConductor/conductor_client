@@ -155,13 +155,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         # attr.add_preset("Binary archive", "0")
         # attr.add_preset("Regular project", "1")
 
-        attr = s_class.add_attribute(
-            "clean_up_render_package",
-            OfAttr.TYPE_BOOL,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "submit")
-        attr.set_bool(True)
 
     def declare_general_attributes(self, s_class):
         """Most commonly accessed attributes."""
@@ -332,6 +325,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "upload")
         attr.set_bool(False)
+
+        attr = s_class.add_attribute(
+            "clean_up_render_package",
+            OfAttr.TYPE_BOOL,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "upload")
+        attr.set_bool(True)
 
         self.add_action(s_class, "manage_extra_uploads", "upload")
 

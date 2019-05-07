@@ -28,7 +28,7 @@ To register the submitter, set the provided startup script in the prefereces pan
 ![prefs][prefs]
 
 
-!!!note ""
+!!!note
     To avoid a restart, enter the following in the script editor:
 
     `from conductor.clarisse import startup`
@@ -47,7 +47,7 @@ Once the plugin is registered, you should see ConductorJob in the **Create** men
 
 You'll now see a ConductorJob item in the attribute editor. 
 
-!!!note ""
+!!!note
     You can hover over any attribute name to get a detailed description of its purpose and behavior.
 
 * Set a title for your job. This will show up on the Conductor dashboard.
@@ -69,7 +69,7 @@ You'll notice the **Frames Info** attribute has updated to let you know which fr
 
 ![frames][frames]
 
-* If you have some idea of the machine specification needed for your images, choose it in the **Instance Type** drop-down menu.
+* If you know the machine specification needed for your images, choose it in the **Instance Type** drop-down menu.
 * Check that your version of Clarisse appears in the **Packages** attribute. If it hasn't been detected, you'll need to open the **Choose Packages** panel and choose a suitable version.
 
 You are now ready to submit your render using either the **Submit** or **Preview** buttons, which you'll find at the top of the attribute editor. You are encouraged to use the **Preview** button, which will allow you to first check the parameters that will be submitted.
@@ -78,7 +78,190 @@ You are now ready to submit your render using either the **Submit** or **Preview
 ![preview][preview]
 
 
-If everyting looks good, press the **Submit** button.
+If everything looks good, press the **Submit** button, and then head over to your Conductor dashboard to check on the job's progress.
+
+
+## Reference
+
+In this section you'll find a complete discussion of attributes, variables and other functionality.    
+
+### Attributes
+
+---
+#### title
+The title that appears in the Conductor dashboard. You may use Clarisse variables and some Conductor variables in an expression to construct the title. If for example, you want the title to contain the filename, the item name, and the frame range, then enter the following expression.
+
+```"$CT_PDIR +" "+ $CT_JOB +" "+ $CT_SEQUENCE```
+
+---
+#### images
+Images to be rendered. Images must have their **Render to Disk** attribute set and their **Save As** field must contain a filename. You may use the **eye** buttons to disable one or more images.
+
+---
+#### project
+The Conductor project. The project dropdown menu is populated or updated when the submitter connects to your Conductor account. If the menu contains only the **- not set -** option, then press the **refresh** button to connect.
+
+!!!note
+    If the list of projects in your account changed since the last time you opened the Clarisse project, you may find it is set incorrectly when it connects. 
+
+---
+#### use_custom_frames
+Activate a text field to enter a custom frame list. When set, the frame ranges on connected image items will be ignored and the custom frames will be used for all. If you leave **use_custom_frames** off, then each image may specify it's own range and they may be different from each other. By default, the render command generated for each task, renders all images together and calculates the correct frames to render for each image within the chunk. 
+
+---
+#### custom_frames
+The set of frames to render when **use_custom_frames** is on. To specify te set of frames enter a comma-separated list of arithmetic progressions. In most cases this will be s simple range.
+
+ `1001-1200` 
+
+However, any set of frames may be specified efficiently in this way.
+
+ `1,7,10-20,30-60x3,1001` 
+
+Negative frame numbers are not valid.
+
+---
+#### chunk_size
+A **chunk** is the set of frames handled by one task. If your renders are fairly fast, it may make sense to render may frames per task, because the time it takes to spin up instances and sync can be significant by comparison. 
+
+---
+#### best_chunk_size
+A convenience function that will try to distribute frames more evenly among chunks. It adjusts **chunk_size**
+while keeping the number of chunks unchanged. 
+
+A contrived example. You want to render 100 frames and you set chunk size to 33. This generates 4 chunks of lengths, 33, 33, 33, and 1. If you press **best_chunk_size**, **chunk_size** becomes 25. You still have 4 chunks.
+
+---
+#### use_scout_frames
+Activates a set of frames to to be rendered first. This allows you to check a subsample of frames before committing to the full render.
+
+---
+#### scout_frames
+Scout-frames to render. When the submission reaches Conductor, only those tasks containing the specified scout frames are started. Other tasks are set to a holding state.
+
+!!!note
+    If **chunk_size** is greater than one, then you may find extra frames are rendered that were not listed as scout frames. As the smallest usnit of execution is a task, there is no way to specify that part of a task should be started and another part held.
+
+---
+#### preemptible
+Preemptible instances are less expensive to run than non-premptible. The drawback is that they may be stopped at any time by the cloud provider. The probability of an instance being preempted rises with the duration of the task. Conductor does not support checkpointing, so if a task is preempted it is started from scratch on another instance. It is possible to change the preemptible setting in the the dashboard for your account.
+
+---
+#### instance_type
+Specify the hardware configuration used to run your tasks. Higher specification instances are potentially faster and able to handle heavier scenes,    
+
+---
+#### retries
+Sets the number of times to retry a failed task before marking it failed.
+
+---
+#### dependency_scan_policy
+Specifies how to search the project for references to files it depends on. The Smart Sequence option tries to identify only those files that are needed for the specified frames. The Glob option finds any files that match a hash pattern. If you have saved all required files in the cached upload list, you can set the policy to No Scan.
+
+---
+#### local_upload
+Uploads files from your workstation, as opposed to using an upload daemon.
+
+---
+#### force_upload
+Forces files to be uploaded, even if they already exist at Conductor.
+
+---
+#### upload_only
+Uploads files but does not start any tasks.
+
+---
+#### manage_extra_uploads
+Opens a panel to browse or scan for files to upload. If any files are not found by the dependency scan at submission time, they may be added here.
+
+---
+#### extra_uploads
+Files to uploaded in addition to any files found by dependency scanning.
+
+---
+#### choose_packages
+Opens the package chooser panel.
+
+---
+#### packages
+Packages made available to the remote compute instances.
+
+---
+#### manage_extra_environment
+Opens a panel for making modifications to the remote environment.
+
+---
+#### extra_environment
+Extra environment encoded as a JSON string.
+
+---
+#### task_template
+Specifies a template for the command that will be run on remote instances. See the Conductor documentation site for a detailed discussion.
+
+---
+#### notify
+Indicates that notifications will be sent by email on job completion.
+
+---
+#### email_addresses
+A comma delimited list of emails addresses to notify on job completion.
+
+### Actions
+
+### Extra uploads window
+
+### Package chooser 
+
+### Extra environment window
+
+### Conductor Variables
+
+The **ConductorJob** scripted class is designed to be flexible and powerful. Commands that are executed on Conductor's cloud machines are fully configurable from within the UI. In order to achieve this level of control, a set of variables are available. These are found in Clarisse's **Variables** panel. In most cases you don't need them other than to set the job title. If you choose to use them you should understand how they work.
+
+All the Conductor variables are prefixed with `CT_` and are created when the **ConductorJob** is first registrered with Clarisse. They are intended for use only in **ConductorJob** items, and their values are set at the time you create a submission or preview. They cannot be relied upon outside this context, and the value displayed in the Variables panel is only the last value that was set. 
+
+####Conductor variables exist at 3 different scopes:
+
+* **Global.** The same value for all job items. Example `CT_SCRIPT_DIR`.
+* **Job.** A different vaue for each job. Example `CT_SEQUENCE`
+* **Task.** A different vaue for each generated task. . Example `CT_CHUNKS`
+
+Below is the full list of Conductor variables.  
+
+|Variable name | Example value | Scope | 
+|:------------|:-------------|:-------------|
+|CT_SEQLENGTH | 10 | Job |
+|CT_SEQUENCE | 1-10 | Job |
+|CT_SEQUENCEMIN | 1 | Job |
+|CT_SEQUENCEMAX | 10 | Job |
+|CT_CORES | 2 | Job |
+|CT_FLAVOR | standard | Job |
+|CT_INSTANCE | 2 core, 7.50GB Mem | Job |
+|CT_PREEMPTIBLE | preemptible | Job |
+|CT_RETRIES | 3 | Job |
+|CT_JOB | conductor_job_item_name | Job |
+|CT_SOURCES | project://scene/image1 project://scene/image2 | Job |
+|CT_SCOUT | 3-8x5 | Job |
+|CT_CHUNKSIZE | 2 | Job |
+|CT_CHUNKCOUNT | 5 | Job |
+|CT_SCOUTCOUNT | 2 | Job |
+|CT_TIMESTAMP | 2019_05_07_01_12_46 | Job |
+|CT_SUBMITTER | conductor_job_item_name | Job |
+|CT_RENDER_PACKAGE | /path/to/project/shot.render | Global |
+|CT_PROJECT | dpool | Job |
+|CT_CHUNKTYPE | regular | Task |
+|CT_CHUNKS | 9:10 9:10 | Task |
+|CT_CHUNKLENGTH | 2 | Task |
+|CT_CHUNKSTART | 9 | Task |
+|CT_CHUNKEND | 10 | Task |
+|CT_CHUNKSTEP | 1 | Task |
+|CT_DIRECTORIES | /path/to/renders/layerA /path/to/renders/layerB | Job |
+|CT_PDIR | /path/to/project | Global |
+|CT_SCRIPT_DIR | /path/to/conductor/clarisse/scripts |  Global |
+
+
+
+
 
 
 
