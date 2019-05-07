@@ -15,7 +15,7 @@ def _resolve(ctx):
 
     If a context (A) is a reference to another file and that file
     contains a reference contxt (B), and A's filepath is wrong, then we
-    don't know anything about B, so we can't gather all contexts in one
+    may not know anything about B, so we can't gather all contexts in one
     hit and replace drive letters. We must recurse down, and for each 
     reference context, resolve its path and then visit the contxts it
     contains.
@@ -33,7 +33,7 @@ def _resolve(ctx):
 
 
 def main():
-    """Resolve all contexts and other filepaths"""
+    """Resolve all contexts and other filepaths."""
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
     _resolve(contexts[0])

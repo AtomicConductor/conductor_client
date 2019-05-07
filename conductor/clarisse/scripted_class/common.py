@@ -1,7 +1,41 @@
+import os
 import ix
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.clarisse.clarisse_info import ClarisseInfo
-from conductor.clarisse.scripted_class import (frames_ui,instances_ui,projects_ui)
+from conductor.clarisse.scripted_class import (
+    frames_ui, instances_ui, projects_ui)
+
+
+
+
+DEFAULT_CMD_EXPRESSION = """
+cmd = "bash -c 'mkdir -p ";
+cmd += $CT_DIRECTORIES;
+cmd += " && cnode ";
+cmd += $CT_RENDER_PACKAGE;
+cmd += "  -log_level Debug5  -image ";
+cmd += $CT_SOURCES;
+cmd += " -image_frames_list ";
+cmd += $CT_CHUNKS;
+cmd += "'";
+cmd"""
+
+if os.name == "nt":
+    DEFAULT_CMD_EXPRESSION = """
+cmd = "bash -c 'mkdir -p ";
+cmd += $CT_DIRECTORIES;
+cmd += " && cnode ";
+cmd += " -script ";
+cmd += $CT_SCRIPT_DIR;
+cmd += "/ct_prep.py ";
+cmd += $CT_RENDER_PACKAGE;
+cmd += "  -log_level Debug5  -image ";
+cmd += $CT_SOURCES;
+cmd += " -image_frames_list ";
+cmd += $CT_CHUNKS;
+cmd += "'";
+cmd"""
+
 
 def force_ae_refresh(node):
     """Trigger an attribute editor refresh.
@@ -22,14 +56,17 @@ def force_ae_refresh(node):
         attr.add_preset(preset[0], preset[1])
         attr.set_long(applied)
 
+
 staticmethod
+
+
 def refresh(_, **kw):
     """Respond to do_setup button click.
 
-    Update UI for projects and instances from the data block. kwargs
-    may contain the force keyword, which will invalidate the
-    datablock and fetch fresh from Conductor. We may as well update
-    all ConductorJob nodes.
+    Update UI for projects and instances from the data block. kwargs may
+    contain the force keyword, which will invalidate the datablock and
+    fetch fresh from Conductor. We may as well update all ConductorJob
+    nodes.
     """
     kw["product"] = "clarisse"
     data_block = ConductorDataBlock(**kw)
@@ -52,12 +89,9 @@ def refresh(_, **kw):
                 '"Clarisse: {} "+$CT_SEQUENCE'.format(obj.get_name()))
 
         task_template_attr = obj.get_attribute("task_template")
-        if not task_template_attr.get_string(): 
-            expr = '"ct_cnode "+$CT_RENDER_PACKAGE+"  -log_level Debug5 '
-            expr += ' -script "+$CT_SCRIPT_DIR+ "/ct_prep.py '
-            expr += ' -image "+$CT_SOURCES+" -image_frames_list "+$CT_CHUNKS +'
-            expr += '" -directories "+$CT_DIRECTORIES'
-            task_template_attr.set_expression(expr)
+        if not task_template_attr.get_string():
+
+            task_template_attr.set_expression(DEFAULT_CMD_EXPRESSION)
         task_template_attr.set_locked(True)
 
         packages_attr = obj.get_attribute("packages")
