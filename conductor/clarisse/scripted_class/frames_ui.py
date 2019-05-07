@@ -2,6 +2,8 @@ import ix
 
 from conductor.native.lib.sequence import Sequence
 
+# Maybe these funcs should be renamed to on_<attr>_changed
+
 
 def handle_use_custom_frames(obj, attr):
     hide = not attr.get_bool()
@@ -55,6 +57,20 @@ def image_range(image):
         image.get_attribute("last_frame").get_long(),
         image.get_attribute("frame_step").get_long()
     )
+
+
+def set_image_range(image, seq):
+    """Set the image frame range to cover the whole Sequence.
+
+    This is required for making sure the image is renderable when a
+    custom sequence is selected. It is not possible to set the step
+    unless the sequence is a progression. But this function is not
+    intended to set the step. It only sets the range. If at some point
+    the step becomes important then we can add a keyword or something.
+    """
+    image.get_attribute("first_frame").set_long(seq.start),
+    image.get_attribute("last_frame").set_long(seq.end),
+    image.get_attribute("frame_step").set_long(1)
 
 
 def _union_sequence(images):

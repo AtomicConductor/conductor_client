@@ -129,14 +129,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_bool(False)
         attr.set_hidden(hidden)
 
-        # attr = s_class.add_attribute(
-        #     "do_submission",
-        #     OfAttr.TYPE_BOOL,
-        #     OfAttr.CONTAINER_SINGLE,
-        #     OfAttr.VISUAL_HINT_DEFAULT,
-        #     "development")
-        # attr.set_bool(True)
-        # attr.set_hidden(hidden)
 
 
     def declare_actions(self, s_class):
@@ -145,16 +137,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         self.add_action(s_class, "refresh", "actions")
         self.add_action(s_class, "preview", "actions")
         self.add_action(s_class, "submit", "actions")
-
-        # attr = s_class.add_attribute(
-        #     "render_package_format", OfAttr.TYPE_LONG,
-        #     OfAttr.CONTAINER_SINGLE,
-        #     OfAttr.VISUAL_HINT_DEFAULT,
-        #     "submit")
-        # attr.set_long(0)
-        # attr.add_preset("Binary archive", "0")
-        # attr.add_preset("Regular project", "1")
-
 
     def declare_general_attributes(self, s_class):
         """Most commonly accessed attributes."""

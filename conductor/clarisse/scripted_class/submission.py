@@ -6,7 +6,7 @@ import sys
 import traceback
 
 import ix
-from conductor.clarisse.scripted_class import variables
+from conductor.clarisse.scripted_class import variables, frames_ui
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
@@ -16,6 +16,7 @@ from conductor.native.lib.gpath import Path
 RENDER_PACKAGE_BINARY = 0
 RENDER_PACKAGE_ASCII = 1
 
+EXPORT_CMD_BATCH_NAME = "ExportRenderPackage"
 
 def _localize_contexts():
     contexts = ix.api.OfContextSet()
@@ -38,6 +39,7 @@ def _remove_drive_letters():
                     with_drive=False))
         except Exception:
             pass
+
 
 def _remove_conductor():
     objects = ix.api.OfObjectArray()
@@ -159,7 +161,8 @@ class Submission(object):
             "$CONDUCTOR_LOCATION/conductor/clarisse/scripts").posix_path(with_drive=False)
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
-        tokens["CT_RENDER_PACKAGE"] = self.render_package.posix_path(with_drive=False)
+        tokens["CT_RENDER_PACKAGE"] = self.render_package.posix_path(
+            with_drive=False)
         tokens["CT_PROJECT"] = self.project["name"]
 
         for token in tokens:
@@ -178,13 +181,12 @@ class Submission(object):
     def write_render_package(self):
         """Take the value of the render package att and save the file.
 
-        A render package may be ascii or binary
-        designed for rendering. It must be saved in the same directory
-        as the project due to the way Clarisse handles relative
-        dependencies. Currently it does not make references local,
-        however localized refs are a planned feature for Isotropix, and
-        for this reason we use this feature rather than send the project
-        file itself.
+        A render package may be ascii or binary designed for rendering.
+        It must be saved in the same directory as the project due to the
+        way Clarisse handles relative dependencies. Currently it does
+        not make references local, however localized refs are a planned
+        feature for Isotropix, and for this reason we use this feature
+        rather than send the project file itself.
         """
 
         package_path = self.render_package.posix_path()
@@ -202,7 +204,7 @@ class Submission(object):
         job. The project, notifications, and upload args are the same
         for all jobs, so they are set here. Other args are provided by
         Job objects and updated with these submission level args to form
-        complete job submissions.
+        each complete job submissions.
         """
         result = []
         submission_args = {}
@@ -230,6 +232,7 @@ class Submission(object):
         Collect responses and show them in the log.
         """
 
+        self._pre_submit()
         self.write_render_package()
 
         results = []
@@ -247,9 +250,38 @@ class Submission(object):
 
         self._post_submit()
 
+    def _pre_submit(self):
+        """Prepare for submission.
+
+        For any job node that has custom frames, we need to make sure
+        the image node covers those frames, otherwise it won't render. I
+        believe this is a failing on the part of Clarisse. If you
+        specify a frame to render on the command line, it should be
+        rendered even if it is not within the range specified on the
+        image node.
+        """
+        # start unoable thing here
+        ix.enable_command_history()
+        ix.begin_command_batch(EXPORT_CMD_BATCH_NAME)
+
+        for node in self.nodes:
+            if node.get_attribute("use_custom_frames").get_bool():
+                seq = frames_ui.custom_frame_sequence(node)
+                images = ix.api.OfObjectArray()
+                node.get_attribute("images").get_values(images)
+                for image in images:
+                    frames_ui.set_image_range(image, seq)
+        ix.end_command_batch()
+
     def _post_submit(self):
         """Cleanup."""
+        # undo unoable thing here
         self._do_delete_render_package()
+        
+        ix.application.get_command_manager().undo()
+        ix.disable_command_history()
+
+
 
     def _do_delete_render_package(self):
         if self.delete_render_package:
