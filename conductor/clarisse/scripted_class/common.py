@@ -58,8 +58,6 @@ def force_ae_refresh(node):
 
 
 staticmethod
-
-
 def refresh(_, **kw):
     """Respond to do_setup button click.
 

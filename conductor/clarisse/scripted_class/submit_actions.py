@@ -116,9 +116,9 @@ def preview(*args):
     preview_ui.build(submission, can_submit=can_submit)
 
 def export_render_package(*args):
-    """Validate and show the script in a panel.
+    """Just prepare and export the render package.
 
-    Submission can be invoked from the preview panel.
+    Useful if the user wants to run one of the commands on it locally.
     """
     state, fn = check_need_save(PREVIEW_FIRST)
     if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]:

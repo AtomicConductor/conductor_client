@@ -1,5 +1,5 @@
 site_name: Conductor Documentation
-theme: windmill
+theme: readthedocs
 site_description: Concuctor cloud rendering on demand
 repo_url: https://github.com/AtomicConductor/conductor_client
 copyright: Conductor Technologies
