@@ -6,7 +6,7 @@ LETTER_RE = re.compile(r'^([a-zA-Z]):')
 
 def _strip_drive_letter(attr):
     path = attr.get_string()
-    ix.log_info("Stripping letter from {}".format(path))
+    print ("Stripping letter from {}".format(path))
     attr.set_string(re.sub(LETTER_RE, "", path))
 
 
@@ -20,6 +20,7 @@ def _resolve(ctx):
     reference context, resolve its path and then visit the contxts it
     contains.
     """
+    print ("Resolving context recursively")
     level = ctx.get_level()
     if ctx.is_reference():
         attr = ctx.get_attribute("filename")
@@ -34,11 +35,14 @@ def _resolve(ctx):
 
 def main():
     """Resolve all contexts and other filepaths."""
+    print ("Resolving drive letter file paths")
+
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
     _resolve(contexts[0])
 
     for attr in ix.api.OfAttr.get_path_attrs():
+        print ("Resolving attrs {}".format(attr.get_name()))
         _strip_drive_letter(attr)
 
 

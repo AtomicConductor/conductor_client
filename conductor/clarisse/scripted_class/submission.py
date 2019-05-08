@@ -18,6 +18,7 @@ RENDER_PACKAGE_ASCII = 1
 
 EXPORT_CMD_BATCH_NAME = "ExportRenderPackage"
 
+
 def _localize_contexts():
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
@@ -30,7 +31,6 @@ def _localize_contexts():
 
 
 def _remove_drive_letters():
-
     for attr in ix.api.OfAttr.get_path_attrs():
         try:
             attr.set_string(
@@ -98,6 +98,8 @@ class Submission(object):
         for node in self.nodes:
             job = Job(node, self.tokens, self.render_package)
             self.jobs.append(job)
+
+        self._undos = []
 
     def _get_project(self):
         """Get the project from the attr.
@@ -188,9 +190,10 @@ class Submission(object):
         feature for Isotropix, and for this reason we use this feature
         rather than send the project file itself.
         """
-
+        self._pre_write_package()
         package_path = self.render_package.posix_path()
         success = ix.application.export_render_archive(package_path)
+        self._post_write_package()
 
         if not success:
             ix.log_error(
@@ -232,7 +235,6 @@ class Submission(object):
         Collect responses and show them in the log.
         """
 
-        self._pre_submit()
         self.write_render_package()
 
         results = []
@@ -250,7 +252,7 @@ class Submission(object):
 
         self._post_submit()
 
-    def _pre_submit(self):
+    def _pre_write_package(self):
         """Prepare for submission.
 
         For any job node that has custom frames, we need to make sure
@@ -260,9 +262,6 @@ class Submission(object):
         rendered even if it is not within the range specified on the
         image node.
         """
-        # start unoable thing here
-        ix.enable_command_history()
-        ix.begin_command_batch(EXPORT_CMD_BATCH_NAME)
 
         for node in self.nodes:
             if node.get_attribute("use_custom_frames").get_bool():
@@ -270,33 +269,33 @@ class Submission(object):
                 images = ix.api.OfObjectArray()
                 node.get_attribute("images").get_values(images)
                 for image in images:
-                    frames_ui.set_image_range(image, seq)
-        ix.end_command_batch()
+                    undos = frames_ui.set_image_range(image, seq)
+                    # Since, like so many parts of Clarisse, undo doesn't work
+                    # correctly, we will store the data that will undo the 
+                    # changes.
+                    self._undos += undos
+ 
 
     def _post_submit(self):
+        self._do_delete_render_package()
+
+
+    def _post_write_package(self):
         """Cleanup."""
         # undo unoable thing here
-        self._do_delete_render_package()
+        for entry in self._undos:
+            if not entry["type"] == ix.api.OfAttr.TYPE_LONG:
+                raise NotImplementedError("Only long attributes maybe undone.")
+            else:
+                entry["attr"].set_long(entry["value"])
+
         
-        ix.application.get_command_manager().undo()
-        ix.disable_command_history()
-
-
 
     def _do_delete_render_package(self):
         if self.delete_render_package:
-            render_package_path = self.render_package.posix_path()
-            if os.path.exists(render_package_path):
-                os.remove(render_package_path)
-
-    def _revert_to_saved_scene(self):
-        clarisse_win = ix.application.get_event_window()
-        old_cursor = clarisse_win.get_mouse_cursor()
-        clarisse_win.set_mouse_cursor(ix.api.Gui.MOUSE_CURSOR_WAIT)
-        ix.application.disable()
-        ix.application.load_project(self.project_filename)
-        ix.application.enable()
-        clarisse_win.set_mouse_cursor(old_cursor)
+            render_package_file = self.render_package.posix_path()
+            if os.path.exists(render_package_file):
+                os.remove(render_package_file)
 
     @property
     def node_name(self):

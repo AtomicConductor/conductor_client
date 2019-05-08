@@ -63,14 +63,23 @@ def set_image_range(image, seq):
     """Set the image frame range to cover the whole Sequence.
 
     This is required for making sure the image is renderable when a
-    custom sequence is selected. It is not possible to set the step
-    unless the sequence is a progression. But this function is not
-    intended to set the step. It only sets the range. If at some point
-    the step becomes important then we can add a keyword or something.
+    custom sequence is selected.
     """
-    image.get_attribute("first_frame").set_long(seq.start),
-    image.get_attribute("last_frame").set_long(seq.end),
-    image.get_attribute("frame_step").set_long(1)
+    first_frame_attr = image.get_attribute("first_frame")
+    last_frame_attr = image.get_attribute("last_frame")
+    frame_step_attr = image.get_attribute("frame_step")
+
+    undo_attrs = [
+        {"attr": first_frame_attr, "value": first_frame_attr .get_long(), "type": ix.api.OfAttr.TYPE_LONG},
+        {"attr": last_frame_attr, "value":  last_frame_attr .get_long(), "type": ix.api.OfAttr.TYPE_LONG},
+        {"attr": frame_step_attr, "value":  frame_step_attr .get_long(), "type": ix.api.OfAttr.TYPE_LONG}
+    ]
+
+    first_frame_attr.set_long(seq.start),
+    last_frame_attr.set_long(seq.end),
+    frame_step_attr.set_long(1)
+
+    return undo_attrs
 
 
 def _union_sequence(images):

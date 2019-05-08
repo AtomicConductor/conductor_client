@@ -86,7 +86,7 @@ def refresh(_, **kw):
         title_attr = obj.get_attribute("title")
         if not title_attr.get_string():
             title_attr.set_expression(
-                '"Clarisse: {} "+$CT_SEQUENCE'.format(obj.get_name()))
+                '"Clarisse: "+$CT_JOB+" "+$CT_SEQUENCE')
 
         task_template_attr = obj.get_attribute("task_template")
         if not task_template_attr.get_string():

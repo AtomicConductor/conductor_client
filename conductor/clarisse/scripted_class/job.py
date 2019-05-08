@@ -118,7 +118,16 @@ class Job(object):
             "name":"CONDUCTOR_PATHHELPER",
             "value": 0,
             "merge_policy": "exclusive"
+            },
+            {
+            "name":"LD_LIBRARY_PATH",
+            "value": "/usr/lib/python2.7/config-x86_64-linux-gnu",
+            "merge_policy": "append"
             }])
+
+
+
+
 
         extra_vars = self._get_extra_env_vars()
         package_env.extend(extra_vars)
