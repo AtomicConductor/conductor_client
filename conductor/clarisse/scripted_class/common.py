@@ -25,11 +25,11 @@ if os.name == "nt":
 cmd = "bash -c 'mkdir -p ";
 cmd += $CT_DIRECTORIES;
 cmd += " && cnode ";
+cmd += $CT_RENDER_PACKAGE;
 cmd += " -script ";
 cmd += $CT_SCRIPT_DIR;
-cmd += "/ct_prep.py ";
-cmd += $CT_RENDER_PACKAGE;
-cmd += "  -log_level Debug5  -image ";
+cmd += "/ct_windows_prep.py";
+cmd += " -log_level Debug5  -image ";
 cmd += $CT_SOURCES;
 cmd += " -image_frames_list ";
 cmd += $CT_CHUNKS;

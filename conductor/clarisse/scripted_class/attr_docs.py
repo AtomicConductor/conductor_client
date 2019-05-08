@@ -9,6 +9,10 @@ def set(s_class):
         "preview",
         """Opens a preview window where you can see the data to be submitted as JSON. You can submit directly from the preview window.""")
 
+    s_class.set_attr_doc(
+        "write_render_package_only",
+        """Exports the render package without submitting. This allows you to test render commands locally.""")
+
     s_class.set_attr_doc("submit", """Submits this job to Conductor.""")
 
     s_class.set_attr_doc(

@@ -6,20 +6,18 @@ import sys
 import traceback
 
 import ix
-from conductor.clarisse.scripted_class import variables, frames_ui
+from conductor.clarisse.scripted_class import frames_ui, variables
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 
 
-RENDER_PACKAGE_BINARY = 0
-RENDER_PACKAGE_ASCII = 1
-
-EXPORT_CMD_BATCH_NAME = "ExportRenderPackage"
-
-
 def _localize_contexts():
+    """Make all clarisse reference contexts local.
+
+    This is the equivalent of importing Maya references.
+    """
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
     for ctx in contexts:
@@ -30,18 +28,12 @@ def _localize_contexts():
                 ix.cmds.MakeLocalContext(ctx)
 
 
-def _remove_drive_letters():
-    for attr in ix.api.OfAttr.get_path_attrs():
-        try:
-            attr.set_string(
-                Path(
-                    attr.get_string()).posix_path(
-                    with_drive=False))
-        except Exception:
-            pass
-
-
 def _remove_conductor():
+    """Remove all Conductor data from the render archive.
+
+    This ensures the render logs are not polluted by complaints about
+    Conductor nodes.
+    """
     objects = ix.api.OfObjectArray()
     ix.application.get_factory().get_objects("ConductorJob", objects)
     for item in list(objects):
@@ -77,10 +69,6 @@ class Submission(object):
             raise NotImplementedError
 
         self.project_filename = ix.application.get_current_project_filename()
-
-        # self.render_package_format = self.node.get_attribute(
-        #     "render_package_format").get_long()
-
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.render_package = self._get_render_package()
         self.delete_render_package = self.node.get_attribute(
@@ -99,8 +87,6 @@ class Submission(object):
             job = Job(node, self.tokens, self.render_package)
             self.jobs.append(job)
 
-        self._undos = []
-
     def _get_project(self):
         """Get the project from the attr.
 
@@ -108,7 +94,7 @@ class Submission(object):
         of projects at conductor, throw an error.
         """
 
-        projects = ConductorDataBlock(product="clarisse").projects()
+        projects = ConductorDataBlock().projects()
         project_att = self.node.get_attribute("project")
         label = project_att.get_applied_preset_label()
 
@@ -175,30 +161,8 @@ class Submission(object):
     def _get_render_package(self):
         basename = os.path.splitext(
             ix.application.get_current_project_filename())[0]
-        # if self.render_package_format == RENDER_PACKAGE_BINARY:
+
         return Path("{}.render".format(basename))
-        # else:
-        #     return Path("{}.render.project".format(basename))
-
-    def write_render_package(self):
-        """Take the value of the render package att and save the file.
-
-        A render package may be ascii or binary designed for rendering.
-        It must be saved in the same directory as the project due to the
-        way Clarisse handles relative dependencies. Currently it does
-        not make references local, however localized refs are a planned
-        feature for Isotropix, and for this reason we use this feature
-        rather than send the project file itself.
-        """
-        self._pre_write_package()
-        package_path = self.render_package.posix_path()
-        success = ix.application.export_render_archive(package_path)
-        self._post_write_package()
-
-        if not success:
-            ix.log_error(
-                "Failed to export render package {}".format(package_path))
-        return package_path
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -252,8 +216,47 @@ class Submission(object):
 
         self._post_submit()
 
+    def write_render_package(self):
+        """Write a package suitable for rendering.
+
+        A render package is a binary package designed for rendering. It
+        has the same name as the project, but with .render for the
+        extension. It is a binary, around half the size of a project
+        file. Before saving, all reference contexts are made local, and
+        all Conductor data is removed.
+        """
+
+        app = ix.application
+        self._pre_write_package()
+
+        package_file = self.render_package.posix_path()
+        success = app.export_render_archive(package_file)
+
+        if os.environ.get("CONDUCTOR_MODE") == "dev":
+            filename = os.path.join(
+                os.path.dirname(
+                    app.get_current_project_filename()),
+                "ct_debug.project")
+            app.disable()
+            app.save_project_snapshot(filename)
+            app.enable()
+
+        self._post_write_package()
+
+        if not success:
+            ix.log_error(
+                "Failed to export render package {}".format(package_file))
+
+        ix.log_info("Wrote package to {}".format(package_file))
+        return package_file
+
     def _pre_write_package(self):
-        """Prepare for submission.
+        self._ensure_valid_image_ranges()
+        _localize_contexts()
+        _remove_conductor()
+
+    def _ensure_valid_image_ranges(self):
+        """Fix image ranges to make them renderable.
 
         For any job node that has custom frames, we need to make sure
         the image node covers those frames, otherwise it won't render. I
@@ -262,40 +265,35 @@ class Submission(object):
         rendered even if it is not within the range specified on the
         image node.
         """
-
         for node in self.nodes:
             if node.get_attribute("use_custom_frames").get_bool():
                 seq = frames_ui.custom_frame_sequence(node)
                 images = ix.api.OfObjectArray()
                 node.get_attribute("images").get_values(images)
                 for image in images:
-                    undos = frames_ui.set_image_range(image, seq)
-                    # Since, like so many parts of Clarisse, undo doesn't work
-                    # correctly, we will store the data that will undo the 
-                    # changes.
-                    self._undos += undos
- 
+                    frames_ui.set_image_range(image, seq)
 
     def _post_submit(self):
         self._do_delete_render_package()
 
-
     def _post_write_package(self):
         """Cleanup."""
-        # undo unoable thing here
-        for entry in self._undos:
-            if not entry["type"] == ix.api.OfAttr.TYPE_LONG:
-                raise NotImplementedError("Only long attributes maybe undone.")
-            else:
-                entry["attr"].set_long(entry["value"])
-
-        
+        self._revert_to_saved_scene()
 
     def _do_delete_render_package(self):
         if self.delete_render_package:
             render_package_file = self.render_package.posix_path()
             if os.path.exists(render_package_file):
                 os.remove(render_package_file)
+
+    def _revert_to_saved_scene(self):
+        clarisse_win = ix.application.get_event_window()
+        old_cursor = clarisse_win.get_mouse_cursor()
+        clarisse_win.set_mouse_cursor(ix.api.Gui.MOUSE_CURSOR_WAIT)
+        ix.application.disable()
+        ix.application.load_project(self.project_filename)
+        ix.application.enable()
+        clarisse_win.set_mouse_cursor(old_cursor)
 
     @property
     def node_name(self):

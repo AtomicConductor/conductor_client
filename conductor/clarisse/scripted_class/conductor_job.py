@@ -35,6 +35,9 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             elif action_name == "preview":
                 common.refresh(obj)
                 submit_actions.preview(obj, data)
+            elif action_name == "export_render_package":
+                common.refresh(obj)
+                submit_actions.export_render_package(obj, data)
             elif action_name == "submit":
                 common.refresh(obj)
                 submit_actions.submit(obj, data)
@@ -135,8 +138,10 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         """Attributes concerned with submission.
         """
         self.add_action(s_class, "refresh", "actions")
+        self.add_action(s_class, "export_render_package", "actions")
         self.add_action(s_class, "preview", "actions")
         self.add_action(s_class, "submit", "actions")
+
 
     def declare_general_attributes(self, s_class):
         """Most commonly accessed attributes."""

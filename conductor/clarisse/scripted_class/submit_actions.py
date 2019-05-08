@@ -16,6 +16,8 @@ SUCCESS_CODES_SUBMIT = [201, 204]
 
 SUBMIT_DIRECT = 0
 PREVIEW_FIRST = 1
+WRITE_PACKAGE_ONLY = 2
+
 
 SAVE_STATE_UNMODIFIED = 0
 SAVE_STATE_CANCELLED = 1
@@ -31,8 +33,11 @@ def check_need_save(which):
     """
     if which == SUBMIT_DIRECT:
         msg = "Save the project?\nYou must save the project if you wish to submit."
-    else:
+    elif which == PREVIEW_FIRST:
         msg = "Save the project?\nClick YES to preview with the option to submit.\nClick NO to preview only."
+    else: # WRITE_PACKAGE_ONLY
+        msg = "Save the project?\nYou must save the project if you wish to export a render package."
+
 
     response = ix.api.AppDialog.cancel()
     app = ix.application
@@ -47,7 +52,7 @@ def check_need_save(which):
     y = (2 * clarisse_window.get_y() +
          clarisse_window.get_height() - box.get_height()) / 2
     box.resize(x, y, box.get_width(), box.get_height())
-    if which == SUBMIT_DIRECT:
+    if which == SUBMIT_DIRECT or which == WRITE_PACKAGE_ONLY:
         box.set_style(ix.api.AppDialog.STYLE_YES_NO)
     else:
         box.set_style(ix.api.AppDialog.STYLE_YES_NO_CANCEL)
@@ -82,10 +87,10 @@ def check_need_save(which):
 
 def submit(*args):
     """Validate and submit directly."""
-    # state, fn = check_need_save(SUBMIT_DIRECT)
-    # if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]:
-    #     ix.log_warning("Submission cancelled.")
-    #     return
+    state, fn = check_need_save(SUBMIT_DIRECT)
+    if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]:
+        ix.log_warning("Submission cancelled.")
+        return
 
     obj = args[0]
     _validate_images(obj)
@@ -99,17 +104,34 @@ def preview(*args):
 
     Submission can be invoked from the preview panel.
     """
-    # state, fn = check_need_save(PREVIEW_FIRST)
-    # if state == SAVE_STATE_CANCELLED:
-    #     ix.log_warning("Submission cancelled.")
-    #     return
-    # can_submit = state in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]
+    state, fn = check_need_save(PREVIEW_FIRST)
+    if state == SAVE_STATE_CANCELLED:
+        ix.log_warning("Preview cancelled.")
+        return
+    can_submit = state in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]
     obj = args[0]
     _validate_images(obj)
     _validate_packages(obj)
     submission = Submission(obj)
-    preview_ui.build(submission)
+    preview_ui.build(submission, can_submit=can_submit)
 
+def export_render_package(*args):
+    """Validate and show the script in a panel.
+
+    Submission can be invoked from the preview panel.
+    """
+    state, fn = check_need_save(PREVIEW_FIRST)
+    if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]:
+        ix.log_warning("Export cancelled.")
+        return
+    obj = args[0]
+    _validate_images(obj)
+    _validate_packages(obj)
+    submission = Submission(obj)
+    submission.write_render_package()
+
+
+ 
 
 def _validate_images(obj):
     """Check some images are present to be rendered.

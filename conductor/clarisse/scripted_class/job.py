@@ -26,9 +26,9 @@ class Job(object):
         """Build job object for a ConductorJob node.
 
         After _setenv has been called, the Job level token variables are
-        valid and calls to evaluate string attributes will correctly resolve
-        where those tokens have been used.  This is why we evaluate title, 
-        tasks, after the call to _setenv()
+        valid and calls to evaluate string attributes will correctly
+        resolve where those tokens have been used.  This is why we
+        evaluate title, tasks, after the call to _setenv()
         """
 
         self.node = node
@@ -99,12 +99,12 @@ class Job(object):
         })
         return result
 
-
     def _get_environment(self):
         """Collect all environment variables.
 
         Collect variables specified by the packages, and add those
-        specified by the user.
+        specified by the user. Also disable the windows pathhelper and
+        add libpython2.7 to the library path.
         """
         package_tree = ConductorDataBlock(product="clarisse").package_tree()
 
@@ -113,21 +113,16 @@ class Job(object):
         paths = list(paths)
         package_env = package_tree.get_environment(paths)
 
-
         package_env.extend([{
-            "name":"CONDUCTOR_PATHHELPER",
+            "name": "CONDUCTOR_PATHHELPER",
             "value": 0,
             "merge_policy": "exclusive"
-            },
+        },
             {
-            "name":"LD_LIBRARY_PATH",
+            "name": "LD_LIBRARY_PATH",
             "value": "/usr/lib/python2.7/config-x86_64-linux-gnu",
             "merge_policy": "append"
-            }])
-
-
-
-
+        }])
 
         extra_vars = self._get_extra_env_vars()
         package_env.extend(extra_vars)
@@ -166,7 +161,7 @@ class Job(object):
 
         return {
             "common_path": out_paths.common_path(),
-            "output_paths":  out_paths
+            "output_paths": out_paths
         }
 
     def _get_instance(self):
@@ -240,7 +235,8 @@ class Job(object):
         tokens["CT_JOB"] = self.node_name
 
         # TODO DETECT PLATFORM ??
-        tokens["CT_DIRECTORIES"] = " ".join(p.posix_path(with_drive=False) for p in self.output_paths)
+        tokens["CT_DIRECTORIES"] = " ".join(p.posix_path(
+            with_drive=False) for p in self.output_paths)
 
         for token in tokens:
             variables.put(token, tokens[token])
@@ -255,7 +251,8 @@ class Job(object):
         notifications, and project, before submitting to Conductor.
         """
         result = {}
-        result["upload_paths"] = sorted([d.posix_path() for d in self.dependencies])
+        result["upload_paths"] = sorted(
+            [d.posix_path() for d in self.dependencies])
         result["autoretry_policy"] = (
             {'preempted': {'max_retries': self.instance["retries"]}}
             if self.instance["preemptible"] else {})
