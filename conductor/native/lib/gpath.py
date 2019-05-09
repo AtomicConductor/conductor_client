@@ -1,21 +1,29 @@
-
 import os
 import re
 
-LETTER_RE = re.compile(r'^([a-zA-Z]):')
-
+RX_LETTER = re.compile(r'^([a-zA-Z]):')
+RX_DOLLAR_VAR = re.compile(r"\$([A-Za-z][A-Z,a-z0-9_]+)")
 
 class GPathError(Exception):
     pass
 
+def _expand_context(path, context):
+    result = path
+    if context:
+        for match in RX_DOLLAR_VAR.finditer(path):
+            key = match.group(1)
+            replacement = context.get(key)
+            if replacement is not None:
+                result = result.replace("${}".format(key), replacement)
+    return result
 
 class Path(object):
 
-    def __init__(self, path):
+    def __init__(self, path, **kw):
         """Initialize a generic absolute path.
 
         If path is a list, then each element will be a component of the path. 
-        If it's a string then expand variables and user. 
+        If it's a string then expand context variables, env vars and user. 
         """
 
         if not path:
@@ -24,24 +32,30 @@ class Path(object):
         if isinstance(path, list):
             ipath = path[:]
             self._drive_letter = ipath.pop(
-                0)[0] if LETTER_RE.match(ipath[0]) else None
+                0)[0] if RX_LETTER.match(ipath[0]) else None
             self._components = ipath
         else:
+            context = kw.get("context")
+            if context:
+                path =_expand_context(path, context)
+                # print  "Gpath expanded context", path
             path = os.path.expanduser(os.path.expandvars(path))
-
-            match = LETTER_RE.match(path)
+            # print  "Gpath expanduser expandvars", path
+            match = RX_LETTER.match(path)
             self._drive_letter = match.group(1) if match else None
-            remainder = re.sub(LETTER_RE, "", path)
+            remainder = re.sub(RX_LETTER, "", path)
 
             if remainder[0] not in ["/", "\\"]:
-                raise GPathError("Not an absolute path")
-
+                raise GPathError("Not an absolute path. Starts with:{}".format(remainder[0]))
             if any((c in [":"]) for c in remainder):
-                raise GPathError("Bad characters in path")
+                raise GPathError("Bad characters in path:{}".format(remainder))
 
             self._components = [s for s in re.split('/|\\\\', remainder) if s]
 
         self._depth = len(self._components)
+
+
+
 
     def _construct_path(self, sep, with_drive_letter=True):
         """Reconstruct path for given path sep."""
@@ -60,7 +74,7 @@ class Path(object):
         with_drive_letter = kw.get("with_drive", True)
         return self._construct_path("\\", with_drive_letter)
 
-    def os_path(self,  **kw):
+    def os_path(self, **kw):
         """Path with slashes for current os. Can include drive letter."""
         with_drive = kw.get("with_drive", True)
         if os.name == "nt":

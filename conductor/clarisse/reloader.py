@@ -6,6 +6,8 @@ from conductor.clarisse.scripted_class import common
 from conductor.clarisse.scripted_class import dependencies
 from conductor.native.lib import gpath_list
 from conductor.native.lib import gpath
+from conductor.native.lib import sequence
+
 from conductor.clarisse.scripted_class import environment_ui
 from conductor.clarisse.scripted_class import extra_uploads_ui
 from conductor.clarisse.scripted_class import frames_ui
@@ -20,12 +22,14 @@ from conductor.clarisse.scripted_class import submit_actions
 from conductor.clarisse.scripted_class import variables
 from conductor.clarisse.scripted_class import preview_ui
 from conductor.clarisse.scripted_class import attr_docs
+ 
 
 
 reload(common)
 reload(dependencies)
 reload(gpath_list)
 reload(gpath)
+reload(sequence)
 reload(environment_ui)
 reload(extra_uploads_ui)
 reload(frames_ui)

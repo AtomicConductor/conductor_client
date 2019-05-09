@@ -38,7 +38,12 @@ CONDUCTOR_VARS = [
     "CT_CHUNKSTEP",
     "CT_DIRECTORIES",
     "CT_PDIR",
-    "CT_SCRIPT_DIR"    
+    "CT_SCRIPT_DIR"
+]
+
+VAR_TYPES = [
+    ix.api.OfVars.TYPE_BUILTIN,
+    ix.api.OfVars.TYPE_CUSTOM
 ]
 
 
@@ -70,3 +75,22 @@ def get(varname):
     """Take the pain out of getting an envvar in Clarisse."""
     var = ix.application.get_factory().get_vars().get(varname)
     return var.get_string() if var else None
+
+
+def get_static():
+    """Get a list of variables that won't be changing over time.
+
+    We need these for the dependency scan. We will handle dynamic
+    variables separately.
+    """
+    result = {}
+    blacklist = ["F", "T", "FPS"]
+    all_vars = ix.application.get_factory().get_vars()
+    for t in VAR_TYPES:
+        vcount = all_vars.get_count(t)
+        for n in range(vcount):
+            v = all_vars.get_by_index(t, n)
+            name = v.get_name()
+            if name not in blacklist and not name.startswith("CT_"):
+                result[name] = v.get_string()
+    return result

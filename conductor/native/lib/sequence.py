@@ -20,7 +20,7 @@ import itertools
 
 NUMBER_RE = re.compile(r"^(\d+)$")
 RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
-
+RX_FRAME = re.compile(r"\$(\d?)F")
 
 def _clamp(minval, val, maxval):
     """Clamp value to min and max."""
@@ -277,10 +277,34 @@ class Sequence(object):
             raise ValueError("Template must contain hashes.")
 
         format_template = re.sub(
-            '(#+)', lambda match: "{{0:0{:d}d}}".format(len(match.group(1))),
+            r'(#+)', lambda match: "{{0:0{:d}d}}".format(len(match.group(1))),
             template)
 
         return [format_template.format(el) for el in self._iterable]
+
+
+    def expand_format(self, *templates):
+        result = []
+        for f, template in zip(self._iterable, itertools.cycle(templates)):
+            print  f, template
+            result.append(template.format(frame=f))
+        print "expand_format result"
+        print result
+        return result
+
+    def expand_dollar_f(self, *templates):
+        """Handle either one template or many.
+
+        If one (or any number less than len, then they will be cycled
+        because we always want to return the number of filenames as the 
+        sequence dictates.
+        """
+        result = []
+        for f, template in zip(self._iterable, itertools.cycle(templates)):
+            format_template = re.sub(
+                r'\$(\d?)F', lambda match:  "{{frame:0{:d}d}}".format(int(match.group(1) or 0)), template)
+            result.append(format_template.format(frame=f))
+        return result
 
     def subsample(self, count):
         """Take a selection of elements from the sequence.

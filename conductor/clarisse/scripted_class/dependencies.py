@@ -1,12 +1,16 @@
 import re
 import os
 import ix
-from conductor.clarisse.scripted_class import frames_ui
+from conductor.clarisse.scripted_class import frames_ui, variables
 from conductor.native.lib.gpath_list import PathList
+from conductor.native.lib.gpath import Path, GPathError
+
 from conductor.native.lib.sequence import Sequence
 
-RX_HASH = re.compile("#+")
-RX_UDIM = re.compile("<UDIM>")
+RX_HASH = re.compile(r"#+")
+RX_FRAME = re.compile(r"\$(\d?)F")
+RX_FRAME_FORMAT = re.compile(r"\{frame:\d*d}")
+RX_UDIM = re.compile(r"<UDIM>")
 GLOB = 1
 SMART = 2
 
@@ -37,7 +41,7 @@ def get_scan(obj, policy):
     """Make a dependencyList according to the policy."""
     result = PathList()
     result.add(*_resolve_file_paths(obj, policy))
-    result.add(*_get_references(obj, policy))
+    # result.add(*_get_references(obj, policy))
     return result
 
 
@@ -84,8 +88,80 @@ def _should_ignore(attr):
     return False
 
 
+def _evaluate_static_expression(target_attr):
+    """Evaluate the static part of the expression. Assume expression is in active state, otherwise we wouldn't be here. Problem is, we don't want to evaluate frame numbers"""
+
+    orig_expr = target_attr.get_expression()
+
+    # substitute every occurrence of $\d?F with a named python template reflecting
+    # the correct value of d, which is the padding.
+    # IN: "$CDIR/$2F/foo/$5F/image.$4F.jpg"
+    # OUT: "/path/to/project/{frame:02d}/foo/{frame:05d}/image.{frame:04d}.jpg"
+    #
+    # IN: "$CDIR/$2F/foo/$5F/image.$4F.jpg"
+    # OUT: "/path/to/project/{frame:02d}/foo/{frame:05d}/image.{frame:04d}.jpg"
+
+    static_expr = re.sub(r'\$(\d?)F', lambda match: "{{frame:0{:d}d}}".format(
+        int(match.group(1) or 0)), orig_expr)
+
+    target_attr.set_expression(static_expr)
+    result = target_attr.get_string()
+    target_attr.set_expression(orig_expr)
+    return result
+
+
+# print expr.format(frame=17)
+
+# # attr.activate_expression(False)
+# # attr.get_serialized_string()
+
+# print attr.get_string()
+
+#     expr = re.sub(r'\$(\d?)F', lambda match: "{{frame:0{:d}d}}".format(
+#         int(match.group(1) or 0)), expr)
+#             result.append(format_template.format(frame=17))
+#         return result
+
+
+    # get the expression
+    # replace $4F with {frame:04d}
+
+
+
+
+# def _resolve_single_filename(attr, policy):
+
+#     # static_vars = variables.get_static()
+#     # is_x = attr.is_expression_enabled() and attr.is_expression_activated()
+#     # if is_x:
+#     #     filename = _evaluate_static_expression(attr)
+#     # else:
+#     #     filename = attr.get_string()
+
+ 
+#     # print "_resolve_single_filename attr",attr.get_parent_object().get_name() +"."+ attr.get_name(), ":", filename
+#     filename = RX_UDIM.sub("*", filename)
+#     print attr.get_name(), ":",  filename
+#     if policy == GLOB:
+#          filename = re.sub((r"(#+|\$\d?F)"), "*", filename)
+
+#     print "Past Glob Test", filename
+    
+
+#     # try:
+
+#     #     print "TRY:", attr.get_name(), ":",  filename
+#     #     return Path(filename, context=static_vars).posix_path()
+
+#     # except GPathError as ex:
+#     #     print "FAILED", filename, 
+#     #     ix.log_warning("{} {}.".format(filename, ex.message()))
+#     #     ix.flush(0)
+#     #     return filename
+
+
 def _resolve_file_paths(obj, policy):
-    """Scan for dependencies according to the given policy.
+    """Scan all path attrs for dependencies according to the given policy.
 
     If policy is not None, first replace all UDIM tags with a "*" so
     they may be globbed. File sequences may be resolved one of 2 ways.
@@ -94,30 +170,76 @@ def _resolve_file_paths(obj, policy):
     look at its sequence definition and calculate the frames that will
     be needed for the frame range being rendered.
     """
+
     result = []
+    
+
     if not policy:
         return result
     for attr in ix.api.OfAttr.get_path_attrs():
         if _should_ignore(attr):
             continue
-
-        filename = attr.get_string()
-        filename = RX_UDIM.sub("*", filename)
-        if RX_HASH.search(filename):
-            if policy == SMART:
-                # The intersection of the sequence being rendered, and
-                # sequence defined by this attribute
-                main_seq = frames_ui.main_frame_sequence(obj)
-
-                attr_seq = _attribute_sequence(attr, intersector=main_seq)
-
-                if attr_seq:
-                    seq_paths = attr_seq.expand(filename)
-                    result += seq_paths
-            else:  # policy is GLOB
-                result.append(re.sub(r'(#+)', "*", filename))
+        
+        if attr.is_expression_enabled() and attr.is_expression_activated():
+            # _evaluate_static_expression means to resolve all dollar variables
+            # i.e. system, builtin, and so on. It does not evaluate time varying 
+            # expression segments such as $4F. Instead it replaces them with python
+            # format template. {frame}
+            filename = _evaluate_static_expression(attr)
         else:
+            filename = attr.get_string()
+
+
+        if not filename:
+            continue
+        
+        # always glob udims
+        filename = RX_UDIM.sub("*", filename)
+
+        if policy == GLOB:
+            # replace all frame identifiers with "*" for globbing later
+            filename = re.sub((r"(#+|\{frame:\d*d})"), "*", filename)
             result.append(filename)
+        else: # SMART
+ 
+            filenames = _smart_expand(obj, attr, filename)
+            # print "SMART: "
+            # print fns
+            result += filenames
+
+    print "_resolve_file_paths" , result
+ 
+    return result
+
+def _smart_expand(obj, attr, filename):
+
+    result = []
+    main_seq = frames_ui.main_frame_sequence(obj)
+
+    sequences = None
+
+
+
+    resolve_hashes = RX_HASH.search(filename)
+    resolve_frame_format = RX_FRAME_FORMAT.search(filename)
+
+
+    if resolve_hashes:
+        # print "resolve_hashes for", filename
+        sequences = _attribute_sequence(attr, main_seq)
+        if sequences:
+            result = sequences["attr_sequence"].expand(filename)
+            if resolve_frame_format:
+                result = sequences["render_sequence"].expand_format(*result)
+    elif resolve_frame_format:
+        # print "resolve_frame_format ONLY for", filename
+        print "Filename is ", filename
+        print main_seq
+        result = main_seq.expand_format(filename)
+        # print result
+    else:
+        # print "NO hashes (that intersect) or frame_format_expr for", filename
+        result = [filename]
     return result
 
 def _get_references(_, policy):
@@ -139,20 +261,17 @@ def _get_references(_, policy):
     return result
 
 
-def _attribute_sequence(attr, **kw):
+def _attribute_sequence(attr, intersector):
     """Get the sequence associated with a filename attribute.
 
     Many attributes have an associated sequence_mode attribute, which
     when set to 1 signifies varying frames, and makes available start,
-    end, and offset attributes to help specify the sequence.
-
-    If the keyword intersector is given, then work out the intersection
-    with it. Why? Because during dependency scanning, we can optimize
-    the number of frames to upload if we use only those frames specified
+    end, and offset attributes to help specify the sequence. Work out the intersection with main sequence ecause during dependency
+    scanning, we can optimize the number of frames to upload if we use only those frames specified
     in the sequence attribute, and intersect them with the frame range
     specified in the job node.
     """
-    intersector = kw.get("intersector")
+
 
     obj = attr.get_parent_object()
     mode_attr = obj.attribute_exists("sequence_mode")
@@ -171,14 +290,21 @@ def _attribute_sequence(attr, **kw):
     start = obj.get_attribute("start_frame").get_long()
     end = obj.get_attribute("end_frame").get_long()
 
-    if intersector:
-        # If there's a frame offset on the attribute, then we need to
-        # do the intersection in the context of that offset.
-        offset = obj.get_attribute("frame_offset").get_long()
+    # If there's a frame offset on the attribute, then we need to
+    # do the intersection in the context of that offset.
+    offset = obj.get_attribute("frame_offset").get_long()
 
-        seq = Sequence.create(start, end, 1).offset(offset)
-        seq = seq.intersection(intersector)
-        if not seq:
-            return
-        return seq.offset(-offset)
-    return Sequence.create(start, end, 1)
+    seq = Sequence.create(start, end, 1).offset(offset)
+    seq = seq.intersection(intersector)
+    if not seq:
+        # The attribute doesn't intersect the render frames
+        return
+    # Make a copy of the sequence while at the render frames
+    render_seq = Sequence(str(seq))
+    attr_seq = seq.offset(-offset)
+    return {"attr_sequence":attr_seq, "render_sequence": render_seq}
+
+
+
+
+
