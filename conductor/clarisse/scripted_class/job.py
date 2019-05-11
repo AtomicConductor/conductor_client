@@ -92,11 +92,6 @@ class Job(object):
                 "merge_policy": ["append", "exclusive"][int(entry["excl"])]
             })
 
-        result.append({
-            "name": "PATH",
-            "value": Path("$CONDUCTOR_LOCATION/conductor/clarisse/scripts").posix_path(with_drive=False),
-            "merge_policy": "append"
-        })
         return result
 
     def _get_environment(self):
@@ -104,7 +99,7 @@ class Job(object):
 
         Collect variables specified by the packages, and add those
         specified by the user. Also disable the windows pathhelper and
-        add libpython2.7 to the library path.
+        add libpython2.7 location to the library path.
         """
         package_tree = ConductorDataBlock(product="clarisse").package_tree()
 
@@ -113,19 +108,25 @@ class Job(object):
         paths = list(paths)
         package_env = package_tree.get_environment(paths)
 
-        package_env.extend([{
-            "name": "CONDUCTOR_PATHHELPER",
-            "value": 0,
-            "merge_policy": "exclusive"
-        },
-            {
-            "name": "LD_LIBRARY_PATH",
-            "value": "/usr/lib/python2.7/config-x86_64-linux-gnu",
-            "merge_policy": "append"
-        }])
-
         extra_vars = self._get_extra_env_vars()
         package_env.extend(extra_vars)
+
+        # Special Amendments!
+        # Clearly we need to find a better value for PYTHONHOME and add it in
+        # sidecar
+        amendments = [{"name": "PATH",
+                       "value": Path("$CONDUCTOR_LOCATION/conductor/clarisse/scripts").posix_path(with_drive=False),
+                       "merge_policy": "append"},
+                      {"name": "PYTHONHOME",
+                       "value": "/opt/silhouettefx/silhouette/7/silhouette-7.5.2",
+                       "merge_policy": "exclusive"},
+                      {"name": "CONDUCTOR_PATHHELPER",
+                       "value": 0,
+                       "merge_policy": "exclusive"},
+                      {"name": "LD_LIBRARY_PATH",
+                       "value": "/usr/lib/python2.7/config-x86_64-linux-gnu",
+                       "merge_policy": "append"}]
+        package_env.extend(amendments)
 
         return package_env
 

@@ -1,6 +1,6 @@
 import conductor.clarisse.scripted_class.dependencies as deps
 import ix
-from conductor.clarisse.scripted_class import common
+from conductor.clarisse.scripted_class import refresh
 from conductor.native.lib.gpath_list import PathList
 
 BTN_HEIGHT = 22
@@ -231,7 +231,7 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         attr.remove_all()
         for item in self.file_list_wdg.item_list:
             attr.add_string(item.get_name())
-        common.force_ae_refresh(self.node)
+        refresh.force_ae_refresh(self.node)
 
 
 def build(*args):

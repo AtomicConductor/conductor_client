@@ -7,7 +7,7 @@ custom UI to be embedded.
 import json
 
 import ix
-from conductor.clarisse.scripted_class import common
+from conductor.clarisse.scripted_class import refresh
 
 BTN_HEIGHT = 22
 BTN_WIDTH = 100
@@ -226,7 +226,7 @@ class EnvWindow(ix.api.GuiWindow):
         attr.remove_all()
         for item in self.panel.item_list:
             attr.add_string(item.to_json())
-        common.force_ae_refresh(self.node)
+        refresh.force_ae_refresh(self.node)
 
 
 def build(*args):

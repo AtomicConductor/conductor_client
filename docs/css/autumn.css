@@ -38,7 +38,7 @@
 .codehilite .nt { color: #1e90ff; font-weight: bold } /* Name.Tag */
 .codehilite .nv { color: #aa0000 } /* Name.Variable */
 .codehilite .ow { color: #0000aa } /* Operator.Word */
-.codehilite .w { color: #bbbbbb } /* Text.Whitespace */
+.codehilite .w { color: #bbbbbb }  /* Text.Whitespace */
 .codehilite .mb { color: #009999 } /* Literal.Number.Bin */
 .codehilite .mf { color: #009999 } /* Literal.Number.Float */
 .codehilite .mh { color: #009999 } /* Literal.Number.Hex */
@@ -64,3 +64,12 @@
 .codehilite .vi { color: #aa0000 } /* Name.Variable.Instance */
 .codehilite .vm { color: #aa0000 } /* Name.Variable.Magic */
 .codehilite .il { color: #009999 } /* Literal.Number.Integer.Long */
+
+.codehilite code, .codehilite pre{
+    font-size:.8em;
+    color:#3F3F3F;background-color:#F7F7F7;
+    overflow: auto;
+    padding: 8px 8px 8px 8px;
+    border-radius: 4px;
+    border: 1px solid #CCC;
+}

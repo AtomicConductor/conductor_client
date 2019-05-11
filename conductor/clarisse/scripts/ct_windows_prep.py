@@ -5,17 +5,20 @@ LETTER_RX = re.compile(r'^([a-zA-Z]):')
 
 def _strip_drive_letter(attr):
     path = attr.get_string()
+    atname = attr.get_name() 
+    objname = attr.get_parent_object().get_name()
+    ix.log_info("Ob:{} At:{} Val:{}".format( objname, atname, path))
     if path:
-        name =  attr.get_name()
-        print "Strip letter from path: {} of attr: {}".format(path, name)
-    attr.set_string(re.sub(LETTER_RX, "", path))
+        attr.set_string(re.sub(LETTER_RX, "", path))
+
 
 def main():
     """Remove drive letters from all paths."""
-    print ("Resolving drive letter file paths")
-    for attr in ix.api.OfAttr.get_path_attrs():
-        print ("Resolving attrs {}".format(attr.get_name()))
+    attrs = ix.api.OfAttr.get_path_attrs()
+    count = len(list(attrs))
+    ix.log_info("Stripping drive letters for {:d} paths".format(count))
+    for attr in attrs:
         _strip_drive_letter(attr)
-
+    ix.log_info("Done stripping drive letters")
 
 main()

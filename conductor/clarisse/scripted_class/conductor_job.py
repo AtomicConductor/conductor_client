@@ -2,7 +2,7 @@ import os
 import traceback
 import ix
 from conductor.clarisse import reloader
-from conductor.clarisse.scripted_class import (attr_docs, common,
+from conductor.clarisse.scripted_class import (attr_docs, refresh,
                                                environment_ui,
                                                extra_uploads_ui, frames_ui,
                                                notifications_ui, packages_ui,
@@ -11,7 +11,51 @@ from conductor.clarisse.scripted_class import (attr_docs, common,
 from ix.api import OfAttr
 
 
+if os.name == "nt":
+    DEFAULT_CMD_EXPRESSION = """
+cmd = "bash -c 'mkdir -p ";
+cmd += $CT_DIRECTORIES;
+cmd += " && cnode ";
+cmd += $CT_RENDER_PACKAGE;
+cmd += " -image ";
+cmd += $CT_SOURCES;
+cmd += " -image_frames_list ";
+cmd += $CT_CHUNKS;
+cmd += "-log_level Debug5 ";
+cmd += "-license_server conductor_ilise:40500 ";
+cmd += "-script ";
+cmd += $CT_SCRIPT_DIR;
+cmd += "/ct_windows_prep.py ";
+cmd += "'";
+cmd"""
+    TITLE_EXPRESSION = """
+"Clarisse-Windows:"+$CT_JOB+"-"+$CT_SEQUENCE
+"""
+else:
+    DEFAULT_CMD_EXPRESSION = """
+cmd = "bash -c 'mkdir -p ";
+cmd += $CT_DIRECTORIES;
+cmd += " && cnode ";
+cmd += $CT_RENDER_PACKAGE;
+cmd += " -image ";
+cmd += $CT_SOURCES;
+cmd += " -image_frames_list ";
+cmd += $CT_CHUNKS;
+cmd += "-log_level Debug5 ";
+cmd += "-license_server conductor_ilise:40500 ";
+cmd += "'";
+cmd"""
+    TITLE_EXPRESSION = """
+"Clarisse:"+$CT_JOB+"-"+$CT_SEQUENCE
+"""
+
+  cmd += " -license_server conductor_ilise:40500  -log_level Debug5  -image "; cmd += $CT_SOURCES; cmd += " -image_frames_list "; cmd += $CT_CHUNKS; cmd += "'"; cmd
+
+
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
+    """
+    Define the engine that creates a ConductorJob ScriptedClass Item.
+    """
 
     def __init__(self):
         ix.api.ModuleScriptedClassEngine.__init__(self)
@@ -33,16 +77,16 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             elif action_name == "manage_extra_environment":
                 environment_ui.build(obj, data)
             elif action_name == "preview":
-                common.refresh(obj)
+                refresh.refresh(obj)
                 submit_actions.preview(obj, data)
             elif action_name == "export_render_package":
-                common.refresh(obj)
+                refresh.refresh(obj)
                 submit_actions.export_render_package(obj, data)
             elif action_name == "submit":
-                common.refresh(obj)
+                refresh.refresh(obj)
                 submit_actions.submit(obj, data)
             elif action_name == "refresh":
-                common.refresh(obj, force=True)
+                refresh.refresh(obj, force=True)
             elif action_name == "best_chunk_size":
                 frames_ui.handle_best_chunk_size(obj, data)
             elif action_name == "add_metadata":
@@ -93,7 +137,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 ix.log_warning(ex.message)
 
     def declare_attributes(self, s_class):
-        """All attributes and actions are declatred here.
+        """All attributes and actions are declared here.
 
         We don't use CID to declare these, despite it being
         reccommended, because we need better control over placement in
@@ -152,6 +196,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "general")
+        attr.set_expression(TITLE_EXPRESSION)
+        attr.activate_expression(True)
 
         attr = s_class.add_attribute(
             "images",
@@ -275,7 +321,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
         Set to no-scan: use only cached uploads.
         Glob-scan: If filenames contain "##" or <UDIM>. They will be globbed.
-        Smart-scan If filenames contain "##" the hashes will be replaced with
+        Smart-scan If filenames contain "##" or $<?>F the hashes will be replaced with
         frame numbers that are being used.
         """
 
@@ -353,12 +399,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         generating tasks.
         """
 
-        s_class.add_attribute(
+        attr = s_class.add_attribute(
             "task_template",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "task")
+        attr.set_expression(DEFAULT_CMD_EXPRESSION)
+        attr.activate_expression(True)
 
     def declare_environment_attributes(self, s_class):
         """Set up any extra environment.

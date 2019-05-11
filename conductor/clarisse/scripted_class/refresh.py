@@ -8,34 +8,6 @@ from conductor.clarisse.scripted_class import (
 
 
 
-DEFAULT_CMD_EXPRESSION = """
-cmd = "bash -c 'mkdir -p ";
-cmd += $CT_DIRECTORIES;
-cmd += " && cnode ";
-cmd += $CT_RENDER_PACKAGE;
-cmd += "  -log_level Debug5  -image ";
-cmd += $CT_SOURCES;
-cmd += " -image_frames_list ";
-cmd += $CT_CHUNKS;
-cmd += "'";
-cmd"""
-
-if os.name == "nt":
-    DEFAULT_CMD_EXPRESSION = """
-cmd = "bash -c 'mkdir -p ";
-cmd += $CT_DIRECTORIES;
-cmd += " && cnode ";
-cmd += $CT_RENDER_PACKAGE;
-cmd += " -script ";
-cmd += $CT_SCRIPT_DIR;
-cmd += "/ct_windows_prep.py";
-cmd += " -log_level Debug5  -image ";
-cmd += $CT_SOURCES;
-cmd += " -image_frames_list ";
-cmd += $CT_CHUNKS;
-cmd += "'";
-cmd"""
-
 
 def force_ae_refresh(node):
     """Trigger an attribute editor refresh.
@@ -81,27 +53,25 @@ def refresh(_, **kw):
         instances_ui.update(obj, data_block)
         frames_ui.update_frame_stats_message(obj)
 
-        title_attr = obj.get_attribute("title")
-        if not title_attr.get_string():
-            title_attr.set_expression(
-                '"Clarisse: "+$CT_JOB+" "+$CT_SEQUENCE')
+        # title_attr = obj.get_attribute("title")
+        # if not title_attr.get_string():
+        #     title_attr.set_expression(
+        #         '"Clarisse: "+$CT_JOB+" "+$CT_SEQUENCE')
 
-        task_template_attr = obj.get_attribute("task_template")
-        if not task_template_attr.get_string():
-
-            task_template_attr.set_expression(DEFAULT_CMD_EXPRESSION)
-        task_template_attr.set_locked(True)
+        # task_template_attr = obj.get_attribute("task_template")
+        # if not task_template_attr.get_string():
+        #     task_template_attr.set_expression(DEFAULT_CMD_EXPRESSION)
+        # task_template_attr.set_locked(True)
 
         packages_attr = obj.get_attribute("packages")
         if not packages_attr.get_value_count():
             for path in detected_host_paths:
-                print detected_host_paths
                 packages_attr.add_string(path)
 
-        inst_type_attr = obj.get_attribute("instance_type")
+        # inst_type_attr = obj.get_attribute("instance_type")
         # if not inst_type_attr.get_long():
         #     inst_type_attr.set_long(0)
 
-        project_attr = obj.get_attribute("project")
+        # project_attr = obj.get_attribute("project")
         # if not project_attr.get_long():
         #     project_attr.set_long(0)

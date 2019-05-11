@@ -1,6 +1,6 @@
 import ix
 from conductor.clarisse.clarisse_info import ClarisseInfo
-from conductor.clarisse.scripted_class import common
+from conductor.clarisse.scripted_class import refresh
 from conductor.native.lib import package_tree as pt
 from conductor.native.lib.data_block import ConductorDataBlock
 
@@ -307,7 +307,7 @@ class PackageChooser(ix.api.GuiWindow):
         for item in selected_items:
             packages_att.add_string(item)
 
-        common.force_ae_refresh(self.node)
+        refresh.force_ae_refresh(self.node)
 
 
 def build(*args):
