@@ -148,15 +148,28 @@ Preemptible instances are less expensive to run than non-premptible. The drawbac
 
 ---
 #### instance_type
-Specify the hardware configuration used to run your tasks. Higher specification instances are potentially faster and able to handle heavier scenes,    
+Specify the hardware configuration used to run your tasks. Higher specification instances are potentially faster and able to handle heavier scenes. You are encouraged to run tests to find the most cost efficient combination that meets your deadline.
 
 ---
 #### retries
-Sets the number of times to retry a failed task before marking it failed.
+Set the number of times to retry a failed task before marking it failed.
 
 ---
 #### dependency_scan_policy
-Specifies how to search the project for references to files it depends on. The Smart Sequence option tries to identify only those files that are needed for the specified frames. The Glob option finds any files that match a hash pattern. If you have saved all required files in the cached upload list, you can set the policy to No Scan.
+Specify how to find files the project depends. Your project is likely to contain references to external textures and geometry caches. These files all need to be uploaded. The dependency-scan searches for these files at the time you generate a preview or submit a job. There are 3 options.
+
+1. **No Scan.** No search will be performed. This may be useful if the scanning process is slow for your project. You can instead chose to cache the list of depencies. See [manage_extra_uploads](#manage_extra_uploads). If you choose this method, you should be aware when new textures or other dependencies are added to your project, and add them to the upload list manually. 
+
+- **Smart Sequence.** When set, an attempt is made to identify only those files needed by the frames being rendered. Filenames will be searched for two patterns that indicate a time varying component: `####` and `$4F`. If hashes are found in a filename, then the list of files to upload is calculated based on the frames set in the ConductorJob, and the sequence attributes associated with the filename. 
+
+
+!!! note "Example"
+    Suppose you have a sequence of 1000 background images on disk. Your shot is 20 frames long and you've set the sequence attributes on the texturemap to start 100 frames in. (-100 frame offset). The smart scan option will find frames 0101 to 0120. 
+
+
+
+
+ The Glob option finds any files that match a hash pattern. If you have saved all required files in the cached upload list, you can set the policy to No Scan.
 
 ---
 #### local_upload

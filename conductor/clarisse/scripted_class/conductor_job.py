@@ -49,9 +49,6 @@ cmd"""
 "Clarisse:"+$CT_JOB+"-"+$CT_SEQUENCE
 """
 
-  cmd += " -license_server conductor_ilise:40500  -log_level Debug5  -image "; cmd += $CT_SOURCES; cmd += " -image_frames_list "; cmd += $CT_CHUNKS; cmd += "'"; cmd
-
-
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
     """
     Define the engine that creates a ConductorJob ScriptedClass Item.
