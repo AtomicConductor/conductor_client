@@ -70,7 +70,7 @@ $Env:Path += ";$Env:CONDUCTOR_LOCATION/bin"
 
 ### Troubleshooting
 
-If you are having trouble with the installation, here are some steps and suggetsions to help you debug.
+If you are having trouble with the installation, here are some steps and suggestions to help you debug.
 
 * Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print.
 * The passage is attributed to an unknown typesetter in the 15th century who.

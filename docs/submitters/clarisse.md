@@ -21,19 +21,12 @@ Any properties you set on a ConductorJob will be stored inside the project when 
 If you haven't already done so, [install Conductor client tools](../install.md). 
  
 ## Register the plugin
-To register the submitter, set the provided startup script in the prefereces panel. It will take effect the next time you start Clarisse.
+To register the submitter, set the path to the provided script in the **Startup Script** section of the prefereces panel. It will take effect the next time you start Clarisse.
 
-``` bash fct_label="Mac"
+``` bash
 $CONDUCTOR_LOCATION/conductor/clarisse/startup.py
 ```
-
-``` bash fct_label="Linux"
-$CONDUCTOR_LOCATION/conductor/clarisse/startup.py
-```
-
-``` bash fct_label="Windows"
-$CONDUCTOR_LOCATION/Conductor/conductor/clarisse/startup.py
-```
+ 
 
 
 ![prefs][prefs]
