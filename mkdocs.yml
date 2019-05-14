@@ -24,12 +24,15 @@ nav:
 
 extra_css:
   - css/autumn.css
+  - css/codetabs.css
+
 
 markdown_extensions:
   - codehilite
   - admonition 
   - meta
+  - markdown_fenced_code_tabs:
+      template: 'default'
+ 
 
-# copyright: Copyright &copy; 2019 , Maintained by the <a href="/about/release-notes/#maintenance-team">Conductor Team</a>.
-# # google_analytics: ['UA-27795084-5', 'mkdocs.org']
-
+copyright: Copyright &copy; 2019 , Conductor Technologies.

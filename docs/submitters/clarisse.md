@@ -18,7 +18,7 @@ Any properties you set on a ConductorJob will be stored inside the project when 
 
 ## Installation
 
-If you haven't already done so, [install Conductor client tools](../install.md) now. 
+If you haven't already done so, [install Conductor client tools](../install.md). 
  
 ## Register the plugin
 To register the submitter, set the provided startup script in the prefereces panel. It will take effect the next time you start Clarisse.

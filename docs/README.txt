@@ -19,10 +19,9 @@ Send X to Conductor's cloud.
 We need to discover what works and then be consistent
 
 Uses https://www.mkdocs.org/ framework, so you need to install
-
 mkdocs                                     
-Pygments
-
+Pygments for syntax hilighting
+markdown-fenced-code-tabs for os dependenyt instructions in a tab
 
 -- To start the server
 

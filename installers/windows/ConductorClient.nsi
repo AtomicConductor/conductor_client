@@ -82,7 +82,7 @@ ${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "A" "HKLM" "$INSTDIR\Conductor\maya_shelf"
 ${EnvVarUpdate} $0 "XBMLANGPATH" "A" "HKLM" "$INSTDIR\Conductor\conductor\resources"
 ${EnvVarUpdate} $0 "NUKE_PATH" "A" "HKLM" "$INSTDIR\Conductor\nuke_menu"
 ${EnvVarUpdate} $0 "HOUDINI_PATH" "A" "HKLM" "$INSTDIR\Conductor\houdini"
-${EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "R" "HKLM" "$INSTDIR"
+${EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "A" "HKLM" "$INSTDIR"
 
 SectionEnd
 
@@ -128,6 +128,7 @@ ${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technolog
 ${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\maya_shelf"
 ${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\conductor\resources"
 ${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\nuke_menu"
+${un.EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
 
 RMDir /r /REBOOTOK "$PROGRAMFILES\Conductor Technologies"
 
