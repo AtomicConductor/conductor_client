@@ -10,7 +10,7 @@ date: 2019-05-02
 
 ## Introduction
 
-The Conductor submitter for Clarisse allows you to ship renders to Conductor's cloud from a familiar interface within Clarisse. It is implemented as a custom class that lives inside the project. The class name is ConductorJob.
+The Conductor submitter for Clarisse allows you to ship renders to Conductor's cloud from a familiar interface within Clarisse. It's implemented as a custom class that lives inside the project. The class name is ConductorJob.
 
 You may configure many ConductorJobs in a single project in order to try out different cloud parameters. A single job may also be set up to render many images, such as multiple VR cameras.
 
@@ -156,12 +156,18 @@ Set the number of times to retry a failed task before marking it failed.
 
 ---
 #### dependency_scan_policy
-Specify how to find files the project depends. Your project is likely to contain references to external textures and geometry caches. These files all need to be uploaded. The dependency-scan searches for these files at the time you generate a preview or submit a job. There are 3 options.
+Specify how to find files that the project depends on. Your project is likely to contain references to external textures and geometry caches. These files all need to be uploaded. The dependency-scan searches for these files at the time you generate a preview or submit a job. There are 3 options.
 
-1. **No Scan.** No search will be performed. This may be useful if the scanning process is slow for your project. You can instead chose to cache the list of depencies. See [manage_extra_uploads](#manage_extra_uploads). If you choose this method, you should be aware when new textures or other dependencies are added to your project, and add them to the upload list manually. 
+1. **No Scan.** No scan will be performed. This may be useful if the scanning process is slow for your project. You can instead chose to cache the list of depencies. See [manage_extra_uploads](#manage_extra_uploads). If you choose this method, you should be aware when new textures or other dependencies are added to your project, and add them to the upload list manually. 
 
-- **Smart Sequence.** When set, an attempt is made to identify only those files needed by the frames being rendered. Filenames will be searched for two patterns that indicate a time varying component: `####` and `$4F`. If hashes are found in a filename, then the list of files to upload is calculated based on the frames set in the ConductorJob, and the sequence attributes associated with the filename. 
+- **Smart Sequence.** When set, an attempt is made to identify for upload, only those files needed by the frames being rendered. Filenames are searched for two patterns that indicate a time-varying component: `####` and `$4F`. 
+    - If any number of hashes are found in a filename, then the list of files to upload is calculated based on the frames set in the ConductorJob, and the sequence attributes associated with the filename.
+    - Likewise, if $F variables are found, the list of files will reflect the frames as specified in the ConductorJob. However, expressions such as `$F * 2` are not resolved. 
 
+- **Glob.** Find all files that exist on disk that could match either of the two time varying patterns. If for example, your shot is 50 frames, but you have 100 images on disk, then a glob scan will find and uploads all those images even though half of them are not used. 
+
+!!! note
+    Contexts that reference external Clarisse projects are ignored during the dependency scan. They are made local in the render package and are therefore not required for rendering.
 
 !!! note "Example"
     Suppose you have a sequence of 1000 background images on disk. Your shot is 20 frames long and you've set the sequence attributes on the texturemap to start 100 frames in. (-100 frame offset). The smart scan option will find frames 0101 to 0120. 

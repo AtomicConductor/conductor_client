@@ -5,7 +5,6 @@ def _force_expression_evaluation(attr):
     attr.activate_expression(True)
     attr.activate_expression(False)
     attr.activate_expression(True)
-    attr.activate_expression(False)
 
 
 

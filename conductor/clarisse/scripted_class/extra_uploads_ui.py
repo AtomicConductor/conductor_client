@@ -15,7 +15,7 @@ class FileListWidget(ix.api.GuiTree):
     """Build a list of files using a tree widget.
 
     Use the tree widget because its the only way to get multiselect in
-    clarisse.
+    clarisse. The actual contents will be flat, one level deep.
     """
 
     def __init__(self, parent, y_val):

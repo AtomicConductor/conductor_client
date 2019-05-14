@@ -21,7 +21,7 @@ cmd += " -image ";
 cmd += $CT_SOURCES;
 cmd += " -image_frames_list ";
 cmd += $CT_CHUNKS;
-cmd += "-log_level Debug5 ";
+cmd += " -log_level Debug5 ";
 cmd += "-license_server conductor_ilise:40500 ";
 cmd += "-script ";
 cmd += $CT_SCRIPT_DIR;
@@ -41,7 +41,7 @@ cmd += " -image ";
 cmd += $CT_SOURCES;
 cmd += " -image_frames_list ";
 cmd += $CT_CHUNKS;
-cmd += "-log_level Debug5 ";
+cmd += " -log_level Debug5 ";
 cmd += "-license_server conductor_ilise:40500 ";
 cmd += "'";
 cmd"""

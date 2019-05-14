@@ -235,7 +235,7 @@ class Job(object):
         tokens["CT_RETRIES"] = str(self.instance["retries"])
         tokens["CT_JOB"] = self.node_name
 
-        # TODO DETECT PLATFORM ??
+        # Space delimited list of output paths are needed for a mkdir cmd.
         tokens["CT_DIRECTORIES"] = " ".join(p.posix_path(
             with_drive=False) for p in self.output_paths)
 

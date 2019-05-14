@@ -17,7 +17,7 @@ def _to_menu_item(item):
     Tuple has unique key and value pair needed to build the menu. e.g. (
     "highmem_32", "32 core, 208GB Mem")
     """
-    key = "%s_%s" % (item["flavor"], item["cores"])
+    key = "{}_{}".format(item["flavor"], item["cores"])
     return (key, item["description"])
 
 

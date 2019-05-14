@@ -6,8 +6,8 @@ def set(s_class):
         """Connects to Conductor and updates available projects and machine types. Sign in may be required. Also sets empty string attributes to their defaults.""")
 
     s_class.set_attr_doc(
-        "preview",
-        """Opens a preview window where you can see the data to be submitted as JSON. You can submit directly from the preview window.""")
+        "export_render_package",
+        """Save the file that would be sent to Conductor, but don't submit the job. This may be useful if you want to test the generated render command locally.""")
 
     s_class.set_attr_doc(
         "write_render_package_only",
@@ -28,7 +28,7 @@ def set(s_class):
         """Sets the images to be rendered. Images must have their Render to Disk attribute set. The Save As field must contain a filename.""")
 
     s_class.set_attr_doc("project",
-                         """Sets the Conductor project.""")
+        """Sets the Conductor project.""")
 
     s_class.set_attr_doc(
         "use_custom_frames",

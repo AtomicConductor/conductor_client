@@ -16,7 +16,15 @@ from conductor.native.lib.gpath import Path
 def _localize_contexts():
     """Make all clarisse reference contexts local.
 
-    This is the equivalent of importing Maya references.
+    This is the equivalent of importing Maya references. We do this
+    because on Windows it can be a bit fragile to have a scene
+    containing nested project references that need drive letters
+    resolved before they can find deeper referenced paths. Clarisse
+    project files are generally small because they get everything heavy
+    from geometry caches, so making refs local is very unlkikely to have
+    an effect on upload size. Having said that, We can try to omit this
+    (and include project refs in the dep scan) once the tool is proven
+    stable.
     """
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)

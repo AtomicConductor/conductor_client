@@ -41,7 +41,6 @@ def get_scan(obj, policy):
     """Make a dependencyList according to the policy."""
     result = PathList()
     result.add(*_resolve_file_paths(obj, policy))
-    # result.add(*_get_references(obj, policy))
     return result
 
 
@@ -56,8 +55,8 @@ def _get_extra_uploads(obj):
 def _is_project_reference(attr):
     """Does the attribute reference a clarisse project?
 
-    If so, we don't include it in the depedency scan because it will
-    ultimately be made local. Check the extension, because Alembic and
+    If so, we don't include it in the depedency scan because ultimately
+    it will be made local. Check the extension, because Alembic and
     pixar formats are also possible.
     """
     obj = attr.get_parent_object()
@@ -87,19 +86,30 @@ def _should_ignore(attr):
         return True
     return False
 
-
 def _evaluate_static_expression(target_attr):
-    """Evaluate the static part of the expression. Assume expression is in active state, otherwise we wouldn't be here. Problem is, we don't want to evaluate frame numbers"""
+    """Evaluate the static part of the expression.
+
+    Assume expression is in active state, otherwise we wouldn't be here.
+
+    We are doing this because we want literal paths that are needed for
+    the upload. The easiest and most reliable way to evaluate variables
+    in the expression is to simply use get_string(). However, if we do
+    that, it will evaluate time varying variables like $3F for the current frame only.  NOTE, it
+    does not resolve hash placeholders like ###. So to keep the time
+    vaiang varables variable, we replace them with python named format strings
+    like {frame:0nd} where n is the padding.
+
+    $CDIR/bugs_seq/bugs.####.jpg becomes
+    /Users/julian/projects/fish/clarisse/bugs_seq/bugs.####.jpg
+
+    $CDIR/bugs_seq/bugs.$4F.jpg becomes
+    /Users/julian/projects/fish/clarisse/bugs_seq/bugs.{frame:04d}.jpg
+
+    With these time varying placeholders left intact, we can expand
+    using either th SMART scan policy, or a simple GLOB.
+    """
 
     orig_expr = target_attr.get_expression()
-
-    # substitute every occurrence of $\d?F with a named python template reflecting
-    # the correct value of d, which is the padding.
-    # IN: "$CDIR/$2F/foo/$5F/image.$4F.jpg"
-    # OUT: "/path/to/project/{frame:02d}/foo/{frame:05d}/image.{frame:04d}.jpg"
-    #
-    # IN: "$CDIR/$2F/foo/$5F/image.$4F.jpg"
-    # OUT: "/path/to/project/{frame:02d}/foo/{frame:05d}/image.{frame:04d}.jpg"
 
     static_expr = re.sub(r'\$(\d?)F', lambda match: "{{frame:0{:d}d}}".format(
         int(match.group(1) or 0)), orig_expr)
@@ -108,56 +118,6 @@ def _evaluate_static_expression(target_attr):
     result = target_attr.get_string()
     target_attr.set_expression(orig_expr)
     return result
-
-
-# print expr.format(frame=17)
-
-# # attr.activate_expression(False)
-# # attr.get_serialized_string()
-
-# print attr.get_string()
-
-#     expr = re.sub(r'\$(\d?)F', lambda match: "{{frame:0{:d}d}}".format(
-#         int(match.group(1) or 0)), expr)
-#             result.append(format_template.format(frame=17))
-#         return result
-
-
-    # get the expression
-    # replace $4F with {frame:04d}
-
-
-
-
-# def _resolve_single_filename(attr, policy):
-
-#     # static_vars = variables.get_static()
-#     # is_x = attr.is_expression_enabled() and attr.is_expression_activated()
-#     # if is_x:
-#     #     filename = _evaluate_static_expression(attr)
-#     # else:
-#     #     filename = attr.get_string()
-
- 
-#     # print "_resolve_single_filename attr",attr.get_parent_object().get_name() +"."+ attr.get_name(), ":", filename
-#     filename = RX_UDIM.sub("*", filename)
-#     print attr.get_name(), ":",  filename
-#     if policy == GLOB:
-#          filename = re.sub((r"(#+|\$\d?F)"), "*", filename)
-
-#     print "Past Glob Test", filename
-    
-
-#     # try:
-
-#     #     print "TRY:", attr.get_name(), ":",  filename
-#     #     return Path(filename, context=static_vars).posix_path()
-
-#     # except GPathError as ex:
-#     #     print "FAILED", filename, 
-#     #     ix.log_warning("{} {}.".format(filename, ex.message()))
-#     #     ix.flush(0)
-#     #     return filename
 
 
 def _resolve_file_paths(obj, policy):
@@ -172,27 +132,21 @@ def _resolve_file_paths(obj, policy):
     """
 
     result = []
-    
 
     if not policy:
         return result
     for attr in ix.api.OfAttr.get_path_attrs():
         if _should_ignore(attr):
             continue
-        
+
         if attr.is_expression_enabled() and attr.is_expression_activated():
-            # _evaluate_static_expression means to resolve all dollar variables
-            # i.e. system, builtin, and so on. It does not evaluate time varying 
-            # expression segments such as $4F. Instead it replaces them with python
-            # format template. {frame}
             filename = _evaluate_static_expression(attr)
         else:
             filename = attr.get_string()
 
-
         if not filename:
             continue
-        
+
         # always glob udims
         filename = RX_UDIM.sub("*", filename)
 
@@ -200,16 +154,14 @@ def _resolve_file_paths(obj, policy):
             # replace all frame identifiers with "*" for globbing later
             filename = re.sub((r"(#+|\{frame:\d*d})"), "*", filename)
             result.append(filename)
-        else: # SMART
- 
+        else:  # SMART
             filenames = _smart_expand(obj, attr, filename)
-            # print "SMART: "
-            # print fns
             result += filenames
 
-    print "_resolve_file_paths" , result
- 
+    print "_resolve_file_paths", result
+
     return result
+
 
 def _smart_expand(obj, attr, filename):
 
@@ -218,11 +170,8 @@ def _smart_expand(obj, attr, filename):
 
     sequences = None
 
-
-
     resolve_hashes = RX_HASH.search(filename)
     resolve_frame_format = RX_FRAME_FORMAT.search(filename)
-
 
     if resolve_hashes:
         # print "resolve_hashes for", filename
@@ -241,6 +190,7 @@ def _smart_expand(obj, attr, filename):
         # print "NO hashes (that intersect) or frame_format_expr for", filename
         result = [filename]
     return result
+
 
 def _get_references(_, policy):
     """Get referenced files from contexts.
@@ -266,12 +216,12 @@ def _attribute_sequence(attr, intersector):
 
     Many attributes have an associated sequence_mode attribute, which
     when set to 1 signifies varying frames, and makes available start,
-    end, and offset attributes to help specify the sequence. Work out the intersection with main sequence ecause during dependency
-    scanning, we can optimize the number of frames to upload if we use only those frames specified
-    in the sequence attribute, and intersect them with the frame range
-    specified in the job node.
+    end, and offset attributes to help specify the sequence. Work out
+    the intersection with main sequence ecause during dependency
+    scanning, we can optimize the number of frames to upload if we use
+    only those frames specified in the sequence attribute, and intersect
+    them with the frame range specified in the job node.
     """
-
 
     obj = attr.get_parent_object()
     mode_attr = obj.attribute_exists("sequence_mode")
@@ -302,9 +252,4 @@ def _attribute_sequence(attr, intersector):
     # Make a copy of the sequence while at the render frames
     render_seq = Sequence(str(seq))
     attr_seq = seq.offset(-offset)
-    return {"attr_sequence":attr_seq, "render_sequence": render_seq}
-
-
-
-
-
+    return {"attr_sequence": attr_seq, "render_sequence": render_seq}
