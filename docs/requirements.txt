@@ -1,0 +1,3 @@
+mkdocs                                     
+pygments
+markdown-fenced-code-tabs
