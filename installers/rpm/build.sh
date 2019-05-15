@@ -29,8 +29,7 @@ cp -r ${SRC_DIR}/bin \
       ${SRC_DIR}/conductor \
       ${SRC_DIR}/maya_shelf \
       ${SRC_DIR}/nuke_menu \
-      ${SRC_DIR}/clarisse_shelf \
-       ${RPM_BUILDROOT}/opt/conductor
+      ${RPM_BUILDROOT}/opt/conductor
 
 cp conductor.spec ${BUILD_DIR}/rpm/SPECS
 mv ${RPM_BUILDROOT}/opt/conductor/bin/conductor \
