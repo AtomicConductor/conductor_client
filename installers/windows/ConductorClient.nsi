@@ -128,7 +128,7 @@ ${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Tech
 ${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\conductor\resources"
 ${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\nuke_menu"
 ${un.EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
-
+${un.EnvVarUpdate} $0 "HOUDINI_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\houdini"
 RMDir /r /REBOOTOK "$PROGRAMFILES\Conductor Technologies"
 
 #### Remove legacy installation artifacts
