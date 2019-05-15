@@ -10,10 +10,10 @@ To install the Conductor client tools, choose an installer from the list below. 
 |Stable |Windows 10 installer|  [conductor-v2.7.100.exe](https://github.com/AtomicConductor/conductor_client/releases/download/v2.7.100/conductor-v2.7.100.exe) |
 |Stable |Mac installer|  [conductor-v2.7.100.pkg](https://github.com/AtomicConductor/conductor_client/releases/download/v2.7.100/conductor-v2.7.100.pkg) |
 |Stable |Manual install|  [v2.7.100.tar.gz](https://github.com/AtomicConductor/conductor_client/archive/v2.7.100.tar.gz) |
-|Clarisse beta |Centos el7 installer|  [conductor-v2.8.4-0.el7.x86_64.rpm](https://github.com/AtomicConductor/conductor_client/releases/download/v2.8.4/conductor-v2.8.4-0.el7.x86_64.rpm) |
-|Clarisse beta |Windows 10 installer|  [conductor-v2.8.4.exe](https://github.com/AtomicConductor/conductor_client/releases/download/v2.8.4/conductor-v2.8.4.exe) |
-|Clarisse beta |Mac installer|  [conductor-v2.8.4.pkg](https://github.com/AtomicConductor/conductor_client/releases/download/v2.8.4/conductor-v2.8.4.pkg) |
-|Clarisse beta |Manual install|  [v2.8.4.tar.gz](https://github.com/AtomicConductor/conductor_client/archive/v2.8.4.tar.gz) |
+|Clarisse beta |Centos el7 installer|  [conductor-v2.8.5-0.el7.x86_64.rpm](https://github.com/AtomicConductor/conductor_client/releases/download/v2.8.5/conductor-v2.8.5-0.el7.x86_64.rpm) |
+|Clarisse beta |Windows 10 installer|  [conductor-v2.8.5.exe](https://github.com/AtomicConductor/conductor_client/releases/download/v2.8.5/conductor-v2.8.5.exe) |
+|Clarisse beta |Mac installer|  [conductor-v2.8.5.pkg](https://github.com/AtomicConductor/conductor_client/releases/download/v2.8.5/conductor-v2.8.5.pkg) |
+|Clarisse beta |Manual install|  [v2.8.5.tar.gz](https://github.com/AtomicConductor/conductor_client/archive/v2.8.5.tar.gz) |
 |All conductor-client releases|All|  [Github releases page](https://github.com/AtomicConductor/conductor_client/releases) |
 
 ### To run an installer.
