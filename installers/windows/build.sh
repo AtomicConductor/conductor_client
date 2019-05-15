@@ -9,7 +9,6 @@ cp -r ${SRC_DIR}/bin \
       ${SRC_DIR}/conductor \
       ${SRC_DIR}/maya_shelf \
       ${SRC_DIR}/nuke_menu \
-      ${SRC_DIR}/clarisse_shelf \
       ${SRC_DIR}/installers/windows/python \
       ${SRC_DIR}/installers/windows/conductor.bat \
       ${BUILD_DIR}/Conductor
