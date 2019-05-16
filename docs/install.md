@@ -24,7 +24,7 @@ To install the Conductor client tools, choose an installer from the list below. 
 
 ### To install manually.
  
-Copy the downloaded source directory to a location of your choice and set the following environment variables. The examples below use bash, and powershell for Windows. You should adjust for your chosen environment.
+Copy the downloaded source directory to a location of your choice and set the following environment variables. The examples below use Bash, and Powershell for Windows. You should adjust for your chosen environment.
 
 ``` bash fct_label="Mac"
 export CONDUCTOR_LOCATION="/path/to/conductor_client"
@@ -75,4 +75,3 @@ If you are having trouble with the installation, here are some steps and suggest
 * Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print.
 * The passage is attributed to an unknown typesetter in the 15th century who.
 * Cicero's De Finibus Bonorum et Malorum for use in a type specimen book.
-
