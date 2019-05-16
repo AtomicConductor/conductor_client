@@ -1,5 +1,5 @@
 site_name: Conductor Documentation
-theme: readthedocs
+theme: windmill
 site_description: Concuctor cloud rendering on demand
 repo_url: https://github.com/AtomicConductor/conductor_client
 copyright: Conductor Technologies
@@ -21,10 +21,12 @@ nav:
     - Jobs: dashboard/jobs.md
   - Support: https://example.com/
   - Bug Tracker: https://example.com/
+  - Meta: meta.md
 
 extra_css:
   - css/autumn.css
   - css/codetabs.css
+  - css/extra.css
 
 
 markdown_extensions:
@@ -33,6 +35,8 @@ markdown_extensions:
   - meta
   - markdown_fenced_code_tabs:
       template: 'default'
+  - toc:
+      permalink: true
  
 
 copyright: Copyright &copy; 2019 , Conductor Technologies.

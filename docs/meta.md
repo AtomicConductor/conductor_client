@@ -1,12 +1,15 @@
+### Images 
 
 ![diag][diag]
 
 
-### Code hilighting
 
-This is the `autumn` theme. There are plenty of others.
+### Code hilighting and fenced tabs 
 
-#### Python
+This is the `autumn` css theme for pygments. There are plenty of others.
+
+Fencing is achieved by making a series of uninterrupted blocks of code.
+
 
 ```python
 """Provide UI to specify what events to notify users of.
@@ -31,20 +34,7 @@ def handle_email_addresses(obj, _):
     if not result:
         ix.log_warning("Email addresses are invalid.")
 
-def notify_changed(obj, attr):
-    """Dim the email field based on toggle value."""
-    obj.get_attribute("email_addresses").set_read_only(not attr.get_bool())
-
-class PackageTreeItem(ix.api.GuiTreeItemBasic):
-    """An item in the tree that maintains its own child list."""
-
-    def __init__(self, parent, name):
-        ix.api.GuiTreeItemBasic.__init__(self, parent, name)
-        self.child_list = []
-        self.was_selected = False
 ```
-
-#### Bash
 
 ```bash
 #export MAYA_DEBUG_ENABLE_CRASH_REPORTING=1
@@ -63,8 +53,6 @@ alias mp='cd `curr_maya_project`'
 alias llrm='echo "Paste ls -l output for files to delete. ^D when done"; \rm -rf `awk '\''{print $9}'\''`' # remove by pasting from long list output
 ```
 
-#### Json
-
 ```json
 {
   "autoretry_policy": {
@@ -82,9 +70,6 @@ alias llrm='echo "Paste ls -l output for files to delete. ^D when done"; \rm -rf
 }
 ```
 
-
-#### Docker
-
 ```docker
 FROM gcr.io/eloquent-vector-104019/conductor_docker_base:7abb26b9-3bf2-4927-846f-ed15460046ea
 
@@ -97,7 +82,36 @@ COPY   ./install.py ./
 RUN python install.py
 ENV PATH /opt/silhouette7.0.11:$PATH
 ```
+ 
 
 
+### Tables
+
+
+|Release label  |  Operating system| Download link | 
+|:------------|:-------------|:-------------|
+|Stable |Centos el7 installer|  [conductor-v2.7.100-0.el7.x86_64.rpm](https://github.com/AtomicConductor/conductor_client/releases/download/v2.7.100/conductor-v2.7.100-0.el7.x86_64.rpm) |
+|Stable |Windows 10 installer|  [conductor-v2.7.100.exe](https://github.com/AtomicConductor/conductor_client/releases/download/v2.7.100/conductor-v2.7.100.exe) |
+|Stable |Mac installer|  [conductor-v2.7.100.pkg](https://github.com/AtomicConductor/conductor_client/releases/download/v2.7.100/conductor-v2.7.100.pkg) |
+|Stable |Manual install|  [v2.7.100.tar.gz](https://github.com/AtomicConductor/conductor_client/archive/v2.7.100.tar.gz) |
+|Clarisse beta |Centos el7 installer|  [conductor-v2.8.5-0.el7.x86_64.rpm](https://github.com/AtomicConductor/conductor_client/releases/download/v2.8.5/conductor-v2.8.5-0.el7.x86_64.rpm) |
+|Clarisse beta |Windows 10 installer|  [conductor-v2.8.5.exe](https://github.com/AtomicConductor/conductor_client/releases/download/v2.8.5/conductor-v2.8.5.exe) |
+|Clarisse beta |Mac installer|  [conductor-v2.8.5.pkg](https://github.com/AtomicConductor/conductor_client/releases/download/v2.8.5/conductor-v2.8.5.pkg) |
+|Clarisse beta |Manual install|  [v2.8.5.tar.gz](https://github.com/AtomicConductor/conductor_client/archive/v2.8.5.tar.gz) |
+|All conductor-client releases|All|  [Github releases page](https://github.com/AtomicConductor/conductor_client/releases) |
+
+
+### Notes and special panels
+
+!!!note
+    You can hover over any attribute name to get a detailed description of its purpose and behavior.
+
+!!! warning
+    Don't go out in this town after 9:30pm.
+
+!!! danger
+    You are likely to cause considerable damage if you touch this button.
+
+ 
 
 [diag]: image/diag.png

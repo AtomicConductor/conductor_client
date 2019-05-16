@@ -1,4 +1,4 @@
-This doc project will contain documentation for all public facing Conductor components, not just client tools.
+This documentation project will contain documentation for all public facing Conductor components, not just client tools.
 
 Grammar
 Try to follow Google developer documentation style guide.
