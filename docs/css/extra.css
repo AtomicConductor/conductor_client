@@ -6,11 +6,11 @@
 
 footer {
     margin: auto;
-    display: none;
+    /*display: none;*/
 }
 
 img {  margin-left: auto;
   margin-right: auto;
   display: block;
 }
-img + em { display: block; text-align: center;} 
+/*img + em { display: block; text-align: center;} */
