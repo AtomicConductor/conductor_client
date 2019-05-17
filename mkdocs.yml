@@ -21,7 +21,7 @@ nav:
     - Jobs: dashboard/jobs.md
   - Support: https://example.com/
   - Bug Tracker: https://example.com/
-  - Meta: meta.md
+  # - Meta: meta.md
 
 extra_css:
   - css/autumn.css

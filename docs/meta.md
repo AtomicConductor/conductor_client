@@ -1,8 +1,67 @@
+#Docs on docs
+
+#### This documentation project contains _technical_ documentation for public facing Conductor components.
+
+## Setup
+
+Conductor documentation is built on [mkdocs](https://www.mkdocs.org/), and uses a few plugins.
+
+`pip install mkdocs pygments markdown-fenced-code-tabs`
+
+The whole setup consists of a `mkdocs.yml` file and a `docs` folder in the root of the repo.
+
+
+To start the server locally:
+
+* From the root of the repo enter `mkdocs serve`
+* View the site at **127.0.0.1:8000**
+
+
+
+## Publish
+
+The docs are hosted on Github Pages. 
+
+To publish:
+
+* From the root of the repo enter `mkdocs gh-deploy`. 
+* To see the updates, head over to [our github pages site](https://atomicconductor.github.io/conductor_client/)
+
+
+
+## Write docs
+
+
+### Grammar
+
+#### General guidelines.
+
+Follow the [Google developer documentation style guide](https://developers.google.com/style/highlights)
+
+#### Conductor terminology.
+
+We probably want to find consistent ways to express concepts that are particular to Conductor. e.g. At Conductor, Your account at Conductor, on Conductor's servers?? If you find an elegant or best way to say something, add it in here. It'll save time.
+
+### Workflow
+
+It's up for discussion, but a rough idea is:
+
+* The developer who merges changes for a project that affects the way customers interact with Conductor, is responsible for updating the docs. 
+* Code reviewers should also check that the docs reflect the changes.
+
+We currently use Github's [Project Pages](https://help.github.com/articles/user-organization-and-project-pages/#project-pages-sites), which means the docs are in the same repo as the code. It also means URL contains **conductor_client**. 
+
+However, if the docs are to cover other aspects of Conductor, like the dashboard, then that repo is separate and things get messy. When a developer makes changes, they'd need to update 2 repos. 
+
+An alternative is to use [User and Organization Pages](https://help.github.com/articles/user-organization-and-project-pages/#user-and-organization-pages-sites). The docs would then be in their own repo. We'd still have to update 2 repos, but at least all are treated equally, and each repo has one responsibility. 
+
+## Formatting examples
+
 ### Images 
 
+
 ![diag][diag]
-
-
+ 
 
 ### Code hilighting and fenced tabs 
 

@@ -8,3 +8,9 @@ footer {
     margin: auto;
     display: none;
 }
+
+img {  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+img + em { display: block; text-align: center;} 
