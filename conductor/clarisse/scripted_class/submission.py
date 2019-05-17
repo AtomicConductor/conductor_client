@@ -167,10 +167,14 @@ class Submission(object):
         return tokens
 
     def _get_render_package(self):
-        basename = os.path.splitext(
-            ix.application.get_current_project_filename())[0]
+        all_vars = ix.application.get_factory().get_vars()
+        tmpdir = all_vars.get("CTEMP").get_string()
+        project_name = all_vars.get("PNAME").get_string()
 
-        return Path("{}.render".format(basename))
+        full_path = "{}_{}.render".format(
+            os.path.join(tmpdir, project_name), self.timestamp)
+
+        return Path(full_path)
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -232,6 +236,8 @@ class Submission(object):
         extension. It is a binary, around half the size of a project
         file. Before saving, all reference contexts are made local, and
         all Conductor data is removed.
+
+        It is saved in the clarisse temp folder CTEMP.
         """
 
         app = ix.application
