@@ -1,6 +1,6 @@
 #Docs on docs
 
-#### This documentation project contains _technical_ documentation for public facing Conductor components.
+This documentation project contains _technical_ documentation for public facing Conductor components.
 
 ## Setup
 
@@ -40,7 +40,7 @@ Follow the [Google developer documentation style guide](https://developers.googl
 
 #### Conductor terminology.
 
-We probably want to find consistent ways to express concepts that are particular to Conductor. e.g. At Conductor, Your account at Conductor, on Conductor's servers?? If you find an elegant or best way to say something, add it in here. It'll save time.
+To save time, we probably want to find consistent ways to express concepts that are particular to Conductor or clloud rendering. e.g. At Conductor, Your account at Conductor, on Conductor's servers??  
 
 ### Workflow
 
