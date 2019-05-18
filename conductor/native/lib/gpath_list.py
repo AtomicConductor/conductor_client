@@ -126,11 +126,7 @@ class PathList(object):
             pp = entry.posix_path()
             if GLOBBABLE_REGEX.search(pp):
                 globs = glob.glob(entry.posix_path())
-                if globs:
-                    result += globs
-                else:
-                    ix.log_warning(
-                        "Path {} glob resolved to an empty list. Check the location.")
+                result += globs
             else:
                 result.append(pp)
         self._entries = [Path(g) for g in result]
