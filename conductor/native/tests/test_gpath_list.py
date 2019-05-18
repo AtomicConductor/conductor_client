@@ -176,8 +176,10 @@ class PathListTest(unittest.TestCase):
         d.add(*files)
         self.assertEqual(d.common_path(), Path("C://users/joebloggs"))
 
-    # This is probably not right. 
-    # There is no common path if drive letters are involved
+    # This is not right. There is no common path if drive letters 
+    # are involved. Need to revisit, and hope that in the
+    # meantime  no one is dumb enough to render to tewo different 
+    # filesystems in the same render job.  
     def test_common_different_drive_letter(self):
         d = PathList()
         files = [

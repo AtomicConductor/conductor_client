@@ -116,18 +116,23 @@ class PathList(object):
 
         We don't simply glob every entry since that would remove entries
         that don't yet exist. And we can't just rely on zero glob
-        results for that because it may have been a legitimate zero
-        result if it was globbable but matched nothing. So we test for 
-        glob characters (*|?|[) to determine whether to attempt a glob.
+        results because it may have been a legitimate zero result if it
+        was globbable but matched nothing. So we test for glob
+        characters (*|?|[) to determine whether to attempt a glob.
         """
         self._deduplicate()
         result = []
         for entry in self._entries:
             pp = entry.posix_path()
             if GLOBBABLE_REGEX.search(pp):
-                result += glob.glob(entry.posix_path())
+                globs = glob.glob(entry.posix_path())
+                if globs:
+                    result += globs
+                else:
+                    ix.log_warning(
+                        "Path {} glob resolved to an empty list. Check the location.")
             else:
-                result.append(entry.posix_path())
+                result.append(pp)
         self._entries = [Path(g) for g in result]
         self._clean = False
         self._current = 0
