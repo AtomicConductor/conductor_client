@@ -40,7 +40,8 @@ Follow the [Google developer documentation style guide](https://developers.googl
 
 #### Conductor terminology.
 
-To save time, we probably want to find consistent ways to express concepts that are particular to Conductor or clloud rendering. e.g. At Conductor, Your account at Conductor, on Conductor's servers??  
+To save time, we probably want to find consistent ways to express concepts that are particular to Conductor or cloud rendering. e.g. At Conductor, Your account at Conductor, on Conductor's servers??  
+
 
 ### Workflow
 

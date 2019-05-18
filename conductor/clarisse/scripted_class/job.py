@@ -22,7 +22,7 @@ class Job(object):
     tokens the user can access as clarisse variables in expressions.
     """
 
-    def __init__(self, node, parent_tokens, render_package):
+    def __init__(self, node, parent_tokens, render_package_path):
         """Build job object for a ConductorJob node.
 
         After _setenv has been called, the Job level token variables are
@@ -46,7 +46,7 @@ class Job(object):
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
         self.dependencies = deps.collect(self.node)
-        self.dependencies.add(render_package)
+        self.dependencies.add(render_package_path)
         self.title = self.node.get_attribute("title").get_string()
         self.metadata = None
 
@@ -113,11 +113,8 @@ class Job(object):
 
         # Special Amendments!
         # Clearly we need to find a better value for PYTHONHOME and add it in
-        # sidecar
-        amendments = [{"name": "PATH",
-                       "value": Path("$CONDUCTOR_LOCATION/conductor/clarisse/scripts").posix_path(with_drive=False),
-                       "merge_policy": "append"},
-                      {"name": "PYTHONHOME",
+        # sidecar or here
+        amendments = [{"name": "PYTHONHOME",
                        "value": "/opt/silhouettefx/silhouette/7/silhouette-7.5.2",
                        "merge_policy": "exclusive"},
                       {"name": "CONDUCTOR_PATHHELPER",

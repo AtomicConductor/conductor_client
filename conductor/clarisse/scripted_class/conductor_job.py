@@ -24,8 +24,8 @@ cmd += $CT_CHUNKS;
 cmd += " -log_level Debug5 ";
 cmd += "-license_server conductor_ilise:40500 ";
 cmd += "-script ";
-cmd += $CT_SCRIPT_DIR;
-cmd += "/ct_windows_prep.py ";
+cmd += $CT_TEMP_DIR;
+cmd += "/ct_windows_prep.py";
 cmd += "'";
 cmd"""
     TITLE_EXPRESSION = """

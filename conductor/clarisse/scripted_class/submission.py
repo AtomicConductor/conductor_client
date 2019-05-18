@@ -1,16 +1,76 @@
-"""Build an object to represent a Clarisse Conductor submission."""
+"""Build an object to represent a Clarisse Conductor submission.
+
+Also handle the submit action.
+
+NOTE There are a number of bugs in clarisse that have lead to the
+decision for a particular submission flow. Namely: on submit:
+1. Make sure the user has saved the file. (they might need it)
+2. Prepare the temp directory.
+3. Copy Conductor strip_drive_letter script to temp.
+4. Make sure image ranges are valid.
+5. Make contexts local.
+6. Remove Conductor nodes.
+7. Save the render package.
+8. Do the submission.
+9. Clean up temp files.
+
+The bugs and reasonong that lead to this are:
+1. Undo doesn't work on deeply nested reference contexts. If you
+`make-all-local` in a batch undo block, then when you undo, there 
+are extra nodes in the project. 
+
+We export a render package as opposed to a regular project because
+all paths containing variables are resolved.
+
+We make-all-local (import referenced files) before exporting for 
+many reasons - 
+    
+A. Bug where  some nested path overrides don't correctly get 
+overridden when opening the project. (I have to manually set 
+one every time I open the project). The same bug would appear
+on the remote machine if we don't make refs local. 
+B. During development, a strategy was tried where drive letter 
+removal was run recursively on contexts on the remote machine
+and it crashed with obscure errors. The same script succeeded
+in the local interactive session, so I abandoned that path.
+C. Isotropix plan to have refs made local for render packages 
+anyway. It's just not implemented yet.
+
+So the combination of undo bugs and the need to make changes 
+to the scene before export, is why we: 
+(save, change, export, revert)
+
+"""
 
 import datetime
+import errno
 import os
 import sys
 import traceback
-
+import shutil
 import ix
 from conductor.clarisse.scripted_class import frames_ui, variables
+import conductor.clarisse.utils as cu
+
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
+from conductor.native.lib.gpath_list import PathList
+import conductor.clarisse.scripted_class.dependencies as deps
+
+# auxiliary scripts provided by conductor and required on the backend.
+# Currrently only ct_windows_prep.py, removes drive letters on win.
+# These will be copied from SCRIPTS_DIRECTORY to the temp dir in
+# preparation for uploading. Why not upload directly from Conductor's 
+# install? Because it just doesn't feel right. It also makes dealing 
+# with paths a bit easier.
+
+SCRIPTS_DIRECTORY = os.path.join(
+    os.environ["CONDUCTOR_LOCATION"],
+    "conductor",
+    "clarisse",
+    "scripts")
 
 
 def _localize_contexts():
@@ -49,6 +109,11 @@ def _remove_conductor():
     variables.remove()
 
 
+# def _get_temp_directory():
+#     tmpdir = ix.application.get_factory().get_vars().get("CTEMP").get_string()
+#     return os.path.join(tmpdir, "conductor")
+
+
 class Submission(object):
     """class Submission holds all data needed for a submission.
 
@@ -78,8 +143,10 @@ class Submission(object):
 
         self.project_filename = ix.application.get_current_project_filename()
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self.render_package = self._get_render_package()
-        self.delete_render_package = self.node.get_attribute(
+
+        self.tmpdir = Path(deps.CONDUCTOR_TMP_DIR)
+        self.render_package_path = self._get_render_package_path()
+        self.should_delete_render_package = self.node.get_attribute(
             "clean_up_render_package").get_bool()
 
         self.local_upload = self.node.get_attribute("local_upload").get_bool()
@@ -90,10 +157,29 @@ class Submission(object):
 
         self.tokens = self._setenv()
 
+        # self.scripts = self._get_scripts()
+
         self.jobs = []
         for node in self.nodes:
-            job = Job(node, self.tokens, self.render_package)
+            job = Job(node, self.tokens, self.render_package_path)
             self.jobs.append(job)
+
+    # def _get_scripts(self):
+    #     """Dependencies that don't exist until the submit button is pressed.
+
+    #     The render package filename is not known until either the
+    #     submission or the preview starts. Firstly, the name is derived
+    #     from the scene name, and the user may have saved scene with a
+    #     new name prior to submission. Secondly, we add a timestamp.
+
+    #     We also copy into the temp directory any Conductor scripts that are
+    #     needed on the render machine. This is for ease of path handling
+    #     reasons and maybe it can be removed at a later date.
+    #     """
+    #     result = []
+    #     for script in deps.CONDUCTORREQUIRED_SCRIPTS:
+    #         result.add(os.path.join(SCRIPTS_DIRECTORY, script))
+    #     return result
 
     def _get_project(self):
         """Get the project from the attr.
@@ -153,11 +239,10 @@ class Submission(object):
             variables.get("PDIR")).posix_path(
             with_drive=False)
 
-        tokens["CT_SCRIPT_DIR"] = Path(
-            "$CONDUCTOR_LOCATION/conductor/clarisse/scripts").posix_path(with_drive=False)
+        tokens["CT_TEMP_DIR"] = self.tmpdir.posix_path(with_drive=False)
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
-        tokens["CT_RENDER_PACKAGE"] = self.render_package.posix_path(
+        tokens["CT_RENDER_PACKAGE"] = self.render_package_path.posix_path(
             with_drive=False)
         tokens["CT_PROJECT"] = self.project["name"]
 
@@ -166,15 +251,23 @@ class Submission(object):
 
         return tokens
 
-    def _get_render_package(self):
-        all_vars = ix.application.get_factory().get_vars()
-        tmpdir = all_vars.get("CTEMP").get_string()
-        project_name = all_vars.get("PNAME").get_string()
+    def _get_render_package_path(self):
+        """Calc the path to the render package.
 
-        full_path = "{}_{}.render".format(
-            os.path.join(tmpdir, project_name), self.timestamp)
-
-        return Path(full_path)
+        This is the only upload path that is not provided by
+        dependencies.py, as he name is not known until
+        preview/submission time because it is based on the filename and
+        a timestamp. What this means, practically, is that it won't show
+        up in the extra uploads window along with other dependencies
+        when the scan button is pushed. It will however always show up
+        in the preview window.
+        """
+        filename = ix.application.get_factory().get_vars().get("PNAME").get_string()
+        filename = "{}_{}.render".format(filename, self.timestamp)
+        return Path(
+            os.path.join(
+                self.tmpdir.posix_path(),
+                filename))
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -183,7 +276,7 @@ class Submission(object):
         job. The project, notifications, and upload args are the same
         for all jobs, so they are set here. Other args are provided by
         Job objects and updated with these submission level args to form
-        each complete job submissions.
+        each complete submission.
         """
         result = []
         submission_args = {}
@@ -211,7 +304,7 @@ class Submission(object):
         Collect responses and show them in the log.
         """
 
-        self.write_render_package()
+        self._before_submit()
 
         results = []
         for job_args in self.get_args():
@@ -226,7 +319,11 @@ class Submission(object):
         for result in results:
             ix.log_info(result)
 
-        self._post_submit()
+        self._after_submit()
+
+    def _before_submit(self):
+        """"""
+        self.write_render_package()
 
     def write_render_package(self):
         """Write a package suitable for rendering.
@@ -241,9 +338,9 @@ class Submission(object):
         """
 
         app = ix.application
-        self._pre_write_package()
+        self._before_write_package()
 
-        package_file = self.render_package.posix_path()
+        package_file = self.render_package_path.posix_path()
         success = app.export_render_archive(package_file)
 
         if os.environ.get("CONDUCTOR_MODE") == "dev":
@@ -251,11 +348,10 @@ class Submission(object):
                 os.path.dirname(
                     app.get_current_project_filename()),
                 "ct_debug.project")
-            app.disable()
-            app.save_project_snapshot(filename)
-            app.enable()
+            with cu.disabled_app():
+                app.save_project_snapshot(filename)
 
-        self._post_write_package()
+        self._after_write_package()
 
         if not success:
             ix.log_error(
@@ -264,10 +360,34 @@ class Submission(object):
         ix.log_info("Wrote package to {}".format(package_file))
         return package_file
 
-    def _pre_write_package(self):
+    def _before_write_package(self):
+        """Prepare to write render package."""
+        self._prepare_temp_directory()
+        self._copy_scripts_to_temp()
         self._ensure_valid_image_ranges()
         _localize_contexts()
         _remove_conductor()
+
+    def _prepare_temp_directory(self):
+        """Make sure the temp directory has a conductor subdirectory.
+
+        Also add in any scripts conductor-owned scripts needed by the
+        task command.
+        """
+        tmpdir = self.tmpdir.posix_path()
+        try:
+            os.makedirs(tmpdir)
+        except OSError as ex:
+            if ex.errno == errno.EEXIST and os.path.isdir(tmpdir):
+                pass
+            else:
+                raise
+
+    def _copy_scripts_to_temp(self):
+        for script in deps.CONDUCTOR_SCRIPTS:
+            script_path = os.path.join(SCRIPTS_DIRECTORY, script)
+            if (os.path.isfile(script_path)):
+                shutil.copy(script_path, self.tmpdir.posix_path())
 
     def _ensure_valid_image_ranges(self):
         """Fix image ranges to make them renderable.
@@ -287,27 +407,24 @@ class Submission(object):
                 for image in images:
                     frames_ui.set_image_range(image, seq)
 
-    def _post_submit(self):
-        self._do_delete_render_package()
+    def _after_submit(self):
+        self._delete_render_package()
 
-    def _post_write_package(self):
+    def _after_write_package(self):
         """Cleanup."""
         self._revert_to_saved_scene()
 
-    def _do_delete_render_package(self):
-        if self.delete_render_package:
-            render_package_file = self.render_package.posix_path()
+    def _delete_render_package(self):
+        if self.should_delete_render_package:
+            render_package_file = self.render_package_path.posix_path()
             if os.path.exists(render_package_file):
                 os.remove(render_package_file)
 
     def _revert_to_saved_scene(self):
-        clarisse_win = ix.application.get_event_window()
-        old_cursor = clarisse_win.get_mouse_cursor()
-        clarisse_win.set_mouse_cursor(ix.api.Gui.MOUSE_CURSOR_WAIT)
-        ix.application.disable()
-        ix.application.load_project(self.project_filename)
-        ix.application.enable()
-        clarisse_win.set_mouse_cursor(old_cursor)
+        with cu.waiting_cursor():
+            ix.application.disable()
+            ix.application.load_project(self.project_filename)
+            ix.application.enable()
 
     @property
     def node_name(self):

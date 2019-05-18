@@ -14,6 +14,25 @@ RX_UDIM = re.compile(r"<UDIM>")
 GLOB = 1
 SMART = 2
 
+# auxiliary scripts provided by conductor and required on the backend.
+# Currrently only ct_windows_prep.py, removes drive letters on win.
+# These will be copied from SCRIPTS_DIRECTORY to the temp dir in
+# preparation for uploading. 
+
+# Why not upload directly from Conductor's install? 
+# Because it makes dealing with paths easier. And it just doesn't feel right. 
+
+# Why not just store the drive_letter removal stuff ready on the sidecar?
+# Because the installation shouldn't know, or try to determine, what OS the 
+# submission was generated on. It should be given instructions from the client
+# and run them.
+
+# Why not replace drive letters locally, at the same time we make refs local
+# and and so on?
+# Because then the render package would not be runnable on the local machine.
+CONDUCTOR_SCRIPTS = ["ct_windows_prep.py"]
+CONDUCTOR_TMP_DIR = os.path.join(ix.application.get_factory().get_vars().get("CTEMP").get_string(), "conductor")
+
 
 def collect(obj):
     """Collect all upload files.
@@ -21,36 +40,75 @@ def collect(obj):
     Always add any extra uploads the user has chosen. Then do a scan if
     the policy is not None.
     """
-
-    policy = obj.get_attribute("dependency_scan_policy").get_long()
-
     result = PathList()
 
-    result.add(
-        "$CONDUCTOR_LOCATION/conductor/clarisse/scripts")
-
+    policy = obj.get_attribute("dependency_scan_policy").get_long()
+    result.add(*_get_conductor_script_paths())
     result.add(*_get_extra_uploads(obj))
     result.add(*get_scan(obj, policy))
 
     # tell the list to expand  any "*" or <UDIM> in place
     result.glob()
+    # print result
+
     return result
 
 
-def get_scan(obj, policy):
-    """Make a dependencyList according to the policy."""
+def _get_conductor_script_paths():
+    """Paths where conductor's own scripts will be uploaded from."""
     result = PathList()
-    result.add(*_resolve_file_paths(obj, policy))
+    for script in CONDUCTOR_SCRIPTS:
+        result.add(os.path.join(CONDUCTOR_TMP_DIR, script))
     return result
 
 
 def _get_extra_uploads(obj):
-    """Get extra uploads from the extra_uploads attribute."""
+    """Get user speciffied uploads from the extra_uploads attribute."""
+    result = PathList()
     extras_attr = obj.get_attribute("extra_uploads")
     paths = ix.api.CoreStringArray()
     extras_attr.get_values(paths)
-    return paths
+    result.add(*paths)
+    return result
 
+def get_scan(obj, policy):
+    """Scan all path attrs for dependencies according to the given policy.
+
+    If policy is not None, first replace all UDIM tags with a "*" so
+    they may be globbed. File sequences may be resolved one of 2 ways.
+    If policy is GLOB, then hashes in filenames will be replaced by a
+    "*" and globbed later. If policy is SMART then for each filename, we
+    look at its sequence definition and calculate the frames that will
+    be needed for the frame range being rendered.
+    """
+    result = PathList()
+
+    if not policy:
+        return result
+    for attr in ix.api.OfAttr.get_path_attrs():
+        if _should_ignore(attr):
+            continue
+
+        if attr.is_expression_enabled() and attr.is_expression_activated():
+            filename = _evaluate_static_expression(attr)
+        else:
+            filename = attr.get_string()
+
+        if not filename:
+            continue
+
+        # always glob for udims.
+        filename = RX_UDIM.sub("*", filename)
+
+        if policy == GLOB:
+            # replace all frame identifiers with "*" for globbing later
+            filename = re.sub((r"(#+|\{frame:\d*d})"), "*", filename)
+            result.add(filename)
+        else:  # SMART
+            filenames = _smart_expand(obj, attr, filename)
+            result.add(*filenames)
+
+    return result
 
 def _is_project_reference(attr):
     """Does the attribute reference a clarisse project?
@@ -86,6 +144,7 @@ def _should_ignore(attr):
         return True
     return False
 
+
 def _evaluate_static_expression(target_attr):
     """Evaluate the static part of the expression.
 
@@ -106,7 +165,7 @@ def _evaluate_static_expression(target_attr):
     /Users/julian/projects/fish/clarisse/bugs_seq/bugs.{frame:04d}.jpg
 
     With these time varying placeholders left intact, we can expand
-    using either th SMART scan policy, or a simple GLOB.
+    using either the SMART scan policy, or a simple GLOB.
     """
 
     orig_expr = target_attr.get_expression()
@@ -120,51 +179,14 @@ def _evaluate_static_expression(target_attr):
     return result
 
 
-def _resolve_file_paths(obj, policy):
-    """Scan all path attrs for dependencies according to the given policy.
-
-    If policy is not None, first replace all UDIM tags with a "*" so
-    they may be globbed. File sequences may be resolved one of 2 ways.
-    If policy is GLOB, then hashes in filenames will be replaced by a
-    "*" and globbed later. If policy is SMART then for each filename, we
-    look at its sequence definition and calculate the frames that will
-    be needed for the frame range being rendered.
-    """
-
-    result = []
-
-    if not policy:
-        return result
-    for attr in ix.api.OfAttr.get_path_attrs():
-        if _should_ignore(attr):
-            continue
-
-        if attr.is_expression_enabled() and attr.is_expression_activated():
-            filename = _evaluate_static_expression(attr)
-        else:
-            filename = attr.get_string()
-
-        if not filename:
-            continue
-
-        # always glob udims
-        filename = RX_UDIM.sub("*", filename)
-
-        if policy == GLOB:
-            # replace all frame identifiers with "*" for globbing later
-            filename = re.sub((r"(#+|\{frame:\d*d})"), "*", filename)
-            result.append(filename)
-        else:  # SMART
-            filenames = _smart_expand(obj, attr, filename)
-            result += filenames
-
-    print "_resolve_file_paths", result
-
-    return result
 
 
 def _smart_expand(obj, attr, filename):
+    """Expand filenames when policy is SMART.
 
+    At this point, filenames may have hashes and/or {frame:02d} style
+    placeholders that represent frame ranges.
+    """
     result = []
     main_seq = frames_ui.main_frame_sequence(obj)
 
@@ -174,14 +196,13 @@ def _smart_expand(obj, attr, filename):
     resolve_frame_format = RX_FRAME_FORMAT.search(filename)
 
     if resolve_hashes:
-        # print "resolve_hashes for", filename
         sequences = _attribute_sequence(attr, main_seq)
         if sequences:
             result = sequences["attr_sequence"].expand(filename)
             if resolve_frame_format:
                 result = sequences["render_sequence"].expand_format(*result)
     elif resolve_frame_format:
-        # print "resolve_frame_format ONLY for", filename
+        # resolve_frame_format ONLY for", filename
         print "Filename is ", filename
         print main_seq
         result = main_seq.expand_format(filename)

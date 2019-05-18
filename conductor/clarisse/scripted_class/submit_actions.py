@@ -10,6 +10,7 @@ Submit, send jobs straight to Conductor.
 import ix
 from conductor.clarisse.scripted_class.submission import Submission
 from conductor.clarisse.scripted_class import preview_ui
+import conductor.clarisse.utils as cu
 
 
 SUCCESS_CODES_SUBMIT = [201, 204]
@@ -91,12 +92,13 @@ def submit(*args):
     if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]:
         ix.log_warning("Submission cancelled.")
         return
-
     obj = args[0]
     _validate_images(obj)
     _validate_packages(obj)
-    submission = Submission(obj)
-    submission.submit()
+
+    with cu.waiting_cursor():
+        submission = Submission(obj)
+        submission.submit()
 
 
 def preview(*args):
@@ -112,7 +114,8 @@ def preview(*args):
     obj = args[0]
     _validate_images(obj)
     _validate_packages(obj)
-    submission = Submission(obj)
+    with cu.waiting_cursor():
+        submission = Submission(obj)
     preview_ui.build(submission, can_submit=can_submit)
 
 def export_render_package(*args):
@@ -127,8 +130,9 @@ def export_render_package(*args):
     obj = args[0]
     _validate_images(obj)
     _validate_packages(obj)
-    submission = Submission(obj)
-    submission.write_render_package()
+    with cu.waiting_cursor():
+        submission = Submission(obj)
+        submission.write_render_package()
 
 
  

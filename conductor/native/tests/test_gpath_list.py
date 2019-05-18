@@ -215,7 +215,7 @@ class PathListTest(unittest.TestCase):
         d.add(*files)
         self.assertEqual(d.common_path(), Path("/"))
 
-    def test_self_glob_when_files_match(self):
+    def test_glob_when_files_match(self):
         glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
         d = PathList()
         file = "/some/file.*.exr"
@@ -223,7 +223,7 @@ class PathListTest(unittest.TestCase):
         d.glob()
         self.assertEqual(len(d), 20)
 
-    def test_self_glob_dedups_when_many_files_match(self):
+    def test_glob_dedups_when_many_files_match(self):
         glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
         d = PathList()
         files = ["/some/file.*.exr", "/some/*.exr"]
@@ -231,13 +231,27 @@ class PathListTest(unittest.TestCase):
         d.glob()
         self.assertEqual(len(d), 20)
 
-    def test_self_glob_when_files_dont_match(self):
+    def test_glob_when_files_dont_match(self):
         glob.populate(Sequence.create("1-20").expand("/other/file.####.exr"))
         d = PathList()
         file = "/some/file.*.exr"
         d.add(file)
         d.glob()
         self.assertEqual(len(d), 0)
+
+    def test_glob_leaves_non_existent_unglobbable_entries_untouched(self):
+        glob.populate(Sequence.create("1-3").expand("/some/file.####.exr"))
+        d = PathList()
+        d.add("/some/file.*.exr", "/other/file1.exr",  "/other/file2.exr")
+        d.glob()
+        self.assertEqual(len(d), 5)
+
+ 
+    def test_unpacking(self):
+        d = PathList()
+        d.add(Path("/a/file1"), Path("/a/file2"))
+        a, b = d
+        self.assertEqual(type(a), Path)
 
 
 if __name__ == '__main__':

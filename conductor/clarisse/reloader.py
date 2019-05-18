@@ -2,6 +2,7 @@
 
 It reloads files imported by ConductorJob. Not ConductorJob itself.
 """
+from conductor.clarisse import utils
 from conductor.clarisse.scripted_class import refresh
 from conductor.clarisse.scripted_class import dependencies
 from conductor.native.lib import gpath_list
@@ -25,6 +26,7 @@ from conductor.clarisse.scripted_class import attr_docs
  
 
 
+reload(utils)
 reload(refresh)
 reload(dependencies)
 reload(gpath_list)

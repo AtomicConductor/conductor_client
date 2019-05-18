@@ -46,7 +46,6 @@ class FileListWidget(ix.api.GuiTree):
 
         deduped = PathList()
         for item in self.item_list:
-            # no need to stat as we must have once already
             deduped.add(item.get_name())
 
         for entry in entries:
@@ -71,7 +70,7 @@ class FileListWidget(ix.api.GuiTree):
             return
         self.destroy_selected_items()
         self.refresh()
-        self._remove_from_sync_itet(indices)
+        self._remove_from_sync_list(indices)
 
     def destroy_all(self):
         """Clear all items."""
