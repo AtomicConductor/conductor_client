@@ -215,13 +215,30 @@ class PathListTest(unittest.TestCase):
         d.add(*files)
         self.assertEqual(d.common_path(), Path("/"))
 
-    def test_glob_when_files_match(self):
+    def test_glob_when_files_match_with_asterisk(self):
         glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
         d = PathList()
         file = "/some/file.*.exr"
         d.add(file)
         d.glob()
         self.assertEqual(len(d), 20)
+
+
+    def test_glob_when_files_match_with_range(self):
+        glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
+        d = PathList()
+        file = "/some/file.000[0-9].exr"
+        d.add(file)
+        d.glob()
+        self.assertEqual(len(d), 9)
+
+    def test_glob_when_files_match_with_questoion_mark(self):
+        glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
+        d = PathList()
+        file = "/some/file.00?0.exr"
+        d.add(file)
+        d.glob()
+        self.assertEqual(len(d), 2)
 
     def test_glob_dedups_when_many_files_match(self):
         glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
@@ -238,6 +255,8 @@ class PathListTest(unittest.TestCase):
         d.add(file)
         d.glob()
         self.assertEqual(len(d), 0)
+
+
 
     def test_glob_leaves_non_existent_unglobbable_entries_untouched(self):
         glob.populate(Sequence.create("1-3").expand("/some/file.####.exr"))

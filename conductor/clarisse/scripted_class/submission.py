@@ -3,7 +3,8 @@
 Also handle the submit action.
 
 NOTE There are a number of bugs in clarisse that have lead to the
-decision for a particular submission flow. Namely: on submit:
+decision for a particular submission flow. See submit() and 
+write_render_package() . The flow is:
 1. Make sure the user has saved the file. (they might need it)
 2. Prepare the temp directory.
 3. Copy Conductor strip_drive_letter script to temp.
@@ -15,9 +16,14 @@ decision for a particular submission flow. Namely: on submit:
 9. Clean up temp files.
 
 The bugs and reasonong that lead to this are:
-1. Undo doesn't work on deeply nested reference contexts. If you
-`make-all-local` in a batch undo block, then when you undo, there 
-are extra nodes in the project. 
+1. BUG: Images don't render if their on-node frame range does not
+contain the frames specified in the render command. The cli frames
+should take precedence, but as they don't, we have to pre adjust 
+them. Undo doesn't work correctly for the relevant attributes, so 
+after adjustment they must be returned to their original values.
+2.BUG:  Undo doesn't work on deeply nested reference contexts. If 
+you`make-all-local` in a batch undo block, then when you undo,
+there are extra nodes in the project. 
 
 We export a render package as opposed to a regular project because
 all paths containing variables are resolved.
@@ -59,12 +65,6 @@ from conductor.native.lib.gpath import Path
 from conductor.native.lib.gpath_list import PathList
 import conductor.clarisse.scripted_class.dependencies as deps
 
-# auxiliary scripts provided by conductor and required on the backend.
-# Currrently only ct_windows_prep.py, removes drive letters on win.
-# These will be copied from SCRIPTS_DIRECTORY to the temp dir in
-# preparation for uploading. Why not upload directly from Conductor's 
-# install? Because it just doesn't feel right. It also makes dealing 
-# with paths a bit easier.
 
 SCRIPTS_DIRECTORY = os.path.join(
     os.environ["CONDUCTOR_LOCATION"],
