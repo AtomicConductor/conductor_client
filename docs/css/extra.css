@@ -3,10 +3,10 @@
 }*/
 
 
-
-footer {
-    margin: auto;
-    /*display: none;*/
+.col-md-12 {
+width: 100% !important;
+flex: 0 0 100% ;
+text-align: center;
 }
 
 img {  margin-left: auto;
