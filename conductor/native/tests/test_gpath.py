@@ -1,3 +1,7 @@
+""" test gpath
+
+   isort:skip_file
+"""
 from conductor.native.lib.gpath import Path, GPathError
 import os
 import sys

@@ -1,3 +1,7 @@
+""" test package_tree
+
+   isort:skip_file
+"""
 import json
 import os
 import random

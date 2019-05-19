@@ -1,3 +1,7 @@
+""" test gpathlist
+
+   isort:skip_file
+"""
 import sys
 import os
 import unittest
