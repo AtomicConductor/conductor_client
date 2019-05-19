@@ -85,8 +85,6 @@ There are 2 conventional ways to build with Github pages:
 
  <span style="color:red">How do we resolve this?</span>
 
-
-
 ## Formatting examples
 
 ### Images 

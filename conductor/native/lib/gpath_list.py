@@ -1,9 +1,12 @@
 
 import os
+import re
 from itertools import takewhile
 import glob
 
 from conductor.native.lib.gpath import Path
+
+GLOBBABLE_REGEX = re.compile(r'\*|\?|\[')
 
 
 class PathList(object):
@@ -35,16 +38,15 @@ class PathList(object):
     def _add_one(self, path):
         """Add a single file.
 
-        Note that when
-        an element is added, it may cause the list to change next time
-        it is deduplicated, which includes getting shorter. This could
-        happen if a containing directory is added. Therefore we have to
-        set the peg position to zero.
+        Note that when an element is added, it may cause the list to
+        change next time it is deduplicated, which includes getting
+        shorter. This could happen if a containing directory is added.
+        Therefore we have to set the peg position to zero.
         """
         # print "isinstance(path, Path) ", isinstance(path, Path)
         if not type(path).__name__ == "Path":
 
-        # if not isinstance(path, Path):
+            # if not isinstance(path, Path):
             path = Path(path)
             # print "PATH IS NOT A Path"
         # else:
@@ -64,7 +66,7 @@ class PathList(object):
             return
 
         sorted_entries = sorted(
-            self._entries, key=lambda entry: (entry.depth , -len(entry.tail)))
+            self._entries, key=lambda entry: (entry.depth, -len(entry.tail)))
 
         self._entries = []
         for entry in sorted_entries:
@@ -73,14 +75,10 @@ class PathList(object):
             self._entries.append(entry)
         self._clean = True
 
-
-
     def __contains__(self, key):
         if not isinstance(key, Path):
             key = Path(key)
         return key in self._entries
-
-
 
     def common_path(self):
         """Find the common path among entries.
@@ -101,30 +99,37 @@ class PathList(object):
 
         If the filesystem root is the common path, return root path, which is
         not entirely correct on windows with drive letters.
-
         """
         if not self._entries:
             return None
 
         def _all_the_same(rhs):
             return all(n == rhs[0] for n in rhs[1:])
- 
+
         levels = zip(*[p.all_components for p in self._entries])
 
-        # print levels
         common = [x[0] for x in takewhile(_all_the_same, levels)]
         return Path(common or "/")
 
-        # return os.sep.join(
-        #     x[0] for x in takewhile(
-        #         _all_the_same, levels)) or os.sep
-
     def glob(self):
+        """Glob expansion for entries containing globbable characters.
+
+        We don't simply glob every entry since that would remove entries
+        that don't yet exist. And we can't just rely on zero glob
+        results because it may have been a legitimate zero result if it
+        was globbable but matched nothing. So we test for glob
+        characters (*|?|[) to determine whether to attempt a glob.
+        """
         self._deduplicate()
-        globbed = []
+        result = []
         for entry in self._entries:
-            globbed += glob.glob(entry.posix_path())
-        self._entries = [Path(g) for g in  globbed]
+            pp = entry.posix_path()
+            if GLOBBABLE_REGEX.search(pp):
+                globs = glob.glob(entry.posix_path())
+                result += globs
+            else:
+                result.append(pp)
+        self._entries = [Path(g) for g in result]
         self._clean = False
         self._current = 0
 

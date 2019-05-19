@@ -31,7 +31,7 @@ class Task(object):
 
         _force_expression_evaluation(command_attr)
 
-        self.command = command_attr.get_string()
+        self.command = "bash -c '{}'".format(command_attr.get_string())
 
 
 
