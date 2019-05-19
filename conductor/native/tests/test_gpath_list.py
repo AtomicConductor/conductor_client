@@ -258,6 +258,12 @@ class PathListTest(unittest.TestCase):
         d.glob()
         self.assertEqual(len(d), 0)
 
+    def test_unpacking(self):
+        d = PathList()
+        d.add(Path("/a/file1"), Path("/a/file2"))
+        a, b = d
+        self.assertEqual(type(a), Path)
+
 
 
     def test_glob_leaves_non_existent_unglobbable_entries_untouched(self):
