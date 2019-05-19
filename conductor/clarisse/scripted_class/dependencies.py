@@ -17,13 +17,13 @@ SMART = 2
 # auxiliary scripts provided by conductor and required on the backend.
 # Currrently only ct_windows_prep.py, removes drive letters on win.
 # These will be copied from SCRIPTS_DIRECTORY to the temp dir in
-# preparation for uploading. 
+# preparation for uploading.
 
-# Why not upload directly from Conductor's install? 
-# Because it makes dealing with paths easier. And it just doesn't feel right. 
+# Why not upload directly from Conductor's install?
+# Because it makes dealing with paths easier. And it just doesn't feel right.
 
 # Why not just store the drive_letter removal stuff ready on the sidecar?
-# Because the installation shouldn't know, or try to determine, what OS the 
+# Because the installation shouldn't know, or try to determine, what OS the
 # submission was generated on. It should be given instructions from the client
 # and run them.
 
@@ -31,7 +31,9 @@ SMART = 2
 # and and so on?
 # Because then the render package would not be runnable on the local machine.
 CONDUCTOR_SCRIPTS = ["ct_windows_prep.py"]
-CONDUCTOR_TMP_DIR = os.path.join(ix.application.get_factory().get_vars().get("CTEMP").get_string(), "conductor")
+CONDUCTOR_TMP_DIR = os.path.join(
+    ix.application.get_factory().get_vars().get("CTEMP").get_string(),
+    "conductor")
 
 
 def collect(obj):
@@ -49,7 +51,6 @@ def collect(obj):
 
     # tell the list to expand  any "*" or <UDIM> in place
     result.glob()
-    # print result
 
     return result
 
@@ -70,6 +71,7 @@ def _get_extra_uploads(obj):
     extras_attr.get_values(paths)
     result.add(*paths)
     return result
+
 
 def get_scan(obj, policy):
     """Scan all path attrs for dependencies according to the given policy.
@@ -109,6 +111,7 @@ def get_scan(obj, policy):
             result.add(*filenames)
 
     return result
+
 
 def _is_project_reference(attr):
     """Does the attribute reference a clarisse project?
@@ -179,56 +182,43 @@ def _evaluate_static_expression(target_attr):
     return result
 
 
-
-
 def _smart_expand(obj, attr, filename):
     """Expand filenames when policy is SMART.
 
-    At this point, filenames may have hashes and/or {frame:02d} style
-    placeholders that represent frame ranges.
+    At this point, filenames may have hashes and/or frame_format
+    {frame:02d} style placeholders that represent frame ranges.
     """
     result = []
     main_seq = frames_ui.main_frame_sequence(obj)
 
     sequences = None
 
-    resolve_hashes = RX_HASH.search(filename)
-    resolve_frame_format = RX_FRAME_FORMAT.search(filename)
-
-    if resolve_hashes:
+    do_resolve_hashes = RX_HASH.search(filename)
+    do_resolve_frame_format = RX_FRAME_FORMAT.search(filename)
+    # If a filename had both of the above (pretty rare) then
+    # we need to expand the hashes first, but also have a record
+    # of what frame numbers (in the timeline) relate to what files,
+    # because remember that hashes can represent a sequence with an 
+    # offset. So after the hash expansion is done, go and resolve 
+    # the corresponding {frame:02d} style placeholders. 
+    # To this end, the function _attribute_sequence() returns both
+    # the Sequence representing the files, and the Sequence 
+    # representing the render.  
+    # sequences["attr_sequence"]
+    # sequences["render_sequence"]
+    if do_resolve_hashes:
         sequences = _attribute_sequence(attr, main_seq)
         if sequences:
             result = sequences["attr_sequence"].expand(filename)
-            if resolve_frame_format:
+            if do_resolve_frame_format:
                 result = sequences["render_sequence"].expand_format(*result)
-    elif resolve_frame_format:
-        # resolve_frame_format ONLY for", filename
-        print "Filename is ", filename
-        print main_seq
+    elif do_resolve_frame_format:
+        # do_resolve_frame_format ONLY for filename
         result = main_seq.expand_format(filename)
-        # print result
     else:
-        # print "NO hashes (that intersect) or frame_format_expr for", filename
+        # There are no hashes (that intersect) or frame_format_expr
+        # components in the filename. So just return the filename
         result = [filename]
-    return result
-
-
-def _get_references(_, policy):
-    """Get referenced files from contexts.
-
-    We handle contexts separately because Clarisse has a bug where
-    get_path_attrs() doesn't find all the attrs in a series of nested
-    references. References do not have any wildcards in their names, so
-    no need to do any expansion.
-    """
-    result = []
-    if not policy:
-        return result
-    contexts = ix.api.OfContextSet()
-    ix.application.get_factory().get_root().resolve_all_contexts(contexts)
-    for context in contexts:
-        if context.is_reference() and not context.is_disabled():
-            result.append(context.get_attribute("filename").get_string())
     return result
 
 

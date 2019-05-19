@@ -219,7 +219,7 @@ class Job(object):
         tokens["CT_CHUNKSIZE"] = str(main_seq.chunk_size)
         tokens["CT_CHUNKCOUNT"] = str(main_seq.chunk_count())
         tokens["CT_SCOUTCOUNT"] = str(len(scout_seq or []))
-        tokens["CT_SEQLENGTH"] = str(len(main_seq))
+        tokens["CT_SEQUENCELENGTH"] = str(len(main_seq))
         tokens["CT_SEQUENCE"] = str(main_seq)
         tokens["CT_SEQUENCEMIN"] = str(main_seq.start)
         tokens["CT_SEQUENCEMAX"] = str(main_seq.end)

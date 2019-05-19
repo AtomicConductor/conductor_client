@@ -218,14 +218,14 @@ class Submission(object):
         dry-run scenario.
         """
         tokens = {}
-        tokens["CT_PDIR"] = Path(
+        tokens["CT_PDIR"] = "\"{}\"".format(Path(
             variables.get("PDIR")).posix_path(
-            with_drive=False)
+            with_drive=False))
 
-        tokens["CT_TEMP_DIR"] = self.tmpdir.posix_path(with_drive=False)
+        tokens["CT_TEMP_DIR"] = "\"{}\"".format(self.tmpdir.posix_path(with_drive=False))
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
-        tokens["CT_RENDER_PACKAGE"] = self.render_package_path.posix_path(with_drive=False)
+        tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(self.render_package_path.posix_path(with_drive=False))
         tokens["CT_PROJECT"] = self.project["name"]
 
         for token in tokens:

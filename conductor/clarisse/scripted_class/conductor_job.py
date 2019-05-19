@@ -16,38 +16,37 @@ from ix.api import OfAttr
 
 if os.name == "nt":
     DEFAULT_CMD_EXPRESSION = """
-cmd = "bash -c 'mkdir -p ";
+cmd = 'mkdir -p ';
 cmd += $CT_DIRECTORIES;
-cmd += " && cnode ";
+cmd += ' && cnode ';
 cmd += $CT_RENDER_PACKAGE;
-cmd += " -image ";
+cmd += ' -image ';
 cmd += $CT_SOURCES;
-cmd += " -image_frames_list ";
+cmd += ' -image_frames_list ';
 cmd += $CT_CHUNKS;
-cmd += " -log_level Debug5 ";
-cmd += "-license_server conductor_ilise:40500 ";
-cmd += "-script ";
-cmd += $CT_TEMP_DIR;
-cmd += "/ct_windows_prep.py";
-cmd += "'";
-cmd"""
+cmd += ' -log_level Debug5';
+cmd += ' -license_server conductor_ilise:40500';
+cmd += ' -script ';
+cmd += $CT_TEMP_DIR+'/ct_windows_prep.py';
+cmd
+"""
     TITLE_EXPRESSION = """
 "Clarisse-Windows:"+$CT_JOB+"-"+$CT_SEQUENCE
 """
 else:
     DEFAULT_CMD_EXPRESSION = """
-cmd = "bash -c 'mkdir -p ";
+cmd = 'mkdir -p ';
 cmd += $CT_DIRECTORIES;
-cmd += " && cnode ";
+cmd += ' && cnode ';
 cmd += $CT_RENDER_PACKAGE;
-cmd += " -image ";
+cmd += ' -image ';
 cmd += $CT_SOURCES;
-cmd += " -image_frames_list ";
+cmd += ' -image_frames_list ';
 cmd += $CT_CHUNKS;
-cmd += " -log_level Debug5 ";
-cmd += "-license_server conductor_ilise:40500 ";
-cmd += "'";
-cmd"""
+cmd += ' -log_level Debug5';
+cmd += ' -license_server conductor_ilise:40500';
+cmd
+"""
     TITLE_EXPRESSION = """
 "Clarisse:"+$CT_JOB+"-"+$CT_SEQUENCE
 """

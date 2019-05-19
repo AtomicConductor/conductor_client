@@ -2,10 +2,13 @@ from conductor.clarisse.scripted_class import variables
 
 
 def _force_expression_evaluation(attr):
+    """Give the expression a nudge.
+
+    Otherwise it emits all tasks with the same value.
+    """
     attr.activate_expression(True)
     attr.activate_expression(False)
     attr.activate_expression(True)
-
 
 
 class Task(object):
@@ -33,14 +36,12 @@ class Task(object):
 
         self.command = "bash -c '{}'".format(command_attr.get_string())
 
-
-
     def _setenv(self, parent_tokens):
         """Env tokens at the task level.
 
         Task level tokens are joined with Job and submission level
         tokens so that all tokens are available when constructing the
-        task command. 
+        task command.
 
         As ConductorJob may contain many images, and those
         images may specify different frame ranges. The Clarisse render
@@ -49,8 +50,7 @@ class Task(object):
         -frames 1-20 30-40`. For Conductor to handle this and calculate
         a command per chunk, it must intersect the chunk with the frame
         range from each image, and apply this in the CT_CHUNKS token,
-        which will be used by the task_template - at least in the 
-        default case.
+        which will be used by the task_template.
         """
 
         tokens = {}
