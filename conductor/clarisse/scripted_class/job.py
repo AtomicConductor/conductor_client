@@ -233,8 +233,8 @@ class Job(object):
         tokens["CT_JOB"] = self.node_name
 
         # Space delimited list of output paths are needed for a mkdir cmd.
-        tokens["CT_DIRECTORIES"] = " ".join(p.posix_path(
-            with_drive=False) for p in self.output_paths)
+        tokens["CT_DIRECTORIES"] = " ".join(
+            '"{}"'.format(p.posix_path(with_drive=False)) for p in self.output_paths)
 
         for token in tokens:
             variables.put(token, tokens[token])

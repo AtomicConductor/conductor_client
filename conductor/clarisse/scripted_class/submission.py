@@ -157,29 +157,12 @@ class Submission(object):
 
         self.tokens = self._setenv()
 
-        # self.scripts = self._get_scripts()
-
         self.jobs = []
         for node in self.nodes:
             job = Job(node, self.tokens, self.render_package_path)
             self.jobs.append(job)
 
-    # def _get_scripts(self):
-    #     """Dependencies that don't exist until the submit button is pressed.
-
-    #     The render package filename is not known until either the
-    #     submission or the preview starts. Firstly, the name is derived
-    #     from the scene name, and the user may have saved scene with a
-    #     new name prior to submission. Secondly, we add a timestamp.
-
-    #     We also copy into the temp directory any Conductor scripts that are
-    #     needed on the render machine. This is for ease of path handling
-    #     reasons and maybe it can be removed at a later date.
-    #     """
-    #     result = []
-    #     for script in deps.CONDUCTORREQUIRED_SCRIPTS:
-    #         result.add(os.path.join(SCRIPTS_DIRECTORY, script))
-    #     return result
+ 
 
     def _get_project(self):
         """Get the project from the attr.
@@ -191,12 +174,12 @@ class Submission(object):
         projects = ConductorDataBlock().projects()
         project_att = self.node.get_attribute("project")
         label = project_att.get_applied_preset_label()
-
         try:
             found = next(p for p in projects if str(p["name"]) == label)
         except StopIteration:
             ix.log_error(
                 "Cannot find project \"{}\" at Conductor.".format(label))
+
         return {
             "id": found["id"],
             "name": str(found["name"])
@@ -242,8 +225,7 @@ class Submission(object):
         tokens["CT_TEMP_DIR"] = self.tmpdir.posix_path(with_drive=False)
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
-        tokens["CT_RENDER_PACKAGE"] = self.render_package_path.posix_path(
-            with_drive=False)
+        tokens["CT_RENDER_PACKAGE"] = self.render_package_path.posix_path(with_drive=False)
         tokens["CT_PROJECT"] = self.project["name"]
 
         for token in tokens:

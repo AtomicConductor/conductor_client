@@ -8,6 +8,9 @@ from conductor.clarisse.scripted_class import (attr_docs, refresh,
                                                notifications_ui, packages_ui,
                                                projects_ui, submit_actions,
                                                variables)
+
+from conductor.native.lib.data_block import PROJECT_NOT_SET
+
 from ix.api import OfAttr
 
 
@@ -213,7 +216,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "general")
         attr.set_long(0)
-        attr.add_preset("- Not set -", "0")
+        attr.add_preset(PROJECT_NOT_SET["name"], "0")
 
         attr = s_class.add_attribute(
             "last_project",

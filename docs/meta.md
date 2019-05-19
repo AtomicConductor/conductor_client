@@ -45,10 +45,21 @@ To save time, we probably want to find consistent ways to express concepts that 
 
 ### Workflow
 
-It's up for discussion, but a rough idea is:
+Some thoughts (up for discussion of course).
 
-* The developer who merges changes for a project that affects the way customers interact with Conductor, is responsible for updating the docs. 
-* Code reviewers should also check that the docs reflect the changes.
+* The developer who writes code that affects the way customers interact with Conductor, is responsible for documenting it.
+* Code reviewers should check that the docs reflect the changes.
+* The doc site doesn't eliminate the need for contextual documentation like tooltips etc.
+* Don't document obvious features or things any normal computer user should know, like how to log-in.
+* Consider the option to improve UX to make it obvious, rather tan document it. 
+* Generally, documentation can be split into: 
+  * **Getting started**
+  * **Reference** Node referenece, API reference
+  * **Concept discussion**
+
+
+
+
 
 We currently use Github's [Project Pages](https://help.github.com/articles/user-organization-and-project-pages/#project-pages-sites), which means the docs are in the same repo as the code. It also means URL contains **conductor_client**. 
 

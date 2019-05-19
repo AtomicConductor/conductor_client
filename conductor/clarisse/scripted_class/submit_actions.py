@@ -7,11 +7,11 @@ that will be sent to Conductor.
 Submit, send jobs straight to Conductor.
 """
 
-import ix
-from conductor.clarisse.scripted_class.submission import Submission
-from conductor.clarisse.scripted_class import preview_ui
 import conductor.clarisse.utils as cu
-
+import ix
+from conductor.clarisse.scripted_class import preview_ui
+from conductor.clarisse.scripted_class.submission import Submission
+from conductor.native.lib.data_block import PROJECT_NOT_SET, ConductorDataBlock
 
 SUCCESS_CODES_SUBMIT = [201, 204]
 
@@ -112,8 +112,7 @@ def preview(*args):
         return
     can_submit = state in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]
     obj = args[0]
-    _validate_images(obj)
-    _validate_packages(obj)
+    _validate(obj)
     with cu.waiting_cursor():
         submission = Submission(obj)
     preview_ui.build(submission, can_submit=can_submit)
@@ -129,13 +128,16 @@ def export_render_package(*args):
         return
     obj = args[0]
     _validate_images(obj)
-    _validate_packages(obj)
     with cu.waiting_cursor():
         submission = Submission(obj)
         submission.write_render_package()
 
 
- 
+def _validate(obj):
+    _validate_images(obj)
+    _validate_packages(obj)
+    _validate_project(obj)
+
 
 def _validate_images(obj):
     """Check some images are present to be rendered.
@@ -176,3 +178,18 @@ def _validate_packages(obj):
     ix.log_error(
         "No Clarisse package detected. \
         Please use the package chooser to find one.")
+
+
+
+def _validate_project(obj):
+
+    projects = ConductorDataBlock().projects()
+    project_att = obj.get_attribute("project")
+    label = project_att.get_applied_preset_label()
+    if label == PROJECT_NOT_SET["name"]:
+        ix.log_error("Project is not set for \"{}\".".format(obj.get_name()))
+    try:
+        next(p for p in projects if str(p["name"]) == label)
+    except StopIteration:
+        ix.log_error(
+            "Cannot find project \"{}\" at Conductor.".format(label))

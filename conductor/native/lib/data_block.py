@@ -21,6 +21,7 @@ if os.environ.get("CONDUCTOR_MOCK_API_CLIENT"):
 else:
     from conductor.lib.api_client import ApiClient
 
+PROJECT_NOT_SET = {"id": "notset", "name": "- Not set -"}
 
 def _projects():
     """Get active projects from the server.
@@ -31,7 +32,7 @@ def _projects():
     with at least one item and disable submit button(s) if not set,
     rather than interrupting flow with an error.
     """
-    notset = [{"id": "notset", "name": "- Not set -"}]
+    notset = [PROJECT_NOT_SET]
 
     response, response_code = ApiClient().make_request(
         uri_path='api/v1/projects/', verb="GET",
