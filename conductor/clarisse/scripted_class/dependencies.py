@@ -1,10 +1,10 @@
-import re
 import os
+import re
+
 import ix
 from conductor.clarisse.scripted_class import frames_ui, variables
+from conductor.native.lib.gpath import GPathError, Path
 from conductor.native.lib.gpath_list import PathList
-from conductor.native.lib.gpath import Path, GPathError
-
 from conductor.native.lib.sequence import Sequence
 
 RX_HASH = re.compile(r"#+")
@@ -198,12 +198,12 @@ def _smart_expand(obj, attr, filename):
     # If a filename had both of the above (pretty rare) then
     # we need to expand the hashes first, but also have a record
     # of what frame numbers (in the timeline) relate to what files,
-    # because remember that hashes can represent a sequence with an 
-    # offset. So after the hash expansion is done, go and resolve 
-    # the corresponding {frame:02d} style placeholders. 
+    # because remember that hashes can represent a sequence with an
+    # offset. So after the hash expansion is done, go and resolve
+    # the corresponding {frame:02d} style placeholders.
     # To this end, the function _attribute_sequence() returns both
-    # the Sequence representing the files, and the Sequence 
-    # representing the render.  
+    # the Sequence representing the files, and the Sequence
+    # representing the render.
     # sequences["attr_sequence"]
     # sequences["render_sequence"]
     if do_resolve_hashes:

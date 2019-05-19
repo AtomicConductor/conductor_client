@@ -55,7 +55,6 @@ class PreviewWindow(ix.api.GuiWindow):
             'EVT_ID_PUSH_BUTTON_CLICK',
             self.on_close_but)
 
-
         self.spacer_but = ix.api.GuiPushButton(
             self,
             BOTTOM_BUT_WIDTH,
@@ -76,7 +75,6 @@ class PreviewWindow(ix.api.GuiWindow):
         # self.write_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
         # self.write_but.set_enable(can_submit)
 
-
         self.go_but = ix.api.GuiPushButton(
             self,
             (WIDTH - BOTTOM_BUT_WIDTH),
@@ -86,7 +84,6 @@ class PreviewWindow(ix.api.GuiWindow):
             "Submit")
         self.go_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
         self.go_but.set_enable(can_submit)
-
 
         # self.connect(
         #     self.write_but,
@@ -140,5 +137,3 @@ def build(submission, **kw):
     win.show_modal()
     while win.is_shown():
         ix.application.check_for_events()
-
- 

@@ -1,9 +1,9 @@
-import os
 import ix
-from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.clarisse.clarisse_info import ClarisseInfo
-from conductor.clarisse.scripted_class import (
-    frames_ui, instances_ui, projects_ui)
+from conductor.clarisse.scripted_class import (frames_ui, instances_ui,
+                                               projects_ui)
+from conductor.native.lib.data_block import ConductorDataBlock
+
 
 def force_ae_refresh(node):
     """Trigger an attribute editor refresh.
@@ -26,6 +26,8 @@ def force_ae_refresh(node):
 
 
 staticmethod
+
+
 def refresh(_, **kw):
     """Respond to do_setup button click.
 
@@ -53,4 +55,3 @@ def refresh(_, **kw):
         if not packages_attr.get_value_count():
             for path in detected_host_paths:
                 packages_attr.add_string(path)
-

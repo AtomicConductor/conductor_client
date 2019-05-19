@@ -286,10 +286,7 @@ class Sequence(object):
     def expand_format(self, *templates):
         result = []
         for f, template in zip(self._iterable, itertools.cycle(templates)):
-            print  f, template
             result.append(template.format(frame=f))
-        print "expand_format result"
-        print result
         return result
 
     def expand_dollar_f(self, *templates):

@@ -250,4 +250,3 @@ def build(*args):
     win.show_modal()
     while win.is_shown():
         ix.application.check_for_events()
-

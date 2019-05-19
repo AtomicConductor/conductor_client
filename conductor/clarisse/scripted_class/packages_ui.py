@@ -39,8 +39,8 @@ class PackageTreeWidget(ix.api.GuiTree):
     packages in a tree like fashion is incorrect.
 
     The only constraint should be that at most one version of each software
-    can be chosen. There's no reason a customer can't have a Houdini session 
-    with a renderman procedural that calls out to Maya in library mode to 
+    can be chosen. There's no reason a customer can't have a Houdini session
+    with a renderman procedural that calls out to Maya in library mode to
     provide geometry at rendertime.
     """
 
@@ -226,7 +226,7 @@ class PackageChooser(ix.api.GuiWindow):
             'EVT_ID_PUSH_BUTTON_CLICK',
             self.on_clear_but)
         self.clear_but.set_enable(False)
-        
+
         self.detect_but = ix.api.GuiPushButton(
             self,
             HALF_WIDTH,
@@ -327,4 +327,3 @@ def build(*args):
     window.show_modal()
     while window.is_shown():
         ix.application.check_for_events()
- 

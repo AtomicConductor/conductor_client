@@ -1,5 +1,6 @@
-import ix
 import re
+
+import ix
 from conductor.lib import package_utils
 
 
@@ -14,7 +15,8 @@ class ClarisseInfo(package_utils.ProductInfo):
     @classmethod
     def get_version(cls):
         """e.g. 3.5.SP1."""
-        return re.compile('([_\s])').sub(".", ix.application.get_version_name()).lower()
+        return re.compile(r'([_\s])').sub(
+            ".", ix.application.get_version_name()).lower()
 
     @classmethod
     def get_major_version(cls):

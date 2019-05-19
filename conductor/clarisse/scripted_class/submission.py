@@ -3,7 +3,7 @@
 Also handle the submit action.
 
 NOTE There are a number of bugs in clarisse that have lead to the
-decision for a particular submission flow. See submit() and 
+decision for a particular submission flow. See submit() and
 write_render_package() . The flow is:
 1. Make sure the user has saved the file. (they might need it)
 2. Prepare the temp directory.
@@ -18,53 +18,51 @@ write_render_package() . The flow is:
 The bugs and reasonong that lead to this are:
 1. BUG: Images don't render if their on-node frame range does not
 contain the frames specified in the render command. The cli frames
-should take precedence, but as they don't, we have to pre adjust 
-them. Undo doesn't work correctly for the relevant attributes, so 
+should take precedence, but as they don't, we have to pre adjust
+them. Undo doesn't work correctly for the relevant attributes, so
 after adjustment they must be returned to their original values.
-2.BUG:  Undo doesn't work on deeply nested reference contexts. If 
+2.BUG:  Undo doesn't work on deeply nested reference contexts. If
 you`make-all-local` in a batch undo block, then when you undo,
-there are extra nodes in the project. 
+there are extra nodes in the project.
 
 We export a render package as opposed to a regular project because
 all paths containing variables are resolved.
 
-We make-all-local (import referenced files) before exporting for 
-many reasons - 
-    
-A. Bug where  some nested path overrides don't correctly get 
-overridden when opening the project. (I have to manually set 
+We make-all-local (import referenced files) before exporting for
+many reasons -
+
+A. Bug where  some nested path overrides don't correctly get
+overridden when opening the project. (I have to manually set
 one every time I open the project). The same bug would appear
-on the remote machine if we don't make refs local. 
-B. During development, a strategy was tried where drive letter 
+on the remote machine if we don't make refs local.
+B. During development, a strategy was tried where drive letter
 removal was run recursively on contexts on the remote machine
 and it crashed with obscure errors. The same script succeeded
 in the local interactive session, so I abandoned that path.
-C. Isotropix plan to have refs made local for render packages 
+C. Isotropix plan to have refs made local for render packages
 anyway. It's just not implemented yet.
 
-So the combination of undo bugs and the need to make changes 
-to the scene before export, is why we: 
+So the combination of undo bugs and the need to make changes
+to the scene before export, is why we:
 (save, change, export, revert)
-
 """
 
 import datetime
 import errno
 import os
+import shutil
 import sys
 import traceback
-import shutil
+
+import conductor.clarisse.scripted_class.dependencies as deps
+import conductor.clarisse.utils as cu
 import ix
 from conductor.clarisse.scripted_class import frames_ui, variables
-import conductor.clarisse.utils as cu
-
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 from conductor.native.lib.gpath_list import PathList
-import conductor.clarisse.scripted_class.dependencies as deps
-
 
 SCRIPTS_DIRECTORY = os.path.join(
     os.environ["CONDUCTOR_LOCATION"],
@@ -162,8 +160,6 @@ class Submission(object):
             job = Job(node, self.tokens, self.render_package_path)
             self.jobs.append(job)
 
- 
-
     def _get_project(self):
         """Get the project from the attr.
 
@@ -222,10 +218,12 @@ class Submission(object):
             variables.get("PDIR")).posix_path(
             with_drive=False))
 
-        tokens["CT_TEMP_DIR"] = "\"{}\"".format(self.tmpdir.posix_path(with_drive=False))
+        tokens["CT_TEMP_DIR"] = "\"{}\"".format(
+            self.tmpdir.posix_path(with_drive=False))
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
-        tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(self.render_package_path.posix_path(with_drive=False))
+        tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(
+            self.render_package_path.posix_path(with_drive=False))
         tokens["CT_PROJECT"] = self.project["name"]
 
         for token in tokens:

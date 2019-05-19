@@ -4,6 +4,7 @@ Currently only email notifications.
 """
 
 import re
+
 import ix
 
 # Simple loose email regex, matches 1 email address.

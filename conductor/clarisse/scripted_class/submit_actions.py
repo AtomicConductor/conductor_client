@@ -36,9 +36,8 @@ def check_need_save(which):
         msg = "Save the project?\nYou must save the project if you wish to submit."
     elif which == PREVIEW_FIRST:
         msg = "Save the project?\nClick YES to preview with the option to submit.\nClick NO to preview only."
-    else: # WRITE_PACKAGE_ONLY
+    else:  # WRITE_PACKAGE_ONLY
         msg = "Save the project?\nYou must save the project if you wish to export a render package."
-
 
     response = ix.api.AppDialog.cancel()
     app = ix.application
@@ -117,6 +116,7 @@ def preview(*args):
         submission = Submission(obj)
     preview_ui.build(submission, can_submit=can_submit)
 
+
 def export_render_package(*args):
     """Just prepare and export the render package.
 
@@ -178,7 +178,6 @@ def _validate_packages(obj):
     ix.log_error(
         "No Clarisse package detected. \
         Please use the package chooser to find one.")
-
 
 
 def _validate_project(obj):

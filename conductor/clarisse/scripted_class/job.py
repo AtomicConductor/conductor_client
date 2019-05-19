@@ -1,17 +1,17 @@
 """Build an object to represent a Conductor job."""
 
 
-import os
 import json
+import os
 
+import conductor.clarisse.scripted_class.dependencies as deps
 import ix
 from conductor.clarisse.scripted_class import frames_ui, variables
+from conductor.clarisse.scripted_class.task import Task
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence
-from conductor.clarisse.scripted_class.task import Task
-import conductor.clarisse.scripted_class.dependencies as deps
 
 
 class Job(object):
@@ -233,8 +233,8 @@ class Job(object):
         tokens["CT_JOB"] = self.node_name
 
         # Space delimited list of output paths are needed for a mkdir cmd.
-        tokens["CT_DIRECTORIES"] = " ".join(
-            '"{}"'.format(p.posix_path(with_drive=False)) for p in self.output_paths)
+        tokens["CT_DIRECTORIES"] = " ".join('"{}"'.format(
+            p.posix_path(with_drive=False)) for p in self.output_paths)
 
         for token in tokens:
             variables.put(token, tokens[token])

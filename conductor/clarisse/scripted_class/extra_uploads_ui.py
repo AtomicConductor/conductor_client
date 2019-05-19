@@ -246,4 +246,3 @@ def build(*args):
 
     while win.is_shown():
         ix.application.check_for_events()
- 

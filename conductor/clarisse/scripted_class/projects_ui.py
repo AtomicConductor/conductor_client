@@ -1,4 +1,4 @@
- 
+
 def handle_project(obj, attr):
     """When project changes, stash its name on a string att.
 

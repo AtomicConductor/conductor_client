@@ -1,18 +1,15 @@
 import os
 import traceback
+
 import ix
 from conductor.clarisse import reloader
-from conductor.clarisse.scripted_class import (attr_docs, refresh,
-                                               environment_ui,
+from conductor.clarisse.scripted_class import (attr_docs, environment_ui,
                                                extra_uploads_ui, frames_ui,
                                                notifications_ui, packages_ui,
-                                               projects_ui, submit_actions,
-                                               variables)
-
+                                               projects_ui, refresh,
+                                               submit_actions, variables)
 from conductor.native.lib.data_block import PROJECT_NOT_SET
-
 from ix.api import OfAttr
-
 
 if os.name == "nt":
     DEFAULT_CMD_EXPRESSION = """
@@ -51,10 +48,9 @@ cmd
 "Clarisse:"+$CT_JOB+"-"+$CT_SEQUENCE
 """
 
+
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
-    """
-    Define the engine that creates a ConductorJob ScriptedClass Item.
-    """
+    """Define the engine that creates a ConductorJob ScriptedClass Item."""
 
     def __init__(self):
         ix.api.ModuleScriptedClassEngine.__init__(self)
@@ -153,15 +149,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         self.declare_environment_attributes(s_class)
         self.declare_task_attributes(s_class)
         self.declare_notification_attributes(s_class)
-        
+
         self.declare_dev_attributes(s_class)
 
         attr_docs.set(s_class)
 
     def declare_dev_attributes(self, s_class):
 
-
-        hidden =  os.environ.get("CONDUCTOR_MODE") != "dev"
+        hidden = os.environ.get("CONDUCTOR_MODE") != "dev"
 
         if not hidden:
             self.add_action(s_class, "reload", "development")
@@ -175,20 +170,16 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_bool(False)
         attr.set_hidden(hidden)
 
-
-
     def declare_actions(self, s_class):
-        """Attributes concerned with submission.
-        """
+        """Attributes concerned with submission."""
         self.add_action(s_class, "refresh", "actions")
         self.add_action(s_class, "export_render_package", "actions")
         self.add_action(s_class, "preview", "actions")
         self.add_action(s_class, "submit", "actions")
 
-
     def declare_general_attributes(self, s_class):
         """Most commonly accessed attributes."""
-  
+
         attr = s_class.add_attribute(
             "title",
             OfAttr.TYPE_STRING,

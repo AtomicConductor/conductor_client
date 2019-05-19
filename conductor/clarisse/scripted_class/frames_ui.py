@@ -1,5 +1,4 @@
 import ix
-
 from conductor.native.lib.sequence import Sequence
 
 # Maybe these funcs should be renamed to on_<attr>_changed
@@ -69,11 +68,15 @@ def set_image_range(image, seq):
     last_frame_attr = image.get_attribute("last_frame")
     frame_step_attr = image.get_attribute("frame_step")
 
-    undo_attrs = [
-        {"attr": first_frame_attr, "value": first_frame_attr .get_long(), "type": ix.api.OfAttr.TYPE_LONG},
-        {"attr": last_frame_attr, "value":  last_frame_attr .get_long(), "type": ix.api.OfAttr.TYPE_LONG},
-        {"attr": frame_step_attr, "value":  frame_step_attr .get_long(), "type": ix.api.OfAttr.TYPE_LONG}
-    ]
+    undo_attrs = [{"attr": first_frame_attr,
+                   "value": first_frame_attr .get_long(),
+                   "type": ix.api.OfAttr.TYPE_LONG},
+                  {"attr": last_frame_attr,
+                   "value": last_frame_attr .get_long(),
+                   "type": ix.api.OfAttr.TYPE_LONG},
+                  {"attr": frame_step_attr,
+                   "value": frame_step_attr .get_long(),
+                   "type": ix.api.OfAttr.TYPE_LONG}]
 
     first_frame_attr.set_long(seq.start),
     last_frame_attr.set_long(seq.end),
