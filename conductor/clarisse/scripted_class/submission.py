@@ -231,6 +231,8 @@ class Submission(object):
 
         return tokens
 
+
+
     def _get_render_package_path(self):
         """Calc the path to the render package.
 
@@ -242,12 +244,10 @@ class Submission(object):
         when the scan button is pushed. It will however always show up
         in the preview window.
         """
-        filename = ix.application.get_factory().get_vars().get("PNAME").get_string()
-        filename = "{}_{}.render".format(filename, self.timestamp)
-        return Path(
-            os.path.join(
-                self.tmpdir.posix_path(),
-                filename))
+        basename = os.path.splitext(
+            ix.application.get_current_project_filename())[0]
+        return Path("{}_{}.render".format(basename, self.timestamp))
+  
 
     def get_args(self):
         """Prepare the args for submission to conductor.
