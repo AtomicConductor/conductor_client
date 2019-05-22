@@ -1,6 +1,3 @@
-import logging
-import sys
-
 from conductor.lib import common, loggeria
 
 # The version string is updated by the build system. (No it isn't)
@@ -14,18 +11,9 @@ except ValueError:
     CONFIG = common.Config().config
 
 
-# Must setup logging before setting the level, otherwise we get a 
+# Must setup logging before setting the level, otherwise we get a
 # complaint about no handlers for logger conductor.
 loggeria.setup_conductor_logging()
 log_level = CONFIG.get("log_level")
 if log_level:
     loggeria.set_conductor_log_level(log_level)
- 
-
-logger = loggeria.get_conductor_logger()
-
-logger.debug('DEBUG')
-logger.info('INFO')
-logger.warning('WARNING')
-logger.error('ERROR')
-logger.critical('CRITICAL')
