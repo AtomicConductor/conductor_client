@@ -105,7 +105,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr_name = attr.get_name()
         verbose_errors = obj.get_attribute("verbose_errors").get_bool()
         try:
-            if attr_name == "project":
+            if attr_name == "conductor_project_name":
                 projects_ui.handle_project(obj, attr)
             elif attr_name == "use_custom_frames":
                 frames_ui.handle_use_custom_frames(obj, attr)
@@ -201,7 +201,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_object_filters(filters)
 
         attr = s_class.add_attribute(
-            "project", OfAttr.TYPE_LONG,
+            "conductor_project_name", OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "general")
