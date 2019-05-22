@@ -94,20 +94,20 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
     """
     # Get the top/parent conductor logger
     logger = get_conductor_logger()
-    
+
     if logger_level:
         assert logger_level in LEVEL_MAP.values(), "Not a valid log level: %s" % logger_level
         # Set the main log level. Note that if this is super restrive, you
         # won't see handler messages, regardless of the handlers' log level
         logger.setLevel(logger_level)
 
-    # Handle debug, info, warning records only.
+    # Handle debug, info, warning records only. STDOUT
     console_handler_out = logging.StreamHandler(sys.stdout)
     console_handler_out.setLevel(logging.DEBUG)
     console_handler_out.addFilter(LogLevelFilter())
     logger.addHandler(console_handler_out)
 
-    # Handle error and critical records only.
+    # Handle error and critical records only. STDERR
     console_handler_err = logging.StreamHandler(sys.stderr)
     console_handler_err.setLevel(logging.ERROR)
     logger.addHandler(console_handler_err)
@@ -261,22 +261,18 @@ class MPFileHandler(logging.Handler):
 
 
 class TableStr(object):
-    """A class to help log/print tables of data.
+    '''
+    A class to help log/print tables of data
+    
+    ############## DOWNLOAD HISTORY #################
+    COMPLETED AT         DOWNLOAD ID       JOB    TASK       SIZE  ACTION  DURATION  THREAD     FILEPATH
+    2016-01-16 01:12:46  5228833175240704  00208  010    137.51MB  DL      0:00:57   Thread-12  /tmp/conductor_daemon_dl/04/cental/cental.010.exr
+    2016-01-16 01:12:42  6032237141164032  00208  004    145.48MB  DL      0:02:24   Thread-2   /tmp/conductor_daemon_dl/04/cental/cental.004.exr
+    2016-01-16 01:12:40  5273802288136192  00208  012    140.86MB  DL      0:02:02   Thread-16  /tmp/conductor_daemon_dl/04/cental/cental.012.exr
+    '''
 
-    ############## DOWNLOAD HISTORY ################# COMPLETED AT
-    DOWNLOAD ID       JOB    TASK       SIZE  ACTION  DURATION  THREAD
-    FILEPATH 2016-01-16 01:12:46  5228833175240704  00208  010
-    137.51MB  DL      0:00:57   Thread-12
-    /tmp/conductor_daemon_dl/04/cental/cental.010.exr 2016-01-16
-    01:12:42  6032237141164032  00208  004    145.48MB  DL      0:02:24
-    Thread-2   /tmp/conductor_daemon_dl/04/cental/cental.004.exr
-    2016-01-16 01:12:40  5273802288136192  00208  012    140.86MB  DL
-    0:02:02   Thread-16
-    /tmp/conductor_daemon_dl/04/cental/cental.012.exr
-    """
-
-    # A dict which contains callable functions that can be used to condition
-    # each column entry of the table
+    # A dict which contains callable functions that can be used 
+    # to condition each column entry of the table
     header_modifiers = {}
 
     cell_modifiers = {}
@@ -362,7 +358,8 @@ class TableStr(object):
         return column_strs
 
     def modify_header(self, column_name):
-        """Modify and return the given column name.
+        """
+        Modify and return the given column name.
 
         This provides an opportunity to adjust what the header should
         consist of.
