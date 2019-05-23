@@ -507,3 +507,4 @@ def _should_add(element, progression, max_size):
     if len(progression) == max_size:
         return False
     return progression[1] - progression[0] == element - progression[-1]
+ 

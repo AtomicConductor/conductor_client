@@ -14,6 +14,11 @@ RX_UDIM = re.compile(r"<UDIM>")
 GLOB = 1
 SMART = 2
 
+
+# Temporarily overcome a no-negative-frames limitation of the Sequence object.
+# Will break with negative offsets of more than a hundred thousand.
+SEQUENCE_OFFSET_KLUDGE=100000
+
 # auxiliary scripts provided by conductor and required on the backend.
 # Currrently only ct_windows_prep.py, removes drive letters on win.
 # These will be copied from SCRIPTS_DIRECTORY to the temp dir in
@@ -228,7 +233,7 @@ def _attribute_sequence(attr, intersector):
     Many attributes have an associated sequence_mode attribute, which
     when set to 1 signifies varying frames, and makes available start,
     end, and offset attributes to help specify the sequence. Work out
-    the intersection with main sequence ecause during dependency
+    the intersection with main sequence because during dependency
     scanning, we can optimize the number of frames to upload if we use
     only those frames specified in the sequence attribute, and intersect
     them with the frame range specified in the job node.
@@ -253,14 +258,25 @@ def _attribute_sequence(attr, intersector):
 
     # If there's a frame offset on the attribute, then we need to
     # do the intersection in the context of that offset.
+
+    # NOTE: Due to a current limitation in Sequence (no negative frame numbers)
+    # we do a temporary fix using SEQUENCE_OFFSET_KLUDGE. The idea is to do all 
+    # the calcs 100000 frames in the future. When Sequence is fixed and can use 
+    # negative frame numbers, we can revert back to the simpler version which
+    # can be found in this commit: 542581247d1f109c5511b066f2e7ff5e86577751
+
     offset = obj.get_attribute("frame_offset").get_long()
 
-    seq = Sequence.create(start, end, 1).offset(offset)
-    seq = seq.intersection(intersector)
+    seq = Sequence.create(start, end, 1).offset(offset+SEQUENCE_OFFSET_KLUDGE)
+    seq = seq.intersection(intersector.offset(SEQUENCE_OFFSET_KLUDGE))
+ 
     if not seq:
         # The attribute doesn't intersect the render frames
         return
     # Make a copy of the sequence while at the render frames
-    render_seq = Sequence(str(seq))
-    attr_seq = seq.offset(-offset)
+    render_seq = Sequence.create(str(seq)).offset(-SEQUENCE_OFFSET_KLUDGE)
+
+    attr_seq = seq.offset(-(offset+SEQUENCE_OFFSET_KLUDGE))
+    
     return {"attr_sequence": attr_seq, "render_sequence": render_seq}
+ 
