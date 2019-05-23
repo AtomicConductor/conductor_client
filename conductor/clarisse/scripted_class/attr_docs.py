@@ -27,7 +27,7 @@ def set(s_class):
         "images",
         """Sets the images to be rendered. Images must have their Render to Disk attribute set. The Save As field must contain a filename.""")
 
-    s_class.set_attr_doc("project",
+    s_class.set_attr_doc("conductor_project_name",
         """Sets the Conductor project.""")
 
     s_class.set_attr_doc(

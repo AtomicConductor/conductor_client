@@ -1,5 +1,4 @@
 from conductor.lib import common, loggeria
-
 # The version string is updated by the build system. (No it isn't)
 # Do not modify the following line.
 # __version__="0.0.0"
@@ -13,7 +12,10 @@ except ValueError:
 
 # Must setup logging before setting the level, otherwise we get an
 # annoying complaint about no handlers for logger conductor.
-loggeria.setup_conductor_logging()
-log_level = CONFIG.get("log_level")
-if log_level:
-    loggeria.set_conductor_log_level(log_level)
+log_level_name = CONFIG.get("log_level", "INFO")
+log_level = loggeria.LEVEL_MAP.get(log_level_name)
+loggeria.setup_conductor_logging(
+    logger_level=log_level,
+    console_formatter=loggeria.FORMATTER_VERBOSE)
+# if log_level:
+#     loggeria.set_conductor_log_level(log_level)

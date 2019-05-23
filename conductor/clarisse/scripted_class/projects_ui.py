@@ -18,7 +18,7 @@ def handle_project(obj, attr):
 def update(obj, data_block):
     """Fetch projects afresh and repopulate menu."""
     projects = data_block.projects()
-    project_att = obj.get_attribute("project")
+    project_att = obj.get_attribute("conductor_project_name")
     project_att.remove_all_presets()
     for i, project in enumerate(projects):
         project_att.add_preset(str(project["name"]), str(i))

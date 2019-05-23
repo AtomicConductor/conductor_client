@@ -3,7 +3,7 @@
 It reloads files imported by ConductorJob. Not ConductorJob itself.
 """
 from conductor.clarisse import utils
-from conductor.clarisse.scripted_class import (attr_docs, dependencies,
+from conductor.clarisse.scripted_class import (attr_docs, debug_ui, dependencies,
                                                environment_ui,
                                                extra_uploads_ui, frames_ui,
                                                instances_ui, job,
@@ -16,6 +16,7 @@ from conductor.native.lib import gpath, gpath_list, sequence
 reload(utils)
 reload(refresh)
 reload(dependencies)
+reload(debug_ui)
 reload(gpath_list)
 reload(gpath)
 reload(sequence)

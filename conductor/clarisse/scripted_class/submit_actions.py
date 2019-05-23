@@ -183,7 +183,7 @@ def _validate_packages(obj):
 def _validate_project(obj):
 
     projects = ConductorDataBlock().projects()
-    project_att = obj.get_attribute("project")
+    project_att = obj.get_attribute("conductor_project_name")
     label = project_att.get_applied_preset_label()
     if label == PROJECT_NOT_SET["name"]:
         ix.log_error("Project is not set for \"{}\".".format(obj.get_name()))

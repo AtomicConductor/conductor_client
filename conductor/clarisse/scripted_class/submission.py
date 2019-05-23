@@ -168,7 +168,7 @@ class Submission(object):
         """
 
         projects = ConductorDataBlock().projects()
-        project_att = self.node.get_attribute("project")
+        project_att = self.node.get_attribute("conductor_project_name")
         label = project_att.get_applied_preset_label()
         try:
             found = next(p for p in projects if str(p["name"]) == label)
@@ -186,15 +186,8 @@ class Submission(object):
         if not self.node.get_attribute("notify").get_bool():
             return None
 
-        result = {"email": {}}
-        address_val = self.node.get_attribute("email_addresses").get_string()
-
-        result["email"]["addresses"] = []
-        for email in address_val.split(","):
-            if email:
-                result["email"]["addresses"].append(email.strip())
-
-        return result
+        emails = self.node.get_attribute("email_addresses").get_string()
+        return [email.strip() for email in emails.split(",") if email.strip()]
 
     def _setenv(self):
         """Env tokens are variables to help the user build expressions.
@@ -265,12 +258,7 @@ class Submission(object):
         submission_args["upload_only"] = self.upload_only
         submission_args["force"] = self.force_upload
         submission_args["project"] = self.project["name"]
-
-        if self.email_addresses:
-            addresses = ", ".join(self.email_addresses)
-            submission_args["notify"] = {"emails": addresses}
-        else:
-            submission_args["notify"] = []
+        submission_args["notify"] = self.notifications
 
         for job in self.jobs:
             args = job.get_args()

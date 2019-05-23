@@ -1,9 +1,9 @@
 import ix
 from conductor.clarisse.clarisse_info import ClarisseInfo
-from conductor.clarisse.scripted_class import (frames_ui, instances_ui,
+from conductor.clarisse.scripted_class import (debug_ui, frames_ui, instances_ui,
                                                projects_ui)
 from conductor.native.lib.data_block import ConductorDataBlock
-
+from conductor.lib import loggeria
 
 def force_ae_refresh(node):
     """Trigger an attribute editor refresh.
@@ -34,7 +34,7 @@ def refresh(_, **kw):
     Update UI for projects and instances from the data block. kwargs may
     contain the force keyword, which will invalidate the datablock and
     fetch fresh from Conductor. We may as well update all ConductorJob
-    nodes.
+    nodes. Also update the log level in the UI.
     """
     kw["product"] = "clarisse"
     data_block = ConductorDataBlock(**kw)
@@ -45,13 +45,18 @@ def refresh(_, **kw):
     detected_host_paths = data_block.package_tree().get_all_paths_to(
         **host)
 
+
     for obj in nodes:
 
         projects_ui.update(obj, data_block)
         instances_ui.update(obj, data_block)
         frames_ui.update_frame_stats_message(obj)
+        
 
         packages_attr = obj.get_attribute("packages")
         if not packages_attr.get_value_count():
             for path in detected_host_paths:
                 packages_attr.add_string(path)
+
+
+    debug_ui.refresh_log_level(nodes)

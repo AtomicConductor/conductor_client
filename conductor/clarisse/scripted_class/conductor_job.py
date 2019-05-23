@@ -1,14 +1,17 @@
 import os
 import traceback
+import logging
 
 import ix
 from conductor.clarisse import reloader
-from conductor.clarisse.scripted_class import (attr_docs, environment_ui,
+from conductor.clarisse.scripted_class import (attr_docs, debug_ui, environment_ui,
                                                extra_uploads_ui, frames_ui,
                                                notifications_ui, packages_ui,
                                                projects_ui, refresh,
                                                submit_actions, variables)
 from conductor.native.lib.data_block import PROJECT_NOT_SET
+from conductor.lib import loggeria
+
 from ix.api import OfAttr
 
 if os.name == "nt":
@@ -63,7 +66,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         https://www.isotropix.com/user/bugtracker/363 .
         """
         action_name = action.get_name()
-        verbose_errors = obj.get_attribute("verbose_errors").get_bool()
+        verbose_errors = obj.get_attribute("show_tracebacks").get_bool()
         try:
             if action_name == "choose_packages":
                 packages_ui.build(obj, data)
@@ -103,7 +106,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         """
 
         attr_name = attr.get_name()
-        verbose_errors = obj.get_attribute("verbose_errors").get_bool()
+        verbose_errors = obj.get_attribute("show_tracebacks").get_bool()
         try:
             if attr_name == "conductor_project_name":
                 projects_ui.handle_project(obj, attr)
@@ -123,6 +126,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 notifications_ui.notify_changed(obj, attr)
             elif attr_name == "email_addresses":
                 notifications_ui.handle_email_addresses(obj, attr)
+            elif attr_name == "conductor_log_level":
+                debug_ui.handle_log_level(obj, attr)
             else:
                 pass
         except Exception as ex:
@@ -161,14 +166,27 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         if not hidden:
             self.add_action(s_class, "reload", "development")
 
+
+
         attr = s_class.add_attribute(
-            "verbose_errors",
+            "conductor_log_level", OfAttr.TYPE_LONG,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "debug")
+        attr.set_long(5)
+        # start NOTSET - update on refresh
+        for i, level in enumerate(loggeria.LEVELS): 
+            attr.add_preset(level, str(i))
+
+        attr = s_class.add_attribute(
+            "show_tracebacks",
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "development")
+            "debug")
         attr.set_bool(False)
-        attr.set_hidden(hidden)
+
+
 
     def declare_actions(self, s_class):
         """Attributes concerned with submission."""
