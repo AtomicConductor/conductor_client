@@ -1,5 +1,5 @@
 from conductor.clarisse.scripted_class import variables
-
+import pipes 
 
 def _force_expression_evaluation(attr):
     """Give the expression a nudge.
@@ -34,7 +34,9 @@ class Task(object):
 
         _force_expression_evaluation(command_attr)
 
-        self.command = "bash -c '{}'".format(command_attr.get_string())
+        # command = pipes.quote(command_attr.get_string())
+        command = command_attr.get_string()
+        self.command = "bash -c '{}'".format(command)
 
     def _setenv(self, parent_tokens):
         """Env tokens at the task level.

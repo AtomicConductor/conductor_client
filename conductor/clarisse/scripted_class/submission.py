@@ -215,8 +215,9 @@ class Submission(object):
             self.tmpdir.posix_path(with_drive=False))
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
-        tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(
-            self.render_package_path.posix_path(with_drive=False))
+
+        render_basename = os.path.basename(self.render_package_path.posix_path())
+        tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(render_basename)
         tokens["CT_PROJECT"] = self.project["name"]
 
         for token in tokens:
@@ -230,17 +231,23 @@ class Submission(object):
         """Calc the path to the render package.
 
         This is the only upload path that is not provided by
-        dependencies.py, as he name is not known until
+        dependencies.py, as the name is not known until
         preview/submission time because it is based on the filename and
         a timestamp. What this means, practically, is that it won't show
         up in the extra uploads window along with other dependencies
         when the scan button is pushed. It will however always show up
         in the preview window.
+
+        We replace spaces in the filename because of a bug in Clarisse
+        https://www.isotropix.com/user/bugtracker/376
+        Also see related `cd` in `DEFAULT_CMD_EXPRESSION` conductor_job.py
         """
-        basename = os.path.splitext(
+        path = os.path.splitext(
             ix.application.get_current_project_filename())[0]
-        return Path("{}_{}.render".format(basename, self.timestamp))
-  
+
+        path = os.path.join(os.path.dirname(path), os.path.basename(path).replace(" ", "_"))
+        return Path("{}_{}.render".format(path, self.timestamp))
+        
 
     def get_args(self):
         """Prepare the args for submission to conductor.

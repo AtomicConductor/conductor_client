@@ -18,6 +18,8 @@ if os.name == "nt":
     DEFAULT_CMD_EXPRESSION = """
 cmd = 'mkdir -p ';
 cmd += $CT_DIRECTORIES;
+cmd += ' && cd ';
+cmd += $CT_PDIR;
 cmd += ' && cnode ';
 cmd += $CT_RENDER_PACKAGE;
 cmd += ' -image ';
@@ -35,6 +37,8 @@ else:
     DEFAULT_CMD_EXPRESSION = """
 cmd = 'mkdir -p ';
 cmd += $CT_DIRECTORIES;
+cmd += ' && cd ';
+cmd += $CT_PDIR;
 cmd += ' && cnode ';
 cmd += $CT_RENDER_PACKAGE;
 cmd += ' -image ';
