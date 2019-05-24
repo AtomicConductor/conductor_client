@@ -200,6 +200,8 @@ class EnvWindow(ix.api.GuiWindow):
             "Go")
         self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
 
+        self.set_resizable(False)
+
     def on_add_but(self, sender, eventid):
         self.panel.add_entries({})
 

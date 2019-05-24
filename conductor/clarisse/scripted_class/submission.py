@@ -337,12 +337,31 @@ class Submission(object):
 
     def _before_write_package(self):
         """Prepare to write render package."""
+        _localize_contexts()
+        self._ensure_valid_image_ranges()
         self._prepare_temp_directory()
         self._copy_scripts_to_temp()
-        self._ensure_valid_image_ranges()
-        _localize_contexts()
+       
         _remove_conductor()
 
+    def _ensure_valid_image_ranges(self):
+        """Fix image ranges to make them renderable.
+
+        For any job node that has custom frames, we need to make sure
+        the image node covers those frames, otherwise it won't render. I
+        believe this is a failing on the part of Clarisse. If you
+        specify a frame to render on the command line, it should be
+        rendered even if it is not within the range specified on the
+        image node.
+        """
+        for node in self.nodes:
+            if node.get_attribute("use_custom_frames").get_bool():
+                seq = frames_ui.custom_frame_sequence(node)
+                images = ix.api.OfObjectArray()
+                node.get_attribute("images").get_values(images)
+                for image in images:
+                    frames_ui.set_image_range(image, seq)
+ 
     def _prepare_temp_directory(self):
         """Make sure the temp directory has a conductor subdirectory.
 
@@ -364,23 +383,6 @@ class Submission(object):
             if (os.path.isfile(script_path)):
                 shutil.copy(script_path, self.tmpdir.posix_path())
 
-    def _ensure_valid_image_ranges(self):
-        """Fix image ranges to make them renderable.
-
-        For any job node that has custom frames, we need to make sure
-        the image node covers those frames, otherwise it won't render. I
-        believe this is a failing on the part of Clarisse. If you
-        specify a frame to render on the command line, it should be
-        rendered even if it is not within the range specified on the
-        image node.
-        """
-        for node in self.nodes:
-            if node.get_attribute("use_custom_frames").get_bool():
-                seq = frames_ui.custom_frame_sequence(node)
-                images = ix.api.OfObjectArray()
-                node.get_attribute("images").get_values(images)
-                for image in images:
-                    frames_ui.set_image_range(image, seq)
 
     def _after_submit(self):
         self._delete_render_package()

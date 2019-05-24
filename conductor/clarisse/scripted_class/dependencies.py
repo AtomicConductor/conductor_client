@@ -69,7 +69,7 @@ def _get_conductor_script_paths():
 
 
 def _get_extra_uploads(obj):
-    """Get user speciffied uploads from the extra_uploads attribute."""
+    """Get user specified uploads from the extra_uploads attribute."""
     result = PathList()
     extras_attr = obj.get_attribute("extra_uploads")
     paths = ix.api.CoreStringArray()
@@ -161,10 +161,10 @@ def _evaluate_static_expression(target_attr):
     We are doing this because we want literal paths that are needed for
     the upload. The easiest and most reliable way to evaluate variables
     in the expression is to simply use get_string(). However, if we do
-    that, it will evaluate time varying variables like $3F for the current frame only.  NOTE, it
-    does not resolve hash placeholders like ###. So to keep the time
-    vaiang varables variable, we replace them with python named format strings
-    like {frame:0nd} where n is the padding.
+    that, it will evaluate time varying variables like $3F for the current 
+    frame only.  NOTE, it does not resolve hash placeholders like ###. 
+    So to keep the time vaiang varables variable, we replace them with 
+    python named format strings like {frame:0nd} where n is the padding.
 
     $CDIR/bugs_seq/bugs.####.jpg becomes
     /Users/julian/projects/fish/clarisse/bugs_seq/bugs.####.jpg
