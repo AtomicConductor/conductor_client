@@ -67,3 +67,6 @@ codeship.aes
 # mkdocs
 site/
 unused_css/
+
+# vscode
+.vscode
