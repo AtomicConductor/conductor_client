@@ -599,6 +599,8 @@ def run_submit(args):
     else:
         logger.error("Submission Failure. Response code: %s", response_code)
         sys.exit(1)
+        
+    return response
 
 
 def set_logging(level=None, log_dirpath=None):
