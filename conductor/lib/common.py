@@ -574,10 +574,14 @@ def load_resources_file():
 
 def get_conductor_instance_types():
     '''
-    Get the list of available instances types from the resources.yml file
+    Get the list of available instances types.
     '''
-    resources = load_resources_file()
-    return resources.get("instance_types") or []
+    api_client = api_client.ApiClient()
+    instance_types = self.api_client.make_request('api/v1/instance_types',
+                                                  use_api_key=True)
+    if not instance_types:
+         return []
+    return instance_types
 
 
 def get_conductor_gpu_configs():
