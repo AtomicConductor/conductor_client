@@ -15,6 +15,8 @@ import time
 import traceback
 import yaml
 
+from conductor.lib import api_client
+
 BYTES_1KB = 1024
 BYTES_1MB = BYTES_1KB ** 2
 BYTES_1GB = BYTES_1KB ** 3
