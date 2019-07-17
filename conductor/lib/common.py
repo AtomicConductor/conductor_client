@@ -15,7 +15,8 @@ import time
 import traceback
 import yaml
 
-from conductor.lib import api_client
+from conductor.lib.downloader import get_bearer_token
+
 
 BYTES_1KB = 1024
 BYTES_1MB = BYTES_1KB ** 2
@@ -578,11 +579,27 @@ def get_conductor_instance_types():
     '''
     Get the list of available instances types.
     '''
-    api_client = api_client.ApiClient()
-    instance_types = self.api_client.make_request('api/v1/instance_types',
-                                                  use_api_key=True)
-    if not instance_types:
-         return []
+    from conductor.lib import api_client
+    api = api_client.ApiClient()
+
+    bearer = get_bearer_token()
+    account_id = api_client.account_id_from_jwt(bearer.value)
+
+    payload, response_code = api.make_request('api/v1/instance-types'
+                                              '?account_id=%s' % account_id,
+                                              use_api_key=True)
+    data = json.loads(payload)
+    if not (response_code == 200 or data):
+        return []
+    # 'data' contains the list of instance types in the following format:
+    # [
+    #    {cores: 2, flavor: standard, description: "2 core, 7.5GB Mem", memory_gb: 7.5},
+    #    {cores: 2, flavor: highmem, description: "2 core, 13GB Mem", memory_gb: 13.0}
+    # ]
+    instance_types = data['data']
+    # Sort by cores first, then memory.
+    instance_types.sort(key=lambda x: x['memory_gb'])
+    instance_types.sort(key=lambda x: x['cores'])
     return instance_types
 
 
