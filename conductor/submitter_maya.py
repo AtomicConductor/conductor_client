@@ -10,7 +10,7 @@ import sys
 import traceback
 import uuid
 import Qt
-from Qt import QtGui, QtCore, QtWidgets
+from Qt import QtGui, QtCompat, QtCore, QtWidgets
 
 # For backwards compatibility
 if Qt.__binding__ in ('PySide'):
@@ -40,7 +40,7 @@ class MayaWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(MayaWidget, self).__init__(parent=parent)
-        pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
+        QtCompat.loadUi(self._ui_filepath, baseinstance=self)
         self.createUI()
 
     def createUI(self):
@@ -112,7 +112,7 @@ class MayaAdvancedWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(MayaAdvancedWidget, self).__init__(parent=parent)
-        pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
+        QtCompat.loadUi(self._ui_filepath, baseinstance=self)
 
     def setWorkspaceDir(self, text):
         '''

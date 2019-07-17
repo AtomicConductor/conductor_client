@@ -7,7 +7,7 @@ import logging
 import os
 import operator
 from pprint import pformat
-from Qt import QtGui, QtCore, QtWidgets
+from Qt import QtGui, QtCore, QtCompat, QtWidgets
 import sys
 import traceback
 from conductor.lib.lsseq import seqLister
@@ -92,7 +92,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         3. Load any user settings to restore widget values from user preferences
         '''
         super(ConductorSubmitter, self).__init__(parent=parent)
-        pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
+        QtCompat.loadUi(self._ui_filepath, baseinstance=self)
 
         # Create widgets
         self.createUI()

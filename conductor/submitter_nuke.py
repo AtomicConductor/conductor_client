@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from Qt import QtGui, QtCore, QtWidgets
+from Qt import QtGui, QtCompat, QtCore, QtWidgets
 import nuke
 import imp
 
@@ -32,7 +32,7 @@ class NukeWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(NukeWidget, self).__init__(parent=parent)
-        pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
+        QtCompat.loadUi(self._ui_filepath, baseinstance=self)
         self.refreshUi()
 
     def refreshUi(self):

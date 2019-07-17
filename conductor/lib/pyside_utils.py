@@ -1,59 +1,8 @@
 import logging
-import Qt
 from functools import wraps
 from Qt import QtGui, QtCore, QtWidgets
 
-try:
-    from Qt import QtUiTools
-except ImportError as e:
-    if Qt.__binding__ in ('PySide'):
-        from PySide import QtUiTools
-    else:
-        from PySide2 import QtUiTools
-
 logger = logging.getLogger(__name__)
-
-
-class UiLoader(QtUiTools.QUiLoader):
-    '''
-    #TODO: Re-write docs/comments for this class
-
-    Load a Qt Designer .ui file and returns an instance of the user interface.
-
-    This was taken almost 100% verbatim from a stack overflow example.
-    '''
-
-    def __init__(self, baseinstance):
-        super(UiLoader, self).__init__(baseinstance)
-        self.baseinstance = baseinstance
-
-    def createWidget(self, class_name, parent=None, name=''):
-        if parent is None and self.baseinstance:
-            # supposed to create the top-level widget, return the base instance
-            # instead
-            return self.baseinstance
-        else:
-            # create a new widget for child widgets
-            widget = QtUiTools.QUiLoader.createWidget(self, class_name, parent, name)
-            if self.baseinstance:
-                # set an attribute for the new child widget on the base
-                # instance, just like uic.loadUi does.
-                setattr(self.baseinstance, name, widget)
-            return widget
-
-    @classmethod
-    def loadUi(cls, uifile, baseinstance=None):
-        '''
-        Load a Qt Designer .ui file and returns an instance of the user interface.
-
-        uifile: the file name or file-like object containing the .ui file.
-        baseinstance: the optional instance of the Qt base class. If specified then the user interface is created in it. Otherwise a new instance of the base class is automatically created.
-        Return type: the QWidget sub-class that implements the user interface.
-        '''
-        loader = cls(baseinstance)
-        widget = loader.load(uifile)
-        QtCore.QMetaObject.connectSlotsByName(widget)
-        return widget
 
 
 def wait_cursor(func):
