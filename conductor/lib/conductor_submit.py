@@ -69,7 +69,8 @@ class Submit(object):
         self.command = self.resolve_arg(args, 'cmd', "")
         logger.debug("command: %s", self.command)
 
-        self.cores = self.resolve_arg(args, 'cores', 8)
+        # Deprecated. Remove this option (use "instance_type" arg instead)
+        self.cores = self.resolve_arg(args, 'cores', None)
         logger.debug("cores: %s", self.cores)
 
         self.database_filepath = self.resolve_arg(args, 'database_filepath', "")
@@ -90,6 +91,9 @@ class Submit(object):
         self.gpu_config = self.resolve_arg(args, 'gpu_config', {})
         logger.debug("gpu_config: %s", self.gpu_config)
 
+        self.instance_type = self.resolve_arg(args, 'instance_type', None)
+        logger.debug("instance_type: %s", self.instance_type)
+
         self.job_title = self.resolve_arg(args, 'job_title', "")
         logger.debug("job_title: %s", self.job_title)
 
@@ -99,7 +103,8 @@ class Submit(object):
         self.location = self.resolve_arg(args, 'location', "")
         logger.debug("location: %s", self.location)
 
-        self.machine_flavor = self.resolve_arg(args, 'machine_type', "standard")
+        # Deprecated. Remove this option (use "instance_type" arg instead)
+        self.machine_flavor = self.resolve_arg(args, 'machine_type', None)
         logger.debug("machine_flavor: %s", self.machine_flavor)
 
         self.preemptible = self.resolve_arg(args, 'preemptible', False)
@@ -290,16 +295,37 @@ class Submit(object):
         if not (self.upload_file or self.upload_paths):
             logger.warning("Submitted Job/tasks don't include any upload files")
 
-        supported_machine_flavors = ["standard", "highmem", "highcpu", "ultramem"]
-        if self.machine_flavor not in supported_machine_flavors:
-            raise BadArgumentError("Machine type %r is not one of %s" % (self.machine_flavor, supported_machine_flavors))
+        # Validate instance types
+        if self.instance_type is None and self.cores is None and self.machine_flavor is None:
+            raise BadArgumentError('Must provide the "instance_type" arg')
 
-        if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
-            raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
+        if self.instance_type is not None and self.machine_flavor is not None:
+            raise BadArgumentError('Cannot supply both the "instance_type" and "machine_type" arguments. Choose one.')
 
-        if self.machine_flavor == "ultramem" and self.cores < 40:
-            raise BadArgumentError("ultramem machines have a minimum of 40 cores")
+        if self.instance_type is not None and self.cores is not None:
+            raise BadArgumentError('Cannot supply both the "instance_type" and "cores" arguments. Choose one.')
 
+        if self.cores is not None:
+            logger.warning('"cores" argument deprecated. Please use "instance_type" arg')
+            if self.machine_flavor is None:
+                raise BadArgumentError('Must provide "machine_type" arg when using "cores" arg')
+
+        if self.machine_flavor is not None:
+            logger.warning('"machine_type" argument deprecated. Please use "instance_type" arg')
+            if self.cores is None:
+                raise BadArgumentError('Must provide "cores" arg when using "machine_type" arg')
+
+            supported_machine_flavors = ["standard", "highmem", "highcpu", "ultramem"]
+            if self.machine_flavor not in supported_machine_flavors:
+                raise BadArgumentError("Machine type %r is not one of %s" % (self.machine_flavor, supported_machine_flavors))
+
+            if self.machine_flavor in ["highmem", "highcpu"] and self.cores < 2:
+                raise BadArgumentError("highmem and highcpu machines have a minimum of 2 cores")
+
+            if self.machine_flavor == "ultramem" and self.cores < 40:
+                raise BadArgumentError("ultramem machines have a minimum of 40 cores")
+
+        # Validate gpu config
         if self.gpu_config:
             supported_gpu_types = ['nvidia-tesla-k80', 'nvidia-tesla-k100']
             if self.gpu_config.get("type") not in supported_gpu_types:
@@ -350,8 +376,7 @@ class Submit(object):
             submit_dict.update({'frame_range': self.frames,
                                 'command': self.command,
                                 'tasks_data': self.tasks_data,
-                                'cores': self.cores,
-                                'machine_flavor': self.machine_flavor})
+                                })
 
             if self.gpu_config:
                 submit_dict['gpu_config'] = self.gpu_config
@@ -371,6 +396,16 @@ class Submit(object):
                 submit_dict['preemptible'] = self.preemptible
             if self.autoretry_policy:
                 submit_dict['autoretry_policy'] = self.autoretry_policy
+            if self.instance_type is not None:
+                submit_dict['instance_type'] = self.instance_type
+
+            # deprecated (here for backwards compatibility)
+            if self.cores is not None:
+                submit_dict['cores'] = self.cores
+
+            # deprecated (here for backwards compatibility)
+            if self.machine_flavor is not None:
+                submit_dict['machine_flavor'] = self.machine_flavor
 
         logger.debug("send_job JOB ARGS:")
         for arg_name, arg_value in sorted(submit_dict.iteritems()):

@@ -572,12 +572,17 @@ def load_resources_file():
         return yaml.safe_load(file_)
 
 
-def get_conductor_instance_types():
+def get_conductor_instance_types(as_dict=False):
     '''
     Get the list of available instances types from the resources.yml file
     '''
     resources = load_resources_file()
-    return resources.get("instance_types") or []
+    instance_types = resources.get("instance_types") or []
+
+    if as_dict:
+        return dict([(instance["name"], instance) for instance in instance_types])
+
+    return instance_types
 
 
 def get_conductor_gpu_configs():
