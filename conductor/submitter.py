@@ -75,7 +75,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     # The instance type that is set by default in the UI. This integer
     # corresponds to the core count of the conductor instance type
-    default_instance_type = 16
+    default_instance_type = "n1-standard-16"
 
     link_color = "rgb(200,100,100)"
 
@@ -93,6 +93,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
+
+        # Fetch and cache all available instance types
+        self._instance_types = common.get_conductor_instance_types(as_dict=True)
 
         # Create widgets
         self.createUI()
@@ -281,6 +284,12 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             "preempted", {}).get("max_retries")
         if default_preempted_autoretry_count is not None:
             self.setAutoretryCount(default_preempted_autoretry_count)
+
+        # Set the default instance type to one specified in user config, or user default value
+        # Note that user prefs will override this value (if one exists)
+        instance_type = CONFIG.get("instance_type") or self.default_instance_type
+        instance_type = self._instance_types.get(instance_type, instance_type)  # default to desired instance_type (even if it doesn't exist)
+        self.setInstanceType(instance_type)
 
         # Set the default project by querying the config
         default_project = CONFIG.get('project')
@@ -482,16 +491,13 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                                             parent=self)
 
     def populateInstanceTypeCmbx(self):
-        """Populate the Instance combobox with all of the available instance
-        types."""
-        instance_types = common.get_conductor_instance_types()
+        '''
+        Populate the Instance combobox with all of the available instance types
+        '''
+
         self.ui_instance_type_cmbx.clear()
-        for instance_info in instance_types:
-            self.ui_instance_type_cmbx.addItem(instance_info['description'], userData=instance_info)
-        # Set instance type to a reasonable default
-        item_idx = self.ui_instance_type_cmbx.findData({"cores": 8, "flavor": "standard", "description": "8 core, 30.0GB Mem"})
-        if item_idx > 0:
-            self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
+        for instance_type in sorted(self._instance_types.values(), key=operator.itemgetter("cores", "memory"), reverse=True):
+            self.ui_instance_type_cmbx.addItem(instance_type['description'], userData=instance_type)
 
     def populateGpuCmbx(self):
         """Populate the GPU combobox with all of the available GPU types."""
@@ -560,17 +566,16 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         """Return UI's Frame Chunk Size spinbox value."""
         return self.ui_chunk_size_spnbx.value()
 
-    def setInstanceType(self, core_count):
-        """Set the UI's "Instance Type" combobox.
+    def setInstanceType(self, instance_type):
+        '''
+        Set the UI's "Instance Type" combobox.  This is done by specifying the
+        core count int.
+        '''
 
-        This is done by specifying the core count int.
-        """
-
-        item_idx = self.ui_instance_type_cmbx.findData(
-            {"cores": core_count, "flavor": "standard", "description": "16 core, 60.0GB Mem"})
+        item_idx = self.ui_instance_type_cmbx.findData(instance_type)
         if item_idx == -1:
-            raise Exception("Could not find combobox entry for core count: %s!"
-                            "This should never happen!" % core_count)
+            raise Exception("Could not find combobox entry for instance type: %s. "
+                            "This should never happen!" % instance_type)
         return self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
 
     def getInstanceType(self):
@@ -660,13 +665,12 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         """
         conductor_args = {}
 
-        conductor_args["cores"] = self.getInstanceType()['cores']
         conductor_args["environment"] = self.getEnvironment()
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["chunk_size"] = self.getChunkSize()
+        conductor_args["instance_type"] = self.getInstanceType()["name"]
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["machine_type"] = self.getInstanceType()['flavor']
         conductor_args["preemptible"] = self.getPreemptibleCheckbox()
         conductor_args["gpu_config"] = self.getGpuConfig()
         conductor_args["notify"] = self.getNotifications()
@@ -811,7 +815,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                 return
             if not self.checkJobSize():
                 return
-            
+
             data = self.runPreSubmission()
             if data:
                 response_code, response = self.runConductorSubmission(data)
@@ -1069,8 +1073,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             max_retries = self.getAutoretryCount()
             return {"preempted": {"max_retries": max_retries}}
 
-
-
     def checkJobSize(self):
         """
         Make sure the user is aware they are about submit a large job.
@@ -1090,20 +1092,19 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         chunk_size = self.getChunkSize()
 
         # To count the tasks, we have to make a generator and sum 1 for every yield
-        task_counter =  TaskFramesGenerator( frames, chunk_size=chunk_size, uniform_chunk_step=True)
+        task_counter = TaskFramesGenerator(frames, chunk_size=chunk_size, uniform_chunk_step=True)
         task_count = sum(1 for _ in task_counter)
-
 
         if task_count < TASK_CONFIRMATION_THRESHOLD:
             return True
 
         logger.debug("{} is {:d} frames divided into chunks of {:d}".format(
-            frames_str, 
+            frames_str,
             len(frames),
             chunk_size)
         )
         logger.debug("Confirm submission of {} tasks".format(task_count))
-    
+
         title = "Warning: Large Job!"
 
         message = """<html><head/><body>
@@ -1118,7 +1119,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         log_msg = "Confirmed submission of a very large job" if sure else "Canceled large job"
         logger.info(log_msg)
         return sure
-
 
     def launchScoutFramesDialog(self, default_scout_frames):
         """Launch a dialog box to prompt the user to enter their desired scout
