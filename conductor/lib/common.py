@@ -575,7 +575,7 @@ def load_resources_file():
         return yaml.safe_load(file_)
 
 
-def get_conductor_instance_types():
+def get_conductor_instance_types(as_dict=False):
     '''
     Get the list of available instances types.
     '''
@@ -585,21 +585,27 @@ def get_conductor_instance_types():
     bearer = get_bearer_token()
     account_id = api_client.account_id_from_jwt(bearer.value)
 
-    payload, response_code = api.make_request('api/v1/instance-types'
-                                              '?account_id=%s' % account_id,
+    payload, response_code = api.make_request('api/v1/instance-types',
+                                              params={'account_id': account_id},
                                               use_api_key=True)
     data = json.loads(payload)
     if not (response_code == 200 or data):
         return []
+
     # 'data' contains the list of instance types in the following format:
     # [
     #    {cores: 2, flavor: standard, description: "2 core, 7.5GB Mem", memory_gb: 7.5},
     #    {cores: 2, flavor: highmem, description: "2 core, 13GB Mem", memory_gb: 13.0}
     # ]
     instance_types = data['data']
+
     # Sort by cores first, then memory.
     instance_types.sort(key=lambda x: x['memory_gb'])
     instance_types.sort(key=lambda x: x['cores'])
+
+    if as_dict:
+        return dict([(instance["name"], instance) for instance in instance_types])
+
     return instance_types
 
 
