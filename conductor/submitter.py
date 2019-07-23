@@ -1443,12 +1443,12 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 #         host_product_info = self.getHostProductInfo()
 # #         item_groups = self.getTreeItemGroups()
 #         for host_package_item in self.getHostPackageTreeItems():
-#             self.ui_software_versions_trwgt.setItemHidden(host_package_item, True)
+#             host_package_item.setHidden(True)
 #             package = self.get_package_by_id(host_package_item.package_id)
 #             if package["product"] == self.product:
 #                 best_package = self.getBestPackage(host_product_info, self.software_packages.values())
 #                 if show_all_versions or (best_package and package["package_id"] == best_package["package_id"]):
-#                     self.ui_software_versions_trwgt.setItemHidden(host_package_item, False)
+#                     host_package_item.setHidden(False)
 
     def filterPackages(self, show_all_versions=False):
         host_package_info = self.getHostProductInfo()
@@ -1456,13 +1456,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         host_package = self.get_package_by_id(
             host_package_id) if host_package_id else None
         for host_package_item in self.getHostPackageTreeItems():
-            self.ui_software_versions_trwgt.setItemHidden(
-                host_package_item, True)
+            host_package_item.setHidden(True)
             package = self.get_package_by_id(host_package_item.package_id)
             if package["product"] == self.product:
                 if show_all_versions or not host_package or package == host_package:
-                    self.ui_software_versions_trwgt.setItemHidden(
-                        host_package_item, False)
+                    host_package_item.setHidden(False)
 
     def getTreeItemPackages(self):
         tree_item_packages = {}
