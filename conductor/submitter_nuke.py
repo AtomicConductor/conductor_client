@@ -56,7 +56,7 @@ class NukeWidget(QtWidgets.QWidget):
 
             # If the node is selected in Nuke, then select it in the UI
             if selected:
-                self.ui_write_nodes_trwgt.setItemSelected(tree_item, True)
+                tree_item.setSelected(True)
 
     def populateViews(self, views):
         '''
@@ -68,7 +68,7 @@ class NukeWidget(QtWidgets.QWidget):
         for view in views:
             tree_item = QtWidgets.QTreeWidgetItem([view])
             self.ui_views_trwgt.addTopLevelItem(tree_item)
-            self.ui_views_trwgt.setItemSelected(tree_item, True)
+            tree_item.setSelected(True)
 
         #  If there is only one view, disable this box...
         if len(views) == 1:

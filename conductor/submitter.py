@@ -1593,7 +1593,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             self.ui_software_versions_trwgt.selectionModel().clear()
 
         for tree_item in tree_items:
-            self.ui_software_versions_trwgt.setItemSelected(tree_item, True)
+            tree_item.setSelected(True)
 
     ###########################################################################
     #  JOB SOFTWARE TREEWIDGET  - self.ui_job_software_trwgt
