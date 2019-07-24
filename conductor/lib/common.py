@@ -585,8 +585,7 @@ def get_conductor_instance_types(as_dict=False):
     bearer = get_bearer_token()
     account_id = api_client.account_id_from_jwt(bearer.value)
 
-    payload, response_code = api.make_request('api/v1/instance-types'
-                                              '?account_id=%s' % account_id,
+    payload, response_code = api.make_request('api/v1/instance-types',
                                               use_api_key=True)
     data = json.loads(payload)
     if not (response_code == 200 or data):
