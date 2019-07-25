@@ -574,8 +574,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         item_idx = self.ui_instance_type_cmbx.findData(instance_type)
         if item_idx == -1:
-            raise Exception("Could not find combobox entry for instance type: %s. "
-                            "This should never happen!" % instance_type)
+            # Instance type isn't currently available, no-op.
+            return
         return self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
 
     def getInstanceType(self):
