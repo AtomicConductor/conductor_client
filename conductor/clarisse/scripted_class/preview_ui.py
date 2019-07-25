@@ -27,10 +27,41 @@ CHECKBOX_WIDTH = 50
 BOTTOM_BUT_WIDTH = WIDTH / 3
 
 
+def show_submission_responses(responses):
+    """Pop up an info dialog after submission.
+
+    The dialog is equipped to handle the results of an array of submissions.
+
+    """
+
+    success_jobs = [response["response"]["uri"]
+                    for response in responses if response.get("code") == 201]
+
+    messages = []
+    if success_jobs:
+        success_msg = ", ".join(success_jobs)
+        messages.append("Successful submissions\n{}".format(success_msg))
+
+    num_failed = len(
+        [response for response in responses if response.get("code") > 201])
+
+    if num_failed:
+        messages.append(
+            "Number of failed submissions: {:d}".format(num_failed))
+
+    if messages:
+        msg = "\n".join(messages)
+    else:
+        msg = "No jobs were submitted"
+
+    ix.application.message_box(
+        msg, "Conductor Submission: Info", ix.api.AppDialog.yes(), ix.api.AppDialog.STYLE_OK)
+
+
 class PreviewWindow(ix.api.GuiWindow):
     """The entire window.
 
-    Holds the panel plus buttons to Submit or Cancel and so on.
+    Holds the panel plus buttons to Submit or Cancel.
     """
 
     def __init__(self, submission, can_submit):
@@ -120,7 +151,11 @@ class PreviewWindow(ix.api.GuiWindow):
 
     def on_go_but(self, sender, eventid):
         """Submit and hide(destroy) the window."""
-        self.submission.submit()
+        responses = self.submission.submit()
+
+        show_submission_responses(responses)
+
+        self.hide()
 
         # self.hide()
 

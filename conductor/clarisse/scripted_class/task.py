@@ -1,5 +1,12 @@
 from conductor.clarisse.scripted_class import variables
-import pipes 
+
+from conductor import CONFIG
+
+CORE_TWO_ONE = False
+auth_url = CONFIG.get("auth_url")
+if auth_url and auth_url.split(".")[1] == "dev-conductortech":
+    CORE_TWO_ONE = True
+
 
 def _force_expression_evaluation(attr):
     """Give the expression a nudge.
@@ -34,9 +41,10 @@ class Task(object):
 
         _force_expression_evaluation(command_attr)
 
-        # command = pipes.quote(command_attr.get_string())
         command = command_attr.get_string()
         self.command = "bash -c '{}'".format(command)
+
+        # self.command = command_attr.get_string()
 
     def _setenv(self, parent_tokens):
         """Env tokens at the task level.

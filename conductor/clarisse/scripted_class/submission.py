@@ -216,7 +216,8 @@ class Submission(object):
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
 
-        render_basename = os.path.basename(self.render_package_path.posix_path())
+        render_basename = os.path.basename(
+            self.render_package_path.posix_path())
         tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(render_basename)
         tokens["CT_PROJECT"] = self.project["name"]
 
@@ -224,8 +225,6 @@ class Submission(object):
             variables.put(token, tokens[token])
 
         return tokens
-
-
 
     def _get_render_package_path(self):
         """Calc the path to the render package.
@@ -245,9 +244,9 @@ class Submission(object):
         path = os.path.splitext(
             ix.application.get_current_project_filename())[0]
 
-        path = os.path.join(os.path.dirname(path), os.path.basename(path).replace(" ", "_"))
+        path = os.path.join(os.path.dirname(
+            path), os.path.basename(path).replace(" ", "_"))
         return Path("{}_{}.render".format(path, self.timestamp))
-        
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -268,7 +267,7 @@ class Submission(object):
         submission_args["notify"] = self.notifications
 
         for job in self.jobs:
-            args = job.get_args()
+            args = job.get_args(self.upload_only)
             args.update(submission_args)
             result.append(args)
         return result
@@ -295,6 +294,8 @@ class Submission(object):
             ix.log_info(result)
 
         self._after_submit()
+
+        return(results)
 
     def _before_submit(self):
         """"""
@@ -341,7 +342,7 @@ class Submission(object):
         self._ensure_valid_image_ranges()
         self._prepare_temp_directory()
         self._copy_scripts_to_temp()
-       
+
         _remove_conductor()
 
     def _ensure_valid_image_ranges(self):
@@ -361,7 +362,7 @@ class Submission(object):
                 node.get_attribute("images").get_values(images)
                 for image in images:
                     frames_ui.set_image_range(image, seq)
- 
+
     def _prepare_temp_directory(self):
         """Make sure the temp directory has a conductor subdirectory.
 
@@ -382,7 +383,6 @@ class Submission(object):
             script_path = os.path.join(SCRIPTS_DIRECTORY, script)
             if (os.path.isfile(script_path)):
                 shutil.copy(script_path, self.tmpdir.posix_path())
-
 
     def _after_submit(self):
         self._delete_render_package()

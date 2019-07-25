@@ -97,7 +97,9 @@ def submit(*args):
 
     with cu.waiting_cursor():
         submission = Submission(obj)
-        submission.submit()
+        responses = submission.submit()
+
+    preview_ui.show_submission_responses(responses)
 
 
 def preview(*args):

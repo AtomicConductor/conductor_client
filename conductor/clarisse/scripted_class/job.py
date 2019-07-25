@@ -38,8 +38,15 @@ class Job(object):
         self.instance = self._get_instance()
 
         out = self._get_output_directory()
+
         self.common_output_path = out["common_path"]
         self.output_paths = out["output_paths"]
+
+        print "common_output_path"
+        print self.common_output_path.posix_path(with_drive=False)
+        print "output_paths"
+        print [p.posix_path(with_drive=False) for p in self.output_paths]
+        print "-----------"
 
         self.tokens = self._setenv(parent_tokens)
 
@@ -236,12 +243,16 @@ class Job(object):
         tokens["CT_DIRECTORIES"] = " ".join('"{}"'.format(
             p.posix_path(with_drive=False)) for p in self.output_paths)
 
+        print "IN _setenv"
+        print tokens["CT_DIRECTORIES"]
+
         for token in tokens:
+            print "Putting {} with value {}".format(token, tokens[token])
             variables.put(token, tokens[token])
         tokens.update(parent_tokens)
         return tokens
 
-    def get_args(self):
+    def get_args(self, upload_only):
         """Prepare the args for submission to conductor.
 
         This dict represents the args that are specific to this job. It
@@ -265,7 +276,8 @@ class Job(object):
         result["chunk_size"] = self.sequence["main"].chunk_size
         result["machine_type"] = self.instance["flavor"]
         result["cores"] = self.instance["cores"]
-        result["tasks_data"] = [task.data() for task in self.tasks]
+        if not upload_only:
+            result["tasks_data"] = [task.data() for task in self.tasks]
         result["job_title"] = self.title
         if self.metadata:
             result["metadata"] = self.metadata

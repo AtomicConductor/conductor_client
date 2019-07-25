@@ -15,8 +15,7 @@ from conductor.lib import loggeria
 from ix.api import OfAttr
 
 if os.name == "nt":
-    DEFAULT_CMD_EXPRESSION = """
-cmd = 'mkdir -p ';
+    DEFAULT_CMD_EXPRESSION = """cmd = 'mkdir -p ';
 cmd += $CT_DIRECTORIES;
 cmd += ' && cd ';
 cmd += $CT_PDIR;
@@ -32,10 +31,9 @@ cmd += ' -script ';
 cmd += $CT_TEMP_DIR+'/ct_windows_prep.py';
 cmd
 """
-    
+
 else:
-    DEFAULT_CMD_EXPRESSION = """
-cmd = 'mkdir -p ';
+    DEFAULT_CMD_EXPRESSION = """cmd = 'mkdir -p ';
 cmd += $CT_DIRECTORIES;
 cmd += ' && cd ';
 cmd += $CT_PDIR;
@@ -50,7 +48,7 @@ cmd += ' -license_server conductor_ilise:40500';
 cmd
 """
 
-TITLE_EXPRESSION ="$PNAME"
+TITLE_EXPRESSION = "$PNAME"
 
 
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
@@ -84,7 +82,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             elif action_name == "submit":
                 refresh.refresh(obj)
                 submit_actions.submit(obj, data)
-            elif action_name == "refresh":
+            elif action_name == "connect":
                 refresh.refresh(obj, force=True)
             elif action_name == "best_chunk_size":
                 frames_ui.handle_best_chunk_size(obj, data)
@@ -167,8 +165,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         if not hidden:
             self.add_action(s_class, "reload", "development")
 
-
-
         attr = s_class.add_attribute(
             "conductor_log_level", OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
@@ -176,7 +172,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "debug")
         attr.set_long(5)
         # start NOTSET - update on refresh
-        for i, level in enumerate(loggeria.LEVELS): 
+        for i, level in enumerate(loggeria.LEVELS):
             attr.add_preset(level, str(i))
 
         attr = s_class.add_attribute(
@@ -187,12 +183,12 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "debug")
         attr.set_bool(False)
 
-
+        self.add_action(s_class, "export_render_package", "debug")
 
     def declare_actions(self, s_class):
         """Attributes concerned with submission."""
-        self.add_action(s_class, "refresh", "actions")
-        self.add_action(s_class, "export_render_package", "actions")
+        self.add_action(s_class, "connect", "actions")
+
         self.add_action(s_class, "preview", "actions")
         self.add_action(s_class, "submit", "actions")
 
@@ -262,6 +258,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "frames")
         attr.set_long(5)
+        attr.set_numeric_range_min(1)
         self.add_action(s_class, "best_chunk_size", "frames")
 
         attr = s_class.add_attribute(
@@ -288,7 +285,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "frames")
         attr.set_read_only(True)
-        attr.set_string("- Please click refresh -")
+        attr.set_string("- Please click connect -")
 
     def declare_machines_attributes(self, s_class):
         """Attributes related to setting the instance type."""
@@ -307,7 +304,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "machines")
         attr.set_long(0)
-        attr.add_preset("- Please click refresh -", "0")
+        attr.add_preset("- Please click connect -", "0")
 
         attr = s_class.add_attribute(
             "retries",
