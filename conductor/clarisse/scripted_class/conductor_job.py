@@ -166,6 +166,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             self.add_action(s_class, "reload", "development")
 
         attr = s_class.add_attribute(
+            "use_cv21",
+            OfAttr.TYPE_BOOL,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "development")
+        attr.set_bool(False)
+
+        attr = s_class.add_attribute(
             "conductor_log_level", OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,

@@ -42,12 +42,6 @@ class Job(object):
         self.common_output_path = out["common_path"]
         self.output_paths = out["output_paths"]
 
-        print "common_output_path"
-        print self.common_output_path.posix_path(with_drive=False)
-        print "output_paths"
-        print [p.posix_path(with_drive=False) for p in self.output_paths]
-        print "-----------"
-
         self.tokens = self._setenv(parent_tokens)
 
         self.environment = self._get_environment()
@@ -55,12 +49,15 @@ class Job(object):
         self.dependencies = deps.collect(self.node)
         self.dependencies.add(render_package_path)
         self.title = self.node.get_attribute("title").get_string()
+
+        use_cv21 = self.node.get_attribute("use_cv21").get_bool()
+
         self.metadata = None
 
         task_att = self.node.get_attribute("task_template")
         for chunk in self.sequence["main"].chunks():
             self.tasks.append(
-                Task(chunk, task_att, self.sources, self.tokens))
+                Task(chunk, task_att, self.sources, self.tokens, use_cv21=use_cv21))
 
     def _get_sources(self):
         """Get the images, along with associated Sequence objects.
@@ -195,7 +192,7 @@ class Job(object):
                     it['description']) == label)
         except StopIteration:
             ix.log_error(
-                "Invalid instance type \"{}\". Try a refresh.".format(label))
+                "Invalid instance type \"{}\". Try a refresh (connect).".format(label))
 
         result.update(found)
         return result
@@ -230,8 +227,7 @@ class Job(object):
         tokens["CT_SEQUENCE"] = str(main_seq)
         tokens["CT_SEQUENCEMIN"] = str(main_seq.start)
         tokens["CT_SEQUENCEMAX"] = str(main_seq.end)
-        tokens["CT_CORES"] = str(self.instance["cores"])
-        tokens["CT_FLAVOR"] = self.instance["flavor"]
+        tokens["CT_INSTANCE_TYPE"] = self.instance["name"]
         tokens["CT_INSTANCE"] = self.instance["description"]
         pidx = int(self.instance["preemptible"])
         tokens["CT_PREEMPTIBLE"] = (
@@ -243,11 +239,7 @@ class Job(object):
         tokens["CT_DIRECTORIES"] = " ".join('"{}"'.format(
             p.posix_path(with_drive=False)) for p in self.output_paths)
 
-        print "IN _setenv"
-        print tokens["CT_DIRECTORIES"]
-
         for token in tokens:
-            print "Putting {} with value {}".format(token, tokens[token])
             variables.put(token, tokens[token])
         tokens.update(parent_tokens)
         return tokens
@@ -274,8 +266,7 @@ class Job(object):
                                             self.sequence["scout"] or []])
         result["output_path"] = self.common_output_path.posix_path()
         result["chunk_size"] = self.sequence["main"].chunk_size
-        result["machine_type"] = self.instance["flavor"]
-        result["cores"] = self.instance["cores"]
+        result["instance_type"] = self.instance["name"]
         if not upload_only:
             result["tasks_data"] = [task.data() for task in self.tasks]
         result["job_title"] = self.title

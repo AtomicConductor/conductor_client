@@ -61,7 +61,7 @@ from conductor.clarisse.scripted_class import frames_ui, variables
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
-from conductor.native.lib.gpath import Path
+from conductor.native.lib.gpath import Path, GPathError
 from conductor.native.lib.gpath_list import PathList
 
 SCRIPTS_DIRECTORY = os.path.join(
@@ -241,12 +241,18 @@ class Submission(object):
         https://www.isotropix.com/user/bugtracker/376
         Also see related `cd` in `DEFAULT_CMD_EXPRESSION` conductor_job.py
         """
-        path = os.path.splitext(
-            ix.application.get_current_project_filename())[0]
+
+        current_filename = ix.application.get_current_project_filename()
+        path = os.path.splitext(current_filename)[0]
 
         path = os.path.join(os.path.dirname(
             path), os.path.basename(path).replace(" ", "_"))
-        return Path("{}_{}.render".format(path, self.timestamp))
+
+        try:
+            return Path("{}_{}.render".format(path, self.timestamp))
+        except GPathError as err:
+            ix.log_error(
+                "Cannot create a submission from this file: \"{}\". Has it ever been saved?".format(current_filename))
 
     def get_args(self):
         """Prepare the args for submission to conductor.
