@@ -153,9 +153,9 @@ class PreviewWindow(ix.api.GuiWindow):
         """Submit and hide(destroy) the window."""
         responses = self.submission.submit()
 
-        show_submission_responses(responses)
-
         self.hide()
+
+        show_submission_responses(responses)
 
         # self.hide()
 
