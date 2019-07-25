@@ -15,8 +15,6 @@ import time
 import traceback
 import yaml
 
-from conductor.lib.downloader import get_bearer_token
-
 
 BYTES_1KB = 1024
 BYTES_1MB = BYTES_1KB ** 2
@@ -582,7 +580,9 @@ def get_conductor_instance_types(as_dict=False):
     from conductor.lib import api_client
     api = api_client.ApiClient()
 
+    from conductor.lib.downloader import get_bearer_token
     bearer = get_bearer_token()
+
     account_id = api_client.account_id_from_jwt(bearer.value)
 
     payload, response_code = api.make_request('api/v1/instance-types',
