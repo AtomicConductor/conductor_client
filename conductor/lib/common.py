@@ -591,19 +591,18 @@ def get_conductor_instance_types(as_dict=False):
     if not (response_code == 200 or data):
         return []
 
-    # 'data' contains the list of instance types in the following format:
+    # The 'data' k/v contains the list of instance types in the following format:
     # [
-    #    {cores: 2, flavor: standard, description: "2 core, 7.5GB Mem", memory_gb: 7.5},
-    #    {cores: 2, flavor: highmem, description: "2 core, 13GB Mem", memory_gb: 13.0}
+    #    {cores: 16, description: "16 core, 64GB Mem", name: "m5.4xlarge", memory: 64.0}
+    #    {cores: 48, description: "48 core, 192GB Mem", name: "m5.12xlarge", memory: 192.0}
     # ]
     instance_types = data['data']
-
     # Sort by cores first, then memory.
-    instance_types.sort(key=lambda x: x['memory_gb'])
+    instance_types.sort(key=lambda x: x['memory'])
     instance_types.sort(key=lambda x: x['cores'])
 
     if as_dict:
-        return dict([(instance["name"], instance) for instance in instance_types])
+        return dict([(instance["description"], instance) for instance in instance_types])
 
     return instance_types
 
