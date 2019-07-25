@@ -14,7 +14,7 @@ except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import conductor
-from conductor.lib import conductor_submit, downloader, downloader2, uploader, loggeria
+from conductor.lib import common, conductor_submit, downloader, downloader2, uploader, loggeria
 
 
 def parse_args():
@@ -55,7 +55,8 @@ def parse_args():
                                      'Example: --cmd "Render <frame args> /tmp/mayafile.ma"'))
 
     submit_parser.add_argument("--cores",
-                               help="Number of cores that this job should run on (highmem and highcpu machines have a minimum of 2 cores)",
+                               help=('[DEPRECATED. Use --instance_type instead]\n'
+                                     'Number of cores that this job should run on (highmem and highcpu machines have a minimum of 2 cores)'),
                                type=int)
 
     submit_parser.add_argument("--database_filepath",
@@ -143,7 +144,12 @@ def parse_args():
 
     #  TODO: We should remove this arg
     submit_parser.add_argument("--machine_type",
-                               help='Type of machine to run on ("standard", "highmem", or "highcpu")')
+                               help=('[DEPRECATED. Use --instance_type instead]\n'
+                                     'Type of machine to run on ("standard", "highmem", or "highcpu")'))
+
+    submit_parser.add_argument("--instance_type",
+                               choices=[instance["name"] for instance in common.get_conductor_instance_types()],
+                               help='Type of instance to run the job on')
 
     submit_parser.add_argument("--preemptible",
                                choices=[False, True],
