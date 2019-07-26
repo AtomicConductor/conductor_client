@@ -17,10 +17,10 @@ SMART = 2
 
 # Temporarily overcome a no-negative-frames limitation of the Sequence object.
 # Will break with negative offsets of more than a hundred thousand.
-SEQUENCE_OFFSET_KLUDGE=100000
+SEQUENCE_OFFSET_KLUDGE = 100000
 
 # auxiliary scripts provided by conductor and required on the backend.
-# Currrently only ct_windows_prep.py, removes drive letters on win.
+# Currrently only ct_prep.py, removes drive letters on win.
 # These will be copied from SCRIPTS_DIRECTORY to the temp dir in
 # preparation for uploading.
 
@@ -35,7 +35,7 @@ SEQUENCE_OFFSET_KLUDGE=100000
 # Why not replace drive letters locally, at the same time we make refs local
 # and and so on?
 # Because then the render package would not be runnable on the local machine.
-CONDUCTOR_SCRIPTS = ["ct_windows_prep.py"]
+CONDUCTOR_SCRIPTS = ["ct_prep.py", "ct_cnode"]
 CONDUCTOR_TMP_DIR = os.path.join(
     ix.application.get_factory().get_vars().get("CTEMP").get_string(),
     "conductor")
@@ -260,8 +260,8 @@ def _attribute_sequence(attr, intersector):
     # do the intersection in the context of that offset.
 
     # NOTE: Due to a current limitation in Sequence (no negative frame numbers)
-    # we do a temporary fix using SEQUENCE_OFFSET_KLUDGE. The idea is to do all 
-    # the calcs 100000 frames in the future. When Sequence is fixed and can use 
+    # we do a temporary fix using SEQUENCE_OFFSET_KLUDGE. The idea is to do all
+    # the calcs 100000 frames in the future. When Sequence is fixed and can use
     # negative frame numbers, we can revert back to the simpler version which
     # can be found in this commit: 542581247d1f109c5511b066f2e7ff5e86577751
 
@@ -269,7 +269,7 @@ def _attribute_sequence(attr, intersector):
 
     seq = Sequence.create(start, end, 1).offset(offset+SEQUENCE_OFFSET_KLUDGE)
     seq = seq.intersection(intersector.offset(SEQUENCE_OFFSET_KLUDGE))
- 
+
     if not seq:
         # The attribute doesn't intersect the render frames
         return
@@ -277,6 +277,5 @@ def _attribute_sequence(attr, intersector):
     render_seq = Sequence.create(str(seq)).offset(-SEQUENCE_OFFSET_KLUDGE)
 
     attr_seq = seq.offset(-(offset+SEQUENCE_OFFSET_KLUDGE))
-    
+
     return {"attr_sequence": attr_seq, "render_sequence": render_seq}
- 

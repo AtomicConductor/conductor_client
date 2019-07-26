@@ -14,39 +14,20 @@ from conductor.lib import loggeria
 
 from ix.api import OfAttr
 
-if os.name == "nt":
-    DEFAULT_CMD_EXPRESSION = """cmd = 'mkdir -p ';
-cmd += $CT_DIRECTORIES;
-cmd += ' && cd ';
-cmd += $CT_PDIR;
-cmd += ' && cnode ';
+DEFAULT_CMD_EXPRESSION = """cmd = $CT_TEMP_DIR+'/ct_cnode ';
 cmd += $CT_RENDER_PACKAGE;
+cmd += ' -directories ';
+cmd += $CT_DIRECTORIES;
 cmd += ' -image ';
 cmd += $CT_SOURCES;
 cmd += ' -image_frames_list ';
 cmd += $CT_CHUNKS;
-cmd += ' -log_level Debug5';
-cmd += ' -license_server conductor_ilise:40500';
+cmd += ' -log_level Debug5 -license_server conductor-ilise:40500';
 cmd += ' -script ';
-cmd += $CT_TEMP_DIR+'/ct_windows_prep.py';
+cmd += $CT_TEMP_DIR+'/ct_prep.py';
 cmd
 """
 
-else:
-    DEFAULT_CMD_EXPRESSION = """cmd = 'mkdir -p ';
-cmd += $CT_DIRECTORIES;
-cmd += ' && cd ';
-cmd += $CT_PDIR;
-cmd += ' && cnode ';
-cmd += $CT_RENDER_PACKAGE;
-cmd += ' -image ';
-cmd += $CT_SOURCES;
-cmd += ' -image_frames_list ';
-cmd += $CT_CHUNKS;
-cmd += ' -log_level Debug5';
-cmd += ' -license_server conductor_ilise:40500';
-cmd
-"""
 
 TITLE_EXPRESSION = "$PNAME"
 
@@ -160,18 +141,10 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
     def declare_dev_attributes(self, s_class):
 
-        hidden = os.environ.get("CONDUCTOR_MODE") != "dev"
+        dev_visible = os.environ.get("CONDUCTOR_MODE") == "dev"
 
-        if not hidden:
+        if dev_visible:
             self.add_action(s_class, "reload", "development")
-
-        attr = s_class.add_attribute(
-            "use_cv21",
-            OfAttr.TYPE_BOOL,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "development")
-        attr.set_bool(False)
 
         attr = s_class.add_attribute(
             "conductor_log_level", OfAttr.TYPE_LONG,
@@ -421,6 +394,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "task")
         attr.set_expression(DEFAULT_CMD_EXPRESSION)
         attr.activate_expression(True)
+
+        attr = s_class.add_attribute(
+            "timestamp_render_package",
+            OfAttr.TYPE_BOOL,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "task")
+        attr.set_bool(False)
 
     def declare_environment_attributes(self, s_class):
         """Set up any extra environment.

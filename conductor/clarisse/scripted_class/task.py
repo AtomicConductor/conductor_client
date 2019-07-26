@@ -25,7 +25,7 @@ class Task(object):
     command.
     """
 
-    def __init__(self, chunk, command_attr, sources, parent_tokens, **kw):
+    def __init__(self, chunk, command_attr, sources, parent_tokens):
         """Resolve the tokens and the command.
 
         After calling setenv, tokens such as start end step
@@ -35,12 +35,8 @@ class Task(object):
         The chunk arg is an instance of a Sequence.
 
 
-        use_cv21 is clearly a temp measure. 
-        When using core v2.1, the task is wrapped in bash -c 
-        by Jon's code. Otherwise we have to do it. Also,
-        no underscores are allowed in the license server name.
+
         """
-        use_cv21 = kw.get("use_cv21", False)
 
         self.chunk = chunk
         self.sources = sources
@@ -49,12 +45,7 @@ class Task(object):
 
         _force_expression_evaluation(command_attr)
 
-        command = command_attr.get_string()
-        if use_cv21:
-            self.command = command.replace(
-                "conductor_ilise", "conductor-ilise")
-        else:
-            self.command = "bash -c '{}'".format(command)
+        self.command = command_attr.get_string()
 
     def _setenv(self, parent_tokens):
         """Env tokens at the task level.

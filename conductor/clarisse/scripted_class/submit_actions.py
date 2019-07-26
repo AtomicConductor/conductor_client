@@ -193,4 +193,4 @@ def _validate_project(obj):
         next(p for p in projects if str(p["name"]) == label)
     except StopIteration:
         ix.log_error(
-            "Cannot find project \"{}\" at Conductor.".format(label))
+            "Cannot find project \"{}\" at Conductor. Please ensure the PROJECT dropdown contains a valid project.".format(label))

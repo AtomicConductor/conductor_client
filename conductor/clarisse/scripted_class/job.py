@@ -50,14 +50,14 @@ class Job(object):
         self.dependencies.add(render_package_path)
         self.title = self.node.get_attribute("title").get_string()
 
-        use_cv21 = self.node.get_attribute("use_cv21").get_bool()
+        # use_cv21 = self.node.get_attribute("use_cv21").get_bool()
 
         self.metadata = None
 
         task_att = self.node.get_attribute("task_template")
         for chunk in self.sequence["main"].chunks():
             self.tasks.append(
-                Task(chunk, task_att, self.sources, self.tokens, use_cv21=use_cv21))
+                Task(chunk, task_att, self.sources, self.tokens))
 
     def _get_sources(self):
         """Get the images, along with associated Sequence objects.

@@ -141,6 +141,8 @@ class Submission(object):
 
         self.project_filename = ix.application.get_current_project_filename()
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self.timestamp_render_package = self.node.get_attribute(
+            "timestamp_render_package").get_bool()
 
         self.tmpdir = Path(deps.CONDUCTOR_TMP_DIR)
         self.render_package_path = self._get_render_package_path()
@@ -152,7 +154,6 @@ class Submission(object):
         self.upload_only = self.node.get_attribute("upload_only").get_bool()
         self.project = self._get_project()
         self.notifications = self._get_notifications()
-
         self.tokens = self._setenv()
 
         self.jobs = []
@@ -211,14 +212,18 @@ class Submission(object):
             variables.get("PDIR")).posix_path(
             with_drive=False))
 
-        tokens["CT_TEMP_DIR"] = "\"{}\"".format(
+        tokens["CT_TEMP_DIR"] = "{}".format(
             self.tmpdir.posix_path(with_drive=False))
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
 
         render_basename = os.path.basename(
             self.render_package_path.posix_path())
-        tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(render_basename)
+        # tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(render_basename)
+
+        tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(
+            self.render_package_path.posix_path())
+
         tokens["CT_PROJECT"] = self.project["name"]
 
         for token in tokens:
@@ -230,12 +235,12 @@ class Submission(object):
         """Calc the path to the render package.
 
         This is the only upload path that is not provided by
-        dependencies.py, as the name is not known until
+        dependencies.py, as the name is not always known until
         preview/submission time because it is based on the filename and
-        a timestamp. What this means, practically, is that it won't show
-        up in the extra uploads window along with other dependencies
-        when the scan button is pushed. It will however always show up
-        in the preview window.
+        possibly a timestamp. What this means, practically, is that it won't 
+        show up in the extra uploads window along with 
+        other dependencies when the glob or smart-scan button is pushed. 
+        It will however always show up in the preview window.
 
         We replace spaces in the filename because of a bug in Clarisse
         https://www.isotropix.com/user/bugtracker/376
@@ -249,7 +254,10 @@ class Submission(object):
             path), os.path.basename(path).replace(" ", "_"))
 
         try:
-            return Path("{}_{}.render".format(path, self.timestamp))
+            if self.timestamp_render_package:
+                return Path("{}_{}.render".format(path, self.timestamp))
+            else:
+                return Path("{}.render".format(path))
         except GPathError as err:
             ix.log_error(
                 "Cannot create a submission from this file: \"{}\". Has it ever been saved?".format(current_filename))
@@ -325,7 +333,7 @@ class Submission(object):
         package_file = self.render_package_path.posix_path()
         success = app.export_render_archive(package_file)
 
-        if os.environ.get("CONDUCTOR_MODE") == "dev":
+        if os.environ.get("CONDUCTOR_SAVE_SNAPSHOTS"):
             filename = os.path.join(
                 os.path.dirname(
                     app.get_current_project_filename()),
