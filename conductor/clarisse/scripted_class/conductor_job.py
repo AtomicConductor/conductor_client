@@ -22,7 +22,7 @@ cmd += ' -image ';
 cmd += $CT_SOURCES;
 cmd += ' -image_frames_list ';
 cmd += $CT_CHUNKS;
-cmd += ' -log_level Debug5 -license_server conductor-ilise:40500';
+cmd += ' -log_level Debug5 -license_server conductor_ilise:40500';
 cmd += ' -script ';
 cmd += $CT_TEMP_DIR+'/ct_prep.py';
 cmd

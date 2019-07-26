@@ -33,7 +33,6 @@ def main():
     """
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('-directories', nargs='*', required=False)
-    # parser.add_argument('-license_server', nargs=1, required=False) -license_server conductor_ilise:40500'
     args, pass_through_args = parser.parse_known_args()
     proj = pass_through_args[0]
 
@@ -43,9 +42,6 @@ def main():
     # beyond our control, so we just cd into it and work from
     # there.
     # https://www.isotropix.com/user/bugtracker/363 .
-
-    # cwd = os.path.dirname(os.path.realpath(__file__))
-    # prep_script = os.path.join(cwd, "ct_prep.py")
 
     work_dir, basename = (os.path.dirname(proj), os.path.basename(proj))
     pass_through_args[0] = basename
