@@ -1,5 +1,6 @@
 import base64
 import datetime
+import collections
 import functools
 import hashlib
 import json
@@ -598,11 +599,12 @@ def get_conductor_instance_types(as_dict=False):
     # ]
     instance_types = data['data']
     # Sort by cores first, then memory.
-    instance_types.sort(key=lambda x: x['memory'])
     instance_types.sort(key=lambda x: x['cores'])
+    instance_types.sort(key=lambda x: x['memory'])
+    instance_types.reverse()
 
     if as_dict:
-        return dict([(instance["description"], instance) for instance in instance_types])
+        return collections.OrderedDict([(instance["description"], instance) for instance in instance_types])
 
     return instance_types
 
