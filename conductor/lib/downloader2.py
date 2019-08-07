@@ -43,11 +43,11 @@ LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(thread
 logger = logging.getLogger(__name__)
 
 
-
 def random_exeption(percentage_chance):
     if random.random() < percentage_chance:
         raise Exception("Random exception raised (%s percent chance)" % percentage_chance)
     logger.debug("Skipped random exception (%s chance)", percentage_chance)
+
 
 def dec_random_exception(percentage_chance):
     '''
@@ -63,7 +63,6 @@ def dec_random_exception(percentage_chance):
     return catch_decorator
 
 
-
 class ThreadState(object):
     '''
     Use a class as mutable datatype so that it can be used across threads
@@ -77,9 +76,6 @@ class FileDownloadState(ThreadState):
     STATE_HASHING_EXISTING_FILE = "HASHING EXISTING FILE"
     STATE_DOWNLOADING = "DOWNLOADING"
     STATE_COMPLETE = "COMPLETE"
-
-
-
 
     bytes_downloaded = 0
     hash_progress = 0
@@ -105,22 +101,19 @@ class FileDownloadState(ThreadState):
         return 0
 
 
-
-
 class HistoryTableStr(loggeria.TableStr):
-
 
     def __init__(self, data, column_names, title="", footer="", upper_headers=True):
 
         self.cell_modifiers = {"Completed at": functools.partial(self.human_time),
-                                "Size": functools.partial(self.human_bytes, rjust=8),
-                                "Duration": functools.partial(common.get_human_duration)}
+                               "Size": functools.partial(self.human_bytes, rjust=8),
+                               "Duration": functools.partial(common.get_human_duration)}
 
         super(HistoryTableStr, self).__init__(data=data,
-                                                  column_names=column_names,
-                                                  title=title,
-                                                  footer=footer,
-                                                  upper_headers=upper_headers)
+                                              column_names=column_names,
+                                              title=title,
+                                              footer=footer,
+                                              upper_headers=upper_headers)
 
     def human_time(self, timestamp, ljust=0, rjust=0):
         return common.get_human_timestamp(timestamp).ljust(ljust).rjust(rjust)
@@ -129,9 +122,7 @@ class HistoryTableStr(loggeria.TableStr):
         return common.get_human_bytes(bytes_).ljust(ljust).rjust(rjust)
 
 
-
 class TaskDownloadState(ThreadState):
-
 
     STATE_QUEUED = "QUEUED"
     STATE_PREPARING_DIRECTORY = "PREPARING DIRECTORY"
@@ -140,18 +131,15 @@ class TaskDownloadState(ThreadState):
     STATE_COMPLETE = "COMPLETE"
     STATE_ERROR = "ERROR"
 
-    ENTITY_STATES = {STATE_QUEUED:"downloading",
-                      STATE_PREPARING_DIRECTORY: "downloading",
-                      STATE_HASHING_EXISTING_FILE: "downloading",
-                      STATE_DOWNLOADING: "downloading",
-                      STATE_COMPLETE: "downloaded",
-                      STATE_ERROR: "pending"}
-
-
+    ENTITY_STATES = {STATE_QUEUED: "downloading",
+                     STATE_PREPARING_DIRECTORY: "downloading",
+                     STATE_HASHING_EXISTING_FILE: "downloading",
+                     STATE_DOWNLOADING: "downloading",
+                     STATE_COMPLETE: "downloaded",
+                     STATE_ERROR: "pending"}
 
     def __init__(self):
         self.reset()
-
 
     def get_bytes_downloaded(self):
         bytes_list = [file_state.bytes_downloaded for file_state in self.file_download_states]
@@ -179,7 +167,6 @@ class TaskDownloadState(ThreadState):
         '''
         return self.ENTITY_STATES[self.status]
 
-
     def initialize(self, task_download):
         '''
         Reset/initialize the properties
@@ -195,7 +182,6 @@ class TaskDownloadState(ThreadState):
         self.time_completed = None
 
 
-
 class Downloader(object):
     '''
     A Downloader daemon which downloads completed frames from finished tasks.
@@ -204,7 +190,7 @@ class Downloader(object):
     Each task has an associated Download entity that represents
     all images/files that were produced from that task. A task may have more than
     file to download.
-    
+
     1. Query the app for the "next" download to download.  The app will return
        the Download that it deems most appropriate (probably of the lowest jobid).
        Note the app will automatically change the status of that Download entity
@@ -212,36 +198,36 @@ class Downloader(object):
        inheriting).  Note that there is cron job that resets Download entities
        that are in state of Downloading but have not "dialed home" after x amount
        of time.
-       
+
    2. Place this Download in the queue to be downloaded.
-   
+
    3. Spawn threads to actively take "work" (Downloads) from the queue.
-   
+
    4. Each thread is responsible for downloading the Download that it took from
       the queue.
-      
+
   5. Each thread is responsible for updating the app of it's downloading status:
       "downloading", etc
-      
+
   6. Each thread is responsible for catching their own exceptions and placing the
      Download back into the queue
-     
+
   7.
-    
+
     Because the downloader is threaded, it makes communication/tracking of data
     more difficult.  In order to facilitate this, ThreadState objects are shared
     across threads to read/write data to. This allows download progress to
     be communicated from multiple threads into a single object, which can then
     be read from a single process and "summarized".
- 
+
     A TaskDownloadState
        .files= [FileDownloadState, FileDownloadState]
-    
-    
+
+
     To complicate matters further, if the downloader is killed (via keyboard, etc),
     the it should clean up after itself.  So we need to catch the
     SIGINT EXIT signal at any point in the code and handle it gracefully.
-    
+
     '''
 
     # The amount of time to "sleep" before querying the app for more downloads
@@ -249,7 +235,6 @@ class Downloader(object):
     endpoint_downloads_next = '/downloads/next'
     endpoint_downloads_job = '/downloads/%s'
     endpoint_downloads_status = '/downloads/status'
-
 
     download_progess_polling = 2
     md5_progess_polling = 2
@@ -266,10 +251,7 @@ class Downloader(object):
     # record last threads alive
     _threads_alive = ()
 
-
     def __init__(self, thread_count=None, location=None, output_dir=None):
-
-
 
         # Turn on the SIGINT handler.  This will catch
         common.register_sigint_signal_handler()
@@ -299,7 +281,6 @@ class Downloader(object):
         downloader._print_download_history()
         downloader.print_uptime()
 
-
     @classmethod
     def download_jobs(cls, job_ids, task_id=None, thread_count=None, output_dir=None):
         '''
@@ -314,7 +295,6 @@ class Downloader(object):
 
         downloader._print_download_history()
         downloader.print_uptime()
-
 
     def start(self, job_ids=None, task_id=None, summary_interval=10):
         # Create new queues
@@ -332,9 +312,8 @@ class Downloader(object):
         else:
             self.start_queue_thread()
 
-
         task_download_states = self.start_download_threads(self.downloading_queue, self.pending_queue)
-        thread_states = {"task_downloads":task_download_states}
+        thread_states = {"task_downloads": task_download_states}
 
         self.start_summary_thread(thread_states, interval=summary_interval)
 
@@ -350,8 +329,6 @@ class Downloader(object):
         human_duration = common.get_human_duration(seconds)
         logger.info("Uptime: %s", human_duration)
 
-
-
     def start_queue_thread(self):
         '''
         Start and return a thread that is responsible for pinging the app for
@@ -360,7 +337,7 @@ class Downloader(object):
 
         thread = threading.Thread(name="QueueThread",
                                   target=self.queue_target,
-                                   args=(self.pending_queue, self.downloading_queue))
+                                  args=(self.pending_queue, self.downloading_queue))
         thread.setDaemon(True)
         thread.start()
         return thread
@@ -373,7 +350,7 @@ class Downloader(object):
         # logger.debug("thread_states: %s", thread_states)
         thread = threading.Thread(name="SummaryThread",
                                   target=self.print_summary,
-                                   args=(thread_states, interval))
+                                  args=(thread_states, interval))
         thread.setDaemon(True)
         thread.start()
         return thread
@@ -396,7 +373,6 @@ class Downloader(object):
             threads.append(thread)
         return task_download_states
 
-
     def start_reporter_thread(self, download_data):
         reporter_thread_name = "ReporterThread"
         current_thread_name = threading.current_thread().name
@@ -406,7 +382,7 @@ class Downloader(object):
 
         thread = threading.Thread(name=reporter_thread_name,
                                   target=self.reporter_target,
-                                   args=(download_data, threading.current_thread()))
+                                  args=(download_data, threading.current_thread()))
         thread.setDaemon(True)
         thread.start()
         return thread
@@ -415,10 +391,9 @@ class Downloader(object):
         '''
         Fill the download queue by quering the app for the "next" Download.
         Only fill the queue to have as many items as there are threads.
-        
+
         Perpetually run this this function until the daemon has been terminated
         '''
-
 
         while True:
 
@@ -427,15 +402,13 @@ class Downloader(object):
                 empty_queue_slots = (self.thread_count * 2) - pending_queue.qsize()
                 # If the queue is full, then sleep
                 if empty_queue_slots <= 0:
-    #                 logger.debug('Pending download queue is full (%s Downloads). Not adding any more Downloads' % self.thread_count)
-    #                 sleep_time = 0.5
-    #                 logger.debug("sleeping3: %s", sleep_time)
-    #                 time.sleep(sleep_time)
+                    #                 logger.debug('Pending download queue is full (%s Downloads). Not adding any more Downloads' % self.thread_count)
+                    #                 sleep_time = 0.5
+                    #                 logger.debug("sleeping3: %s", sleep_time)
+                    #                 time.sleep(sleep_time)
                     continue
 
                 logger.debug("empty_queue_slots: %s", empty_queue_slots)
-
-
 
                 # Get the the next download
                 max_count = 20  # Cap the request to 20 Downloads at a time (this keeps the request from not taking a super long time). This is an arbitrary number and can be adjusted as needed
@@ -450,7 +423,7 @@ class Downloader(object):
 
                 # Ensure that each Download is not already in the pending/downloading queues
                 for download in downloads:
-                    if _in_queue(pending_queue, download, "download_id") or  _in_queue(downloading_queue, download, "download_id"):
+                    if _in_queue(pending_queue, download, "download_id") or _in_queue(downloading_queue, download, "download_id"):
                         logger.warning("Omitting Redundant Download: %s", download)
                         continue
 
@@ -463,10 +436,9 @@ class Downloader(object):
 
     def nap(self):
         while not common.SIGINT_EXIT:
-#             print "Sleeping4 for %s" % self.naptime
+            #             print "Sleeping4 for %s" % self.naptime
             time.sleep(self.naptime)
             return
-
 
     @common.dec_timer_exit(log_level=logging.DEBUG)
     def get_next_downloads(self, count):
@@ -475,7 +447,6 @@ class Downloader(object):
             return downloads
         except Exception as e:
             logger.exception('Could not get next download')
-
 
     def get_jobs_downloads(self, job_ids, task_id):
 
@@ -487,10 +458,6 @@ class Downloader(object):
                     print "putting in queue: %s" % task_download
                     self.pending_queue.put(task_download, block=True)
 
-
-
-
-
     @common.dec_catch_exception(raise_=True)
     def download_target(self, pending_queue, downloading_queue, task_download_state):
         '''
@@ -499,10 +466,10 @@ class Downloader(object):
         downloading a single Download (essentially an entity in Datastore which
         represents the output data from a single Task).  This may consist of many
         files.
-        
+
         This function pulls one Download from the pending queue and attempts
         to download it.  If it fails, it places it back on the queue.
-        
+
         The function also spawns a child thread that is responsible for constantly
         updating the app with the status of the Download, such as:
             - status (e.g. "pending", "downloading", "downloaded")
@@ -510,8 +477,8 @@ class Downloader(object):
               for the Download. Note that these bytes encompass all of the bytes
               that have been transferred for ALL of the files that are part
               of the Download (as opposed to only a single file)
-        
-        
+
+
         task_download_state: a class, serving as global mutable object, which allows
                         this thread to report data about its Download state,
                         so that other threads can read and output that data.
@@ -520,7 +487,7 @@ class Downloader(object):
                         for each Task that a thread downloads
                         It's important that the state information is wiped clean (reset) every time a new task begins.
                         This is the resposnbility of this function
-                
+
         '''
         task_download_state.thread_name = threading.currentThread().name
 
@@ -561,7 +528,7 @@ class Downloader(object):
                     logger.info("Overriding default output directory: %s", output_dir)
 
                 for file_info in task_download['files']:
-#                     logger.debug("file_info: %s", file_info)
+                    #                     logger.debug("file_info: %s", file_info)
 
                     # Create file state object
                     file_download_state = FileDownloadState()
@@ -598,7 +565,6 @@ class Downloader(object):
                     except:
                         logger.warning("Failed to chmod filepath  %s", dirpath)
 
-
                     file_download_state.time_started = time.time()
                     self.download_file(file_info['url'],
                                        local_filepath,
@@ -614,7 +580,6 @@ class Downloader(object):
                 # Remove theDownload from the downloading queue.
                 downloading_queue.get(block=False)
                 downloading_queue.task_done()
-
 
             except:
                 if task_download:
@@ -641,7 +606,6 @@ class Downloader(object):
             # Reset The task_download_state object
             task_download_state.reset()
 
-
         # IF the daemont is terminated, clean up the active Download, resetting
         # it's status on the app
         logger.debug("Exiting thread. Cleaning up state for Download: ")
@@ -656,9 +620,9 @@ class Downloader(object):
         while True:
 
             try:
-    #             logger.debug("threading.threading.currentThread(): %s", threading.currentThread())
-    #             logger.debug('bytes_downloaded is %s' % bytes_downloaded)
-    #             logger.debug('done is %s' % done)
+                #             logger.debug("threading.threading.currentThread(): %s", threading.currentThread())
+                #             logger.debug('bytes_downloaded is %s' % bytes_downloaded)
+                #             logger.debug('done is %s' % done)
 
                 if common.SIGINT_EXIT:
                     task_download_state.status = TaskDownloadState.STATE_ERROR
@@ -682,14 +646,14 @@ class Downloader(object):
             # is reporting about is still alive. Otherwise exit the reporter loop
             if not downloader_thread.is_alive():
                 logger.warning("Detected %s thread is dead. Exiting %s thread now",
-                             downloader_thread.name, threading.current_thread().name)
+                               downloader_thread.name, threading.current_thread().name)
                 return
 
             # Check to make sure that that the downloader thread that this reporter thread
             # is reporting about is still alive. Otherwise exit the reporter loop
             if not downloader_thread.is_alive():
                 logger.warning("Detected %s thread is dead. Exiting %s thread now",
-                             downloader_thread.name, threading.current_thread().name)
+                               downloader_thread.name, threading.current_thread().name)
                 return
 
 #     @dec_random_exception(percentage_chance=0.05)
@@ -762,7 +726,6 @@ class Downloader(object):
         file_state.hash_progress = int((bytes_processed / float(file_size)) * 100)
 
 
-
 #     @dec_random_exception(percentage_chance=0.05)
     def add_to_history(self, file_download_state):
 
@@ -788,28 +751,28 @@ class Downloader(object):
 #         logger.debug("data: %s", data)
 #         if data["status"] == "downloaded":
 #             print "********DOWNLOADED: %s ********************" % download_id
-        return  self.api_client.make_request(self.endpoint_downloads_status,
-                                             data=json.dumps(data), use_api_key=True)
+        return self.api_client.make_request(self.endpoint_downloads_status,
+                                            data=json.dumps(data), use_api_key=True)
 
     def print_summary(self, thread_states, interval):
         '''
         - total threads running
         - thread names
         - total download threads
-        
+
         Last 20 files downloaded
         Last 20 tasks  downloaded
         Last 20 Downlaods  downloaded
-        
+
         Currently downloading jobs
         Currenly downloading files
         Currently downloading Downloads
-        
-        
-        
+
+
+
         ####### SUMMARY #########################
         Active Thread Count: 14
-        
+
         Threads:
               ErrorThread
               MainThread
@@ -826,34 +789,34 @@ class Downloader(object):
               Thread-3
               Thread-4
               Thread-5
-              
-              
+
+
         #### ACTIVE DOWNLOADS #####
-        
+
          Job 08285 Task 004 - 80% (200/234MB)  - Thread-1
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/beauty/deep_lidar.deep.0005.exr  HASHING EXISTING FILE     80%
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/data/deep_lidar.deep.0005.exr    DOWLOADING 20%
-            
-          
-              
+
+
+
          Job 08285 Task 003 - 20%  (20/234MB) - Thread-2
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01142.exr
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01074.exr
-            
-          
+
+
         #### PENDING DOWNLOADS #####
             Job 08285 Task 006
             Job 08285 Task 007
             Job 08285 Task 008
             Job 08285 Task 009
-        
-          
-          
-              
+
+
+
+
         #### HISTORY ####
-        
+
         Last 20 files downloaded:
-        
+
             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01142.exr
             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01074.exr
             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01038.exr
@@ -873,7 +836,7 @@ class Downloader(object):
             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01065.exr
             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01096.exr
             /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01055.exr
-        
+
         Last 20 tasks downloaded
             Job 08285 Task 004 (Download 3492394234)
             Job 08285 Task 002 (Download 3492394234)
@@ -891,7 +854,7 @@ class Downloader(object):
 
 
 
-        
+
         '''
 
         while True:
@@ -918,7 +881,6 @@ class Downloader(object):
             self._threads_alive = thread_names
         else:
             logger.info('##### THREADS ALIVE #### [No changes] (%s)', len(thread_names))
-
 
     def _print_dead_thread_warnings(self):
         dead_threads = set(self._original_threads).difference(set(threading.enumerate()))
@@ -951,8 +913,6 @@ class Downloader(object):
         else:
             logger.info('##### ACTIVE DOWNLOADS ##### [None]')
 
-
-
     def _print_pending_queue(self):
         pending_downloads = [str(item["download_id"]) for item in list(self.pending_queue.queue)]
         if pending_downloads:
@@ -968,7 +928,6 @@ class Downloader(object):
 #
 
 
-
 #
 #         logger.debug("TOTAL THREADS: %s", len(active_threads))
 #         logger.debug("DOWNLOAD THREADS: %s", len(active_threads))
@@ -979,23 +938,20 @@ class Downloader(object):
 #         logger.debug("Last %s Jobs downloaded ")
 #         logger.debug("Last %s Downloads downloaded ")
 
-
-
     def construct_active_downloads_summary(self, task_download_states):
-
         '''
         #### ACTIVE DOWNLOADS #####
-        
+
          Job 08285 Task 004 - 80% (200/234MB)  - Thread-1
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/beauty/deep_lidar.deep.0005.exr
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/data/deep_lidar.deep.0005.exr
-            
-          
-              
+
+
+
          Job 08285 Task 003 - 20%  (20/234MB) - Thread-2
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01142.exr
              /Volumes/af/show/wash/shots/MJ/MJ_0080/sandbox/jfunk/katana/renders/MJ_0080_light_v001/deep_lidar/deep_lidar.deep.01074.exr
-            
+
         '''
         header = "##### ACTIVE DOWNLOADS #####"
         content = ""
@@ -1008,7 +964,6 @@ class Downloader(object):
             return header + content
 
         return ""
-
 
     def _contruct_active_download_summary(self, task_download_state):
         '''
@@ -1048,15 +1003,14 @@ class Downloader(object):
         return summary
 
     def construct_file_downloads_history_summary(self, file_download_history):
-
         '''
         #### DOWNLOAD HISTORY #####
-        
-         
+
+
         6227709558521856 Job 08285 Task 001 20MB  CACHED /work/renders/light_v001/beauty/deep_lidar.deep.0005.exr  <timestamp>
         7095580349853434 Job 08285 Task 002 10MB  DL     /work/renders/spider_fly01/beauty/deep_lidar.deep.0005.exr  <timestamp>
         5343402947290140 Job 08284 Task 001 5MB   DL     /work/renders/light_v002/data/light_002.deep.0005.exr  <timestamp>
-                     
+
         '''
 
         table_data = []
@@ -1074,17 +1028,15 @@ class Downloader(object):
             row_data["Filepath"] = file_download_state.filepath
             table_data.append(row_data)
 
-
         column_names = ["Completed at", "Download ID", "Job", "Task", "Size", "Action", "Duration", "Thread", "Filepath"]
         title = " DOWNLOAD HISTORY %s " % (("(last %s files)" % self.history_queue_max) if self.history_queue_max else "")
         table = HistoryTableStr(data=list(table_data),
                                 column_names=column_names,
                                 title=title.center(100, "#"),
-                                footer="#"*180,
+                                footer="#" * 180,
                                 upper_headers=True)
 
         return table.make_table_str()
-
 
 
 # @dec_random_exception(percentage_chance=0.05)
@@ -1092,9 +1044,11 @@ class Downloader(object):
 def delete_file(filepath):
     os.remove(filepath)
 
+
 @common.DecRetry(tries=3, static_sleep=1)
 def chmod(filepath, mode):
     os.chmod(filepath, mode)
+
 
 def prepare_dest_dirpath(dir_path):
     '''
@@ -1120,6 +1074,7 @@ def _get_next_downloads(location, endpoint, client, count=1):
 
     return json.loads(response_string).get("data", [])
 
+
 def _get_job_download(endpoint, client, jid, tid):
     params = None
     if tid:
@@ -1134,12 +1089,11 @@ def _get_job_download(endpoint, client, jid, tid):
     return download_job
 
 
-
 # @dec_random_exception(percentage_chance=0.05)
 @common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS)
 def download_file(download_url, filepath, poll_rate=2, state=None):
     '''
-        
+
     state: class with .bytes_downloaded property. Reflects the amount of bytes that have currently
                       been downloaded. This can be used by other threads to report
                       "progress".  Note that this must be a mutable object (hence
@@ -1177,8 +1131,6 @@ def download_file(download_url, filepath, poll_rate=2, state=None):
     return base64.b64encode(new_md5)
 
 
-
-
 def safe_mkdirs(dirpath):
     '''
     Create the given directory.  If it already exists, suppress the exception.
@@ -1190,8 +1142,6 @@ def safe_mkdirs(dirpath):
     except OSError:
         if not os.path.isdir(dirpath):
             raise
-
-
 
 
 # @dec_random_exception(percentage_chance=0.05)
@@ -1206,14 +1156,12 @@ def _in_queue(queue, item_dict, key):
             return True
 
 
-
 def run_downloader(args):
     '''
     Start the downloader. If a job id(s) were given, exit the downloader upon
     completion.  Otherwise, run the downloader indefinitely (daemon mode), polling
     the Conductor cloud app for files that need to be downloaded.
     '''
-
 
     # Set up logging
     log_level_name = args.get("log_level")
@@ -1226,12 +1174,11 @@ def run_downloader(args):
     job_ids = args.get("job_id")
     thread_count = args.get("thread_count")
 
-
     if job_ids:
         Downloader.download_jobs(job_ids,
-                            task_id=args.get("task_id"),
-                            thread_count=thread_count,
-                            output_dir=args.get("output"))
+                                 task_id=args.get("task_id"),
+                                 thread_count=thread_count,
+                                 output_dir=args.get("output"))
 
     else:
         Downloader.start_daemon(thread_count=thread_count,
@@ -1260,8 +1207,3 @@ def report_error(self, download_id, error_message):
     except e:
         pass
     return True
-
-
-
-
-
