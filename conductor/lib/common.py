@@ -598,14 +598,9 @@ def get_conductor_instance_types(as_dict=False):
     #    {cores: 48, description: "48 core, 192GB Mem", name: "m5.12xlarge", memory: 192.0}
     # ]
     instance_types = data['data']
-    # Sort by cores first, then memory.
-    instance_types.sort(key=lambda x: x['cores'])
-    instance_types.sort(key=lambda x: x['memory'])
-    instance_types.reverse()
 
     if as_dict:
         return collections.OrderedDict([(instance["description"], instance) for instance in instance_types])
-
     return instance_types
 
 
