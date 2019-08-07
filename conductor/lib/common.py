@@ -1,6 +1,5 @@
 import base64
 import datetime
-import collections
 import functools
 import hashlib
 import json
@@ -600,7 +599,7 @@ def get_conductor_instance_types(as_dict=False):
     instance_types = data['data']
 
     if as_dict:
-        return collections.OrderedDict([(instance["description"], instance) for instance in instance_types])
+        return dict([(instance["description"], instance) for instance in instance_types])
     return instance_types
 
 
