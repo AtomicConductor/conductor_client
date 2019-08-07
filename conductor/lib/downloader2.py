@@ -517,7 +517,7 @@ class Downloader(object):
                 task_download_state.initialize(task_download)
                 task_download_state.status = TaskDownloadState.STATE_DOWNLOADING
 
-                # Explicity report the Download status (to indicate that it's now "downloading"
+                # Explicitly report the Download status (to indicate that it's now "downloading"
                 self.report_download_status(task_download_state)
 
                 output_dir = task_download['output_dir']
@@ -575,12 +575,19 @@ class Downloader(object):
                     file_download_state.time_completed = time.time()
                     self.add_to_history(file_download_state)
 
-                # Update the status downloaded
+                # Update the status to downloaded
                 task_download_state.status = TaskDownloadState.STATE_COMPLETE
-                # Remove theDownload from the downloading queue.
+
+                # Explicitly report_download_status to app.  We can't always rely on the reporter
+                # thread because it only pings the app every x seconds.
+                self.report_download_status(task_download_state)
+
+                # Remove the Download from the downloading queue.
                 downloading_queue.get(block=False)
                 downloading_queue.task_done()
 
+            # If there is an error when handling the task_download, put it back into the pending queue,
+            # and report to the app that it's pending again.
             except:
                 if task_download:
                     task_download_state.reset_bytes_downloaded()
@@ -588,25 +595,26 @@ class Downloader(object):
                     logger.exception("Failed to download Download %s", task_download.get('download_id'))
                     logger.debug("Putting Download back on queue: %s", task_download)
                     pending_queue.put(task_download)
+                    # Remove the Download from the downloading queue.
+                    downloading_queue.get(block=False)
+                    downloading_queue.task_done()
 
-            # Explicity call report_download_status to tell the app the status
-            # of the Download.  We can't always rely on the reporter in the
-            # thread because it only pings the app every x seconds.
-
-            # Make sure this doesn't throw an exception. Don't want to kill the thread.
-            try:
-                self.report_download_status(task_download_state)
-            except:
-                # I think the worst that could happen is that the Download
-                # may not get it's status changed to "downloaded".  This will
-                # eventually get cleaned up by the cron, and prompt a redownloading
-                download_id = task_download_state.task_download.get("download_id")
-                logger.exception("Failed to report final status for Download %s, due to error", download_id)
+                    # Explicitly report_download_status to app.  We can't always rely on the reporter
+                    # thread because it only pings the app every x seconds.
+                    # Make sure this doesn't throw an exception. Don't want to kill the thread.
+                    try:
+                        self.report_download_status(task_download_state)
+                    except:
+                        # I think the worst that could happen is that the Download
+                        # may not get its status changed to "downloaded".  This will
+                        # eventually get cleaned up by the cron, and prompt a redownloading
+                        download_id = task_download_state.task_download.get("download_id")
+                        logger.exception("Failed to report final status for Download %s, due to error", download_id)
 
             # Reset The task_download_state object
             task_download_state.reset()
 
-        # IF the daemont is terminated, clean up the active Download, resetting
+        # If the daemon is terminated, clean up the active Download, resetting
         # it's status on the app
         logger.debug("Exiting thread. Cleaning up state for Download: ")
         task_download_state.reset_bytes_downloaded()
