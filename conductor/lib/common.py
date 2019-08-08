@@ -597,6 +597,7 @@ def get_conductor_instance_types(as_dict=False):
     #    {cores: 48, description: "48 core, 192GB Mem", name: "m5.12xlarge", memory: 192.0}
     # ]
     instance_types = data['data']
+    logger.debug('Found available instance types: %s', instance_types)
 
     if as_dict:
         return dict([(instance["description"], instance) for instance in instance_types])
