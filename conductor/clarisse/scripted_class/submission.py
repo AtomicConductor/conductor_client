@@ -222,7 +222,7 @@ class Submission(object):
         # tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(render_basename)
 
         tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(
-            self.render_package_path.posix_path())
+            self.render_package_path.posix_path(with_drive=False))
 
         tokens["CT_PROJECT"] = self.project["name"]
 
