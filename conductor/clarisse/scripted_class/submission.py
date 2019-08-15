@@ -217,10 +217,6 @@ class Submission(object):
         tokens["CT_TIMESTAMP"] = self.timestamp
         tokens["CT_SUBMITTER"] = self.node.get_name()
 
-        render_basename = os.path.basename(
-            self.render_package_path.posix_path())
-        # tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(render_basename)
-
         tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(
             self.render_package_path.posix_path(with_drive=False))
 
@@ -255,9 +251,9 @@ class Submission(object):
 
         try:
             if self.timestamp_render_package:
-                return Path("{}_{}.render".format(path, self.timestamp))
+                return Path("{}_ct{}.project".format(path, self.timestamp))
             else:
-                return Path("{}.render".format(path))
+                return Path("{}_ct.project".format(path))
         except GPathError as err:
             ix.log_error(
                 "Cannot create a submission from this file: \"{}\". Has it ever been saved?".format(current_filename))
@@ -331,7 +327,7 @@ class Submission(object):
         self._before_write_package()
 
         package_file = self.render_package_path.posix_path()
-        success = app.export_render_archive(package_file)
+        success = ix.application.save_project(package_file)
 
         if os.environ.get("CONDUCTOR_SAVE_SNAPSHOTS"):
             filename = os.path.join(
@@ -356,7 +352,6 @@ class Submission(object):
         self._ensure_valid_image_ranges()
         self._prepare_temp_directory()
         self._copy_scripts_to_temp()
-
         _remove_conductor()
 
     def _ensure_valid_image_ranges(self):
