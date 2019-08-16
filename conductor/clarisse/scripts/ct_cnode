@@ -7,6 +7,10 @@ import sys
 import argparse
 import subprocess
 
+NUMBER_RE = re.compile(r"^(\d+)$")
+RANGE_RE = re.compile(r"^(?:(\d+):(\d+)(?:\%(\d+))?)+$")
+BIG_NUMBER = 99999999
+
 
 def mkdir_p(dirs):
     """Make directories unless they already exist."""
@@ -21,37 +25,82 @@ def mkdir_p(dirs):
                 raise
 
 
+def get_bounding_frames(*fame_specs):
+    min_frame = BIG_NUMBER
+    max_frame = -BIG_NUMBER
+
+    for spec in fame_specs:
+        number_match = NUMBER_RE.match(spec)
+        range_match = RANGE_RE.match(spec)
+
+        if not (range_match or number_match):
+            raise ValueError("Spec format must be 'start<:end<%step>>")
+        if range_match:
+            start, end, _ = [int(n or 1) for n in range_match.groups()]
+        else:
+            start = end = int(number_match.groups()[0])
+
+        print start, end
+        if start < min_frame:
+            min_frame = start
+        if end > max_frame:
+            max_frame = end
+
+    return min_frame, max_frame
+
+
+def generate_prerender_script_arg(args):
+    """Provide the pre render script with some information about the render images and range"""
+    script_directory = os.path.dirname(sys.argv[0])
+    prep_script = os.path.join(script_directory, "ct_prep.py")
+    min_frame, max_frame = get_bounding_frames(*args.image_frames_list)
+    return "{} -range {:d} {:d} -images {}".format(prep_script, min_frame, max_frame, " ".join(args.image))
+
+
 def main():
     """Wrapper to run cnode with conductor adjustments.
-
-    Clarisse allows multiple images to be rendered, and
-    each may have a different save_as destination. If the
-    destination folders don't exist then the cnode will fail.
-    So here, argparse extracts -directory args and creates
-    them first.
-
     """
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('-directories', nargs='*', required=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-directories',
+                        nargs='*', type=str,
+                        help="Directories to contain rendered images. They must be created before Clarisse starts the render."
+                        )
+    parser.add_argument('-image_frames_list',
+                        nargs='*',
+                        type=str, required=True,
+                        help="List of image frame specs."
+                        )
+    parser.add_argument('-image',
+                        nargs='*',
+                        type=str,
+                        help="List of images.")
+
     args, pass_through_args = parser.parse_known_args()
-    proj = pass_through_args[0]
 
     # We will change to the working directory because cnode
     # cannot deal with spaces in the project filepath. We have
-    # eliminated spaces from the filename. But the dirname is
-    # beyond our control, so we just cd into it and work from
-    # there.
+    # eliminated spaces from the project filename. But the
+    # directory name is beyond our control, so we cd into it
+    # and work from there.
     # https://www.isotropix.com/user/bugtracker/363 .
-
+    proj = pass_through_args[0]
     work_dir, basename = (os.path.dirname(proj), os.path.basename(proj))
     pass_through_args[0] = basename
 
     cnode_args = ["cnode"] + pass_through_args
 
+    if args.image:
+        cnode_args += ["-image"] + args.image
+        cnode_args += ["-image_frames_list"] + args.image_frames_list
+
+    cnode_args += ["-script"] + [generate_prerender_script_arg(args)]
+
+    # Clarisse fails to render if the destination
+    # directories don't exist
     if args.directories:
         mkdir_p(args.directories)
 
-    sys.stdout.write("Running :{} in {}\n".format(
+    sys.stdout.write("Running command:{} in {}\n".format(
         " ".join(cnode_args), work_dir))
 
     os.chdir(work_dir)

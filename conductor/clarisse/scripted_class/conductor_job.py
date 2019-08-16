@@ -23,8 +23,6 @@ cmd += $CT_SOURCES;
 cmd += ' -image_frames_list ';
 cmd += $CT_CHUNKS;
 cmd += ' -log_level Debug5 -license_server conductor_ilise:40500';
-cmd += ' -script ';
-cmd += $CT_TEMP_DIR+'/ct_prep.py';
 cmd
 """
 
@@ -169,7 +167,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def declare_actions(self, s_class):
         """Attributes concerned with submission."""
         self.add_action(s_class, "connect", "actions")
-
         self.add_action(s_class, "preview", "actions")
         self.add_action(s_class, "submit", "actions")
 

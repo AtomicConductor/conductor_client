@@ -79,7 +79,7 @@ def _localize_contexts():
     containing nested project references that need drive letters
     resolved before they can find deeper referenced paths. Clarisse
     project files are generally small because they get everything heavy
-    from geometry caches, so making refs local is very unlkikely to have
+    from geometry caches, so making refs local is very unlikely to have
     an effect on upload size. Having said that, We can try to omit this
     (and include project refs in the dep scan) once the tool is proven
     stable.
@@ -349,34 +349,30 @@ class Submission(object):
     def _before_write_package(self):
         """Prepare to write render package."""
         _localize_contexts()
-        self._ensure_valid_image_ranges()
         self._prepare_temp_directory()
         self._copy_scripts_to_temp()
         _remove_conductor()
 
-    def _ensure_valid_image_ranges(self):
-        """Fix image ranges to make them renderable.
+    # def _ensure_valid_image_ranges(self):
+    #     """Fix image ranges to make them renderable.
 
-        For any job node that has custom frames, we need to make sure
-        the image node covers those frames, otherwise it won't render. I
-        believe this is a failing on the part of Clarisse. If you
-        specify a frame to render on the command line, it should be
-        rendered even if it is not within the range specified on the
-        image node.
-        """
-        for node in self.nodes:
-            if node.get_attribute("use_custom_frames").get_bool():
-                seq = frames_ui.custom_frame_sequence(node)
-                images = ix.api.OfObjectArray()
-                node.get_attribute("images").get_values(images)
-                for image in images:
-                    frames_ui.set_image_range(image, seq)
+    #     For any job node that has custom frames, we need to make sure
+    #     the image node covers those frames, otherwise it won't render. I
+    #     believe this is a failing on the part of Clarisse. If you
+    #     specify a frame to render on the command line, it should be
+    #     rendered even if it is not within the range specified on the
+    #     image node.
+    #     """
+    #     for node in self.nodes:
+    #         if node.get_attribute("use_custom_frames").get_bool():
+    #             seq = frames_ui.custom_frame_sequence(node)
+    #             images = ix.api.OfObjectArray()
+    #             node.get_attribute("images").get_values(images)
+    #             for image in images:
+    #                 frames_ui.set_image_range(image, seq)
 
     def _prepare_temp_directory(self):
         """Make sure the temp directory has a conductor subdirectory.
-
-        Also add in any scripts conductor-owned scripts needed by the
-        task command.
         """
         tmpdir = self.tmpdir.posix_path()
         try:
