@@ -87,11 +87,8 @@ def _localize_contexts():
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
     for ctx in contexts:
-        if ctx.is_reference():
-            path = ctx.get_attribute("filename").get_string()
-            fn, ext = os.path.splitext(path)
-            if ext == ".project":
-                ix.cmds.MakeLocalContext(ctx)
+        if ctx.is_reference() and ctx.get_attribute("filename").get_string().endswith(".project"):
+            ix.cmds.MakeLocalContext(ctx)
 
 
 def _remove_conductor():
