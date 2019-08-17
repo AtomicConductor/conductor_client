@@ -12,19 +12,6 @@ RANGE_RE = re.compile(r"^(?:(\d+):(\d+)(?:\%(\d+))?)+$")
 BIG_NUMBER = 99999999
 
 
-# def mkdir_p(dirs):
-#     """Make directories unless they already exist."""
-#     for d in dirs:
-#         try:
-#             os.makedirs(d)
-#             sys.stdout.write("Made Directory:{}\n".format(d))
-#         except OSError as ex:
-#             if ex.errno == errno.EEXIST and os.path.isdir(d):
-#                 pass
-#             else:
-#                 raise
-
-
 def get_bounding_frames(*fame_specs):
     min_frame = BIG_NUMBER
     max_frame = -BIG_NUMBER
@@ -50,7 +37,10 @@ def get_bounding_frames(*fame_specs):
 
 
 def generate_prerender_script_arg(args):
-    """Provide the pre render script with some information about the render images and range"""
+    """Provide the pre render script with some information about the render images and range
+    return something like:
+    /tmp/conductor/ct_prep.py -range 1 100 -images project://scene/imgHigh project://scene/imgLow
+    """
     script_directory = os.path.dirname(sys.argv[0])
     prep_script = os.path.join(script_directory, "ct_prep.py")
     min_frame, max_frame = get_bounding_frames(*args.image_frames_list)
@@ -61,10 +51,7 @@ def main():
     """Wrapper to run cnode with conductor adjustments.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-directories',
-                        nargs='*', type=str,
-                        help="Directories to contain rendered images. They must be created before Clarisse starts the render."
-                        )
+
     parser.add_argument('-image_frames_list',
                         nargs='*',
                         type=str, required=True,
