@@ -16,8 +16,6 @@ from ix.api import OfAttr
 
 DEFAULT_CMD_EXPRESSION = """cmd = $CT_TEMP_DIR+'/ct_cnode ';
 cmd += $CT_RENDER_PACKAGE;
-cmd += ' -directories ';
-cmd += $CT_DIRECTORIES;
 cmd += ' -image ';
 cmd += $CT_SOURCES;
 cmd += ' -image_frames_list ';

@@ -30,6 +30,8 @@ def main():
         start, end = options.range
         force_image_ranges(start, end, options.images)
 
+    ensure_image_directories(options.images)
+
 
 def strip_drive_letters():
     attrs = ix.api.OfAttr.get_path_attrs()
@@ -67,6 +69,32 @@ def force_image_ranges(start, end, images):
         image.get_attribute("first_frame").set_long(start)
         image.get_attribute("last_frame").set_long(end)
         image.get_attribute("frame_step").set_long(1)
+
+
+def ensure_image_directories(images):
+    """Clarisse fails to render if the destination
+    directories don't exist"""
+    ix.log_info("Ensure directories exist for images")
+    directories = []
+    for image_path in images:
+        image = ix.get_item(image_path)
+        directories.append(os.path.dirname(
+            image.get_attribute("save_as").get_string()))
+
+    mkdir_p(directories)
+
+
+def mkdir_p(dirs):
+    """Make directories unless they already exist."""
+    for d in dirs:
+        try:
+            os.makedirs(d)
+            sys.stdout.write("Made Directory:{}\n".format(d))
+        except OSError as ex:
+            if ex.errno == errno.EEXIST and os.path.isdir(d):
+                pass
+            else:
+                raise
 
 
 main()

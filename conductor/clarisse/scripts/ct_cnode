@@ -12,17 +12,17 @@ RANGE_RE = re.compile(r"^(?:(\d+):(\d+)(?:\%(\d+))?)+$")
 BIG_NUMBER = 99999999
 
 
-def mkdir_p(dirs):
-    """Make directories unless they already exist."""
-    for d in dirs:
-        try:
-            os.makedirs(d)
-            sys.stdout.write("Made Directory:{}\n".format(d))
-        except OSError as ex:
-            if ex.errno == errno.EEXIST and os.path.isdir(d):
-                pass
-            else:
-                raise
+# def mkdir_p(dirs):
+#     """Make directories unless they already exist."""
+#     for d in dirs:
+#         try:
+#             os.makedirs(d)
+#             sys.stdout.write("Made Directory:{}\n".format(d))
+#         except OSError as ex:
+#             if ex.errno == errno.EEXIST and os.path.isdir(d):
+#                 pass
+#             else:
+#                 raise
 
 
 def get_bounding_frames(*fame_specs):
@@ -97,8 +97,8 @@ def main():
 
     # Clarisse fails to render if the destination
     # directories don't exist
-    if args.directories:
-        mkdir_p(args.directories)
+    # if args.directories:
+    #     mkdir_p(args.directories)
 
     sys.stdout.write("Running command:{} in {}\n".format(
         " ".join(cnode_args), work_dir))
