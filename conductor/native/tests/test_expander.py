@@ -19,7 +19,7 @@ class ExpanderTest(unittest.TestCase):
         self.context = {
             "home": "/users/joebloggs/",
             "shot": "/metropolis/shot01/",
-            "dept": "texturing",
+            "ct_dept": "texturing",
             "frames": 20,
             "directories": "/a/b /a/c"}
 
@@ -47,7 +47,7 @@ class ExpanderTest(unittest.TestCase):
     # lists
     def test_expand_list_target(self):
         e = Expander(**self.context)
-        result = e.evaluate(["x_<shot>_y", "x_<dept>_y"])
+        result = e.evaluate(["x_<shot>_y", "x_<ct_dept>_y"])
         self.assertIsInstance(result, list)
         self.assertEqual(result, ["x_/metropolis/shot01/_y", "x_texturing_y"])
 
@@ -65,7 +65,7 @@ class ExpanderTest(unittest.TestCase):
     # dicts
     def test_expand_dict_target(self):
         e = Expander(**self.context)
-        result = e.evaluate({"foo": "x_<shot>_y", "bar": "x_<dept>_y"})
+        result = e.evaluate({"foo": "x_<shot>_y", "bar": "x_<ct_dept>_y"})
         self.assertIsInstance(result, dict)
         self.assertEqual(
             result, {"foo": "x_/metropolis/shot01/_y", "bar": "x_texturing_y"})

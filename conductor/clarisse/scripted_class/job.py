@@ -6,12 +6,13 @@ import os
 
 import conductor.clarisse.scripted_class.dependencies as deps
 import ix
-from conductor.clarisse.scripted_class import frames_ui, variables
+from conductor.clarisse.scripted_class import frames_ui
 from conductor.clarisse.scripted_class.task import Task
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence
+from conductor.native.lib.expander import Expander
 
 
 class Job(object):
@@ -25,10 +26,10 @@ class Job(object):
     def __init__(self, node, parent_tokens, render_package_path):
         """Build job object for a ConductorJob node.
 
-        After _setenv has been called, the Job level token variables are
+        After _set_tokens has been called, the Job level token variables are
         valid and calls to evaluate string attributes will correctly
         resolve where those tokens have been used.  This is why we
-        evaluate title, tasks, after the call to _setenv()
+        evaluate title, tasks, after the call to _set_tokens()
         """
 
         self.node = node
@@ -42,15 +43,16 @@ class Job(object):
         self.common_output_path = out["common_path"]
         self.output_paths = out["output_paths"]
 
-        self.tokens = self._setenv(parent_tokens)
+        self.tokens = self._set_tokens(parent_tokens)
 
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
         self.dependencies = deps.collect(self.node)
         self.dependencies.add(render_package_path)
-        self.title = self.node.get_attribute("title").get_string()
 
-        # use_cv21 = self.node.get_attribute("use_cv21").get_bool()
+        expander = Expander(**self.tokens)
+        self.title = expander.evaluate(
+            self.node.get_attribute("title").get_string())
 
         self.metadata = None
 
@@ -209,7 +211,7 @@ class Job(object):
             "scout": frames_ui.resolved_scout_sequence(self.node)
         }
 
-    def _setenv(self, parent_tokens):
+    def _set_tokens(self, parent_tokens):
         """Env tokens.
 
         Collect token values for this Job and merge with those from the
@@ -219,28 +221,26 @@ class Job(object):
         main_seq = self.sequence["main"]
         scout_seq = self.sequence["scout"]
 
-        tokens["CT_SCOUT"] = str(scout_seq)
-        tokens["CT_CHUNKSIZE"] = str(main_seq.chunk_size)
-        tokens["CT_CHUNKCOUNT"] = str(main_seq.chunk_count())
-        tokens["CT_SCOUTCOUNT"] = str(len(scout_seq or []))
-        tokens["CT_SEQUENCELENGTH"] = str(len(main_seq))
-        tokens["CT_SEQUENCE"] = str(main_seq)
-        tokens["CT_SEQUENCEMIN"] = str(main_seq.start)
-        tokens["CT_SEQUENCEMAX"] = str(main_seq.end)
-        tokens["CT_INSTANCE_TYPE"] = self.instance["name"]
-        tokens["CT_INSTANCE"] = self.instance["description"]
+        tokens["ct_scout"] = str(scout_seq)
+        tokens["ct_chunksize"] = str(main_seq.chunk_size)
+        tokens["ct_chunkcount"] = str(main_seq.chunk_count())
+        tokens["ct_scoutcount"] = str(len(scout_seq or []))
+        tokens["ct_sequencelength"] = str(len(main_seq))
+        tokens["ct_sequence"] = str(main_seq)
+        tokens["ct_sequencemin"] = str(main_seq.start)
+        tokens["ct_sequencemax"] = str(main_seq.end)
+        tokens["ct_instance_type"] = self.instance["name"]
+        tokens["ct_instance"] = self.instance["description"]
         pidx = int(self.instance["preemptible"])
-        tokens["CT_PREEMPTIBLE"] = (
+        tokens["ct_preemptible"] = (
             "preemptible" if pidx else "non-preemptible")
-        tokens["CT_RETRIES"] = str(self.instance["retries"])
-        tokens["CT_JOB"] = self.node_name
+        tokens["ct_retries"] = str(self.instance["retries"])
+        tokens["ct_job"] = self.node_name
 
         # Space delimited list of output paths are needed for a mkdir cmd.
-        tokens["CT_DIRECTORIES"] = " ".join('"{}"'.format(
+        tokens["ct_directories"] = " ".join('"{}"'.format(
             p.posix_path(with_drive=False)) for p in self.output_paths)
 
-        for token in tokens:
-            variables.put(token, tokens[token])
         tokens.update(parent_tokens)
         return tokens
 

@@ -10,7 +10,7 @@ from conductor.clarisse.scripted_class import (attr_docs, debug_ui, dependencies
                                                notifications_ui, packages_ui,
                                                preview_ui, projects_ui,
                                                refresh, submission,
-                                               submit_actions, task, variables)
+                                               submit_actions, task)
 from conductor.native.lib import gpath, gpath_list, sequence
 
 reload(utils)
@@ -31,6 +31,5 @@ reload(packages_ui)
 reload(projects_ui)
 reload(submission)
 reload(submit_actions)
-reload(variables)
 reload(preview_ui)
 reload(attr_docs)

@@ -1,21 +1,11 @@
-from conductor.clarisse.scripted_class import variables
 
 from conductor import CONFIG
+from conductor.native.lib.expander import Expander
 
 CORE_TWO_ONE = False
 auth_url = CONFIG.get("auth_url")
 if auth_url and auth_url.split(".")[1] == "dev-conductortech":
     CORE_TWO_ONE = True
-
-
-def _force_expression_evaluation(attr):
-    """Give the expression a nudge.
-
-    Otherwise it emits all tasks with the same value.
-    """
-    attr.activate_expression(True)
-    attr.activate_expression(False)
-    attr.activate_expression(True)
 
 
 class Task(object):
@@ -28,26 +18,23 @@ class Task(object):
     def __init__(self, chunk, command_attr, sources, parent_tokens):
         """Resolve the tokens and the command.
 
-        After calling setenv, tokens such as start end step
+        After calling set_tokens, tokens such as start end step
         and so on are valid. So when we expand the command
         any tokens that were used are correctly resolved.
 
         The chunk arg is an instance of a Sequence.
-
-
-
         """
 
         self.chunk = chunk
         self.sources = sources
 
-        self.tokens = self._setenv(parent_tokens)
+        self.tokens = self._set_tokens(parent_tokens)
 
-        _force_expression_evaluation(command_attr)
+        expander = Expander(**self.tokens)
+        self.command = expander.evaluate(
+            command_attr.get_string())
 
-        self.command = command_attr.get_string()
-
-    def _setenv(self, parent_tokens):
+    def _set_tokens(self, parent_tokens):
         """Env tokens at the task level.
 
         Task level tokens are joined with Job and submission level
@@ -74,15 +61,12 @@ class Task(object):
                 chunks.append(intersection.to(":", "%", "; "))
                 image_names.append(source["image"].get_full_name())
 
-        tokens["CT_CHUNKS"] = " ".join(chunks)
-        tokens["CT_SOURCES"] = " ".join(image_names)
+        tokens["ct_chunks"] = " ".join(chunks)
+        tokens["ct_sources"] = " ".join(image_names)
+        tokens["ct_chunklength"] = str(len(self.chunk))
+        tokens["ct_chunkstart"] = str(self.chunk.start)
+        tokens["ct_chunkend"] = str(self.chunk.end)
 
-        tokens["CT_CHUNKLENGTH"] = str(len(self.chunk))
-        tokens["CT_CHUNKSTART"] = str(self.chunk.start)
-        tokens["CT_CHUNKEND"] = str(self.chunk.end)
-
-        for token in tokens:
-            variables.put(token, tokens[token])
         tokens.update(parent_tokens)
         return tokens
 

@@ -8,24 +8,15 @@ from conductor.clarisse.scripted_class import (attr_docs, debug_ui, environment_
                                                extra_uploads_ui, frames_ui,
                                                notifications_ui, packages_ui,
                                                projects_ui, refresh,
-                                               submit_actions, variables)
+                                               submit_actions)
 from conductor.native.lib.data_block import PROJECT_NOT_SET
 from conductor.lib import loggeria
 
 from ix.api import OfAttr
 
-DEFAULT_CMD_EXPRESSION = """cmd = $CT_TEMP_DIR+'/ct_cnode ';
-cmd += $CT_RENDER_PACKAGE;
-cmd += ' -image ';
-cmd += $CT_SOURCES;
-cmd += ' -image_frames_list ';
-cmd += $CT_CHUNKS;
-cmd += ' -log_level Debug5 -license_server conductor_ilise:40500';
-cmd
-"""
+DEFAULT_CMD_TEMPLATE = "<ct_temp_dir>/ct_cnode <ct_render_package> -image <ct_sources> -image_frames_list <ct_chunks> -log_level Debug5 -license_server conductor_ilise:40500"
 
-
-TITLE_EXPRESSION = "$PNAME"
+DEFAULT_TITLE = "<ct_job>"
 
 
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
@@ -119,7 +110,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         reccommended, because we need better control over placement in
         the attribute editor.
         """
-        variables.declare()
 
         self.declare_actions(s_class)
         self.declare_general_attributes(s_class)
@@ -177,8 +167,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "general")
-        attr.set_expression(TITLE_EXPRESSION)
-        attr.activate_expression(True)
+        attr.set_string(DEFAULT_TITLE)
+        # attr.activate_expression(True)
 
         attr = s_class.add_attribute(
             "images",
@@ -387,8 +377,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
             "task")
-        attr.set_expression(DEFAULT_CMD_EXPRESSION)
-        attr.activate_expression(True)
+        attr.set_string(DEFAULT_CMD_TEMPLATE)
+        # attr.activate_expression(True)
 
         attr = s_class.add_attribute(
             "timestamp_render_package",

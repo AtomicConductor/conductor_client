@@ -5,15 +5,20 @@ from string import Template
 
 
 class AngleBracketTemplate(Template):
+    """ Template for substituting tokens in angle brackets.
+
+    Tokens may have lowercase letters and contain underscores.
+    E.g. <foo> or <foo_bar>
+    """
     delimiter = '<'
     pattern = r"""
-    \<(?:
-    (?P<escaped>\<)|
-    (?P<named>  )\>|
-    (?P<braced>[a-zA-Z]+)\>|
-    (?P<invalid>)
-    )
-    """
+        \<(?:
+        (?P<escaped>\<)|
+        (?P<named>  )\>|
+        (?P<braced>[a-z][a-z_]+)\>|
+        (?P<invalid>)
+        )
+        """
 
 
 class Expander(object):

@@ -2,7 +2,7 @@ import os
 import re
 
 import ix
-from conductor.clarisse.scripted_class import frames_ui, variables
+from conductor.clarisse.scripted_class import frames_ui
 from conductor.native.lib.gpath import GPathError, Path
 from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence

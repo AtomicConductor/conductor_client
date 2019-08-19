@@ -21,14 +21,14 @@ def set(s_class):
 
     s_class.set_attr_doc(
         "title",
-        """Sets the title that appears in the Conductor dashboard. You may use Clarisse variables and some Conductor variables to construct the title.""")
+        """Sets the title that appears in the Conductor dashboard. You may use Clarisse variables and some Conductor tokens to construct the title.""")
 
     s_class.set_attr_doc(
         "images",
         """Sets the images to be rendered. Images must have their Render to Disk attribute set. The Save As field must contain a filename.""")
 
     s_class.set_attr_doc("conductor_project_name",
-        """Sets the Conductor project.""")
+                         """Sets the Conductor project.""")
 
     s_class.set_attr_doc(
         "use_custom_frames",
@@ -39,14 +39,14 @@ def set(s_class):
         """Specifies a set of frames to render. Provide a comma-separated list of progressions. Example 1,7,10-20,30-60x3,1001.""")
 
     s_class.set_attr_doc("chunk_size",
-        """Sets the number of frames per task.""")
+                         """Sets the number of frames per task.""")
 
     s_class.set_attr_doc(
         "best_chunk_size",
         """Tries to adjust the chunk size so that frames are evenly distributed among the current number of tasks.""")
 
     s_class.set_attr_doc("use_scout_frames",
-       """Activates a set of frames to scout.""")
+                         """Activates a set of frames to scout.""")
 
     s_class.set_attr_doc(
         "scout_frames",
@@ -57,7 +57,7 @@ def set(s_class):
         """Activates use of low-cost instances. Premptble instances may be stopped at any time by the cloud provider. See the Conductor documentation site for a discussion of the situations where preemptible instances are suitable.""")
 
     s_class.set_attr_doc("instance_type",
-        """Specifies the required hardware configuration.""")
+                         """Specifies the required hardware configuration.""")
 
     s_class.set_attr_doc(
         "retries",
@@ -76,7 +76,7 @@ def set(s_class):
         """Forces files to be uploaded, even if they already exist at Conductor.""")
 
     s_class.set_attr_doc("upload_only",
-        """Uploads files but does not start any tasks.""")
+                         """Uploads files but does not start any tasks.""")
 
     s_class.set_attr_doc(
         "manage_extra_uploads",
@@ -87,7 +87,7 @@ def set(s_class):
         """Files to uploaded in addition to any files found by dependency scanning.""")
 
     s_class.set_attr_doc("choose_packages",
-        """Opens the package chooser panel.""")
+                         """Opens the package chooser panel.""")
 
     s_class.set_attr_doc(
         "packages",
@@ -98,7 +98,7 @@ def set(s_class):
         """Opens a panel for making modifications to the remote environment.""")
 
     s_class.set_attr_doc("extra_environment",
-        """Extra environment encoded as a JSON string.""")
+                         """Extra environment encoded as a JSON string.""")
 
     s_class.set_attr_doc(
         "task_template",
@@ -113,7 +113,7 @@ def set(s_class):
         """A comma delimited list of emails addresses to notify on job completion.""")
 
     s_class.set_attr_doc("verbose_errors",
-        """Shows a stacktrace when something goes wrong.""")
+                         """Shows a stacktrace when something goes wrong.""")
 
     s_class.set_attr_doc(
         "do_submission",

@@ -57,7 +57,7 @@ import traceback
 import conductor.clarisse.scripted_class.dependencies as deps
 import conductor.clarisse.utils as cu
 import ix
-from conductor.clarisse.scripted_class import frames_ui, variables
+from conductor.clarisse.scripted_class import frames_ui
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
@@ -101,7 +101,6 @@ def _remove_conductor():
     ix.application.get_factory().get_objects("ConductorJob", objects)
     for item in list(objects):
         ix.application.get_factory().remove_item(item.get_full_name())
-    variables.remove()
 
 
 # def _get_temp_directory():
@@ -124,7 +123,7 @@ class Submission(object):
         """Collect data from the Clarisse UI.
 
         Collect attribute values that are common to all jobs, then call
-        setenv(). After _setenv has been called, the Submission level
+        setenv(). After _set_tokens has been called, the Submission level
         token variables are valid and calls to evaluate expressions will
         correctly resolve where those tokens have been used.
         """
@@ -151,7 +150,7 @@ class Submission(object):
         self.upload_only = self.node.get_attribute("upload_only").get_bool()
         self.project = self._get_project()
         self.notifications = self._get_notifications()
-        self.tokens = self._setenv()
+        self.tokens = self._set_tokens()
 
         self.jobs = []
         for node in self.nodes:
@@ -187,7 +186,7 @@ class Submission(object):
         emails = self.node.get_attribute("email_addresses").get_string()
         return [email.strip() for email in emails.split(",") if email.strip()]
 
-    def _setenv(self):
+    def _set_tokens(self):
         """Env tokens are variables to help the user build expressions.
 
         The user interface has fields for strings such as job title,
@@ -205,22 +204,21 @@ class Submission(object):
         dry-run scenario.
         """
         tokens = {}
-        tokens["CT_PDIR"] = "\"{}\"".format(Path(
-            variables.get("PDIR")).posix_path(
+
+        pdirval = ix.application.get_factory().get_vars().get("PDIR").get_string()
+
+        tokens["ct_pdir"] = "\"{}\"".format(Path(pdirval).posix_path(
             with_drive=False))
 
-        tokens["CT_TEMP_DIR"] = "{}".format(
+        tokens["ct_temp_dir"] = "{}".format(
             self.tmpdir.posix_path(with_drive=False))
-        tokens["CT_TIMESTAMP"] = self.timestamp
-        tokens["CT_SUBMITTER"] = self.node.get_name()
+        tokens["ct_timestamp"] = self.timestamp
+        tokens["ct_submitter"] = self.node.get_name()
 
-        tokens["CT_RENDER_PACKAGE"] = "\"{}\"".format(
+        tokens["ct_render_package"] = "\"{}\"".format(
             self.render_package_path.posix_path(with_drive=False))
 
-        tokens["CT_PROJECT"] = self.project["name"]
-
-        for token in tokens:
-            variables.put(token, tokens[token])
+        tokens["ct_project"] = self.project["name"]
 
         return tokens
 
@@ -237,7 +235,7 @@ class Submission(object):
 
         We replace spaces in the filename because of a bug in Clarisse
         https://www.isotropix.com/user/bugtracker/376
-        Also see related `cd` in `DEFAULT_CMD_EXPRESSION` conductor_job.py
+        Also see related `cd` in `DEFAULT_CMD_TEMPLATE` conductor_job.py
         """
 
         current_filename = ix.application.get_current_project_filename()
@@ -349,24 +347,6 @@ class Submission(object):
         self._prepare_temp_directory()
         self._copy_scripts_to_temp()
         _remove_conductor()
-
-    # def _ensure_valid_image_ranges(self):
-    #     """Fix image ranges to make them renderable.
-
-    #     For any job node that has custom frames, we need to make sure
-    #     the image node covers those frames, otherwise it won't render. I
-    #     believe this is a failing on the part of Clarisse. If you
-    #     specify a frame to render on the command line, it should be
-    #     rendered even if it is not within the range specified on the
-    #     image node.
-    #     """
-    #     for node in self.nodes:
-    #         if node.get_attribute("use_custom_frames").get_bool():
-    #             seq = frames_ui.custom_frame_sequence(node)
-    #             images = ix.api.OfObjectArray()
-    #             node.get_attribute("images").get_values(images)
-    #             for image in images:
-    #                 frames_ui.set_image_range(image, seq)
 
     def _prepare_temp_directory(self):
         """Make sure the temp directory has a conductor subdirectory.
