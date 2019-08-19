@@ -14,7 +14,7 @@ from conductor.lib import loggeria
 
 from ix.api import OfAttr
 
-DEFAULT_CMD_TEMPLATE = "<ct_temp_dir>/ct_cnode <ct_render_package> -image <ct_sources> -image_frames_list <ct_chunks> -log_level Debug5 -license_server conductor_ilise:40500"
+DEFAULT_CMD_TEMPLATE = "<ct_temp_dir>/ct_cnode <ct_render_package> -image <ct_sources> -image_frames_list <ct_chunks> -log_level Debug5 -tile_rendering <ct_tiles> <ct_tile_number> -license_server conductor_ilise:40500"
 
 DEFAULT_TITLE = "<ct_job>"
 
