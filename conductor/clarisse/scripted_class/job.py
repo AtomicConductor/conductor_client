@@ -43,6 +43,9 @@ class Job(object):
         self.common_output_path = out["common_path"]
         self.output_paths = out["output_paths"]
 
+        tile_width = int(self.node.get_attribute("tiles").get_long())
+        self.tiles = tile_width*tile_width
+
         self.tokens = self._set_tokens(parent_tokens)
 
         self.environment = self._get_environment()
@@ -58,8 +61,10 @@ class Job(object):
 
         task_att = self.node.get_attribute("task_template")
         for chunk in self.sequence["main"].chunks():
-            self.tasks.append(
-                Task(chunk, task_att, self.sources, self.tokens))
+            for tile_number in range(1, self.tiles+1):
+                tile_spec = (self.tiles, tile_number)
+                self.tasks.append(
+                    Task(chunk, task_att, self.sources, tile_spec, self.tokens))
 
     def _get_sources(self):
         """Get the images, along with associated Sequence objects.
@@ -231,6 +236,7 @@ class Job(object):
         tokens["ct_sequencemax"] = str(main_seq.end)
         tokens["ct_instance_type"] = self.instance["name"]
         tokens["ct_instance"] = self.instance["description"]
+        tokens["ct_tiles"] = str(self.tiles)
         pidx = int(self.instance["preemptible"])
         tokens["ct_preemptible"] = (
             "preemptible" if pidx else "non-preemptible")
@@ -269,6 +275,7 @@ class Job(object):
         result["instance_type"] = self.instance["name"]
         if not upload_only:
             result["tasks_data"] = [task.data() for task in self.tasks]
+
         result["job_title"] = self.title
         if self.metadata:
             result["metadata"] = self.metadata

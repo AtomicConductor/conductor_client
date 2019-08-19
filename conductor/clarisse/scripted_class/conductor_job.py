@@ -245,6 +245,16 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_string("2,4-8,10-50x2")
 
         attr = s_class.add_attribute(
+            "tiles", OfAttr.TYPE_LONG,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "frames")
+        attr.set_long(1)
+        # start NOTSET - update on refresh
+        for i in range(1, 11):
+            [attr.add_preset("{}x{}={}".format(i, i, i*i), str(i))]
+
+        attr = s_class.add_attribute(
             "frames_info",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,

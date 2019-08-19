@@ -15,7 +15,7 @@ class Task(object):
     command.
     """
 
-    def __init__(self, chunk, command_attr, sources, parent_tokens):
+    def __init__(self, chunk, command_attr, sources, tile_spec, parent_tokens):
         """Resolve the tokens and the command.
 
         After calling set_tokens, tokens such as start end step
@@ -26,6 +26,7 @@ class Task(object):
         """
 
         self.chunk = chunk
+        self.tile_spec = tile_spec
         self.sources = sources
 
         self.tokens = self._set_tokens(parent_tokens)
@@ -61,6 +62,7 @@ class Task(object):
                 chunks.append(intersection.to(":", "%", "; "))
                 image_names.append(source["image"].get_full_name())
 
+        tokens["ct_tile_number"] = str(self.tile_spec[1])
         tokens["ct_chunks"] = " ".join(chunks)
         tokens["ct_sources"] = " ".join(image_names)
         tokens["ct_chunklength"] = str(len(self.chunk))
