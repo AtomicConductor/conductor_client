@@ -119,6 +119,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         self.declare_packages_attributes(s_class)
         self.declare_environment_attributes(s_class)
         self.declare_task_attributes(s_class)
+        self.declare_packaging_attributes(s_class)
         self.declare_notification_attributes(s_class)
 
         self.declare_dev_attributes(s_class)
@@ -150,7 +151,36 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "debug")
         attr.set_bool(False)
 
-        self.add_action(s_class, "export_render_package", "debug")
+
+   def declare_packaging_attributes(self, s_class):
+
+        self.add_action(s_class, "export_render_package", "packaging")
+
+        attr = s_class.add_attribute(
+            "localize_contexts",
+            OfAttr.TYPE_BOOL,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "packaging")
+        attr.set_bool(False)
+
+        attr = s_class.add_attribute(
+            "timestamp_render_package",
+            OfAttr.TYPE_BOOL,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "packaging")
+        attr.set_bool(False)
+
+        attr = s_class.add_attribute(
+            "clean_up_render_package",
+            OfAttr.TYPE_BOOL,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "packaging")
+        attr.set_bool(True)
+
+
 
     def declare_actions(self, s_class):
         """Attributes concerned with submission."""
@@ -341,13 +371,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "upload")
         attr.set_bool(False)
 
-        attr = s_class.add_attribute(
-            "clean_up_render_package",
-            OfAttr.TYPE_BOOL,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "upload")
-        attr.set_bool(True)
 
         self.add_action(s_class, "manage_extra_uploads", "upload")
 
@@ -374,6 +397,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "packages")
         attr.set_read_only(True)
 
+
+
     def declare_task_attributes(self, s_class):
         """This is the task command template.
 
@@ -390,13 +415,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_string(DEFAULT_CMD_TEMPLATE)
         # attr.activate_expression(True)
 
-        attr = s_class.add_attribute(
-            "timestamp_render_package",
-            OfAttr.TYPE_BOOL,
-            OfAttr.CONTAINER_SINGLE,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "task")
-        attr.set_bool(False)
+
 
     def declare_environment_attributes(self, s_class):
         """Set up any extra environment.

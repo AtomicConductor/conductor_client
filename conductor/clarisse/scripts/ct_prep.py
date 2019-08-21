@@ -100,3 +100,51 @@ def mkdir_p(dirs):
 
 
 main()
+
+
+attrs = ix.api.OfAttr.get_path_attrs()
+for attr in attrs:
+    path = attr.get_string()
+    attr_name = attr.get_name()
+    obj_name = attr.get_parent_object().get_name()
+    is_output = ix.api.OfAttr.get_visual_hint_name(
+        attr.get_visual_hint()) == "VISUAL_HINT_FILENAME_SAVE"
+    type_val = "output" if is_output else "input"
+    ix.log_info("-------------------------------")
+    ix.log_info("Obj.Attr: {}.{} Path value: {} Type: {}".format(
+        obj_name, attr_name, path, type_val))
+
+
+def _is_project_reference(attr):
+    """Does the attribute reference a clarisse project?
+
+    If so, we don't include it in the depedency scan because ultimately
+    it will be made local. Check the extension, because Alembic and
+    pixar formats are also possible.
+    """
+    obj = attr.get_parent_object()
+    if obj.get_class_name() == "Generic":
+        if obj.get_name() == "__context_options__":
+            path = attr.get_string()
+            _, ext = os.path.splitext(path)
+            if ext == ".project":
+                return True
+    return False
+
+
+def _should_ignore(attr):
+    """Is the attribute needed.attribute.
+
+    Ignore if private, disabled, output filename, or reference. We don't
+    need refs because we make them local on the client.
+    """
+    if attr.get_parent_object().is_disabled():
+        return True
+    if attr.is_private():
+        return True
+    hint = ix.api.OfAttr.get_visual_hint_name(attr.get_visual_hint())
+    if hint == "VISUAL_HINT_FILENAME_SAVE":
+        return True
+    if _is_project_reference(attr):
+        return True
+    return False
