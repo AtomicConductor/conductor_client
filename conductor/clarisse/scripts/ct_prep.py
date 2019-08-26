@@ -72,8 +72,6 @@ def resolve(ctx):
     if ctx.is_reference():
         attr = ctx.get_attribute("filename")
         strip_drive_letter(attr)
-        # ix.application.message_box("Continue?", "Msg", ix.api.AppDialog.yes(),
-        #                            ix.api.AppDialog.STYLE_YES_NO)
 
     next_level = level + 1
     contexts = ix.api.OfContextSet()
