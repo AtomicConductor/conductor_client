@@ -70,3 +70,4 @@ unused_css/
 
 # vscode
 .vscode
+conductor_client.code-workspace

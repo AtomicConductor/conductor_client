@@ -3,7 +3,6 @@ import re
 
 import ix
 from conductor.clarisse.scripted_class import frames_ui
-from conductor.native.lib.gpath import GPathError, Path
 from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence
 
@@ -37,8 +36,8 @@ SEQUENCE_OFFSET_KLUDGE = 100000
 # Because then the render package would not be runnable on the local machine.
 CONDUCTOR_SCRIPTS = ["ct_prep.py", "ct_cnode"]
 CONDUCTOR_TMP_DIR = os.path.join(
-    ix.application.get_factory().get_vars().get("CTEMP").get_string(),
-    "conductor")
+    ix.application.get_factory().get_vars().get("CTEMP").get_string(), "conductor"
+)
 
 
 def collect(obj):
@@ -49,10 +48,11 @@ def collect(obj):
     """
     result = PathList()
 
+    include_references = not obj.get_attribute("localize_contexts").get_bool()
     policy = obj.get_attribute("dependency_scan_policy").get_long()
     result.add(*_get_conductor_script_paths())
     result.add(*_get_extra_uploads(obj))
-    result.add(*get_scan(obj, policy))
+    result.add(*get_scan(obj, policy, include_references))
 
     # tell the list to expand  any "*" or <UDIM> in place
     result.glob()
@@ -78,7 +78,7 @@ def _get_extra_uploads(obj):
     return result
 
 
-def get_scan(obj, policy):
+def get_scan(obj, policy, include_references=True):
     """Scan all path attrs for dependencies according to the given policy.
 
     If policy is not None, first replace all UDIM tags with a "*" so
@@ -114,6 +114,18 @@ def get_scan(obj, policy):
         else:  # SMART
             filenames = _smart_expand(obj, attr, filename)
             result.add(*filenames)
+
+    #
+    # We ignored references in _should_ignore for 2 reasons.
+    # 1. We only want them if we are not localizing them.
+    # 2. Getting ref contexts from OfAttr.get_path_attrs() is buggy
+    # so it's best to get them through the root context resolve_all_contexts()
+    if include_references:
+        contexts = ix.api.OfContextSet()
+        ix.application.get_factory().get_root().resolve_all_contexts(contexts)
+        for context in contexts:
+            if context.is_reference() and not context.is_disabled():
+                result.add(context.get_attribute("filename").get_string())
 
     return result
 
@@ -161,9 +173,9 @@ def _evaluate_static_expression(target_attr):
     We are doing this because we want literal paths that are needed for
     the upload. The easiest and most reliable way to evaluate variables
     in the expression is to simply use get_string(). However, if we do
-    that, it will evaluate time varying variables like $3F for the current 
+    that, it will evaluate time varying variables like $3F for the current
     frame only.  NOTE, it does not resolve hash placeholders like ###. 
-    So to keep the time vaiang varables variable, we replace them with 
+    So to keep the time vaiang varables variable, we replace them with
     python named format strings like {frame:0nd} where n is the padding.
 
     $CDIR/bugs_seq/bugs.####.jpg becomes
@@ -178,8 +190,11 @@ def _evaluate_static_expression(target_attr):
 
     orig_expr = target_attr.get_expression()
 
-    static_expr = re.sub(r'\$(\d?)F', lambda match: "{{frame:0{:d}d}}".format(
-        int(match.group(1) or 0)), orig_expr)
+    static_expr = re.sub(
+        r"\$(\d?)F",
+        lambda match: "{{frame:0{:d}d}}".format(int(match.group(1) or 0)),
+        orig_expr,
+    )
 
     target_attr.set_expression(static_expr)
     result = target_attr.get_string()
@@ -245,13 +260,14 @@ def _attribute_sequence(attr, intersector):
         ix.log_error("Attribute is not in sequence mode {}")
 
     global_frame_rate = ix.application.get_prefs(
-        ix.api.AppPreferences.MODE_APPLICATION).get_long_value(
-            "animation", "frames_per_second")
+        ix.api.AppPreferences.MODE_APPLICATION
+    ).get_long_value("animation", "frames_per_second")
     attr_frame_rate = obj.get_attribute("frame_rate").get_long()
     if not attr_frame_rate == global_frame_rate:
         ix.log_error(
             "Can't get attribute sequence when global \
-            fps is different from fps on the attribute")
+            fps is different from fps on the attribute"
+        )
 
     start = obj.get_attribute("start_frame").get_long()
     end = obj.get_attribute("end_frame").get_long()
@@ -267,7 +283,7 @@ def _attribute_sequence(attr, intersector):
 
     offset = obj.get_attribute("frame_offset").get_long()
 
-    seq = Sequence.create(start, end, 1).offset(offset+SEQUENCE_OFFSET_KLUDGE)
+    seq = Sequence.create(start, end, 1).offset(offset + SEQUENCE_OFFSET_KLUDGE)
     seq = seq.intersection(intersector.offset(SEQUENCE_OFFSET_KLUDGE))
 
     if not seq:
@@ -276,6 +292,6 @@ def _attribute_sequence(attr, intersector):
     # Make a copy of the sequence while at the render frames
     render_seq = Sequence.create(str(seq)).offset(-SEQUENCE_OFFSET_KLUDGE)
 
-    attr_seq = seq.offset(-(offset+SEQUENCE_OFFSET_KLUDGE))
+    attr_seq = seq.offset(-(offset + SEQUENCE_OFFSET_KLUDGE))
 
     return {"attr_sequence": attr_seq, "render_sequence": render_seq}

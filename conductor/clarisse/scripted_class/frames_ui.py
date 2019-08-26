@@ -54,35 +54,8 @@ def image_range(image):
     return (
         image.get_attribute("first_frame").get_long(),
         image.get_attribute("last_frame").get_long(),
-        image.get_attribute("frame_step").get_long()
+        image.get_attribute("frame_step").get_long(),
     )
-
-
-def set_image_range(image, seq):
-    """Set the image frame range to cover the whole Sequence.
-
-    This is required for making sure the image is renderable when a
-    custom sequence is selected.
-    """
-    first_frame_attr = image.get_attribute("first_frame")
-    last_frame_attr = image.get_attribute("last_frame")
-    frame_step_attr = image.get_attribute("frame_step")
-
-    undo_attrs = [{"attr": first_frame_attr,
-                   "value": first_frame_attr .get_long(),
-                   "type": ix.api.OfAttr.TYPE_LONG},
-                  {"attr": last_frame_attr,
-                   "value": last_frame_attr .get_long(),
-                   "type": ix.api.OfAttr.TYPE_LONG},
-                  {"attr": frame_step_attr,
-                   "value": frame_step_attr .get_long(),
-                   "type": ix.api.OfAttr.TYPE_LONG}]
-
-    first_frame_attr.set_long(seq.start),
-    last_frame_attr.set_long(seq.end),
-    frame_step_attr.set_long(1)
-
-    return undo_attrs
 
 
 def _union_sequence(images):
@@ -166,6 +139,6 @@ def update_frame_stats_message(obj):
     else:
         frame_info = "%d Frames" % num_frames
 
-    chunks = ("%d Chunks" % main_seq.chunk_count())
+    chunks = "%d Chunks" % main_seq.chunk_count()
 
     info_attr.set_string("{} -- {} -- {}".format(frame_info, chunks, main_seq))

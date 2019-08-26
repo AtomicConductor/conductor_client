@@ -65,10 +65,8 @@ from conductor.native.lib.gpath import Path, GPathError
 from conductor.native.lib.gpath_list import PathList
 
 SCRIPTS_DIRECTORY = os.path.join(
-    os.environ["CONDUCTOR_LOCATION"],
-    "conductor",
-    "clarisse",
-    "scripts")
+    os.environ["CONDUCTOR_LOCATION"], "conductor", "clarisse", "scripts"
+)
 
 
 def _localize_contexts():
@@ -87,7 +85,9 @@ def _localize_contexts():
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
     for ctx in contexts:
-        if ctx.is_reference() and ctx.get_attribute("filename").get_string().endswith(".project"):
+        if ctx.is_reference() and ctx.get_attribute("filename").get_string().endswith(
+            ".project"
+        ):
             ix.cmds.MakeLocalContext(ctx)
 
 
@@ -135,15 +135,20 @@ class Submission(object):
         else:
             raise NotImplementedError
 
+        self.localize_before_ship = self.node.get_attribute(
+            "localize_contexts"
+        ).get_bool()
         self.project_filename = ix.application.get_current_project_filename()
-        self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self.timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         self.timestamp_render_package = self.node.get_attribute(
-            "timestamp_render_package").get_bool()
+            "timestamp_render_package"
+        ).get_bool()
 
         self.tmpdir = Path(deps.CONDUCTOR_TMP_DIR)
         self.render_package_path = self._get_render_package_path()
         self.should_delete_render_package = self.node.get_attribute(
-            "clean_up_render_package").get_bool()
+            "clean_up_render_package"
+        ).get_bool()
 
         self.local_upload = self.node.get_attribute("local_upload").get_bool()
         self.force_upload = self.node.get_attribute("force_upload").get_bool()
@@ -170,13 +175,9 @@ class Submission(object):
         try:
             found = next(p for p in projects if str(p["name"]) == label)
         except StopIteration:
-            ix.log_error(
-                "Cannot find project \"{}\" at Conductor.".format(label))
+            ix.log_error('Cannot find project "{}" at Conductor.'.format(label))
 
-        return {
-            "id": found["id"],
-            "name": str(found["name"])
-        }
+        return {"id": found["id"], "name": str(found["name"])}
 
     def _get_notifications(self):
         """Get notification prefs."""
@@ -207,16 +208,15 @@ class Submission(object):
 
         pdirval = ix.application.get_factory().get_vars().get("PDIR").get_string()
 
-        tokens["ct_pdir"] = "\"{}\"".format(Path(pdirval).posix_path(
-            with_drive=False))
+        tokens["ct_pdir"] = '"{}"'.format(Path(pdirval).posix_path(with_drive=False))
 
-        tokens["ct_temp_dir"] = "{}".format(
-            self.tmpdir.posix_path(with_drive=False))
+        tokens["ct_temp_dir"] = "{}".format(self.tmpdir.posix_path(with_drive=False))
         tokens["ct_timestamp"] = self.timestamp
         tokens["ct_submitter"] = self.node.get_name()
 
-        tokens["ct_render_package"] = "\"{}\"".format(
-            self.render_package_path.posix_path(with_drive=False))
+        tokens["ct_render_package"] = '"{}"'.format(
+            self.render_package_path.posix_path(with_drive=False)
+        )
 
         tokens["ct_project"] = self.project["name"]
 
@@ -241,8 +241,9 @@ class Submission(object):
         current_filename = ix.application.get_current_project_filename()
         path = os.path.splitext(current_filename)[0]
 
-        path = os.path.join(os.path.dirname(
-            path), os.path.basename(path).replace(" ", "_"))
+        path = os.path.join(
+            os.path.dirname(path), os.path.basename(path).replace(" ", "_")
+        )
 
         try:
             if self.timestamp_render_package:
@@ -251,7 +252,10 @@ class Submission(object):
                 return Path("{}_ct.project".format(path))
         except GPathError as err:
             ix.log_error(
-                "Cannot create a submission from this file: \"{}\". Has it ever been saved?".format(current_filename))
+                'Cannot create a submission from this file: "{}". Has it ever been saved?'.format(
+                    current_filename
+                )
+            )
 
     def get_args(self):
         """Prepare the args for submission to conductor.
@@ -290,17 +294,22 @@ class Submission(object):
             try:
                 remote_job = conductor_submit.Submit(job_args)
                 response, response_code = remote_job.main()
-                results.append(
-                    {"code": response_code, "response": response})
+                results.append({"code": response_code, "response": response})
             except BaseException:
-                results.append({"code": "undefined", "response": "".join(
-                    traceback.format_exception(*sys.exc_info()))})
+                results.append(
+                    {
+                        "code": "undefined",
+                        "response": "".join(
+                            traceback.format_exception(*sys.exc_info())
+                        ),
+                    }
+                )
         for result in results:
             ix.log_info(result)
 
         self._after_submit()
 
-        return(results)
+        return results
 
     def _before_submit(self):
         """"""
@@ -320,33 +329,36 @@ class Submission(object):
 
         app = ix.application
         self._before_write_package()
+        current_filename = app.get_current_project_filename()
 
         package_file = self.render_package_path.posix_path()
         success = ix.application.save_project(package_file)
 
+        ix.application.set_current_project_filename(current_filename)
+
         if os.environ.get("CONDUCTOR_SAVE_SNAPSHOTS"):
             filename = os.path.join(
-                os.path.dirname(
-                    app.get_current_project_filename()),
-                "ct_debug.project")
+                os.path.dirname(app.get_current_project_filename()), "ct_debug.project"
+            )
             with cu.disabled_app():
                 app.save_project_snapshot(filename)
 
         self._after_write_package()
 
         if not success:
-            ix.log_error(
-                "Failed to export render package {}".format(package_file))
+            ix.log_error("Failed to export render package {}".format(package_file))
 
         ix.log_info("Wrote package to {}".format(package_file))
         return package_file
 
     def _before_write_package(self):
         """Prepare to write render package."""
-        _localize_contexts()
+        if self.localize_before_ship:
+            _localize_contexts()
+            _remove_conductor()
+
         self._prepare_temp_directory()
         self._copy_scripts_to_temp()
-        _remove_conductor()
 
     def _prepare_temp_directory(self):
         """Make sure the temp directory has a conductor subdirectory.
@@ -363,15 +375,23 @@ class Submission(object):
     def _copy_scripts_to_temp(self):
         for script in deps.CONDUCTOR_SCRIPTS:
             script_path = os.path.join(SCRIPTS_DIRECTORY, script)
-            if (os.path.isfile(script_path)):
+            if os.path.isfile(script_path):
                 shutil.copy(script_path, self.tmpdir.posix_path())
 
     def _after_submit(self):
         self._delete_render_package()
 
     def _after_write_package(self):
-        """Cleanup."""
-        self._revert_to_saved_scene()
+        """
+        Runs operations after saving the render package.
+
+        If we did something destructive, like localize contexts, then
+        a backup will have been saved and we now reload it. This strategy
+        is used because Clarisse's undo is broken when it comes to 
+        undoing context localization.  
+        """
+        if self.localize_before_ship:
+            self._revert_to_saved_scene()
 
     def _delete_render_package(self):
         if self.should_delete_render_package:

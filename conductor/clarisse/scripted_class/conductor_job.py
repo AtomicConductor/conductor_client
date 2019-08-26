@@ -4,11 +4,18 @@ import logging
 
 import ix
 from conductor.clarisse import reloader
-from conductor.clarisse.scripted_class import (attr_docs, debug_ui, environment_ui,
-                                               extra_uploads_ui, frames_ui,
-                                               notifications_ui, packages_ui,
-                                               projects_ui, refresh,
-                                               submit_actions)
+from conductor.clarisse.scripted_class import (
+    attr_docs,
+    debug_ui,
+    environment_ui,
+    extra_uploads_ui,
+    frames_ui,
+    notifications_ui,
+    packages_ui,
+    projects_ui,
+    refresh,
+    submit_actions,
+)
 from conductor.native.lib.data_block import PROJECT_NOT_SET
 from conductor.lib import loggeria
 
@@ -41,11 +48,9 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 extra_uploads_ui.build(obj, data)
             elif action_name == "manage_extra_environment":
                 environment_ui.build(obj, data)
-            elif action_name == "preview":
+            elif action_name == "preflight":
                 refresh.refresh(obj)
                 submit_actions.preview(obj, data)
-            elif action_name == "export_render_package":
-                refresh.refresh(obj)
                 submit_actions.export_render_package(obj, data)
             elif action_name == "submit":
                 refresh.refresh(obj)
@@ -134,10 +139,12 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             self.add_action(s_class, "reload", "development")
 
         attr = s_class.add_attribute(
-            "conductor_log_level", OfAttr.TYPE_LONG,
+            "conductor_log_level",
+            OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "debug")
+            "debug",
+        )
         attr.set_long(5)
         # start NOTSET - update on refresh
         for i, level in enumerate(loggeria.LEVELS):
@@ -148,11 +155,11 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "debug")
+            "debug",
+        )
         attr.set_bool(False)
 
-
-   def declare_packaging_attributes(self, s_class):
+    def declare_packaging_attributes(self, s_class):
 
         self.add_action(s_class, "export_render_package", "packaging")
 
@@ -161,7 +168,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "packaging")
+            "packaging",
+        )
         attr.set_bool(False)
 
         attr = s_class.add_attribute(
@@ -169,7 +177,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "packaging")
+            "packaging",
+        )
         attr.set_bool(False)
 
         attr = s_class.add_attribute(
@@ -177,15 +186,14 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "packaging")
+            "packaging",
+        )
         attr.set_bool(True)
-
-
 
     def declare_actions(self, s_class):
         """Attributes concerned with submission."""
         self.add_action(s_class, "connect", "actions")
-        self.add_action(s_class, "preview", "actions")
+        self.add_action(s_class, "preflight", "actions")
         self.add_action(s_class, "submit", "actions")
 
     def declare_general_attributes(self, s_class):
@@ -196,7 +204,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "general")
+            "general",
+        )
         attr.set_string(DEFAULT_TITLE)
         # attr.activate_expression(True)
 
@@ -205,17 +214,20 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_REFERENCE,
             OfAttr.CONTAINER_LIST,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "general")
-        cstr = ix.api.CoreString()
-        filters = ix.api.CoreStringBasicArray(cstr, 1)
-        filters.set_item(0, "Image")
+            "general",
+        )
+        filters = ix.api.CoreStringVector(0)
+        filters.add("Layer")
+        filters.add("Image")
         attr.set_object_filters(filters)
 
         attr = s_class.add_attribute(
-            "conductor_project_name", OfAttr.TYPE_LONG,
+            "conductor_project_name",
+            OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "general")
+            "general",
+        )
         attr.set_long(0)
         attr.add_preset(PROJECT_NOT_SET["name"], "0")
 
@@ -224,7 +236,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "general")
+            "general",
+        )
         attr.set_hidden(True)
 
     def declare_frames_attributes(self, s_class):
@@ -235,7 +248,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "frames")
+            "frames",
+        )
         attr.set_bool(False)
 
         attr = s_class.add_attribute(
@@ -243,7 +257,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "frames")
+            "frames",
+        )
         attr.set_hidden(True)
         attr.set_string("2,4-8,10-50x2")
 
@@ -252,7 +267,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "frames")
+            "frames",
+        )
         attr.set_long(5)
         attr.set_numeric_range_min(1)
         self.add_action(s_class, "best_chunk_size", "frames")
@@ -262,7 +278,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "frames")
+            "frames",
+        )
         attr.set_bool(False)
 
         attr = s_class.add_attribute(
@@ -270,26 +287,30 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "frames")
+            "frames",
+        )
         attr.set_hidden(True)
         attr.set_string("2,4-8,10-50x2")
 
         attr = s_class.add_attribute(
-            "tiles", OfAttr.TYPE_LONG,
+            "tiles",
+            OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "frames")
+            "frames",
+        )
         attr.set_long(1)
         # start NOTSET - update on refresh
         for i in range(1, 11):
-            [attr.add_preset("{}x{}={}".format(i, i, i*i), str(i))]
+            [attr.add_preset("{}x{}={}".format(i, i, i * i), str(i))]
 
         attr = s_class.add_attribute(
             "frames_info",
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "frames")
+            "frames",
+        )
         attr.set_read_only(True)
         attr.set_string("- Please click connect -")
 
@@ -301,14 +322,17 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "machines")
+            "machines",
+        )
         attr.set_bool(True)
 
         attr = s_class.add_attribute(
-            "instance_type", OfAttr.TYPE_LONG,
+            "instance_type",
+            OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "machines")
+            "machines",
+        )
         attr.set_long(0)
         attr.add_preset("- Please click connect -", "0")
 
@@ -317,7 +341,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "machines")
+            "machines",
+        )
         attr.set_long(3)
 
         attr = s_class.add_attribute(
@@ -325,7 +350,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "machines")
+            "machines",
+        )
         attr.set_hidden(True)
 
     def declare_upload_attributes(self, s_class):
@@ -338,10 +364,12 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         """
 
         attr = s_class.add_attribute(
-            "dependency_scan_policy", OfAttr.TYPE_LONG,
+            "dependency_scan_policy",
+            OfAttr.TYPE_LONG,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "upload")
+            "upload",
+        )
         attr.set_long(2)
         attr.add_preset("No scan", "0")
         attr.add_preset("Glob sequence", "1")
@@ -352,7 +380,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "upload")
+            "upload",
+        )
         attr.set_bool(True)
 
         attr = s_class.add_attribute(
@@ -360,7 +389,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "upload")
+            "upload",
+        )
         attr.set_bool(False)
 
         attr = s_class.add_attribute(
@@ -368,9 +398,9 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "upload")
+            "upload",
+        )
         attr.set_bool(False)
-
 
         self.add_action(s_class, "manage_extra_uploads", "upload")
 
@@ -379,7 +409,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_LIST,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "cached_upload_list")
+            "cached_upload_list",
+        )
         attr.set_read_only(True)
 
     def declare_packages_attributes(self, s_class):
@@ -394,10 +425,9 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_LIST,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "packages")
+            "packages",
+        )
         attr.set_read_only(True)
-
-
 
     def declare_task_attributes(self, s_class):
         """This is the task command template.
@@ -411,11 +441,10 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "task")
+            "task",
+        )
         attr.set_string(DEFAULT_CMD_TEMPLATE)
         # attr.activate_expression(True)
-
-
 
     def declare_environment_attributes(self, s_class):
         """Set up any extra environment.
@@ -429,7 +458,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_LIST,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "environment")
+            "environment",
+        )
         attr.set_read_only(True)
 
     def declare_notification_attributes(self, s_class):
@@ -439,7 +469,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_BOOL,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "notifications")
+            "notifications",
+        )
         attr.set_bool(False)
 
         attr = s_class.add_attribute(
@@ -447,5 +478,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.TYPE_STRING,
             OfAttr.CONTAINER_SINGLE,
             OfAttr.VISUAL_HINT_DEFAULT,
-            "notifications")
+            "notifications",
+        )
         attr.set_read_only(True)

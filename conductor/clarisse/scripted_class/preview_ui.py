@@ -4,9 +4,10 @@ This is required because Clarisse's attribute editor doesn't allow
 custom UI to be embedded.
 """
 
-import json
 
+import json
 import ix
+import conductor.clarisse.utils as cu
 
 C_LEFT = ix.api.GuiWidget.CONSTRAINT_LEFT
 C_TOP = ix.api.GuiWidget.CONSTRAINT_TOP
@@ -24,7 +25,7 @@ PADDING = 5
 SYMBOL_BUT_WIDTH = 30
 CHECKBOX_WIDTH = 50
 
-BOTTOM_BUT_WIDTH = WIDTH / 3
+BOTTOM_BUT_WIDTH = WIDTH / 4
 
 
 def show_submission_responses(responses):
@@ -34,20 +35,21 @@ def show_submission_responses(responses):
 
     """
 
-    success_jobs = [response["response"]["uri"]
-                    for response in responses if response.get("code") == 201]
+    success_jobs = [
+        response["response"]["uri"]
+        for response in responses
+        if response.get("code") == 201
+    ]
 
     messages = []
     if success_jobs:
         success_msg = ", ".join(success_jobs)
         messages.append("Successful submissions\n{}".format(success_msg))
 
-    num_failed = len(
-        [response for response in responses if response.get("code") > 201])
+    num_failed = len([response for response in responses if response.get("code") > 201])
 
     if num_failed:
-        messages.append(
-            "Number of failed submissions: {:d}".format(num_failed))
+        messages.append("Number of failed submissions: {:d}".format(num_failed))
 
     if messages:
         msg = "\n".join(messages)
@@ -55,7 +57,11 @@ def show_submission_responses(responses):
         msg = "No jobs were submitted"
 
     ix.application.message_box(
-        msg, "Conductor Submission: Info", ix.api.AppDialog.yes(), ix.api.AppDialog.STYLE_OK)
+        msg,
+        "Conductor Submission: Info",
+        ix.api.AppDialog.yes(),
+        ix.api.AppDialog.STYLE_OK,
+    )
 
 
 class PreviewWindow(ix.api.GuiWindow):
@@ -67,44 +73,41 @@ class PreviewWindow(ix.api.GuiWindow):
     def __init__(self, submission, can_submit):
         window_height = HEIGHT + BTN_HEIGHT
 
-        super(PreviewWindow, self).__init__(ix.application.get_event_window(),
-                                            WINDOW_LEFT,
-                                            WINDOW_TOP,
-                                            WIDTH,
-                                            window_height,
-                                            "Submission Preview")
+        super(PreviewWindow, self).__init__(
+            ix.application.get_event_window(),
+            WINDOW_LEFT,
+            WINDOW_TOP,
+            WIDTH,
+            window_height,
+            "Submission Preview",
+        )
 
         self.submission = submission
         self.text_widget = ix.api.GuiTextEdit(self, 0, 0, WIDTH, HEIGHT)
         self.text_widget.set_constraints(C_LEFT, C_TOP, C_RIGHT, C_BOTTOM)
         self.text_widget.set_read_only(True)
         self.close_but = ix.api.GuiPushButton(
-            self, 0, HEIGHT, BOTTOM_BUT_WIDTH, BTN_HEIGHT, "Close")
+            self, 0, HEIGHT, BOTTOM_BUT_WIDTH, BTN_HEIGHT, "Close"
+        )
         self.close_but.set_constraints(C_LEFT, C_BOTTOM, C_LEFT, C_BOTTOM)
-        self.connect(
-            self.close_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_close_but)
+        self.connect(self.close_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_close_but)
 
         self.spacer_but = ix.api.GuiPushButton(
-            self,
-            BOTTOM_BUT_WIDTH,
-            HEIGHT,
-            BOTTOM_BUT_WIDTH,
-            BTN_HEIGHT,
-            "")
+            self, BOTTOM_BUT_WIDTH, HEIGHT, BOTTOM_BUT_WIDTH, BTN_HEIGHT, ""
+        )
         self.spacer_but.set_constraints(C_LEFT, C_BOTTOM, C_RIGHT, C_BOTTOM)
         self.spacer_but.set_enable(False)
 
-        # self.write_but = ix.api.GuiPushButton(
-        #     self,
-        #     (WIDTH - (BOTTOM_BUT_WIDTH*2)),
-        #     HEIGHT,
-        #     BOTTOM_BUT_WIDTH,
-        #     BTN_HEIGHT,
-        #     "Write package only")
-        # self.write_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
-        # self.write_but.set_enable(can_submit)
+        self.write_but = ix.api.GuiPushButton(
+            self,
+            (WIDTH - (BOTTOM_BUT_WIDTH * 2)),
+            HEIGHT,
+            BOTTOM_BUT_WIDTH,
+            BTN_HEIGHT,
+            "Write package only",
+        )
+        self.write_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
+        self.write_but.set_enable(can_submit)
 
         self.go_but = ix.api.GuiPushButton(
             self,
@@ -112,18 +115,13 @@ class PreviewWindow(ix.api.GuiWindow):
             HEIGHT,
             BOTTOM_BUT_WIDTH,
             BTN_HEIGHT,
-            "Submit")
+            "Submit",
+        )
         self.go_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
         self.go_but.set_enable(can_submit)
 
-        # self.connect(
-        #     self.write_but,
-        #     'EVT_ID_PUSH_BUTTON_CLICK',
-        #     self.on_write_but)
-        self.connect(
-            self.go_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_go_but)
+        self.connect(self.write_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_write_but)
+        self.connect(self.go_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_go_but)
 
         self._populate()
 
@@ -144,20 +142,19 @@ class PreviewWindow(ix.api.GuiWindow):
         """
         self.hide()
 
-    # def on_write_but(self, sender, eventid):
-    #     """Submit and keep the window visible."""
-    #     package_path = self.submission.write_render_package()
-    #     ix.log_info("Wrote package to {}".format(package_path))
+    def on_write_but(self, sender, eventid):
+        """  and keep the window visible."""
+        with cu.waiting_cursor():
+            package_path = self.submission.write_render_package()
+        ix.log_info("Wrote package to {}".format(package_path))
 
     def on_go_but(self, sender, eventid):
         """Submit and hide(destroy) the window."""
-        responses = self.submission.submit()
+        with cu.waiting_cursor():
+            responses = self.submission.submit()
 
         self.hide()
-
         show_submission_responses(responses)
-
-        # self.hide()
 
 
 def build(submission, **kw):

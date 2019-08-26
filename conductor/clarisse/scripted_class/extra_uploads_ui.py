@@ -83,8 +83,9 @@ class FileListWidget(ix.api.GuiTree):
 
         Get in reverse order so they don't change during removal.
         """
-        indices = sorted([i for i, item in enumerate(
-            self.item_list) if item.is_selected()])
+        indices = sorted(
+            [i for i, item in enumerate(self.item_list) if item.is_selected()]
+        )
         indices.reverse()
         return indices
 
@@ -112,47 +113,53 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
             WINDOW_TOP,
             WIDTH,
             window_height,
-            "Extra uploads")
+            "Extra uploads",
+        )
         self.set_resizable(False)
 
         current_y = 0
         self.browse_but = ix.api.GuiPushButton(
-            self, (WIDTH - BTN_WIDTH), current_y,
-            BTN_WIDTH, BTN_HEIGHT, "Browse")
-        self.connect(
-            self.browse_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_browse_but)
+            self, (WIDTH - BTN_WIDTH), current_y, BTN_WIDTH, BTN_HEIGHT, "Browse"
+        )
+        self.connect(self.browse_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_browse_but)
 
         self.smart_scan_but = ix.api.GuiPushButton(
-            self, (WIDTH - (BTN_WIDTH * 2)), current_y,
-            BTN_WIDTH, BTN_HEIGHT, "Smart scan")
+            self,
+            (WIDTH - (BTN_WIDTH * 2)),
+            current_y,
+            BTN_WIDTH,
+            BTN_HEIGHT,
+            "Smart scan",
+        )
         self.connect(
-            self.smart_scan_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_smart_scan_but)
+            self.smart_scan_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_smart_scan_but
+        )
 
         self.glob_scan_but = ix.api.GuiPushButton(
-            self, (WIDTH - (BTN_WIDTH * 3)), current_y,
-            BTN_WIDTH, BTN_HEIGHT, "Glob scan")
+            self,
+            (WIDTH - (BTN_WIDTH * 3)),
+            current_y,
+            BTN_WIDTH,
+            BTN_HEIGHT,
+            "Glob scan",
+        )
         self.connect(
-            self.glob_scan_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_glob_scan_but)
+            self.glob_scan_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_glob_scan_but
+        )
 
         self.remove_sel_but = ix.api.GuiPushButton(
-            self, 0, current_y, BTN_WIDTH, BTN_HEIGHT, "Remove selected")
+            self, 0, current_y, BTN_WIDTH, BTN_HEIGHT, "Remove selected"
+        )
         self.connect(
-            self.remove_sel_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_remove_sel_but)
+            self.remove_sel_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_remove_sel_but
+        )
 
         self.remove_all_but = ix.api.GuiPushButton(
-            self, BTN_WIDTH, current_y, BTN_WIDTH, BTN_HEIGHT, "Remove all")
+            self, BTN_WIDTH, current_y, BTN_WIDTH, BTN_HEIGHT, "Remove all"
+        )
         self.connect(
-            self.remove_all_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_remove_all_but)
+            self.remove_all_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_remove_all_but
+        )
 
         current_y += BTN_HEIGHT
         self.file_list_wdg = FileListWidget(self, current_y)
@@ -161,27 +168,19 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         go_btn_width = int(WIDTH / 3)
 
         self.close_but = ix.api.GuiPushButton(
-            self, 0, current_y, go_btn_width, BTN_HEIGHT, "Close")
-        self.connect(
-            self.close_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_close_but)
+            self, 0, current_y, go_btn_width, BTN_HEIGHT, "Close"
+        )
+        self.connect(self.close_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_close_but)
 
         self.apply_but = ix.api.GuiPushButton(
-            self, go_btn_width, current_y, go_btn_width, BTN_HEIGHT, "Apply")
-        self.connect(
-            self.apply_but,
-            'EVT_ID_PUSH_BUTTON_CLICK',
-            self.on_apply_but)
+            self, go_btn_width, current_y, go_btn_width, BTN_HEIGHT, "Apply"
+        )
+        self.connect(self.apply_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_apply_but)
 
         self.go_but = ix.api.GuiPushButton(
-            self,
-            (WIDTH - go_btn_width),
-            current_y,
-            go_btn_width,
-            BTN_HEIGHT,
-            "Go")
-        self.connect(self.go_but, 'EVT_ID_PUSH_BUTTON_CLICK', self.on_go_but)
+            self, (WIDTH - go_btn_width), current_y, go_btn_width, BTN_HEIGHT, "Go"
+        )
+        self.connect(self.go_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_go_but)
 
     def on_browse_but(self, sender, eventid):
         """User may browse for files."""
@@ -192,12 +191,14 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_smart_scan_but(self, sender, eventid):
-        filenames = deps.get_scan(self.node, deps.SMART)
+        include_references = not self.node.get_attribute("localize_contexts").get_bool()
+        filenames = deps.get_scan(self.node, deps.SMART, include_references)
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_glob_scan_but(self, sender, eventid):
-        filenames = deps.get_scan(self.node, deps.GLOB)
+        include_references = not self.node.get_attribute("localize_contexts").get_bool()
+        filenames = deps.get_scan(self.node, deps.GLOB, include_references)
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 

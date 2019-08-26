@@ -1,4 +1,3 @@
-
 def handle_instance_type(obj, attr):
     """When instance type changes, remember the string.
 
@@ -12,7 +11,14 @@ def handle_instance_type(obj, attr):
 
 
 def update(obj, data_block):
-    """Rebuild the entire menu."""
+    """
+    Rebuilds the instance types menu.
+
+    Args:
+        obj (ConductorJob): Item on which to rebuild menu.
+        data_block (ConductorDataBlock): Singleton object containing instance types
+    """
+
     instance_types = data_block.instance_types()
     instance_type_att = obj.get_attribute("instance_type")
     instance_type_att.remove_all_presets()

@@ -24,14 +24,19 @@ SAVE_STATE_UNMODIFIED = 0
 SAVE_STATE_CANCELLED = 1
 SAVE_STATE_SAVED = 2
 SAVE_STATE_NO = 3
+SAVE_STATE_DONT_CARE = 4
 
 
-def check_need_save(which):
+def check_need_save(node, which):
     """Check if the current project is modified and proposed to save it.
 
     If user chooses to save, then save it and return the filename along
     with an enum response.
     """
+
+    if not node.get_attribute("localize_contexts").get_bool():
+        return SAVE_STATE_DONT_CARE, None
+
     if which == SUBMIT_DIRECT:
         msg = "Save the project?\nYou must save the project if you wish to submit."
     elif which == PREVIEW_FIRST:
@@ -43,14 +48,17 @@ def check_need_save(which):
     app = ix.application
     if not ix.application.is_project_modified():
         return SAVE_STATE_UNMODIFIED, None
-
+    # fsdhfklhsfdsjf
     clarisse_window = ix.application.get_event_window()
     box = ix.api.GuiMessageBox(
-        app, 0, 0, "Conductor Information - project not saved!", msg)
-    x = (2 * clarisse_window.get_x() +
-         clarisse_window.get_width() - box.get_width()) / 2
-    y = (2 * clarisse_window.get_y() +
-         clarisse_window.get_height() - box.get_height()) / 2
+        app, 0, 0, "Conductor Information - project not saved!", msg
+    )
+    x = (
+        2 * clarisse_window.get_x() + clarisse_window.get_width() - box.get_width()
+    ) / 2
+    y = (
+        2 * clarisse_window.get_y() + clarisse_window.get_height() - box.get_height()
+    ) / 2
     box.resize(x, y, box.get_width(), box.get_height())
     if which == SUBMIT_DIRECT or which == WRITE_PACKAGE_ONLY:
         box.set_style(ix.api.AppDialog.STYLE_YES_NO)
@@ -66,17 +74,14 @@ def check_need_save(which):
     if response.is_no():
         return SAVE_STATE_NO, None
 
-    # response.is_yes()
+    # response is yes
     current_filename = ix.application.get_current_project_filename()
 
     if current_filename == "":
         current_filename = "untitled"
     filename = ix.api.GuiWidget.save_file(
-        app,
-        current_filename,
-        "Save Scene File...",
-        "Project Files\t*." +
-        "project")
+        app, current_filename, "Save Scene File...", "Project Files\t*." + "project"
+    )
     if filename != "":
         ix.application.save_project(filename)
         return SAVE_STATE_SAVED, filename
@@ -87,16 +92,17 @@ def check_need_save(which):
 
 def submit(*args):
     """Validate and submit directly."""
-    state, fn = check_need_save(SUBMIT_DIRECT)
-    if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]:
+    node = args[0]
+
+    state, fn = check_need_save(node, SUBMIT_DIRECT)
+    if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED, SAVE_STATE_DONT_CARE]:
         ix.log_warning("Submission cancelled.")
         return
-    obj = args[0]
-    _validate_images(obj)
-    _validate_packages(obj)
+    _validate_images(node)
+    _validate_packages(node)
 
     with cu.waiting_cursor():
-        submission = Submission(obj)
+        submission = Submission(node)
         responses = submission.submit()
 
     preview_ui.show_submission_responses(responses)
@@ -107,15 +113,21 @@ def preview(*args):
 
     Submission can be invoked from the preview panel.
     """
-    state, fn = check_need_save(PREVIEW_FIRST)
+    node = args[0]
+
+    state, fn = check_need_save(node, PREVIEW_FIRST)
     if state == SAVE_STATE_CANCELLED:
-        ix.log_warning("Preview cancelled.")
+        ix.log_warning("Preflight cancelled.")
         return
-    can_submit = state in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]
-    obj = args[0]
-    _validate(obj)
+    can_submit = state in [
+        SAVE_STATE_UNMODIFIED,
+        SAVE_STATE_SAVED,
+        SAVE_STATE_DONT_CARE,
+    ]
+
+    _validate(node)
     with cu.waiting_cursor():
-        submission = Submission(obj)
+        submission = Submission(node)
     preview_ui.build(submission, can_submit=can_submit)
 
 
@@ -124,50 +136,52 @@ def export_render_package(*args):
 
     Useful if the user wants to run one of the commands on it locally.
     """
-    state, fn = check_need_save(PREVIEW_FIRST)
-    if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED]:
+    node = args[0]
+    state, fn = check_need_save(node, WRITE_PACKAGE_ONLY)
+    if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED, SAVE_STATE_DONT_CARE]:
         ix.log_warning("Export cancelled.")
         return
-    obj = args[0]
-    _validate_images(obj)
+    _validate_images(node)
     with cu.waiting_cursor():
-        submission = Submission(obj)
+        submission = Submission(node)
         submission.write_render_package()
 
 
-def _validate(obj):
-    _validate_images(obj)
-    _validate_packages(obj)
-    _validate_project(obj)
+def _validate(node):
+    _validate_images(node)
+    _validate_packages(node)
+    _validate_project(node)
 
 
-def _validate_images(obj):
+def _validate_images(node):
     """Check some images are present to be rendered.
-
     Then check that they are set up to save to disk.
     """
     images = ix.api.OfObjectArray()
-    obj.get_attribute("images").get_values(images)
+    node.get_attribute("images").get_values(images)
     if not images.get_count():
-        ix.log_error(
-            "No render images. Please reference one or more image items")
+        ix.log_error("No render images. Please reference one or more image items")
 
     for image in images:
         if not image.get_attribute("render_to_disk").get_bool():
             ix.log_error(
                 "Image does not have render_to_disk attribute set: {}".format(
-                    image.get_full_name()))
+                    image.get_full_name()
+                )
+            )
 
         save_path = image.get_attribute("save_as").get_string()
         if not save_path:
             ix.log_error(
-                "Image save_as path is not set: {}".format(
-                    image.get_full_name()))
+                "Image save_as path is not set: {}".format(image.get_full_name())
+            )
         if save_path.endswith("/"):
             ix.log_error(
                 "Image save_as path must be a filename, \
                 not a directory: {}".format(
-                    image.get_full_name()))
+                    image.get_full_name()
+                )
+            )
 
 
 def _validate_packages(obj):
@@ -175,11 +189,12 @@ def _validate_packages(obj):
     attr = obj.get_attribute("packages")
     paths = ix.api.CoreStringArray()
     attr.get_values(paths)
-    if any(path.startswith('clarisse') for path in paths):
+    if any(path.startswith("clarisse") for path in paths):
         return
     ix.log_error(
         "No Clarisse package detected. \
-        Please use the package chooser to find one.")
+        Please use the package chooser to find one."
+    )
 
 
 def _validate_project(obj):
@@ -188,9 +203,15 @@ def _validate_project(obj):
     project_att = obj.get_attribute("conductor_project_name")
     label = project_att.get_applied_preset_label()
     if label == PROJECT_NOT_SET["name"]:
-        ix.log_error("Project is not set for \"{}\".".format(obj.get_name()))
+        ix.log_error('Project is not set for "{}".'.format(obj.get_name()))
     try:
         next(p for p in projects if str(p["name"]) == label)
     except StopIteration:
         ix.log_error(
-            "Cannot find project \"{}\" at Conductor. Please ensure the PROJECT dropdown contains a valid project.".format(label))
+            'Cannot find project "{}" at Conductor. \
+                Please ensure the PROJECT dropdown contains a \
+                valid project.'.format(
+                label
+            )
+        )
+
