@@ -329,14 +329,19 @@ class Submission(object):
         """
 
         app = ix.application
+        clarisse_window = app.get_event_window()
+
         self._before_write_package()
         current_filename = app.get_current_project_filename()
+        current_window_title = clarisse_window.get_title()
 
         package_file = self.render_package_path.posix_path()
         with cu.disabled_app():
             success = ix.application.save_project(package_file)
             ix.application.set_current_project_filename(current_filename)
+            clarisse_window.set_title(current_window_title)
 
+        # Now that we save a project file
         if os.environ.get("CONDUCTOR_SAVE_SNAPSHOTS"):
             filename = os.path.join(
                 os.path.dirname(app.get_current_project_filename()), "ct_debug.project"

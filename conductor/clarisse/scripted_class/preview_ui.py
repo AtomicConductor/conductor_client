@@ -49,7 +49,9 @@ def show_submission_responses(responses):
     num_failed = len([response for response in responses if response.get("code") > 201])
 
     if num_failed:
-        messages.append("Number of failed submissions: {:d}".format(num_failed))
+        messages.append(
+            "Number of failed/cancelled submissions: {:d}".format(num_failed)
+        )
 
     if messages:
         msg = "\n".join(messages)

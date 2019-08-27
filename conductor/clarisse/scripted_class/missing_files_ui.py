@@ -21,6 +21,8 @@ WINDOW_TOP = 200
 HEIGHT = 500
 WIDTH = 800
 PADDING = 5
+TITLE_PANEL_HEIGHT = 60
+
 
 SYMBOL_BUT_WIDTH = 30
 CHECKBOX_WIDTH = 50
@@ -28,46 +30,10 @@ CHECKBOX_WIDTH = 50
 BOTTOM_BUT_WIDTH = WIDTH / 3
 
 
-# def show_submission_responses(responses):
-#     """Pop up an info dialog after submission.
-
-#     The dialog is equipped to handle the results of an array of submissions.
-
-#     """
-
-#     success_jobs = [
-#         response["response"]["uri"]
-#         for response in responses
-#         if response.get("code") == 201
-#     ]
-
-#     messages = []
-#     if success_jobs:
-#         success_msg = ", ".join(success_jobs)
-#         messages.append("Successful submissions\n{}".format(success_msg))
-
-#     num_failed = len([response for response in responses if response.get("code") > 201])
-
-#     if num_failed:
-#         messages.append("Number of failed submissions: {:d}".format(num_failed))
-
-#     if messages:
-#         msg = "\n".join(messages)
-#     else:
-#         msg = "No jobs were submitted"
-
-#     ix.application.message_box(
-#         msg,
-#         "Conductor Submission: Info",
-#         ix.api.AppDialog.yes(),
-#         ix.api.AppDialog.STYLE_OK,
-#     )
-
-
 class MissingFilesWindow(ix.api.GuiWindow):
     """The entire window.
 
-    Holds the panel plus buttons to Submit or Cancel.
+    Holds the panel plus buttons to Continue or Cancel.
     """
 
     def __init__(self, files):
@@ -84,11 +50,30 @@ class MissingFilesWindow(ix.api.GuiWindow):
 
         self.result = False
         self.files = files
-        self.text_widget = ix.api.GuiTextEdit(self, 0, 0, WIDTH, HEIGHT)
+
+        self.title_widget = ix.api.GuiTextEdit(self, 0, 0, WIDTH, TITLE_PANEL_HEIGHT)
+        self.title_widget.set_constraints(C_LEFT, C_TOP, C_RIGHT, C_TOP)
+        self.title_widget.set_read_only(True)
+
+        plural = len(files) > 1
+        message = "Your project refers to {:d} {} exist on disk.\n".format(
+            len(files), "files that do not" if plural else "file that does not"
+        )
+        message += "See the list of missing files below.\n\n"
+        message += "You may continue the submission without {} or Cancel.".format(
+            "them" if plural else "it"
+        )
+        self.title_widget.set_text(message)
+        self.title_widget.set_font_size(14)
+
+        self.text_widget = ix.api.GuiTextEdit(
+            self, 0, TITLE_PANEL_HEIGHT, WIDTH, HEIGHT - TITLE_PANEL_HEIGHT
+        )
         self.text_widget.set_constraints(C_LEFT, C_TOP, C_RIGHT, C_BOTTOM)
+
         self.text_widget.set_read_only(True)
         self.close_but = ix.api.GuiPushButton(
-            self, 0, HEIGHT, BOTTOM_BUT_WIDTH, BTN_HEIGHT, "Close"
+            self, 0, HEIGHT, BOTTOM_BUT_WIDTH, BTN_HEIGHT, "Cancel"
         )
         self.close_but.set_constraints(C_LEFT, C_BOTTOM, C_LEFT, C_BOTTOM)
         self.connect(self.close_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_close_but)
@@ -105,7 +90,7 @@ class MissingFilesWindow(ix.api.GuiWindow):
             HEIGHT,
             BOTTOM_BUT_WIDTH,
             BTN_HEIGHT,
-            "Submit",
+            "Continue",
         )
         self.go_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
         # self.go_but.set_enable(can_submit)

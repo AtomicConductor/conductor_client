@@ -38,6 +38,9 @@ CONDUCTOR_SCRIPTS = ["ct_prep.py", "ct_cnode"]
 CONDUCTOR_TMP_DIR = os.path.join(
     ix.application.get_factory().get_vars().get("CTEMP").get_string(), "conductor"
 )
+# CLARISSE_CONFIG_FILE = = os.path.join(
+#     ix.application.get_factory().get_vars().get("CLARISSE_USER_CONFIG_DIR").get_string(), "conductor"
+# )
 
 
 def collect(obj):
