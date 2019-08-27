@@ -58,6 +58,7 @@ import conductor.clarisse.scripted_class.dependencies as deps
 import conductor.clarisse.utils as cu
 import ix
 from conductor.clarisse.scripted_class import frames_ui
+from conductor.clarisse.scripted_class import missing_files_ui
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
@@ -101,11 +102,6 @@ def _remove_conductor():
     ix.application.get_factory().get_objects("ConductorJob", objects)
     for item in list(objects):
         ix.application.get_factory().remove_item(item.get_full_name())
-
-
-# def _get_temp_directory():
-#     tmpdir = ix.application.get_factory().get_vars().get("CTEMP").get_string()
-#     return os.path.join(tmpdir, "conductor")
 
 
 class Submission(object):
@@ -286,34 +282,39 @@ class Submission(object):
 
         Collect responses and show them in the log.
         """
+        submission_args = self.get_args()
+        self.write_render_package()
 
-        self._before_submit()
-
+        do_submission, submission_args = self.legalize_upload_paths(submission_args)
         results = []
-        for job_args in self.get_args():
-            try:
-                remote_job = conductor_submit.Submit(job_args)
-                response, response_code = remote_job.main()
-                results.append({"code": response_code, "response": response})
-            except BaseException:
-                results.append(
-                    {
-                        "code": "undefined",
-                        "response": "".join(
-                            traceback.format_exception(*sys.exc_info())
-                        ),
-                    }
-                )
-        for result in results:
-            ix.log_info(result)
+        if do_submission:
+
+            for job_args in submission_args:
+                try:
+                    remote_job = conductor_submit.Submit(job_args)
+                    response, response_code = remote_job.main()
+                    results.append({"code": response_code, "response": response})
+                except BaseException:
+                    results.append(
+                        {
+                            "code": "undefined",
+                            "response": "".join(
+                                traceback.format_exception(*sys.exc_info())
+                            ),
+                        }
+                    )
+            for result in results:
+                ix.log_info(result)
+        else:
+            return [{"code": "undefined", "response": "Submission cancelled by user"}]
 
         self._after_submit()
-
         return results
 
-    def _before_submit(self):
-        """"""
-        self.write_render_package()
+    # def _before_submit(self):
+    #     """"""
+    #     self.write_render_package()
+    #     self.validate_upload_paths()
 
     def write_render_package(self):
         """Write a package suitable for rendering.
@@ -332,9 +333,9 @@ class Submission(object):
         current_filename = app.get_current_project_filename()
 
         package_file = self.render_package_path.posix_path()
-        success = ix.application.save_project(package_file)
-
-        ix.application.set_current_project_filename(current_filename)
+        with cu.disabled_app():
+            success = ix.application.save_project(package_file)
+            ix.application.set_current_project_filename(current_filename)
 
         if os.environ.get("CONDUCTOR_SAVE_SNAPSHOTS"):
             filename = os.path.join(
@@ -350,6 +351,20 @@ class Submission(object):
 
         ix.log_info("Wrote package to {}".format(package_file))
         return package_file
+
+    def legalize_upload_paths(self, submission_args):
+        missing_files = []
+
+        for job_args in submission_args:
+            existing_files = []
+            for path in job_args["upload_paths"]:
+                existing_files.append(path) if os.path.exists(
+                    path
+                ) else missing_files.append(path)
+            job_args["upload_paths"] = existing_files
+        if not missing_files_ui.proceed(missing_files):
+            return (False, [])
+        return (True, submission_args)
 
     def _before_write_package(self):
         """Prepare to write render package."""
@@ -401,9 +416,8 @@ class Submission(object):
 
     def _revert_to_saved_scene(self):
         with cu.waiting_cursor():
-            ix.application.disable()
-            ix.application.load_project(self.project_filename)
-            ix.application.enable()
+            with cu.disabled_app():
+                ix.application.load_project(self.project_filename)
 
     @property
     def node_name(self):

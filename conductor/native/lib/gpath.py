@@ -1,11 +1,13 @@
 import os
 import re
 
-RX_LETTER = re.compile(r'^([a-zA-Z]):')
+RX_LETTER = re.compile(r"^([a-zA-Z]):")
 RX_DOLLAR_VAR = re.compile(r"\$([A-Za-z][A-Z,a-z0-9_]+)")
+
 
 class GPathError(Exception):
     pass
+
 
 def _expand_context(path, context):
     result = path
@@ -17,8 +19,24 @@ def _expand_context(path, context):
                 result = result.replace("${}".format(key), replacement)
     return result
 
-class Path(object):
 
+def _normalize_dots(components):
+    currentdir = "."
+    parentdir = ".."
+    result = []
+    for c in components:
+        if c == currentdir:
+            pass
+        elif c == parentdir:
+            if not len(result):
+                raise GPathError("Can't resolve path due to '..' overflow.")
+            del result[-1]
+        else:
+            result.append(c)
+    return result
+
+
+class Path(object):
     def __init__(self, path, **kw):
         """Initialize a generic absolute path.
 
@@ -31,31 +49,30 @@ class Path(object):
 
         if isinstance(path, list):
             ipath = path[:]
-            self._drive_letter = ipath.pop(
-                0)[0] if RX_LETTER.match(ipath[0]) else None
-            self._components = ipath
+            self._drive_letter = ipath.pop(0)[0] if RX_LETTER.match(ipath[0]) else None
+            self._components = _normalize_dots(ipath)
         else:
             context = kw.get("context")
             if context:
-                path =_expand_context(path, context)
-                # print  "Gpath expanded context", path
+                path = _expand_context(path, context)
             path = os.path.expanduser(os.path.expandvars(path))
-            # print  "Gpath expanduser expandvars", path
+
             match = RX_LETTER.match(path)
             self._drive_letter = match.group(1) if match else None
             remainder = re.sub(RX_LETTER, "", path)
 
             if remainder[0] not in ["/", "\\"]:
-                raise GPathError("Not an absolute path. Starts with:{}".format(remainder[0]))
+                raise GPathError(
+                    "Not an absolute path. Starts with:{}".format(remainder[0])
+                )
             if any((c in [":"]) for c in remainder):
                 raise GPathError("Bad characters in path:{}".format(remainder))
 
-            self._components = [s for s in re.split('/|\\\\', remainder) if s]
+            self._components = _normalize_dots(
+                [s for s in re.split("/|\\\\", remainder) if s]
+            )
 
         self._depth = len(self._components)
-
-
-
 
     def _construct_path(self, sep, with_drive_letter=True):
         """Reconstruct path for given path sep."""

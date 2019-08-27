@@ -44,7 +44,7 @@ class Job(object):
         self.output_paths = out["output_paths"]
 
         tile_width = int(self.node.get_attribute("tiles").get_long())
-        self.tiles = tile_width*tile_width
+        self.tiles = tile_width * tile_width
 
         self.tokens = self._set_tokens(parent_tokens)
 
@@ -54,17 +54,17 @@ class Job(object):
         self.dependencies.add(render_package_path)
 
         expander = Expander(**self.tokens)
-        self.title = expander.evaluate(
-            self.node.get_attribute("title").get_string())
+        self.title = expander.evaluate(self.node.get_attribute("title").get_string())
 
         self.metadata = None
 
         task_att = self.node.get_attribute("task_template")
         for chunk in self.sequence["main"].chunks():
-            for tile_number in range(1, self.tiles+1):
+            for tile_number in range(1, self.tiles + 1):
                 tile_spec = (self.tiles, tile_number)
                 self.tasks.append(
-                    Task(chunk, task_att, self.sources, tile_spec, self.tokens))
+                    Task(chunk, task_att, self.sources, tile_spec, self.tokens)
+                )
 
     def _get_sources(self):
         """Get the images, along with associated Sequence objects.
@@ -80,8 +80,7 @@ class Job(object):
 
         # cast to list because OfObjectArray is true even when empty.
         if not list(images):
-            ix.log_error(
-                "No render images. Please reference one or more image items")
+            ix.log_error("No render images. Please reference one or more image items")
         seq = self.sequence["main"]
         result = []
         for image in images:
@@ -97,11 +96,13 @@ class Job(object):
         self.node.get_attribute("extra_environment").get_values(json_entries)
 
         for entry in [json.loads(j) for j in json_entries]:
-            result.append({
-                "name": entry["key"],
-                "value": os.path.expandvars(entry["value"]),
-                "merge_policy": ["append", "exclusive"][int(entry["excl"])]
-            })
+            result.append(
+                {
+                    "name": entry["key"],
+                    "value": os.path.expandvars(entry["value"]),
+                    "merge_policy": ["append", "exclusive"][int(entry["excl"])],
+                }
+            )
 
         return result
 
@@ -125,15 +126,19 @@ class Job(object):
         # Special Amendments!
         # Clearly we need to find a better value for PYTHONHOME and add it in
         # sidecar or here
-        amendments = [{"name": "PYTHONHOME",
-                       "value": "/opt/silhouettefx/silhouette/7/silhouette-7.5.2",
-                       "merge_policy": "exclusive"},
-                      {"name": "CONDUCTOR_PATHHELPER",
-                       "value": 0,
-                       "merge_policy": "exclusive"},
-                      {"name": "LD_LIBRARY_PATH",
-                       "value": "/usr/lib/python2.7/config-x86_64-linux-gnu",
-                       "merge_policy": "append"}]
+        amendments = [
+            {
+                "name": "PYTHONHOME",
+                "value": "/opt/silhouettefx/silhouette/7/silhouette-7.5.2",
+                "merge_policy": "exclusive",
+            },
+            {"name": "CONDUCTOR_PATHHELPER", "value": 0, "merge_policy": "exclusive"},
+            {
+                "name": "LD_LIBRARY_PATH",
+                "value": "/usr/lib/python2.7/config-x86_64-linux-gnu",
+                "merge_policy": "append",
+            },
+        ]
         package_env.extend(amendments)
 
         return package_env
@@ -164,14 +169,10 @@ class Job(object):
         self.node.get_attribute("images").get_values(images)
 
         for image in images:
-            directory = os.path.dirname(
-                image.get_attribute("save_as").get_string())
+            directory = os.path.dirname(image.get_attribute("save_as").get_string())
             out_paths.add(directory)
 
-        return {
-            "common_path": out_paths.common_path(),
-            "output_paths": out_paths
-        }
+        return {"common_path": out_paths.common_path(), "output_paths": out_paths}
 
     def _get_instance(self):
         """Get everything related to the instance.
@@ -183,10 +184,8 @@ class Job(object):
         list of available types may be dynamic, so wetell the user to
         refresh.
         """
-        instance_types = ConductorDataBlock(
-            product="clarisse").instance_types()
-        label = self.node.get_attribute(
-            "instance_type").get_applied_preset_label()
+        instance_types = ConductorDataBlock(product="clarisse").instance_types()
+        label = self.node.get_attribute("instance_type").get_applied_preset_label()
 
         result = {
             "preemptible": self.node.get_attribute("preemptible").get_bool(),
@@ -194,12 +193,11 @@ class Job(object):
         }
 
         try:
-            found = next(
-                it for it in instance_types if str(
-                    it['description']) == label)
+            found = next(it for it in instance_types if str(it["description"]) == label)
         except StopIteration:
             ix.log_error(
-                "Invalid instance type \"{}\". Try a refresh (connect).".format(label))
+                'Invalid instance type "{}". Try a refresh (connect).'.format(label)
+            )
 
         result.update(found)
         return result
@@ -213,7 +211,7 @@ class Job(object):
         """
         return {
             "main": frames_ui.main_frame_sequence(self.node),
-            "scout": frames_ui.resolved_scout_sequence(self.node)
+            "scout": frames_ui.resolved_scout_sequence(self.node),
         }
 
     def _set_tokens(self, parent_tokens):
@@ -238,14 +236,14 @@ class Job(object):
         tokens["ct_instance"] = self.instance["description"]
         tokens["ct_tiles"] = str(self.tiles)
         pidx = int(self.instance["preemptible"])
-        tokens["ct_preemptible"] = (
-            "preemptible" if pidx else "non-preemptible")
+        tokens["ct_preemptible"] = "preemptible" if pidx else "non-preemptible"
         tokens["ct_retries"] = str(self.instance["retries"])
         tokens["ct_job"] = self.node_name
 
         # Space delimited list of output paths are needed for a mkdir cmd.
-        tokens["ct_directories"] = " ".join('"{}"'.format(
-            p.posix_path(with_drive=False)) for p in self.output_paths)
+        tokens["ct_directories"] = " ".join(
+            '"{}"'.format(p.posix_path(with_drive=False)) for p in self.output_paths
+        )
 
         tokens.update(parent_tokens)
         return tokens
@@ -258,18 +256,19 @@ class Job(object):
         notifications, and project, before submitting to Conductor.
         """
         result = {}
-        result["upload_paths"] = sorted(
-            [d.posix_path() for d in self.dependencies])
+        result["upload_paths"] = sorted([d.posix_path() for d in self.dependencies])
         result["autoretry_policy"] = (
-            {'preempted': {'max_retries': self.instance["retries"]}}
-            if self.instance["preemptible"] else {})
+            {"preempted": {"max_retries": self.instance["retries"]}}
+            if self.instance["preemptible"]
+            else {}
+        )
         result["software_package_ids"] = self.package_ids
         result["preemptible"] = self.instance["preemptible"]
-        result["environment"] = dict(
-            self.environment)
+        result["environment"] = dict(self.environment)
         result["enforced_md5s"] = {}
-        result["scout_frames"] = ", ".join([str(s) for s in
-                                            self.sequence["scout"] or []])
+        result["scout_frames"] = ", ".join(
+            [str(s) for s in self.sequence["scout"] or []]
+        )
         result["output_path"] = self.common_output_path.posix_path()
         result["chunk_size"] = self.sequence["main"].chunk_size
         result["instance_type"] = self.instance["name"]

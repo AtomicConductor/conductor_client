@@ -1,4 +1,3 @@
-
 import os
 import re
 from itertools import takewhile
@@ -6,7 +5,7 @@ import glob
 
 from conductor.native.lib.gpath import Path
 
-GLOBBABLE_REGEX = re.compile(r'\*|\?|\[')
+GLOBBABLE_REGEX = re.compile(r"\*|\?|\[")
 
 
 class PathList(object):
@@ -32,6 +31,7 @@ class PathList(object):
         Duplicate files and directories that contain other files may be
         added and no deduplication will happen at this time.
         """
+
         for path in paths:
             self._add_one(path)
 
@@ -43,15 +43,9 @@ class PathList(object):
         shorter. This could happen if a containing directory is added.
         Therefore we have to set the peg position to zero.
         """
-        # print "isinstance(path, Path) ", isinstance(path, Path)
-        if not type(path).__name__ == "Path":
 
-            # if not isinstance(path, Path):
+        if not type(path).__name__ == "Path":
             path = Path(path)
-            # print "PATH IS NOT A Path"
-        # else:
-            # print "PATH IS A Path"
-        # print "PATH: ", path.posix_path()
         self._entries.append(path)
         self._clean = False
         self._current = 0
@@ -66,7 +60,8 @@ class PathList(object):
             return
 
         sorted_entries = sorted(
-            self._entries, key=lambda entry: (entry.depth, -len(entry.tail)))
+            self._entries, key=lambda entry: (entry.depth, -len(entry.tail))
+        )
 
         self._entries = []
         for entry in sorted_entries:

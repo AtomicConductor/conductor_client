@@ -131,22 +131,6 @@ def preview(*args):
     preview_ui.build(submission, can_submit=can_submit)
 
 
-def export_render_package(*args):
-    """Just prepare and export the render package.
-
-    Useful if the user wants to run one of the commands on it locally.
-    """
-    node = args[0]
-    state, fn = check_need_save(node, WRITE_PACKAGE_ONLY)
-    if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED, SAVE_STATE_DONT_CARE]:
-        ix.log_warning("Export cancelled.")
-        return
-    _validate_images(node)
-    with cu.waiting_cursor():
-        submission = Submission(node)
-        submission.write_render_package()
-
-
 def _validate(node):
     _validate_images(node)
     _validate_packages(node)

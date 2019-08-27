@@ -171,7 +171,7 @@ class PackageTreeWidget(ix.api.GuiTree):
             parent_item.expand()
 
     def _select_leaf(self, parent_item, *nodes):
-        print "NODES:", nodes
+ 
         try:
             children = parent_item.child_list
             child_item = next(c for c in children if c.get_name() == nodes[0])

@@ -51,7 +51,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             elif action_name == "preflight":
                 refresh.refresh(obj)
                 submit_actions.preview(obj, data)
-                submit_actions.export_render_package(obj, data)
             elif action_name == "submit":
                 refresh.refresh(obj)
                 submit_actions.submit(obj, data)
@@ -161,7 +160,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
 
     def declare_packaging_attributes(self, s_class):
 
-        self.add_action(s_class, "export_render_package", "packaging")
+        # self.add_action(s_class, "export_render_package", "packaging")
 
         attr = s_class.add_attribute(
             "localize_contexts",

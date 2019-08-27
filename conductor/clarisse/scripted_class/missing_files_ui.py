@@ -25,64 +25,65 @@ PADDING = 5
 SYMBOL_BUT_WIDTH = 30
 CHECKBOX_WIDTH = 50
 
-BOTTOM_BUT_WIDTH = WIDTH / 4
+BOTTOM_BUT_WIDTH = WIDTH / 3
 
 
-def show_submission_responses(responses):
-    """Pop up an info dialog after submission.
+# def show_submission_responses(responses):
+#     """Pop up an info dialog after submission.
 
-    The dialog is equipped to handle the results of an array of submissions.
+#     The dialog is equipped to handle the results of an array of submissions.
 
-    """
+#     """
 
-    success_jobs = [
-        response["response"]["uri"]
-        for response in responses
-        if response.get("code") == 201
-    ]
+#     success_jobs = [
+#         response["response"]["uri"]
+#         for response in responses
+#         if response.get("code") == 201
+#     ]
 
-    messages = []
-    if success_jobs:
-        success_msg = ", ".join(success_jobs)
-        messages.append("Successful submissions\n{}".format(success_msg))
+#     messages = []
+#     if success_jobs:
+#         success_msg = ", ".join(success_jobs)
+#         messages.append("Successful submissions\n{}".format(success_msg))
 
-    num_failed = len([response for response in responses if response.get("code") > 201])
+#     num_failed = len([response for response in responses if response.get("code") > 201])
 
-    if num_failed:
-        messages.append("Number of failed submissions: {:d}".format(num_failed))
+#     if num_failed:
+#         messages.append("Number of failed submissions: {:d}".format(num_failed))
 
-    if messages:
-        msg = "\n".join(messages)
-    else:
-        msg = "No jobs were submitted"
+#     if messages:
+#         msg = "\n".join(messages)
+#     else:
+#         msg = "No jobs were submitted"
 
-    ix.application.message_box(
-        msg,
-        "Conductor Submission: Info",
-        ix.api.AppDialog.yes(),
-        ix.api.AppDialog.STYLE_OK,
-    )
+#     ix.application.message_box(
+#         msg,
+#         "Conductor Submission: Info",
+#         ix.api.AppDialog.yes(),
+#         ix.api.AppDialog.STYLE_OK,
+#     )
 
 
-class PreviewWindow(ix.api.GuiWindow):
+class MissingFilesWindow(ix.api.GuiWindow):
     """The entire window.
 
     Holds the panel plus buttons to Submit or Cancel.
     """
 
-    def __init__(self, submission, can_submit):
+    def __init__(self, files):
         window_height = HEIGHT + BTN_HEIGHT
 
-        super(PreviewWindow, self).__init__(
+        super(MissingFilesWindow, self).__init__(
             ix.application.get_event_window(),
             WINDOW_LEFT,
             WINDOW_TOP,
             WIDTH,
             window_height,
-            "Submission Preview",
+            "Missing files",
         )
 
-        self.submission = submission
+        self.result = False
+        self.files = files
         self.text_widget = ix.api.GuiTextEdit(self, 0, 0, WIDTH, HEIGHT)
         self.text_widget.set_constraints(C_LEFT, C_TOP, C_RIGHT, C_BOTTOM)
         self.text_widget.set_read_only(True)
@@ -98,17 +99,6 @@ class PreviewWindow(ix.api.GuiWindow):
         self.spacer_but.set_constraints(C_LEFT, C_BOTTOM, C_RIGHT, C_BOTTOM)
         self.spacer_but.set_enable(False)
 
-        self.write_but = ix.api.GuiPushButton(
-            self,
-            (WIDTH - (BOTTOM_BUT_WIDTH * 2)),
-            HEIGHT,
-            BOTTOM_BUT_WIDTH,
-            BTN_HEIGHT,
-            "Write package only",
-        )
-        self.write_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
-        self.write_but.set_enable(can_submit)
-
         self.go_but = ix.api.GuiPushButton(
             self,
             (WIDTH - BOTTOM_BUT_WIDTH),
@@ -118,19 +108,17 @@ class PreviewWindow(ix.api.GuiWindow):
             "Submit",
         )
         self.go_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
-        self.go_but.set_enable(can_submit)
+        # self.go_but.set_enable(can_submit)
 
-        self.connect(self.write_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_write_but)
         self.connect(self.go_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_go_but)
 
         self._populate()
 
     def _populate(self):
         """Put the submission args in the window."""
-        submission_args = self.submission.get_args()
-        json_jobs = json.dumps(submission_args, indent=3, sort_keys=True)
-        self.text_widget.set_text(json_jobs)
-        self.text_widget.set_highlighted_word("upload_paths", True)
+
+        content = "\n".join(self.files)
+        self.text_widget.set_text(content)
 
     def on_close_but(self, sender, eventid):
         """Hide only.
@@ -140,30 +128,25 @@ class PreviewWindow(ix.api.GuiWindow):
         """
         self.hide()
 
-    def on_write_but(self, sender, eventid):
-        """  and keep the window visible."""
-        with cu.waiting_cursor():
-            package_path = self.submission.write_render_package()
-        ix.log_info("Wrote package to {}".format(package_path))
-
     def on_go_but(self, sender, eventid):
-        """Submit and hide(destroy) the window."""
-        with cu.waiting_cursor():
-            responses = self.submission.submit()
+        """Set result and hide(destroy) the window."""
+        self.result = True
 
         self.hide()
-        show_submission_responses(responses)
 
 
-def build(submission, **kw):
+def proceed(files):
     """Show the window.
 
     Populate it with submission args for each job. Listen for events
     until the window is hidden.
     """
-    can_submit = kw.get("can_submit", False)
-    win = PreviewWindow(submission, can_submit)
+    if not files:
+        return True
+    win = MissingFilesWindow(files)
 
     win.show_modal()
     while win.is_shown():
         ix.application.check_for_events()
+
+    return win.result
