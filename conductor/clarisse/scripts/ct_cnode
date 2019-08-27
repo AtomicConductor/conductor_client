@@ -76,18 +76,16 @@ def main():
 
     cnode_args = ["cnode"] + pass_through_args
 
+    config_path =  os.path.join(os.path.dirname(sys.argv[0]), "clarisse.cfg")
+    cnode_args += ["-config_file", config_path, "-log_width", 0 ,"-search_path", "./", "-stats"]
+ 
     if args.image:
         cnode_args += ["-image"] + args.image
         cnode_args += ["-image_frames_list"] + args.image_frames_list
 
     cnode_args += ["-script"] + [generate_prerender_script_arg(args)]
 
-    # Clarisse fails to render if the destination
-    # directories don't exist
-    # if args.directories:
-    #     mkdir_p(args.directories)
-
-    sys.stdout.write("Running command:{} in {}\n".format(
+    sys.stdout.write("Running command:..\n{}\nfrom:\n{}\n".format(
         " ".join(cnode_args), work_dir))
 
     os.chdir(work_dir)

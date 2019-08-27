@@ -3,6 +3,7 @@ import re
 
 import ix
 from conductor.clarisse.scripted_class import frames_ui
+from conductor.native.lib.gpath import GPathError
 from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence
 
@@ -35,12 +36,53 @@ SEQUENCE_OFFSET_KLUDGE = 100000
 # and and so on?
 # Because then the render package would not be runnable on the local machine.
 CONDUCTOR_SCRIPTS = ["ct_prep.py", "ct_cnode"]
-CONDUCTOR_TMP_DIR = os.path.join(
-    ix.application.get_factory().get_vars().get("CTEMP").get_string(), "conductor"
-)
-# CLARISSE_CONFIG_FILE = = os.path.join(
-#     ix.application.get_factory().get_vars().get("CLARISSE_USER_CONFIG_DIR").get_string(), "conductor"
-# )
+CLARISSE_CFG_FILENAME = "clarisse.cfg"
+
+
+def system_dependencies():
+
+    result = []
+    conductor_scripts_directory = os.path.join(
+        os.environ["CONDUCTOR_LOCATION"], "conductor", "clarisse", "scripts"
+    )
+    conductor_tmp_dir = os.path.join(
+        ix.application.get_factory().get_vars().get("CTEMP").get_string(), "conductor"
+    )
+
+    for script in CONDUCTOR_SCRIPTS:
+        src_path = os.path.join(conductor_scripts_directory, script)
+        dest_path = os.path.join(conductor_tmp_dir, script)
+
+        result.append({"src": src_path, "dest": dest_path})
+
+    config_dir = (
+        ix.application.get_factory()
+        .get_vars()
+        .get("CLARISSE_USER_CONFIG_DIR")
+        .get_string()
+    )
+
+    config_src_file = os.path.join(config_dir, CLARISSE_CFG_FILENAME)
+    config_dest_file = os.path.join(conductor_tmp_dir, CLARISSE_CFG_FILENAME)
+
+    result.append({"src": config_src_file, "dest": config_dest_file})
+
+    return result
+
+
+def _get_system_dependencies():
+    """Paths where conductor's own scripts will be uploaded from."""
+    result = PathList()
+    for entry in system_dependencies():
+        try:
+            result.add(entry["dest"])
+        except GPathError:
+            ix.log_error(
+                "Error while resolving system_dependency: {}".format(entry["dest"])
+            )
+            raise
+
+    return result
 
 
 def collect(obj):
@@ -53,7 +95,7 @@ def collect(obj):
 
     include_references = not obj.get_attribute("localize_contexts").get_bool()
     policy = obj.get_attribute("dependency_scan_policy").get_long()
-    result.add(*_get_conductor_script_paths())
+    result.add(*_get_system_dependencies())
     result.add(*_get_extra_uploads(obj))
     result.add(*get_scan(obj, policy, include_references))
 
@@ -63,21 +105,18 @@ def collect(obj):
     return result
 
 
-def _get_conductor_script_paths():
-    """Paths where conductor's own scripts will be uploaded from."""
-    result = PathList()
-    for script in CONDUCTOR_SCRIPTS:
-        result.add(os.path.join(CONDUCTOR_TMP_DIR, script))
-    return result
-
-
 def _get_extra_uploads(obj):
     """Get user specified uploads from the extra_uploads attribute."""
     result = PathList()
     extras_attr = obj.get_attribute("extra_uploads")
     paths = ix.api.CoreStringArray()
     extras_attr.get_values(paths)
-    result.add(*paths)
+    for path in paths:
+        try:
+            result.add(path)
+        except GPathError:
+            ix.log_error("Error while resolving extra upload path: {}".format(path))
+            raise
     return result
 
 
@@ -96,6 +135,7 @@ def get_scan(obj, policy, include_references=True):
     if not policy:
         return result
     for attr in ix.api.OfAttr.get_path_attrs():
+        item_name = attr.get_parent_object().get_name()
         if _should_ignore(attr):
             continue
 
@@ -112,11 +152,26 @@ def get_scan(obj, policy, include_references=True):
 
         if policy == GLOB:
             # replace all frame identifiers with "*" for globbing later
-            filename = re.sub((r"(#+|\{frame:\d*d})"), "*", filename)
-            result.add(filename)
+            try:
+                result.add(re.sub((r"(#+|\{frame:\d*d})"), "*", filename))
+            except GPathError as ex:
+                ix.log_error(
+                    "Error while resolving path: {}.{} = {}".format(
+                        item_name, attr.get_name(), filename
+                    )
+                )
+                raise
         else:  # SMART
             filenames = _smart_expand(obj, attr, filename)
-            result.add(*filenames)
+            try:
+                result.add(*filenames)
+            except GPathError as ex:
+                ix.log_error(
+                    "Error while resolving path: {}.{} = {}".format(
+                        item_name, attr.get_name(), filename
+                    )
+                )
+                raise
 
     #
     # We ignored references in _should_ignore for 2 reasons.
@@ -128,8 +183,15 @@ def get_scan(obj, policy, include_references=True):
         ix.application.get_factory().get_root().resolve_all_contexts(contexts)
         for context in contexts:
             if context.is_reference() and not context.is_disabled():
-                result.add(context.get_attribute("filename").get_string())
-
+                try:
+                    result.add(context.get_attribute("filename").get_string())
+                except GPathError as ex:
+                    ix.log_error(
+                        "Error while resolving reference: {}.filename = {}".format(
+                            str(context), filename
+                        )
+                    )
+                    raise
     return result
 
 

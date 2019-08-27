@@ -65,9 +65,9 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path, GPathError
 from conductor.native.lib.gpath_list import PathList
 
-SCRIPTS_DIRECTORY = os.path.join(
-    os.environ["CONDUCTOR_LOCATION"], "conductor", "clarisse", "scripts"
-)
+# SCRIPTS_DIRECTORY = os.path.join(
+#     os.environ["CONDUCTOR_LOCATION"], "conductor", "clarisse", "scripts"
+# )
 
 
 def _localize_contexts():
@@ -363,10 +363,13 @@ class Submission(object):
         for job_args in submission_args:
             existing_files = []
             for path in job_args["upload_paths"]:
-                existing_files.append(path) if os.path.exists(
-                    path
-                ) else missing_files.append(path)
+                if os.path.exists(path):
+                    existing_files.append(path)
+                else:
+                    missing_files.append(path)
+
             job_args["upload_paths"] = existing_files
+        missing_files = sorted(list(set(missing_files)))
         if not missing_files_ui.proceed(missing_files):
             return (False, [])
         return (True, submission_args)
@@ -378,7 +381,7 @@ class Submission(object):
             _remove_conductor()
 
         self._prepare_temp_directory()
-        self._copy_scripts_to_temp()
+        self._copy_system_dependencies_to_temp()
 
     def _prepare_temp_directory(self):
         """Make sure the temp directory has a conductor subdirectory.
@@ -392,11 +395,11 @@ class Submission(object):
             else:
                 raise
 
-    def _copy_scripts_to_temp(self):
-        for script in deps.CONDUCTOR_SCRIPTS:
-            script_path = os.path.join(SCRIPTS_DIRECTORY, script)
-            if os.path.isfile(script_path):
-                shutil.copy(script_path, self.tmpdir.posix_path())
+    def _copy_system_dependencies_to_temp(self):
+        for entry in deps.system_dependencies():
+            if os.path.isfile(entry["src"]):
+                ix.log_info("Copy {} to {}".format(entry["src"], entry["dest"]))
+                shutil.copy(entry["src"], entry["dest"])
 
     def _after_submit(self):
         self._delete_render_package()

@@ -29,7 +29,7 @@ def _normalize_dots(components):
             pass
         elif c == parentdir:
             if not len(result):
-                raise GPathError("Can't resolve path due to '..' overflow.")
+                raise GPathError("Can't resolve path due to '..' overflow")
             del result[-1]
         else:
             result.append(c)
