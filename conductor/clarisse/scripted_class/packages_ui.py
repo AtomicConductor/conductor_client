@@ -27,6 +27,7 @@ C_RIGHT = ix.api.GuiWidget.CONSTRAINT_RIGHT
 C_BOTTOM = ix.api.GuiWidget.CONSTRAINT_BOTTOM
 C_COUNT = ix.api.GuiWidget.CONSTRAINT_COUNT
 
+
 class PackageTreeItem(ix.api.GuiTreeItemBasic):
     """An item in the tree that maintains its own child list."""
 
@@ -180,7 +181,7 @@ class PackageTreeWidget(ix.api.GuiTree):
             parent_item.expand()
 
     def _select_leaf(self, parent_item, *nodes):
- 
+
         try:
             children = parent_item.child_list
             child_item = next(c for c in children if c.get_name() == nodes[0])
@@ -191,7 +192,7 @@ class PackageTreeWidget(ix.api.GuiTree):
             print "LEN NODES ONE set_is_selected", child_item.get_name()
             child_item.set_is_selected(True)
             child_item.set_is_dirty(True)
-   
+
             return
         self._select_leaf(child_item, *nodes[1:])
 

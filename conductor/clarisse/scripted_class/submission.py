@@ -86,7 +86,7 @@ class Submission(object):
 
     It has potentially many Jobs, and those Jobs each have many Tasks. A
     Submission can provide the correct args to send to Conductor, or it can be
-    used to create a dry run to show the user what will happen. 
+    used to create a dry run to show the user what will happen.
 
     A Submission also sets a list of tokens that the user can access as <angle
     bracket> tokens in order to build strings in the UI such as commands and job
@@ -198,9 +198,9 @@ class Submission(object):
 
         The name is not always known until
         preview/submission time because it is based on the filename and
-        possibly a timestamp. What this means, practically, is that it won't 
-        show up in the extra uploads window along with 
-        other dependencies when the glob or smart-scan button is pushed. 
+        possibly a timestamp. What this means, practically, is that it won't
+        show up in the extra uploads window along with
+        other dependencies when the glob or smart-scan button is pushed.
         It will however always show up in the preview window.
 
         We replace spaces in the filename because of a bug in Clarisse
@@ -221,7 +221,7 @@ class Submission(object):
                 return Path("{}_ct{}.project".format(path, self.timestamp))
             else:
                 return Path("{}_ct.project".format(path))
-        except ValueError as err:
+        except ValueError:
             ix.log_error(
                 'Cannot create a submission from this file: "{}". Has it ever been saved?'.format(
                     current_filename
@@ -231,7 +231,7 @@ class Submission(object):
     def get_args(self):
         """
         Prepare the args for submission to conductor.
-        
+
         Returns:
             list: list of dicts containing submission args per job.
         """
@@ -254,7 +254,7 @@ class Submission(object):
     def submit(self):
         """
         Submit all jobs.
-        
+
         Returns:
             list: list of response dictionariues, containing response codes
             and descriptions.
@@ -322,12 +322,12 @@ class Submission(object):
         Alert the user of missing files. If the user doesn't want to continue
         with missing files, the result will be False. Otherwise it will be True
         and the potentially adjusted args are returned.
-        
+
         Args:
             submission_args (list): list of job args.
-        
+
         Returns:
-           tuple (bool, adjusted args):  
+           tuple (bool, adjusted args):
         """
         missing_files = []
 
@@ -390,8 +390,8 @@ class Submission(object):
 
         If we did something destructive, like localize contexts, then
         a backup will have been saved and we now reload it. This strategy
-        is used because Clarisse's undo is broken when it comes to 
-        undoing context localization.  
+        is used because Clarisse's undo is broken when it comes to
+        undoing context localization.
         """
         if self.localize_before_ship:
             self._revert_to_saved_scene()

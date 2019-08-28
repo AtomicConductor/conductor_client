@@ -14,9 +14,9 @@ from conductor.native.lib.sequence import Sequence
 def handle_use_custom_frames(obj, attr):
     """
     Responds to use_custom_frames changes.
-    
+
     Args:
-        obj (ConductorJob): 
+        obj (ConductorJob):
         attr (OfAttr): Atribute that changed.
     """
     hide = not attr.get_bool()
@@ -72,7 +72,7 @@ def handle_best_chunk_size(obj, _):
 def custom_frame_sequence(obj):
     """
     Generates the custom_frames sequence.
-    
+
     Returns:
         Sequence: A Sequence object that represents the value in custom_frames.
         It may be a comma-separated list of progressions. Example
@@ -92,10 +92,10 @@ def custom_frame_sequence(obj):
 def image_range(image):
     """
     Returns the first, last, and step values from sequence attributes of an image or layer.
-    
+
     Args:
         image (OfObject):  The image/layer item
-    
+
     Returns:
         tuple: start, end, step
     """
@@ -113,7 +113,7 @@ def _union_sequence(images):
 
     Args:
         images (list of OfObject): The images to consider.
-    
+
     Returns:
         Sequence: The union Sequence.
     """
@@ -131,10 +131,10 @@ def _union_sequence(images):
 def range_frame_sequence(obj):
     """
     Generate Sequence from value in the input images along with chunk_size attribute.
-    
+
     Args:
         obj (ConductorJob): Item whose images attribute to get images from.
-    
+
     Returns:
         Sequence: Sequence derived from given images.
     """
@@ -155,12 +155,12 @@ def main_frame_sequence(obj):
     Generates Sequence that represents current settings.
 
     If using custom frames, then the value in the custom frames attribute are
-    used, otherwise calc;ulate the union of image sequences. 
+    used, otherwise calc;ulate the union of image sequences.
 
-    Args: 
+    Args:
         obj (ConductorJob): Item whose attribute to get parameters from.
 
-    Returns: 
+    Returns:
         Sequence: Sequence that will be used for rendering.
     """
     if obj.get_attribute("use_custom_frames").get_bool():
@@ -171,10 +171,10 @@ def main_frame_sequence(obj):
 def scout_frame_sequence(obj):
     """
     Generate Sequence from value in scout_frames attribute.
-    
+
     Args:
         obj (ConductorJob): Item whose attribute to get parameters from.
-    
+
     Returns:
         Sequence: Sequence that represents scout frames.
     """
@@ -191,14 +191,14 @@ def resolved_scout_sequence(obj):
 
     Args:
         obj (ConductorJob): Item whose attribute to get parameters from.
-    
+
     Returns:
         Sequence: If do_scout is off then returning None indicates all frames
         will be
-    rendered. 
-    
+    rendered.
+
         If do_scout is on and the set of scout frames intersects the
-    main frames, then return the intersection. 
+    main frames, then return the intersection.
 
     If scout frames does not intersect the main frames, then the user intended
     to scout but ended up with no frames. This produces None. If it becomes a

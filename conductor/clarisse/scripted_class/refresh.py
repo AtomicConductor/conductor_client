@@ -16,7 +16,7 @@ from conductor.native.lib.data_block import ConductorDataBlock
 def force_ae_refresh(node):
     """
     Trigger an attribute editor refresh.
-    
+
     Args:
         node (ConductorJob): item whose attrmibute editor to refresh.
     """
@@ -36,7 +36,7 @@ def refresh(_, **kw):
     Respond to connect button click, and others that may benefit from a refresh.
 
     Update UI for projects and instances from the data block.
-    
+
     Args:
         (kw["force"]): If true, invalidate the datablock and fetch fresh from
         Conductor. We update all ConductorJob nodes. Also update the log level

@@ -15,7 +15,7 @@ SIMPLE_EMAIL_RE = re.compile(r"^\S+@\S+$")
 def handle_email_addresses(obj, _):
     """
     Validate email addresses when attribute changes.
-    
+
     Args:
         obj (ConductorJob): Item from which to get notification data
     """
@@ -32,7 +32,7 @@ def handle_email_addresses(obj, _):
 def notify_changed(obj, attr):
     """
     Dim the email field based on toggle value.
-    
+
     Args:
         obj (ConductorJob): Item in question
         attr (OfAttr): The toggle attribute

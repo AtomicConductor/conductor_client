@@ -32,15 +32,15 @@ def check_need_save(node, which):
 
     If user chooses to save, then save it and return the filename along
     with an enum response.
-    
+
 
     Args:
-        node (ConductorJob): 
+        node (ConductorJob):
         which (Enum): Why we are checking.
             SUBMIT_DIRECT, PREVIEW_FIRST, WRITE_PACKAGE_ONLY
-    
+
     Returns:
-        tuple(Enum, Filename): 
+        tuple(Enum, Filename):
             SAVE_STATE_UNMODIFIED
             SAVE_STATE_CANCELLED
             SAVE_STATE_SAVED
@@ -183,9 +183,9 @@ def _validate_images(node):
 def _validate_packages(obj):
     """
     For now, just make sure clarisse is present in packages
-    
+
     Args:
-        obj (ConductorJob): 
+        obj (ConductorJob):
     """
     attr = obj.get_attribute("packages")
     paths = ix.api.CoreStringArray()
@@ -201,9 +201,9 @@ def _validate_packages(obj):
 def _validate_project(obj):
     """
     Check that the project is set.
-    
+
     Args:
-        obj (ConductorJob): 
+        obj (ConductorJob):
     """
     projects = ConductorDataBlock().projects()
     project_att = obj.get_attribute("conductor_project_name")

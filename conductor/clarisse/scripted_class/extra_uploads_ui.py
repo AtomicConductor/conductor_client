@@ -31,7 +31,7 @@ class FileListWidget(ix.api.GuiTree):
 
         We inherit so that we can keep a list of children, due to
         GuiWidget,get_child_items being broken.
-        
+
         Args:
             parent (GuiWidget): Parent UI
             y_val (int): Height location to put the top of the widget
@@ -47,7 +47,7 @@ class FileListWidget(ix.api.GuiTree):
     def add_entries(self, entries):
         """
         Add a line item for each entry.
-        
+
         Use PathList to deduplicate on the fly. As the addition of
         entries may completely change the list (grow or shrink) we
         delete and rebuild the list of entries each time a batch is
@@ -118,7 +118,7 @@ class FileListWidget(ix.api.GuiTree):
     def _remove_from_sync_list(self, indices):
         """
         Remove items with given indices.
-        
+
         Args:
             indices (list): Indices of items to remove.
         """

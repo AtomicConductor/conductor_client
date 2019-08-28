@@ -6,19 +6,19 @@ Responds to events in the projects UI.
 def handle_project(obj, attr):
     """
     When project changes, stash its name on a string att.
-    
+
     The current applied option is saved by its index. There may be a
     case where the index that was saved in the file is different from
     the actual project that the index referred to when the scene was
     saved, if new projects are added with a lower alphabetical position
     for example. In this case we can look at the stashed project name
-    and figure out what to do. 
-    
+    and figure out what to do.
+
     NOTE: the reassignment part is not yet
     implemented, but the stashed name part is.
 
     Args:
-        obj (ConductorJob): 
+        obj (ConductorJob):
         attr (OfAttr): Atribute that changed.
     """
     label = attr.get_applied_preset_label()
@@ -30,7 +30,7 @@ def update(obj, data_block):
     """
     Fetch projects afresh and repopulate menu.
 
-    Args:
+    Args:å
         obj (ConductorJob):
         data_block (ConductorDataBlock): Singleton object that has a cached list of projects.
     """

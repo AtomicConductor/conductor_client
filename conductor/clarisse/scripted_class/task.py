@@ -2,7 +2,6 @@
 Build an object to represent a task to be run on a render node.
 """
 
-from conductor import CONFIG
 from conductor.native.lib.expander import Expander
 
 
@@ -21,7 +20,7 @@ class Task(object):
         such as start end step and so on are valid. So when we expand the
         command any tokens that were used are correctly resolved.
 
-        Args: 
+        Args:
             chunk (Sequence): The frames to be rendered. command_attr
             (OfAttr): The task template attribute. sources (list(dict(OfObject,
             Sequence))):  list of images along with a sequence that represents

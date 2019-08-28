@@ -28,16 +28,16 @@ class Job(object):
     def __init__(self, node, parent_tokens, render_package_path):
         """
         Build job object for a ConductorJob node.
-        
+
         After _set_tokens has been called, the Job level token variables are
         valid and calls to evaluate string attributes will correctly resolve
         where those tokens have been used.  This is why we evaluate title,
         tasks, after the call to _set_tokens()
 
         Args:
-            node (ConductorJob): item from which to build this job object   
+            node (ConductorJob): item from which to build this job object
             parent_tokens (dict): token/value pairs in the scope of the
-            submission (parent) object. 
+            submission (parent) object.
             render_package_path (string): The render project file, which must be
             added to this job's dependencies.
         """
@@ -83,13 +83,13 @@ class Job(object):
     def _get_sources(self):
         """
         Get the images/layers, along with associated Sequence objects.
-        
+
         If we are not rendering a custom range, then the sequence for
         each image may be different.
 
         Returns:
             list of dict: elements contain an image along with the Sequence that
-            represents the image range. 
+            represents the image range.
         """
 
         images = ix.api.OfObjectArray()
@@ -111,7 +111,7 @@ class Job(object):
     def _get_extra_env_vars(self):
         """
         Collect any environment specified by the user.
-        
+
         Returns:
             list of dict: name, value and merge policy of user specified env vars.
         """
@@ -134,10 +134,10 @@ class Job(object):
     def _get_environment(self):
         """
         Collect all environment variables.
-        
+
         NOTE: Revisit and test the bespoke env added below in the amendments
         section.
-         
+
         Returns:
             package_environment: Resolved package environment object.
         """
@@ -175,7 +175,7 @@ class Job(object):
     def _get_package_ids(self):
         """
         Package Ids for chosen packages.
-        
+
         Returns:
             list: package ids as list of strings.
         """
@@ -195,7 +195,7 @@ class Job(object):
     def _get_output_directory(self):
         """
         Get the common path for all image output paths.
-        
+
         NOTE: We don't really need the subpaths any longer because directory
         creation is handled in the prerender script. Don't want to mess with
         things right now though.
@@ -226,7 +226,7 @@ class Job(object):
         instance_types is stored. When exhaustion API is in effect, the
         list of available types may be dynamic, so wetell the user to
         refresh.
-        
+
         Returns:
             dict: Fields to specify the render node behaviour.
         """
@@ -253,7 +253,7 @@ class Job(object):
 
         """
         Get sequence objects from the frames section of the UI.
-        
+
         Returns:
             dict: main sequence and scout sequence.
         """
@@ -268,11 +268,11 @@ class Job(object):
 
         Collect token values for this Job and merge with those from the
         parent Submission.
-        
+
         Args:
             parent_tokens (dict): tokens that were resolved in the parent
             (submission) object.
-        
+
         Returns:
             dict: combined dictionary of tokens in scope for this job.
         """
@@ -313,7 +313,7 @@ class Job(object):
 
         Args:
             upload_only (bool): Don't construct tasks in an upload only job.
-        
+
         Returns:
             dict: This dict represents the args that are specific to this job.
             It will be joined with the submission level args like notifications,

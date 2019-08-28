@@ -30,7 +30,7 @@ VAL_WDG_WIDTH = WIDTH - (
 class VarWidget(ix.api.GuiWidget):
     """
     This is a line item containing UI for one env var.
-    
+
     An env var has a merge policy (exclusive or append), so we have a checkbox
     for that. And we have a button to delete the line. We inherit because
     GuiWidget::get_child_items is broken and we have to have a way to store the
@@ -62,7 +62,7 @@ class VarWidget(ix.api.GuiWidget):
     def index(self):
         """
         Calculates the index of this widget in the list.
-        
+
         Returns:
             int: The index, derived from it's y pos so that we don't have to
             maintain another variable each time a line is added or deleted.
@@ -77,7 +77,7 @@ class VarWidget(ix.api.GuiWidget):
         Widgets locations are relative to the window, not their direct
         parent. In fact the only reason to set the parent's position is
         OCD.
-        
+
         Args:
             index (int): index in the list of widgets.
         """
@@ -90,7 +90,7 @@ class VarWidget(ix.api.GuiWidget):
     def to_json(self):
         """
         Serialize for storage in the node's attribute.
-        
+
         Returns:
             string: The entry as json
         """
@@ -116,7 +116,7 @@ class EnvListWidget(ix.api.GuiPanel):
         Since the GuiPanel::get_child_items is broken, we have to
         maintain our own list of children, and in fact this is the only
         reason for inheriting rather than using GuiPanel directly.
-        
+
         Args:
             parent (GuiWidget): Widget that this widget sits in.
             y_val (int): location of top of widget.
@@ -133,7 +133,7 @@ class EnvListWidget(ix.api.GuiPanel):
 
         Need this in order to add new items at the bottom, and to tell
         the scollable area how big the virtual space is.
-        
+
         Returns:
             int: height of items.
         """
@@ -156,7 +156,7 @@ class EnvListWidget(ix.api.GuiPanel):
         Remove from view.
 
         We have to keep the item_list in sync.
-        
+
         Args:
             sender (GuiButton): button that sent the event.
         """
@@ -269,8 +269,8 @@ def build(*args):
 
     Populate it with existing entries from the extra_env attribute. The
     window is shown in modal mode so we don't keep losing the damn thing
-    behind other stuff. 
-    
+    behind other stuff.
+
     Listen for events until the window is hidden.
     """
     node = args[0]

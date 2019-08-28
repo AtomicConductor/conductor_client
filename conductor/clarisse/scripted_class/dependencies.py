@@ -135,10 +135,10 @@ def _get_extra_uploads(obj):
     Collects any files specified through the extra uploads window.
 
     They are stored in a list attribute on theConductorJob item./
-    
+
     Args:
         obj (ConductorJob): item being processed.
-    
+
     Returns:
         PathList: Collected paths.
     """
@@ -162,11 +162,11 @@ def get_scan(obj, policy, include_references=True):
     Scan all path attrs for dependencies according to the given policy.
 
     If policy is not None: First replace all UDIM tags with a "*" so they may be
-    globbed. 
+    globbed.
 
     File sequences may be resolved one of 2 ways:
     1. If policy is GLOB, then hashes in filenames will be replaced by a "*" and
-        globbed later. 
+        globbed later.
     2. If policy is SMART then for each filename, we look at its sequence
         definition and calculate the frames that will be needed for the frame
         range being rendered.
@@ -175,7 +175,7 @@ def get_scan(obj, policy, include_references=True):
         obj (ConductorJob): Item being processed.
         policy (Enum): NONE, GLOB, SMART
         include_references (bool, optional): Whether to scan for references. Defaults to True.
-    
+
     Returns:
         PathList: Collected paths
     """
@@ -183,6 +183,7 @@ def get_scan(obj, policy, include_references=True):
 
     if not policy:
         return result
+
     for attr in ix.api.OfAttr.get_path_attrs():
         if _should_ignore(attr):
             continue
@@ -226,19 +227,25 @@ def get_scan(obj, policy, include_references=True):
     # 2. Getting ref contexts from OfAttr.get_path_attrs() is buggy so it's best
     #    to get them through the root context with resolve_all_contexts()
     if include_references:
-        contexts = ix.api.OfContextSet()
-        ix.application.get_factory().get_root().resolve_all_contexts(contexts)
-        for context in contexts:
-            if context.is_reference() and not context.is_disabled():
-                try:
-                    filename = context.get_attribute("filename").get_string()
-                    result.add(filename)
-                except ValueError as ex:
-                    ix.log_error(
-                        "{} - while resolving reference {}.filename = {}".format(
-                            str(ex), str(context), filename
-                        )
+        result.add(*_scan_for_references())
+    return result
+
+
+def _scan_for_references():
+    result = PathList()
+    contexts = ix.api.OfContextSet()
+    ix.application.get_factory().get_root().resolve_all_contexts(contexts)
+    for context in contexts:
+        if context.is_reference() and not context.is_disabled():
+            try:
+                filename = context.get_attribute("filename").get_string()
+                result.add(filename)
+            except ValueError as ex:
+                ix.log_error(
+                    "{} - while resolving reference {}.filename = {}".format(
+                        str(ex), str(context), filename
                     )
+                )
 
     return result
 
@@ -270,10 +277,10 @@ def _is_project_reference(attr):
 def _should_ignore(attr):
     """
     Is the attribute needed
-    
+
     Args:
         attr (OfAttr): Attribute to query
-    
+
     Returns:
         bool: True if the path at this attribute should be ignored
     """
@@ -298,12 +305,12 @@ def _evaluate_static_expression(target_attr):
     We are doing this because we want literal paths that are needed for the
     upload. The easiest and most reliable way to evaluate variables in the
     expression would be to use get_string(). However, if we do that, it will
-    evaluate time varying variables like $3F for the current frame only.  
+    evaluate time varying variables like $3F for the current frame only.
 
     So to keep the time varying varables variable, we replace them with python named format strings
     like {frame:0nd} where n is the padding.
 
-    NOTE: It does not resolve hash placeholders like ### so we can leave them as is. 
+    NOTE: It does not resolve hash placeholders like ### so we can leave them as is.
     NOTE 2: Can't remember why I used {frame:04d} rather than change to ####.
 
     $CDIR/bugs_seq/bugs.####.jpg becomes
@@ -317,7 +324,7 @@ def _evaluate_static_expression(target_attr):
 
     Args:
         target_attr (OfAttr): Attribute to query,
-    
+
     Returns:
         string: The attribute value with all $variables resolved except those
         that rely on time.
@@ -343,10 +350,10 @@ def _smart_expand(obj, attr, filename):
     Takes into account the frame range to be rendered, and the frame
     specification of any msource animated maps along with their offset. Then
     resolves filenames for that intersection of sequences.
-    
+
     Args:
         obj (ConductorJob):  Item being processed. attr (OfAttr): Attribute to
-        query. 
+        query.
         filename (string): File template to expand. It may have hashes
         and/or frame_format {frame:02d} style placeholders to represent frame
         ranges
@@ -395,7 +402,7 @@ def _attribute_sequence(attr, intersector):
 
      Many attributes have an associated sequence_mode attribute, which when set
     to 1 signifies varying frames and makes available start, end, and offset
-    attributes to help specify the sequence. 
+    attributes to help specify the sequence.
 
     We work out the intersection of that sequence with the main sequence because
     during dependency scanning, we can optimize the number of frames to upload
@@ -408,7 +415,7 @@ def _attribute_sequence(attr, intersector):
         frames override, or by the images being rendered.
 
     Returns:
-        dict: 
+        dict:
             The sequence defined by the attribute intersected with the main sequence.
             The sequence the sequence while at the render frames.
     """

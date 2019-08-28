@@ -21,7 +21,7 @@ def disabled_app():
     Run functions in the app while disabled.
 
     Clarisse crashes while resolving drive letters in contexts unless the
-    operation is done while disabled. 
+    operation is done while disabled.
     """
     app = ix.application
     app.disable()
@@ -73,7 +73,7 @@ def resolve_contexts():
     If a context (A) is a reference to another file and that file
     contains a reference contxt (B), and A's filepath is wrong, then we
     don't know anything about B, so we can't gather all contexts in one
-    hit and replace drive letters. We must recurse down, and for each 
+    hit and replace drive letters. We must recurse down, and for each
     reference context, resolve its path and then visit the contexts it
     contains.
 
@@ -122,10 +122,10 @@ def strip_drive_letters():
 def strip_drive_letter(attr):
     """
     Strip drive letter from one path attribute.
-    
+
     Args:
         attr (OfAttr): Attribute to modify.
-    
+
     Returns:
         bool: Whether the attribute was modified
     """
@@ -142,7 +142,7 @@ def strip_drive_letter(attr):
 
 def force_image_ranges(start, end, images):
     """
-    Ensure the sequence attributes on image ranges are valid. 
+    Ensure the sequence attributes on image ranges are valid.
 
     Clarisse doesn't respect frame range overrides, so we make sure the image
     ranges are covered.

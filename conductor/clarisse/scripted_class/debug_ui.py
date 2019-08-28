@@ -10,7 +10,7 @@ LEVEL_LIST = [loggeria.LEVEL_MAP[key] for key in loggeria.LEVELS]
 def handle_log_level(_, attr):
     """
     When a node changes log level, change all nodes log levels.
-    
+
     Args:
         attr (OfAttr): Attribute that changed
     """
@@ -27,7 +27,7 @@ def handle_log_level(_, attr):
 def refresh_log_level(nodes):
     """
     On refresh resolve log level, update other nodes to reflect the same.
-    
+
     Args:
         nodes (list): This is all ConductorJob nodes and we find the log level
         of the first one that is set.

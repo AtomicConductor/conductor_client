@@ -54,14 +54,14 @@ def get_bounding_frames(*fame_specs):
 def generate_prerender_script_arg(args):
     """
     Constructs pre render script with some useful information as args.
-    
-    Example: 
+
+    Example:
         /tmp/conductor/ct_prep.py -range 1 100 -images project://scene/imgHigh
         project://scene/imgLow
 
     Args:
-        args (list): image and frame range arguments 
-    
+        args (list): image and frame range arguments
+
     Returns:
         string: script with args
     """

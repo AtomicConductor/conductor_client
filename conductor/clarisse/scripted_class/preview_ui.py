@@ -31,7 +31,7 @@ BOTTOM_BUT_WIDTH = WIDTH / 4
 def show_submission_responses(responses):
     """
     Display submission responese in a window.
-    
+
     Args:
         responses (list of dict): elements contain response codes and descriptsions
     """
@@ -164,10 +164,10 @@ class PreviewWindow(ix.api.GuiWindow):
 
 def build(submission, **kw):
     """
-    Show and populate the preflight window. 
+    Show and populate the preflight window.
 
-    Populate it with submission args for each job. 
-    
+    Populate it with submission args for each job.
+
     Args:
         submission (Submission): Submission object
     """

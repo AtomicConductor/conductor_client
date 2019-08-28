@@ -44,7 +44,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def on_action(self, action, obj, data):
         """
         Handles any button press in the Attribute Editor.
-        
+
         Args:
             action (str): Name of the action is a nice version of the button label.
             obj (ConductorJob): The scripted class instance.
@@ -86,7 +86,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def on_attribute_change(self, obj, attr, *_):
         """
         Handles attributes changing value.
-        
+
         Args:
             obj (ConductorJob): The scripted class instance.
             attr (OfAttr): The attribute that changed.
@@ -126,7 +126,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def declare_attributes(self, s_class):
         """
         Declares all attributes and actions.
-        
+
         Args:
             s_class (ScriptedClass):  The scripted class.
         """
@@ -147,7 +147,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
     def declare_dev_attributes(self, s_class):
         """
         Declares developer attributes.
-        
+
         Sets up log level and traceback behaviour. Also provides a reload button
         for Conductor devs by setting an env var.
 
@@ -184,13 +184,13 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         Declares render package attributes.
 
         Render package is simply a project file that may have been manipulated
-        in preparation for the render. 
+        in preparation for the render.
 
         localize_contexts: Like Maya's import references. Useful if renders fail
         due to the complexity of dispatching nested references.
 
         timestamp_render_package: Add a timestamp to the name of the render
-        package. 
+        package.
 
         clean_up_render_package: Remove the render package after submission.
 
