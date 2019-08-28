@@ -2,7 +2,7 @@
 
    isort:skip_file
 """
-from conductor.native.lib.gpath import Path, GPathError
+from conductor.native.lib.gpath import Path
 import os
 import sys
 import mock
@@ -21,25 +21,25 @@ sys.modules["glob"] = __import__("conductor.native.lib.mocks.glob", fromlist=["d
 
 class BadInputTest(unittest.TestCase):
     def test_badly_formed_drive_letter(self):
-        with self.assertRaises(GPathError):
+        with self.assertRaises(ValueError):
             self.p = Path("CZ:\\a\\b\\c")
 
     def test_empty_input(self):
-        with self.assertRaises(GPathError):
+        with self.assertRaises(ValueError):
             self.p = Path("")
 
     def test_many_colons_input(self):
-        with self.assertRaises(GPathError):
+        with self.assertRaises(ValueError):
             self.p = Path("A:a\\b:c")
 
     def test_relative_input_literal(self):
-        with self.assertRaises(GPathError):
+        with self.assertRaises(ValueError):
             self.p = Path("a/b/c")
 
     def test_relative_input_var(self):
         env = {"DEPT": "texturing"}
         with mock.patch.dict("os.environ", env):
-            with self.assertRaises(GPathError):
+            with self.assertRaises(ValueError):
                 self.p = Path("$DEPT/a/b/c")
 
 
@@ -185,7 +185,7 @@ class PathContextExpansionTest(unittest.TestCase):
         )
 
     def test_relative_path_var_fails(self):
-        with self.assertRaises(GPathError):
+        with self.assertRaises(ValueError):
             self.p = Path("$FOO/a/b/c", context=self.context)
 
 
@@ -239,7 +239,7 @@ class PathCollapseDotsTest(unittest.TestCase):
         self.assertEqual(p.depth, 0)
 
     def test_raise_when_collapse_too_many_dots(self):
-        with self.assertRaises(GPathError):
+        with self.assertRaises(ValueError):
             Path("/a/b/../../../")
 
 

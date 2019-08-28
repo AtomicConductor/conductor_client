@@ -51,7 +51,11 @@ class Job(object):
         self.environment = self._get_environment()
         self.package_ids = self._get_package_ids()
         self.dependencies = deps.collect(self.node)
-        self.dependencies.add(render_package_path)
+
+        try:
+            self.dependencies.add(render_package_path)
+        except ValueError as ex:
+            ix.log_error("{} - while resolving {}".format(str(ex), render_package_path))
 
         expander = Expander(**self.tokens)
         self.title = expander.evaluate(self.node.get_attribute("title").get_string())
@@ -170,8 +174,10 @@ class Job(object):
 
         for image in images:
             directory = os.path.dirname(image.get_attribute("save_as").get_string())
-            out_paths.add(directory)
-
+            try:
+                out_paths.add(directory)
+            except ValueError as ex:
+                ix.log_error("{} - while resolving {}".format(str(ex), directory))
         return {"common_path": out_paths.common_path(), "output_paths": out_paths}
 
     def _get_instance(self):

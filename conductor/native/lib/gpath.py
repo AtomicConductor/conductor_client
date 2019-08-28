@@ -5,8 +5,8 @@ RX_LETTER = re.compile(r"^([a-zA-Z]):")
 RX_DOLLAR_VAR = re.compile(r"\$([A-Za-z][A-Z,a-z0-9_]+)")
 
 
-class GPathError(Exception):
-    pass
+# class ValueError(ValueError):
+#     pass
 
 
 def _expand_context(path, context):
@@ -29,7 +29,7 @@ def _normalize_dots(components):
             pass
         elif c == parentdir:
             if not len(result):
-                raise GPathError("Can't resolve path due to '..' overflow")
+                raise ValueError("Can't resolve components due to '..' overflow:")
             del result[-1]
         else:
             result.append(c)
@@ -45,7 +45,7 @@ class Path(object):
         """
 
         if not path:
-            raise GPathError("Empty path")
+            raise ValueError("Empty path")
 
         if isinstance(path, list):
             ipath = path[:]
@@ -62,11 +62,11 @@ class Path(object):
             remainder = re.sub(RX_LETTER, "", path)
 
             if remainder[0] not in ["/", "\\"]:
-                raise GPathError(
-                    "Not an absolute path. Starts with:{}".format(remainder[0])
+                raise ValueError(
+                    "Not an absolute path. Starts with: '{}'".format(remainder[0])
                 )
             if any((c in [":"]) for c in remainder):
-                raise GPathError("Bad characters in path:{}".format(remainder))
+                raise ValueError("Bad characters in path:{}".format(remainder))
 
             self._components = _normalize_dots(
                 [s for s in re.split("/|\\\\", remainder) if s]

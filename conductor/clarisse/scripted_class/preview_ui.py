@@ -132,7 +132,6 @@ class PreviewWindow(ix.api.GuiWindow):
         submission_args = self.submission.get_args()
         json_jobs = json.dumps(submission_args, indent=3, sort_keys=True)
         self.text_widget.set_text(json_jobs)
-        self.text_widget.set_highlighted_word("upload_paths", True)
 
     def on_close_but(self, sender, eventid):
         """Hide only.

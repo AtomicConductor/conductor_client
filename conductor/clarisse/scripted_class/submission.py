@@ -62,7 +62,7 @@ from conductor.clarisse.scripted_class import missing_files_ui
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
-from conductor.native.lib.gpath import Path, GPathError
+from conductor.native.lib.gpath import Path
 from conductor.native.lib.gpath_list import PathList
 
 # SCRIPTS_DIRECTORY = os.path.join(
@@ -140,7 +140,12 @@ class Submission(object):
             "timestamp_render_package"
         ).get_bool()
 
-        self.tmpdir = Path(deps.CONDUCTOR_TMP_DIR)
+        self.tmpdir = Path(
+            os.path.join(
+                ix.application.get_factory().get_vars().get("CTEMP").get_string(),
+                "conductor",
+            )
+        )
         self.render_package_path = self._get_render_package_path()
         self.should_delete_render_package = self.node.get_attribute(
             "clean_up_render_package"
@@ -246,7 +251,7 @@ class Submission(object):
                 return Path("{}_ct{}.project".format(path, self.timestamp))
             else:
                 return Path("{}_ct.project".format(path))
-        except GPathError as err:
+        except ValueError as err:
             ix.log_error(
                 'Cannot create a submission from this file: "{}". Has it ever been saved?'.format(
                     current_filename

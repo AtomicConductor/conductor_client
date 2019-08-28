@@ -3,7 +3,6 @@ import re
 
 import ix
 from conductor.clarisse.scripted_class import frames_ui
-from conductor.native.lib.gpath import GPathError
 from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence
 
@@ -76,11 +75,12 @@ def _get_system_dependencies():
     for entry in system_dependencies():
         try:
             result.add(entry["dest"])
-        except GPathError:
+        except ValueError as ex:
             ix.log_error(
-                "Error while resolving system_dependency: {}".format(entry["dest"])
+                "{} - while resolving system_dependency: {}".format(
+                    str(ex), entry["dest"]
+                )
             )
-            raise
 
     return result
 
@@ -114,9 +114,11 @@ def _get_extra_uploads(obj):
     for path in paths:
         try:
             result.add(path)
-        except GPathError:
-            ix.log_error("Error while resolving extra upload path: {}".format(path))
-            raise
+        except ValueError as ex:
+            ix.log_error(
+                "{} - while resolving extra upload path: {}".format(str(ex), path)
+            )
+
     return result
 
 
@@ -154,24 +156,23 @@ def get_scan(obj, policy, include_references=True):
             # replace all frame identifiers with "*" for globbing later
             try:
                 result.add(re.sub((r"(#+|\{frame:\d*d})"), "*", filename))
-            except GPathError as ex:
+            except ValueError as ex:
                 ix.log_error(
-                    "Error while resolving path: {}.{} = {}".format(
-                        item_name, attr.get_name(), filename
+                    "{} - while resolving path: {} = {}".format(
+                        str(ex), str(attr), filename
                     )
                 )
-                raise
+
         else:  # SMART
             filenames = _smart_expand(obj, attr, filename)
             try:
                 result.add(*filenames)
-            except GPathError as ex:
+            except ValueError as ex:
                 ix.log_error(
-                    "Error while resolving path: {}.{} = {}".format(
-                        item_name, attr.get_name(), filename
+                    "{} - while resolving path: {} = {}".format(
+                        str(ex), str(attr), filename
                     )
                 )
-                raise
 
     #
     # We ignored references in _should_ignore for 2 reasons.
@@ -185,13 +186,13 @@ def get_scan(obj, policy, include_references=True):
             if context.is_reference() and not context.is_disabled():
                 try:
                     result.add(context.get_attribute("filename").get_string())
-                except GPathError as ex:
+                except ValueError as ex:
                     ix.log_error(
-                        "Error while resolving reference: {}.filename = {}".format(
-                            str(context), filename
+                        "{} - while resolving reference: {}.filename = {}".format(
+                            str(ex), str(context), filename
                         )
                     )
-                    raise
+
     return result
 
 

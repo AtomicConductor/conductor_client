@@ -46,10 +46,15 @@ class FileListWidget(ix.api.GuiTree):
 
         deduped = PathList()
         for item in self.item_list:
-            deduped.add(item.get_name())
-
+            try:
+                deduped.add(item.get_name())
+            except ValueError as ex:
+                ix.log_error("{} - while resolving {}".format(str(ex), item.get_name()))
         for entry in entries:
-            deduped.add(entry)
+            try:
+                deduped.add(entry)
+            except ValueError as ex:
+                ix.log_error("{} - while resolving {}".format(str(ex), entry))
         # clear existing list
         root_item.remove_children()
         del self.item_list[:]
