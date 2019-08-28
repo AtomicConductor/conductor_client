@@ -22,7 +22,7 @@ SMART = 2
 # Will break with negative offsets of more than a hundred thousand.
 SEQUENCE_OFFSET_KLUDGE = 100000
 
-# ct_node: wrapper around cnode. Allows us to add flags and so.
+# ct_node: wrapper around cnode. Allows us to add flags and so on.
 
 # ct_prep.py: pre render script that operates in the Clarisse. Among other
 # things, it emoves drive letters on win.
@@ -83,7 +83,7 @@ def system_dependencies():
 
 def _get_system_dependencies():
     """
-    Extracts the destination side of system depencdency files.
+    Extracts the destination side of system dependency files.
 
     Returns:
         PathList: list of system files to be uploaded
