@@ -6,26 +6,16 @@ Module is responsible for providing documentation for all attributes of the scri
 def set_docs(s_class):
 
     s_class.set_attr_doc(
-        "refresh",
+        "connect",
         """Connects to Conductor and updates available projects and machine types. Sign in may be required. Also sets empty string attributes to their defaults.""",
     )
 
     s_class.set_attr_doc(
-        "export_render_package",
-        """Save the file that would be sent to Conductor, but don't submit the job. This may be useful if you want to test the generated render command locally.""",
-    )
-
-    s_class.set_attr_doc(
-        "write_render_package_only",
-        """Exports the render package without submitting. This allows you to test render commands locally.""",
+        "preflight",
+        """Build a submission as json and inspect it before submitting to Conductor.""",
     )
 
     s_class.set_attr_doc("submit", """Submits this job to Conductor.""")
-
-    s_class.set_attr_doc(
-        "clean_up_render_package",
-        """Removes the render package file after submission.""",
-    )
 
     s_class.set_attr_doc(
         "title",
@@ -34,7 +24,7 @@ def set_docs(s_class):
 
     s_class.set_attr_doc(
         "images",
-        """Sets the images to be rendered. Images must have their Render to Disk attribute set. The Save As field must contain a filename.""",
+        """Sets the items to be rendered. Images or Layers must have their Render to Disk attribute set. The Save As field must contain a filename.""",
     )
 
     s_class.set_attr_doc("conductor_project_name", """Sets the Conductor project.""")
@@ -61,6 +51,10 @@ def set_docs(s_class):
     s_class.set_attr_doc(
         "scout_frames",
         """Scout-frames to render. Tasks containing any of the specified scout frames, are run in their entirety. Other frames are set to a holding state.""",
+    )
+
+    s_class.set_attr_doc(
+        "tiles", """Render tiles. Split each single frame across many machines."""
     )
 
     s_class.set_attr_doc(
@@ -127,6 +121,21 @@ def set_docs(s_class):
     )
 
     s_class.set_attr_doc(
+        "localize_contexts",
+        """Localize contexts before dispatching to Conductor. This will cause your project to be saved and then reloaded after submission, which may take a long time for large projects.""",
+    )
+
+    s_class.set_attr_doc(
+        "timestamp_render_package",
+        """Add a timestamp to the project filename that will be submitted.""",
+    )
+
+    s_class.set_attr_doc(
+        "clean_up_render_package",
+        """Removes the render project file after submission.""",
+    )
+
+    s_class.set_attr_doc(
         "notify",
         """Indicates that notifications will be sent by email on job completion.""",
     )
@@ -137,10 +146,10 @@ def set_docs(s_class):
     )
 
     s_class.set_attr_doc(
-        "verbose_errors", """Shows a stacktrace when something goes wrong."""
+        "show_tracebacks", """Shows a stacktrace when something goes wrong."""
     )
 
     s_class.set_attr_doc(
-        "do_submission",
-        """Sends the submission to Conductor. If Do Submission is turned off, the render package will still be written.""",
+        "conductor_log_level",
+        """Sets the severity above which Conductor's logging emits messages.""",
     )

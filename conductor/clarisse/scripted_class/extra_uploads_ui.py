@@ -287,7 +287,7 @@ def build(*args):
     """
     Pop up a window to choose extra upload files.
 
-    Pre populate the wondow withthe list of files that were stored on the
+    Pre populate the wondow with the list of files that were stored on the
     ConductorJob item extra_uploads attribute.
     """
     node = args[0]
