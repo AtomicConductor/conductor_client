@@ -1,13 +1,12 @@
-def handle_instance_type(obj, attr):
-    """When instance type changes, remember the string.
+"""
+Responds to events in the machines section of the ConductorJob attribute editor.
 
-    This is because the value is numeric, but the menu is built
-    dynamically from the list of instance types. So by stashing the name
-    we can try to repair it if the list changes order between sessions.
-    """
-    label = attr.get_applied_preset_label()
-    if label:
-        obj.get_attribute("last_instance_type").set_string(label)
+NOTE: In a future version we will also save the name of the instance type.This
+    is because the value is numeric, but the menu is built dynamically from the
+    list of instance types. So by stashing the name we can try to repair it if
+    the list changes order between sessions.
+
+"""
 
 
 def update(obj, data_block):
@@ -16,7 +15,7 @@ def update(obj, data_block):
 
     Args:
         obj (ConductorJob): Item on which to rebuild menu.
-        data_block (ConductorDataBlock): Singleton object containing instance types
+        data_block (ConductorDataBlock): Singleton object containing instance types.
     """
 
     instance_types = data_block.instance_types()

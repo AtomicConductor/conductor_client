@@ -264,7 +264,6 @@ class EnvWindow(ix.api.GuiWindow):
 
 
 def build(*args):
-
     """
     Show the window.
 

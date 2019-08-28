@@ -8,17 +8,16 @@ Submit, send jobs straight to Conductor.
 """
 
 import conductor.clarisse.utils as cu
-import ix
 from conductor.clarisse.scripted_class import preview_ui
 from conductor.clarisse.scripted_class.submission import Submission
 from conductor.native.lib.data_block import PROJECT_NOT_SET, ConductorDataBlock
+import ix
 
 SUCCESS_CODES_SUBMIT = [201, 204]
 
 SUBMIT_DIRECT = 0
 PREVIEW_FIRST = 1
 WRITE_PACKAGE_ONLY = 2
-
 
 SAVE_STATE_UNMODIFIED = 0
 SAVE_STATE_CANCELLED = 1
@@ -28,15 +27,30 @@ SAVE_STATE_DONT_CARE = 4
 
 
 def check_need_save(node, which):
-    """Check if the current project is modified and proposed to save it.
+    """
+    Check if the current project is modified and proposed to save it.
 
     If user chooses to save, then save it and return the filename along
     with an enum response.
+    
+
+    Args:
+        node (ConductorJob): 
+        which (Enum): Why we are checking.
+            SUBMIT_DIRECT, PREVIEW_FIRST, WRITE_PACKAGE_ONLY
+    
+    Returns:
+        tuple(Enum, Filename): 
+            SAVE_STATE_UNMODIFIED
+            SAVE_STATE_CANCELLED
+            SAVE_STATE_SAVED
+            SAVE_STATE_NO
+            SAVE_STATE_DONT_CARE
+
     """
 
     if not node.get_attribute("localize_contexts").get_bool():
         return SAVE_STATE_DONT_CARE, None
-
     if which == SUBMIT_DIRECT:
         msg = "Save the project?\nYou must save the project if you wish to submit."
     elif which == PREVIEW_FIRST:
@@ -48,17 +62,12 @@ def check_need_save(node, which):
     app = ix.application
     if not ix.application.is_project_modified():
         return SAVE_STATE_UNMODIFIED, None
-    # fsdhfklhsfdsjf
-    clarisse_window = ix.application.get_event_window()
+    cwin = ix.application.get_event_window()
     box = ix.api.GuiMessageBox(
         app, 0, 0, "Conductor Information - project not saved!", msg
     )
-    x = (
-        2 * clarisse_window.get_x() + clarisse_window.get_width() - box.get_width()
-    ) / 2
-    y = (
-        2 * clarisse_window.get_y() + clarisse_window.get_height() - box.get_height()
-    ) / 2
+    x = (2 * cwin.get_x() + cwin.get_width() - box.get_width()) / 2
+    y = (2 * cwin.get_y() + cwin.get_height() - box.get_height()) / 2
     box.resize(x, y, box.get_width(), box.get_height())
     if which == SUBMIT_DIRECT or which == WRITE_PACKAGE_ONLY:
         box.set_style(ix.api.AppDialog.STYLE_YES_NO)
@@ -82,16 +91,17 @@ def check_need_save(node, which):
     filename = ix.api.GuiWidget.save_file(
         app, current_filename, "Save Scene File...", "Project Files\t*." + "project"
     )
-    if filename != "":
+    if filename:
         ix.application.save_project(filename)
         return SAVE_STATE_SAVED, filename
-
     else:
         return SAVE_STATE_CANCELLED, None
 
 
 def submit(*args):
-    """Validate and submit directly."""
+    """
+    Validate and submit directly.
+    """
     node = args[0]
 
     state, fn = check_need_save(node, SUBMIT_DIRECT)
@@ -109,13 +119,14 @@ def submit(*args):
 
 
 def preview(*args):
-    """Validate and show the script in a panel.
+    """
+    Validate and show the script in a panel.
 
     Submission can be invoked from the preview panel.
     """
     node = args[0]
 
-    state, fn = check_need_save(node, PREVIEW_FIRST)
+    state, _ = check_need_save(node, PREVIEW_FIRST)
     if state == SAVE_STATE_CANCELLED:
         ix.log_warning("Preflight cancelled.")
         return
@@ -138,7 +149,8 @@ def _validate(node):
 
 
 def _validate_images(node):
-    """Check some images are present to be rendered.
+    """
+    Check some images or layers are present to be rendered.
     Then check that they are set up to save to disk.
     """
     images = ix.api.OfObjectArray()
@@ -169,7 +181,12 @@ def _validate_images(node):
 
 
 def _validate_packages(obj):
-    # for now, just make sure clarisse is present in packages
+    """
+    For now, just make sure clarisse is present in packages
+    
+    Args:
+        obj (ConductorJob): 
+    """
     attr = obj.get_attribute("packages")
     paths = ix.api.CoreStringArray()
     attr.get_values(paths)
@@ -182,7 +199,12 @@ def _validate_packages(obj):
 
 
 def _validate_project(obj):
-
+    """
+    Check that the project is set.
+    
+    Args:
+        obj (ConductorJob): 
+    """
     projects = ConductorDataBlock().projects()
     project_att = obj.get_attribute("conductor_project_name")
     label = project_att.get_applied_preset_label()
@@ -198,4 +220,3 @@ def _validate_project(obj):
                 label
             )
         )
-

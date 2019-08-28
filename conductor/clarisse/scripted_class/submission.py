@@ -1,50 +1,36 @@
-"""Build an object to represent a Clarisse Conductor submission.
+"""
+Build an object to represent a Clarisse Conductor submission.
 
 Also handle the submit action.
 
-NOTE There are a number of bugs in clarisse that have lead to the
-decision for a particular submission flow. See submit() and
-write_render_package() . The flow is:
+NOTE There are some bugs in clarisse that have lead to some decisions for the
+submission flow.
+
+1. Bug where some nested path overrides don't correctly get overridden when
+   opening the project.
+
+2. Undo doesn't work on deeply nested reference contexts. If you make-all-local
+   in a batch undo block, then when you undo, there are extra nodes in the
+   project.
+
+Users can choose to localize contexts before submission (off by default) If they
+turn it on then the flow is:
 1. Make sure the user has saved the file. (they might need it)
-2. Prepare the temp directory.
-3. Copy Conductor strip_drive_letter script to temp.
-4. Make sure image ranges are valid.
 5. Make contexts local.
 6. Remove Conductor nodes.
 7. Save the render package.
 8. Do the submission.
-9. Clean up temp files.
+9. Reload the saved file. This is slow for very big projects because of the time
+   to reload the broject.
 
-The bugs and reasonong that lead to this are:
-1. BUG: Images don't render if their on-node frame range does not
-contain the frames specified in the render command. The cli frames
-should take precedence, but as they don't, we have to pre adjust
-them. Undo doesn't work correctly for the relevant attributes, so
-after adjustment they must be returned to their original values.
-2.BUG:  Undo doesn't work on deeply nested reference contexts. If
-you`make-all-local` in a batch undo block, then when you undo,
-there are extra nodes in the project.
+If they don't localize, then:
+1. Save the render package.
+2. Do the submission.
 
-We export a render package as opposed to a regular project because
-all paths containing variables are resolved.
 
-We make-all-local (import referenced files) before exporting for
-many reasons -
-
-A. Bug where  some nested path overrides don't correctly get
-overridden when opening the project. (I have to manually set
-one every time I open the project). The same bug would appear
-on the remote machine if we don't make refs local.
-B. During development, a strategy was tried where drive letter
-removal was run recursively on contexts on the remote machine
-and it crashed with obscure errors. The same script succeeded
-in the local interactive session, so I abandoned that path.
-C. Isotropix plan to have refs made local for render packages
-anyway. It's just not implemented yet.
-
-So the combination of undo bugs and the need to make changes
-to the scene before export, is why we:
-(save, change, export, revert)
+In this case the submission may contain xrefs nested to any level and we do a
+pretty good job of resolving them. However, if the render errors due to xrfef
+the localize method is the fallback.
 """
 
 import datetime
@@ -57,31 +43,19 @@ import traceback
 import conductor.clarisse.scripted_class.dependencies as deps
 import conductor.clarisse.utils as cu
 import ix
-from conductor.clarisse.scripted_class import frames_ui
 from conductor.clarisse.scripted_class import missing_files_ui
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
-from conductor.native.lib.gpath_list import PathList
-
-# SCRIPTS_DIRECTORY = os.path.join(
-#     os.environ["CONDUCTOR_LOCATION"], "conductor", "clarisse", "scripts"
-# )
 
 
 def _localize_contexts():
-    """Make all clarisse reference contexts local.
+    """
+    Make all clarisse reference contexts local.
 
-    This is the equivalent of importing Maya references. We do this
-    because on Windows it can be a bit fragile to have a scene
-    containing nested project references that need drive letters
-    resolved before they can find deeper referenced paths. Clarisse
-    project files are generally small because they get everything heavy
-    from geometry caches, so making refs local is very unlikely to have
-    an effect on upload size. Having said that, We can try to omit this
-    (and include project refs in the dep scan) once the tool is proven
-    stable.
+    This is the equivalent of importing Maya references and is optional for the
+    user.
     """
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
@@ -93,10 +67,12 @@ def _localize_contexts():
 
 
 def _remove_conductor():
-    """Remove all Conductor data from the render archive.
+    """
+    Remove all Conductor data from the render archive.
 
-    This ensures the render logs are not polluted by complaints about
-    Conductor nodes.
+    This ensures the render logs are not polluted by complaints about Conductor
+    nodes. This can only be done in the situation where we localize contexts,
+    because in that case we get tto reload the scene after submission.
     """
     objects = ix.api.OfObjectArray()
     ix.application.get_factory().get_objects("ConductorJob", objects)
@@ -105,25 +81,27 @@ def _remove_conductor():
 
 
 class Submission(object):
-    """class Submission holds all data needed for a submission.
+    """
+    Submission holds all data needed for a submission.
 
-    A Submission has potentially many Jobs, and those Jobs each have
-    many Tasks. A Submission can provide the correct args to send to
-    Conductor, or it can be used to create a dry run to show the user
-    what will happen. A Submission also sets a list of tokens that the
-    user can access as Clarisse custom variables in order to build
-    strings in the UI such as commands and job titles.
+    It has potentially many Jobs, and those Jobs each have many Tasks. A
+    Submission can provide the correct args to send to Conductor, or it can be
+    used to create a dry run to show the user what will happen. 
+
+    A Submission also sets a list of tokens that the user can access as <angle
+    bracket> tokens in order to build strings in the UI such as commands and job
+    titles.
     """
 
     def __init__(self, obj):
-        """Collect data from the Clarisse UI.
+        """
+        Collect data from the Clarisse UI.
 
         Collect attribute values that are common to all jobs, then call
-        setenv(). After _set_tokens has been called, the Submission level
+        _set_tokens(). After _set_tokens has been called, the Submission level
         token variables are valid and calls to evaluate expressions will
         correctly resolve where those tokens have been used.
         """
-
         self.node = obj
 
         if self.node.is_kindof("ConductorJob"):
@@ -192,24 +170,15 @@ class Submission(object):
         """Env tokens are variables to help the user build expressions.
 
         The user interface has fields for strings such as job title,
-        task command. The user can use these env tokens in SeExpr
-        expressions to build those strings. Tokens at the Submission
+        task command. The user can use these tokens with <angle brackets> to build those strings. Tokens at the Submission
         level are also available in Job level fields, and likewise
         tokens at the Job level are available in Task level fields.
-        However, it makes no sense the other way, for example you can't
-        use a chunk token (available at Task level) in a Job title
-        expression because a chunk changes for every task. Once tokens
-        are set, strings using them are expanded correctly. In fact we
-        don't need these tokens to be stored as member data on the
-        Submission object (or Job or Task) for the submission to
-        succeed. The only reason we store them is to display them in a
-        dry-run scenario.
         """
         tokens = {}
 
-        pdirval = ix.application.get_factory().get_vars().get("PDIR").get_string()
+        pdir_val = ix.application.get_factory().get_vars().get("PDIR").get_string()
 
-        tokens["ct_pdir"] = '"{}"'.format(Path(pdirval).posix_path(with_drive=False))
+        tokens["ct_pdir"] = '"{}"'.format(Path(pdir_val).posix_path(with_drive=False))
 
         tokens["ct_temp_dir"] = "{}".format(self.tmpdir.posix_path(with_drive=False))
         tokens["ct_timestamp"] = self.timestamp
@@ -224,10 +193,10 @@ class Submission(object):
         return tokens
 
     def _get_render_package_path(self):
-        """Calc the path to the render package.
+        """
+        Calc the path to the render package.
 
-        This is the only upload path that is not provided by
-        dependencies.py, as the name is not always known until
+        The name is not always known until
         preview/submission time because it is based on the filename and
         possibly a timestamp. What this means, practically, is that it won't 
         show up in the extra uploads window along with 
@@ -236,9 +205,10 @@ class Submission(object):
 
         We replace spaces in the filename because of a bug in Clarisse
         https://www.isotropix.com/user/bugtracker/376
-        Also see related `cd` in `DEFAULT_CMD_TEMPLATE` conductor_job.py
-        """
 
+        Returns:
+            string: path
+        """
         current_filename = ix.application.get_current_project_filename()
         path = os.path.splitext(current_filename)[0]
 
@@ -259,14 +229,13 @@ class Submission(object):
             )
 
     def get_args(self):
-        """Prepare the args for submission to conductor.
-
-        This is a list where there is one args object for each Conductor
-        job. The project, notifications, and upload args are the same
-        for all jobs, so they are set here. Other args are provided by
-        Job objects and updated with these submission level args to form
-        each complete submission.
         """
+        Prepare the args for submission to conductor.
+        
+        Returns:
+            list: list of dicts containing submission args per job.
+        """
+
         result = []
         submission_args = {}
 
@@ -283,10 +252,14 @@ class Submission(object):
         return result
 
     def submit(self):
-        """Submit all jobs.
-
-        Collect responses and show them in the log.
         """
+        Submit all jobs.
+        
+        Returns:
+            list: list of response dictionariues, containing response codes
+            and descriptions.
+        """
+
         submission_args = self.get_args()
         self.write_render_package()
 
@@ -316,21 +289,11 @@ class Submission(object):
         self._after_submit()
         return results
 
-    # def _before_submit(self):
-    #     """"""
-    #     self.write_render_package()
-    #     self.validate_upload_paths()
-
     def write_render_package(self):
-        """Write a package suitable for rendering.
+        """
+        Write a package suitable for rendering.
 
-        A render package is a binary package designed for rendering. It
-        has the same name as the project, but with .render for the
-        extension. It is a binary, around half the size of a project
-        file. Before saving, all reference contexts are made local, and
-        all Conductor data is removed.
-
-        It is saved in the clarisse temp folder CTEMP.
+        A render package is a project file with a special name.
         """
 
         app = ix.application
@@ -346,14 +309,6 @@ class Submission(object):
             ix.application.set_current_project_filename(current_filename)
             clarisse_window.set_title(current_window_title)
 
-        # Now that we save a project file
-        if os.environ.get("CONDUCTOR_SAVE_SNAPSHOTS"):
-            filename = os.path.join(
-                os.path.dirname(app.get_current_project_filename()), "ct_debug.project"
-            )
-            with cu.disabled_app():
-                app.save_project_snapshot(filename)
-
         self._after_write_package()
 
         if not success:
@@ -363,6 +318,17 @@ class Submission(object):
         return package_file
 
     def legalize_upload_paths(self, submission_args):
+        """
+        Alert the user of missing files. If the user doesn't want to continue
+        with missing files, the result will be False. Otherwise it will be True
+        and the potentially adjusted args are returned.
+        
+        Args:
+            submission_args (list): list of job args.
+        
+        Returns:
+           tuple (bool, adjusted args):  
+        """
         missing_files = []
 
         for job_args in submission_args:
@@ -380,7 +346,9 @@ class Submission(object):
         return (True, submission_args)
 
     def _before_write_package(self):
-        """Prepare to write render package."""
+        """
+        Prepare to write render package.
+        """
         if self.localize_before_ship:
             _localize_contexts()
             _remove_conductor()
@@ -389,7 +357,8 @@ class Submission(object):
         self._copy_system_dependencies_to_temp()
 
     def _prepare_temp_directory(self):
-        """Make sure the temp directory has a conductor subdirectory.
+        """
+        Make sure the temp directory has a conductor subdirectory.
         """
         tmpdir = self.tmpdir.posix_path()
         try:
@@ -401,12 +370,18 @@ class Submission(object):
                 raise
 
     def _copy_system_dependencies_to_temp(self):
+        """
+        Copy over all system dfependencies:
+
+        Wrapper scripts, config files etc.
+        """
         for entry in deps.system_dependencies():
             if os.path.isfile(entry["src"]):
                 ix.log_info("Copy {} to {}".format(entry["src"], entry["dest"]))
                 shutil.copy(entry["src"], entry["dest"])
 
     def _after_submit(self):
+        """Clean up, and potentially other post submission actions."""
         self._delete_render_package()
 
     def _after_write_package(self):
@@ -422,12 +397,18 @@ class Submission(object):
             self._revert_to_saved_scene()
 
     def _delete_render_package(self):
+        """
+        Delete the render package from disk if the user wants to.
+        """
         if self.should_delete_render_package:
             render_package_file = self.render_package_path.posix_path()
             if os.path.exists(render_package_file):
                 os.remove(render_package_file)
 
     def _revert_to_saved_scene(self):
+        """
+        If contexts were localized, we will load the saved scene.
+        """
         with cu.waiting_cursor():
             with cu.disabled_app():
                 ix.application.load_project(self.project_filename)

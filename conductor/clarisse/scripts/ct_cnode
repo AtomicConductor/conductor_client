@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+"""
+Wrapper around cnode
+"""
 import os
 import re
 import sys
@@ -12,6 +15,20 @@ BIG_NUMBER = 99999999
 
 
 def get_bounding_frames(*fame_specs):
+    """
+    Get frames to cover the range being rendered.
+
+    We do this because Clarisse doesn't render images unless they have their
+    sequence attributes set, even if the command line flags specify what frames
+    to render. Therefore we have to calculate the frames needed and turn them
+    on.
+
+    Raises:
+        ValueError: Raises if the spec is malformed.
+
+    Returns:
+        tuple(int, int): bounding frames
+    """
     min_frame = BIG_NUMBER
     max_frame = -BIG_NUMBER
 
@@ -35,10 +52,20 @@ def get_bounding_frames(*fame_specs):
 
 
 def generate_prerender_script_arg(args):
-    """Provide the pre render script with some information about the render images and range
-    return something like:
-    /tmp/conductor/ct_prep.py -range 1 100 -images project://scene/imgHigh project://scene/imgLow
     """
+    Constructs pre render script with some useful information as args.
+    
+    Example: 
+        /tmp/conductor/ct_prep.py -range 1 100 -images project://scene/imgHigh
+        project://scene/imgLow
+
+    Args:
+        args (list): image and frame range arguments 
+    
+    Returns:
+        string: script with args
+    """
+
     script_directory = os.path.dirname(sys.argv[0])
     prep_script = os.path.join(script_directory, "ct_prep.py")
     min_frame, max_frame = get_bounding_frames(*args.image_frames_list)
@@ -48,7 +75,8 @@ def generate_prerender_script_arg(args):
 
 
 def main():
-    """Wrapper to run cnode with conductor adjustments.
+    """
+    Mainn function to run cnode with conductor adjustments.
     """
     parser = argparse.ArgumentParser()
 
@@ -63,12 +91,10 @@ def main():
 
     args, pass_through_args = parser.parse_known_args()
 
-    # We will change to the working directory because cnode
-    # cannot deal with spaces in the project filepath. We have
-    # eliminated spaces from the project filename. But the
-    # directory name is beyond our control, so we cd into it
-    # and work from there.
-    # https://www.isotropix.com/user/bugtracker/363 .
+    # We will change to the working directory because cnode cannot deal with
+    # spaces in the project filepath. We have eliminated spaces from the project
+    # filename. But the directory name is beyond our control, so we cd into it
+    # and work from there. https://www.isotropix.com/user/bugtracker/363 .
     proj = pass_through_args[0]
     work_dir, basename = (os.path.dirname(proj), os.path.basename(proj))
     pass_through_args[0] = basename
@@ -76,6 +102,9 @@ def main():
     cnode_args = ["cnode"] + pass_through_args
 
     config_path = os.path.join(os.path.dirname(sys.argv[0]), "clarisse.cfg")
+
+    # These args are generally args we've decided to put in the wrapper rather
+    # than allow the user to specify them in the task command.
     cnode_args += [
         "-config_file",
         config_path,

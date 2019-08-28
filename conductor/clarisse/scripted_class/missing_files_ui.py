@@ -1,13 +1,9 @@
-"""Provide a window in which to display a preview submission.
-
-This is required because Clarisse's attribute editor doesn't allow
-custom UI to be embedded.
+"""
+Provide a window in which to display a MissingFiles.
 """
 
-
-import json
 import ix
-import conductor.clarisse.utils as cu
+
 
 C_LEFT = ix.api.GuiWidget.CONSTRAINT_LEFT
 C_TOP = ix.api.GuiWidget.CONSTRAINT_TOP
@@ -21,7 +17,7 @@ WINDOW_TOP = 200
 HEIGHT = 500
 WIDTH = 800
 PADDING = 5
-TITLE_PANEL_HEIGHT = 60
+TITLE_PANEL_HEIGHT = 90
 
 
 SYMBOL_BUT_WIDTH = 30
@@ -31,7 +27,8 @@ BOTTOM_BUT_WIDTH = WIDTH / 3
 
 
 class MissingFilesWindow(ix.api.GuiWindow):
-    """The entire window.
+    """
+    The entire window.
 
     Holds the panel plus buttons to Continue or Cancel.
     """
@@ -100,31 +97,36 @@ class MissingFilesWindow(ix.api.GuiWindow):
         self._populate()
 
     def _populate(self):
-        """Put the submission args in the window."""
-
+        """
+        Put the missing files in the window.
+        """
         content = "\n".join(self.files)
         self.text_widget.set_text(content)
 
     def on_close_but(self, sender, eventid):
-        """Hide only.
-
-        Don't destroy because hide will cause the event loop to end and
-        destroy will kick in afterwards.
+        """
+        Hide UI so that the event loop exits and window is destroyed.
         """
         self.hide()
 
     def on_go_but(self, sender, eventid):
-        """Set result and hide(destroy) the window."""
+        """
+        Set result and hide(destroy) the window.
+        """
         self.result = True
 
         self.hide()
 
 
 def proceed(files):
-    """Show the window.
-
-    Populate it with submission args for each job. Listen for events
-    until the window is hidden.
+    """
+    Show the window and pass in the missiong file paths
+    
+    Args:
+        files (list of strings): Unique, ready sorted, list of miussubg files.
+    
+    Returns:
+        bool: whether or not the user wants to continue the submission or cancel
     """
     if not files:
         return True

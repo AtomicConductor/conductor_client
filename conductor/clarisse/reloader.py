@@ -1,5 +1,9 @@
-"""This is useful for development.
+"""
+For development mode, we can reload modules with a button push. 
 
+
+
+The button is available when the env var CONDUCTOR_MODE == "dev".
 It reloads files imported by ConductorJob. Not ConductorJob itself.
 """
 from conductor.clarisse import utils

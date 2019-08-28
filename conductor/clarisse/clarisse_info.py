@@ -1,3 +1,6 @@
+"""
+Manage version info and the like.
+"""
 import re
 
 import ix
@@ -5,7 +8,9 @@ from conductor.lib import package_utils
 
 
 class ClarisseInfo(package_utils.ProductInfo):
-    """Retrieve information about the current clarisse session."""
+    """
+    Retrieve information about the current clarisse session.
+    """
 
     @classmethod
     def get_product(cls):
@@ -15,8 +20,9 @@ class ClarisseInfo(package_utils.ProductInfo):
     @classmethod
     def get_version(cls):
         """e.g. 3.5.SP1."""
-        return re.compile(r'([_\s])').sub(
-            ".", ix.application.get_version_name()).lower()
+        return (
+            re.compile(r"([_\s])").sub(".", ix.application.get_version_name()).lower()
+        )
 
     @classmethod
     def get_major_version(cls):

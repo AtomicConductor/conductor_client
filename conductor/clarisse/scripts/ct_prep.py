@@ -1,16 +1,28 @@
-import re
-import os
-import ix
+"""
+Pre render script to run inside clarisse on the render node.
+
+It mainly deals with drive letters.
+"""
 import argparse
 import errno
+import os
+import re
 import sys
 from contextlib import contextmanager
+
+import ix
 
 LETTER_RX = re.compile(r"^([a-zA-Z]):")
 
 
 @contextmanager
 def disabled_app():
+    """
+    Run functions in the app while disabled.
+
+    Clarisse crashes while resolving drive letters in contexts unless the
+    operation is done while disabled. 
+    """
     app = ix.application
     app.disable()
     yield
@@ -18,7 +30,9 @@ def disabled_app():
 
 
 def main():
-    """Removes drive letters from all paths."""
+    """
+    Prepare this project to be rendered.
+    """
     desc = "Prepare a Clarisse project file for rendering on Conductor"
     parser = argparse.ArgumentParser(description=desc)
 
@@ -40,6 +54,8 @@ def main():
 
     resolve_contexts()
 
+    # strip regular drive letters AFTER resolving contexts so we catch any paths
+    # that were inside contexts.
     if options.strip_drive_letters:
         strip_drive_letters()
 
@@ -51,6 +67,18 @@ def main():
 
 
 def resolve_contexts():
+    """
+    Find the root context and recurse down, resolving xrefs in children.
+
+    If a context (A) is a reference to another file and that file
+    contains a reference contxt (B), and A's filepath is wrong, then we
+    don't know anything about B, so we can't gather all contexts in one
+    hit and replace drive letters. We must recurse down, and for each 
+    reference context, resolve its path and then visit the contexts it
+    contains.
+
+    We have to disable the app dfor this operation otherwise it tends to crash Clarisse.
+    """
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)
     with disabled_app():
@@ -58,14 +86,11 @@ def resolve_contexts():
 
 
 def resolve(ctx):
-    """Strip drive letters from reference contexts.
+    """
+    Recursively strip drive letters from xref contexts and discover their children.
 
-    If a context (A) is a reference to another file and that file
-    contains a reference contxt (B), and A's filepath is wrong, then we
-    don't know anything about B, so we can't gather all contexts in one
-    hit and replace drive letters. We must recurse down, and for each 
-    reference context, resolve its path and then visit the contxts it
-    contains.
+    Args:
+        ctx (OfContext): parent context.
     """
     level = ctx.get_level()
 
@@ -81,6 +106,9 @@ def resolve(ctx):
 
 
 def strip_drive_letters():
+    """
+    Strip drive letters from regular path attrs.
+    """
     attrs = ix.api.OfAttr.get_path_attrs()
     total = len(list(attrs))
     ix.log_info("Stripping drive letters for {:d} paths".format(total))
@@ -92,6 +120,15 @@ def strip_drive_letters():
 
 
 def strip_drive_letter(attr):
+    """
+    Strip drive letter from one path attribute.
+    
+    Args:
+        attr (OfAttr): Attribute to modify.
+    
+    Returns:
+        bool: Whether the attribute was modified
+    """
     path = attr.get_string()
     attr_name = attr.get_name()
     item_name = attr.get_parent_object().get_name()
@@ -104,8 +141,18 @@ def strip_drive_letter(attr):
 
 
 def force_image_ranges(start, end, images):
-    # Clarisse doesn't respect frame range overrides, so we make sure the image ranges
-    # are covered.
+    """
+    Ensure the sequence attributes on image ranges are valid. 
+
+    Clarisse doesn't respect frame range overrides, so we make sure the image
+    ranges are covered.
+
+    Args:
+        start (int): first frame
+        end (int): last frame
+        images (list): Clarisse paths to all images
+    """
+
     ix.log_info(
         "Ensuring image ranges are on for the sequence {}:{}".format(start, end)
     )
@@ -118,8 +165,16 @@ def force_image_ranges(start, end, images):
 
 
 def ensure_image_directories(images):
-    """Clarisse fails to render if the destination
-    directories don't exist"""
+    """
+    Create directories in preparation for image output.
+
+    Clarisse fails to render if the destination
+    directories don't exist.
+
+    Args:
+        images (list): Clarisse paths to all images
+    """
+
     ix.log_info("Ensure directories exist for images")
     directories = []
     for image_path in images:
@@ -130,7 +185,12 @@ def ensure_image_directories(images):
 
 
 def mkdir_p(dirs):
-    """Make directories unless they already exist."""
+    """
+    Make directories unless they already exist.
+
+    Args:
+        dirs (list): directories to create
+    """
     for d in dirs:
         try:
             os.makedirs(d)

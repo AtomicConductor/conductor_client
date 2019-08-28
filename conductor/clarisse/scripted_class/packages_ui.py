@@ -1,3 +1,13 @@
+"""
+Provides a window in which to choose packages.
+
+This is overkill for Clarisse as it doesn't have a rich plugin ecosystem and
+therefore doesn't need complex hierarchical packge display.
+
+for this reason it will be replaced very soon and i'm not going to spend time
+re-documenting it in detail.
+
+"""
 import ix
 from conductor.clarisse.clarisse_info import ClarisseInfo
 from conductor.clarisse.scripted_class import refresh
@@ -16,7 +26,6 @@ C_TOP = ix.api.GuiWidget.CONSTRAINT_TOP
 C_RIGHT = ix.api.GuiWidget.CONSTRAINT_RIGHT
 C_BOTTOM = ix.api.GuiWidget.CONSTRAINT_BOTTOM
 C_COUNT = ix.api.GuiWidget.CONSTRAINT_COUNT
-
 
 class PackageTreeItem(ix.api.GuiTreeItemBasic):
     """An item in the tree that maintains its own child list."""
@@ -182,8 +191,7 @@ class PackageTreeWidget(ix.api.GuiTree):
             print "LEN NODES ONE set_is_selected", child_item.get_name()
             child_item.set_is_selected(True)
             child_item.set_is_dirty(True)
-            # child_item.select(True)
-
+   
             return
         self._select_leaf(child_item, *nodes[1:])
 
@@ -271,7 +279,9 @@ class PackageChooser(ix.api.GuiWindow):
         self.tree_widget.clear()
 
     def on_detect_but(self, sender, eventid):
-        """Select the current package if available in the list."""
+        """
+        Select the current package if available in the list.
+        """
         print "-" * 80
         host = ClarisseInfo().get()
         print host
@@ -286,7 +296,9 @@ class PackageChooser(ix.api.GuiWindow):
         self.hide()
 
     def _get_selected(self, item, selected_paths, path=None):
-        """Dig down to get all selected itens."""
+        """
+        Dig down to get all selected itens.
+        """
         for child in item.child_list:
             child_path = (
                 "/").join([part for part in [path, child.get_name()] if part])
@@ -295,7 +307,9 @@ class PackageChooser(ix.api.GuiWindow):
             self._get_selected(child, selected_paths, child_path)
 
     def on_go_but(self, sender, eventid):
-        """Save the selected packages on the CobnductorJob node."""
+        """
+        Save the selected packages on the CobnductorJob node.
+        """
         selected_items = []
         self._get_selected(self.tree_widget, selected_items)
         selected_items.sort(key=lambda item: item.count("/"))
@@ -311,7 +325,8 @@ class PackageChooser(ix.api.GuiWindow):
 
 
 def build(*args):
-    """Called from the attribute editor to build the window.
+    """
+    Called from the attribute editor to build the window.
 
     Highlight any existing packages entries for the node.
     """

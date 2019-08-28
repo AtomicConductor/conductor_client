@@ -1,4 +1,6 @@
-"""Build an object to represent a Conductor job."""
+"""
+Build an object to represent a Conductor job.
+"""
 
 
 import json
@@ -9,27 +11,35 @@ import ix
 from conductor.clarisse.scripted_class import frames_ui
 from conductor.clarisse.scripted_class.task import Task
 from conductor.native.lib.data_block import ConductorDataBlock
-from conductor.native.lib.gpath import Path
+from conductor.native.lib.expander import Expander
 from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence
-from conductor.native.lib.expander import Expander
 
 
 class Job(object):
-    """class Job holds all data for one Conductor Job in Clarisse.
+    """
+    Class Job holds all data for one Conductor Job in Clarisse.
 
-    Jobs are owned by a Submission and a Job owns potentially many
-    Tasks. Like a Submission, it also manages a list of environment
-    tokens the user can access as clarisse variables in expressions.
+    Jobs are owned by a Submission and a Job owns potentially many Tasks. Like a
+    Submission, it also manages a list of tokens the user can access in thhe
+    task template and other ConductorJob attributes.
     """
 
     def __init__(self, node, parent_tokens, render_package_path):
-        """Build job object for a ConductorJob node.
-
+        """
+        Build job object for a ConductorJob node.
+        
         After _set_tokens has been called, the Job level token variables are
-        valid and calls to evaluate string attributes will correctly
-        resolve where those tokens have been used.  This is why we
-        evaluate title, tasks, after the call to _set_tokens()
+        valid and calls to evaluate string attributes will correctly resolve
+        where those tokens have been used.  This is why we evaluate title,
+        tasks, after the call to _set_tokens()
+
+        Args:
+            node (ConductorJob): item from which to build this job object   
+            parent_tokens (dict): token/value pairs in the scope of the
+            submission (parent) object. 
+            render_package_path (string): The render project file, which must be
+            added to this job's dependencies.
         """
 
         self.node = node
@@ -39,7 +49,6 @@ class Job(object):
         self.instance = self._get_instance()
 
         out = self._get_output_directory()
-
         self.common_output_path = out["common_path"]
         self.output_paths = out["output_paths"]
 
@@ -60,6 +69,7 @@ class Job(object):
         expander = Expander(**self.tokens)
         self.title = expander.evaluate(self.node.get_attribute("title").get_string())
 
+        # TODO: Add metadata UI
         self.metadata = None
 
         task_att = self.node.get_attribute("task_template")
@@ -71,10 +81,15 @@ class Job(object):
                 )
 
     def _get_sources(self):
-        """Get the images, along with associated Sequence objects.
-
+        """
+        Get the images/layers, along with associated Sequence objects.
+        
         If we are not rendering a custom range, then the sequence for
         each image may be different.
+
+        Returns:
+            list of dict: elements contain an image along with the Sequence that
+            represents the image range. 
         """
 
         images = ix.api.OfObjectArray()
@@ -94,7 +109,13 @@ class Job(object):
         return result
 
     def _get_extra_env_vars(self):
-        """Collect any environment specified by the user."""
+        """
+        Collect any environment specified by the user.
+        
+        Returns:
+            list of dict: name, value and merge policy of user specified env vars.
+        """
+
         result = []
         json_entries = ix.api.CoreStringArray()
         self.node.get_attribute("extra_environment").get_values(json_entries)
@@ -111,12 +132,16 @@ class Job(object):
         return result
 
     def _get_environment(self):
-        """Collect all environment variables.
-
-        Collect variables specified by the packages, and add those
-        specified by the user. Also disable the windows pathhelper and
-        add libpython2.7 location to the library path.
         """
+        Collect all environment variables.
+        
+        NOTE: Revisit and test the bespoke env added below in the amendments
+        section.
+         
+        Returns:
+            package_environment: Resolved package environment object.
+        """
+
         package_tree = ConductorDataBlock(product="clarisse").package_tree()
 
         paths = ix.api.CoreStringArray()
@@ -129,7 +154,7 @@ class Job(object):
 
         # Special Amendments!
         # Clearly we need to find a better value for PYTHONHOME and add it in
-        # sidecar or here
+        # the sidecar
         amendments = [
             {
                 "name": "PYTHONHOME",
@@ -148,7 +173,12 @@ class Job(object):
         return package_env
 
     def _get_package_ids(self):
-        """Package Ids for chosen packages."""
+        """
+        Package Ids for chosen packages.
+        
+        Returns:
+            list: package ids as list of strings.
+        """
         package_tree = ConductorDataBlock(product="clarisse").package_tree()
         paths = ix.api.CoreStringArray()
         self.node.get_attribute("packages").get_values(paths)
@@ -163,9 +193,15 @@ class Job(object):
         return results
 
     def _get_output_directory(self):
-        """Get the common path for all image output paths.
+        """
+        Get the common path for all image output paths.
+        
+        NOTE: We don't really need the subpaths any longer because directory
+        creation is handled in the prerender script. Don't want to mess with
+        things right now though.
 
-        Also return the individual paths as they may need to be created.
+        Returns:
+            dict: common path and list of paths below it
         """
         out_paths = PathList()
 
@@ -181,7 +217,8 @@ class Job(object):
         return {"common_path": out_paths.common_path(), "output_paths": out_paths}
 
     def _get_instance(self):
-        """Get everything related to the instance.
+        """
+        Get everything related to the instance.
 
         Get the machine type, preemptible flag, and number of retries if
         preemptible. We use the key from the instance_type menu and look
@@ -189,7 +226,11 @@ class Job(object):
         instance_types is stored. When exhaustion API is in effect, the
         list of available types may be dynamic, so wetell the user to
         refresh.
+        
+        Returns:
+            dict: Fields to specify the render node behaviour.
         """
+
         instance_types = ConductorDataBlock(product="clarisse").instance_types()
         label = self.node.get_attribute("instance_type").get_applied_preset_label()
 
@@ -209,11 +250,12 @@ class Job(object):
         return result
 
     def _get_sequence(self):
-        """Get the sequence object from the frames section of the UI.
 
-        As this is not a simulation job, the frames UI is visible and we
-        use it. The Sequence contains chunk information, and we also get
-        a sequence describing the scout frames.
+        """
+        Get sequence objects from the frames section of the UI.
+        
+        Returns:
+            dict: main sequence and scout sequence.
         """
         return {
             "main": frames_ui.main_frame_sequence(self.node),
@@ -221,10 +263,18 @@ class Job(object):
         }
 
     def _set_tokens(self, parent_tokens):
-        """Env tokens.
+        """
+        Constructs angle bracket tokens dictionary.
 
         Collect token values for this Job and merge with those from the
         parent Submission.
+        
+        Args:
+            parent_tokens (dict): tokens that were resolved in the parent
+            (submission) object.
+        
+        Returns:
+            dict: combined dictionary of tokens in scope for this job.
         """
         tokens = {}
         main_seq = self.sequence["main"]
@@ -246,7 +296,10 @@ class Job(object):
         tokens["ct_retries"] = str(self.instance["retries"])
         tokens["ct_job"] = self.node_name
 
-        # Space delimited list of output paths are needed for a mkdir cmd.
+        # Space delimited list of output paths are needed for a mkdir cmd. As
+        # mentioned above, no longer needed now that directories are created in
+        # the prerender script. Just don't want to remove right now as no time
+        # to test.
         tokens["ct_directories"] = " ".join(
             '"{}"'.format(p.posix_path(with_drive=False)) for p in self.output_paths
         )
@@ -255,11 +308,16 @@ class Job(object):
         return tokens
 
     def get_args(self, upload_only):
-        """Prepare the args for submission to conductor.
+        """
+        Prepare the args for submission to conductor.
 
-        This dict represents the args that are specific to this job. It
-        will be joined with the submission level args like
-        notifications, and project, before submitting to Conductor.
+        Args:
+            upload_only (bool): Don't construct tasks in an upload only job.
+        
+        Returns:
+            dict: This dict represents the args that are specific to this job.
+            It will be joined with the submission level args like notifications,
+            and project, before submitting to Conductor.
         """
         result = {}
         result["upload_paths"] = sorted([d.posix_path() for d in self.dependencies])

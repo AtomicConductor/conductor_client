@@ -29,10 +29,11 @@ BOTTOM_BUT_WIDTH = WIDTH / 4
 
 
 def show_submission_responses(responses):
-    """Pop up an info dialog after submission.
-
-    The dialog is equipped to handle the results of an array of submissions.
-
+    """
+    Display submission responese in a window.
+    
+    Args:
+        responses (list of dict): elements contain response codes and descriptsions
     """
 
     success_jobs = [
@@ -128,27 +129,32 @@ class PreviewWindow(ix.api.GuiWindow):
         self._populate()
 
     def _populate(self):
-        """Put the submission args in the window."""
+        """
+        Put the submission args in the window.
+        """
         submission_args = self.submission.get_args()
         json_jobs = json.dumps(submission_args, indent=3, sort_keys=True)
         self.text_widget.set_text(json_jobs)
 
     def on_close_but(self, sender, eventid):
-        """Hide only.
-
-        Don't destroy because hide will cause the event loop to end and
-        destroy will kick in afterwards.
+        """
+        Hide UI so that the event loop exits and window is destroyed.
         """
         self.hide()
 
     def on_write_but(self, sender, eventid):
-        """  and keep the window visible."""
+        """
+        Write the render package file(s) out. This allows you to run one of the
+        task commands in your own shell.
+        """
         with cu.waiting_cursor():
             package_path = self.submission.write_render_package()
         ix.log_info("Wrote package to {}".format(package_path))
 
     def on_go_but(self, sender, eventid):
-        """Submit and hide(destroy) the window."""
+        """
+        Submit and hide(destroy) the window.
+        """
         with cu.waiting_cursor():
             responses = self.submission.submit()
 
@@ -157,10 +163,13 @@ class PreviewWindow(ix.api.GuiWindow):
 
 
 def build(submission, **kw):
-    """Show the window.
+    """
+    Show and populate the preflight window. 
 
-    Populate it with submission args for each job. Listen for events
-    until the window is hidden.
+    Populate it with submission args for each job. 
+    
+    Args:
+        submission (Submission): Submission object
     """
     can_submit = kw.get("can_submit", False)
     win = PreviewWindow(submission, can_submit)
