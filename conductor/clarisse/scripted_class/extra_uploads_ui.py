@@ -1,3 +1,9 @@
+"""
+Provides a window in which to add extra uploads.
+
+This is required because Clarisse's attribute editor doesn't allow
+custom UI to be embedded.
+"""
 import conductor.clarisse.scripted_class.dependencies as deps
 import ix
 from conductor.clarisse.scripted_class import refresh
@@ -12,18 +18,25 @@ WIDTH = 900
 
 
 class FileListWidget(ix.api.GuiTree):
-    """Build a list of files using a tree widget.
+    """
+    Build a list of files using a tree widget.
 
-    Use the tree widget because its the only way to get multiselect in
-    clarisse. The actual contents will be flat, one level deep.
+    Use the tree widget because its the only way to get multiselect in a
+    clarisse list-like widget. The actual contents will be flat, one level deep.
     """
 
     def __init__(self, parent, y_val):
-        """Set up the tree config.
+        """
+        Set up the tree config.
 
         We inherit so that we can keep a list of children, due to
         GuiWidget,get_child_items being broken.
+        
+        Args:
+            parent (GuiWidget): Parent UI
+            y_val (int): Height location to put the top of the widget
         """
+
         ix.api.GuiTree.__init__(self, parent, 0, y_val, WIDTH, HEIGHT)
         self.set_border_style(ix.api.GuiTree.BORDER_STYLE_FLAT)
         self.set_shaded_entries(True)
@@ -32,12 +45,16 @@ class FileListWidget(ix.api.GuiTree):
         self.item_list = []
 
     def add_entries(self, entries):
-        """Add a line item for each entry.
-
+        """
+        Add a line item for each entry.
+        
         Use PathList to deduplicate on the fly. As the addition of
         entries may completely change the list (grow or shrink) we
         delete and rebuild the list of entries each time a batch is
         added.
+
+        Args:
+            entries (list): list of file paths.
         """
         if not entries:
             return
@@ -65,7 +82,8 @@ class FileListWidget(ix.api.GuiTree):
         self.refresh()
 
     def destroy_selected(self):
-        """Remove the selected items.
+        """
+        Remove the selected items.
 
         Also remove from the item_list.
         """
@@ -78,13 +96,16 @@ class FileListWidget(ix.api.GuiTree):
         self._remove_from_sync_list(indices)
 
     def destroy_all(self):
-        """Clear all items."""
+        """
+        Clear all items.
+        """
         self.get_root().remove_children()
         del self.item_list[:]
         self.refresh()
 
     def _get_selected_indices(self):
-        """Get indices.
+        """
+        Get indices of selected paths.
 
         Get in reverse order so they don't change during removal.
         """
@@ -95,15 +116,22 @@ class FileListWidget(ix.api.GuiTree):
         return indices
 
     def _remove_from_sync_list(self, indices):
+        """
+        Remove items with given indices.
+        
+        Args:
+            indices (list): Indices of items to remove.
+        """
         for index in indices:
             self.item_list.pop(index)
 
 
 class ExtraUploadsWindow(ix.api.GuiWindow):
-    """Window to contain the tree.
+    """
+    Window to contain the tree.
 
-    It has buttons to browse and manage the list. It also has regular
-    apply, go, close buttons at the bottom.
+    It has buttons to browse and manage the list. It also has regular apply, go,
+    close buttons at the bottom.
     """
 
     def __init__(self, node):
@@ -188,7 +216,9 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         self.connect(self.go_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_go_but)
 
     def on_browse_but(self, sender, eventid):
-        """User may browse for files."""
+        """
+        User may browse for files.
+        """
         app = ix.application
         title = "Select extra uploads..."
         mask = "Any files\t*"
@@ -196,25 +226,38 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_smart_scan_but(self, sender, eventid):
+        """
+        Add the results of a smart scan to the list.
+        """
         include_references = not self.node.get_attribute("localize_contexts").get_bool()
         filenames = deps.get_scan(self.node, deps.SMART, include_references)
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_glob_scan_but(self, sender, eventid):
+        """
+        Add the results of a glob scan to the list.
+        """
         include_references = not self.node.get_attribute("localize_contexts").get_bool()
         filenames = deps.get_scan(self.node, deps.GLOB, include_references)
         filenames.glob()
         self.file_list_wdg.add_entries(sorted(filenames))
 
     def on_remove_sel_but(self, sender, eventid):
+        """
+        Responds to remove selected button.
+        """
         self.file_list_wdg.destroy_selected()
 
     def on_remove_all_but(self, sender, eventid):
+        """
+        Responds to remove all button.
+        """
         self.file_list_wdg.destroy_all()
 
     def on_close_but(self, sender, eventid):
-        """Hide the widget.
+        """
+        Hide the widget.
 
         Destruction will be be triggered as the event loop ends.
         """
@@ -228,9 +271,10 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
         self.hide()
 
     def _apply(self):
-        """Save this list of files on the node.
+        """
+        Save this list of files on the node.
 
-        Force the AE to update afterwards.
+        Force the attribute editor to update afterwards.
         """
         attr = self.node.get_attribute("extra_uploads")
         attr.remove_all()
@@ -240,7 +284,12 @@ class ExtraUploadsWindow(ix.api.GuiWindow):
 
 
 def build(*args):
-    """Pop up a window to choose extra upload files."""
+    """
+    Pop up a window to choose extra upload files.
+
+    Pre populate the wondow withthe list of files that were stored on the
+    ConductorJob item extra_uploads attribute.
+    """
     node = args[0]
     win = ExtraUploadsWindow(node)
     win.show_modal()

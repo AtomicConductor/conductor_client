@@ -1,3 +1,7 @@
+"""
+Collect dependencies
+"""
+
 import os
 import re
 
@@ -18,27 +22,35 @@ SMART = 2
 # Will break with negative offsets of more than a hundred thousand.
 SEQUENCE_OFFSET_KLUDGE = 100000
 
-# auxiliary scripts provided by conductor and required on the backend.
-# Currrently only ct_prep.py, removes drive letters on win.
-# These will be copied from SCRIPTS_DIRECTORY to the temp dir in
-# preparation for uploading.
+# ct_node: wrapper around cnode. Allows us to add flags and so.
 
-# Why not upload directly from Conductor's install?
-# Because it makes dealing with paths easier. And it just doesn't feel right.
-
-# Why not just store the drive_letter removal stuff ready on the sidecar?
-# Because the installation shouldn't know, or try to determine, what OS the
-# submission was generated on. It should be given instructions from the client
-# and run them.
-
-# Why not replace drive letters locally, at the same time we make refs local
-# and and so on?
-# Because then the render package would not be runnable on the local machine.
+# ct_prep.py: pre render script that operates in the Clarisse. Among other
+# things, it emoves drive letters on win.
 CONDUCTOR_SCRIPTS = ["ct_prep.py", "ct_cnode"]
+
+# clarisse.cfg: A copy of the users config file.
 CLARISSE_CFG_FILENAME = "clarisse.cfg"
 
 
 def system_dependencies():
+    """
+    Provides a list of system files to be sent to the render node.
+
+   These will be copied to a directory in preparation for uploading.
+
+   This is part of a strategy to satisfy 2 constraints.
+   1. Dont store special logic on the sidecar.
+   2. Don't make the render command un-runnable on the local machine.
+
+   See docs in ct_cnode and ct_prep for more info.
+
+    Returns:
+        list: Each element is a source/destination pair of paths.
+        [
+            {"src": "/some/path.ext", "dest": "/other/path.ext"},
+            ...
+        ]
+    """
 
     result = []
     conductor_scripts_directory = os.path.join(
@@ -70,7 +82,12 @@ def system_dependencies():
 
 
 def _get_system_dependencies():
-    """Paths where conductor's own scripts will be uploaded from."""
+    """
+    Extracts the destination side of system depencdency files.
+
+    Returns:
+        PathList: list of system files to be uploaded
+    """
     result = PathList()
     for entry in system_dependencies():
         try:
@@ -86,27 +103,45 @@ def _get_system_dependencies():
 
 
 def collect(obj):
-    """Collect all upload files.
+    """
+    Collect ALL upload files in preparation for submission.
 
-    Always add any extra uploads the user has chosen. Then do a scan if
-    the policy is not None.
+    Args:
+        obj (ConductorJob): The item whose attributes define the scan.
+    Returns:
+        PathList: All file dependencies.
     """
     result = PathList()
 
-    include_references = not obj.get_attribute("localize_contexts").get_bool()
+    # policy: NONE, GLOB, SMART_SEQUENCE
     policy = obj.get_attribute("dependency_scan_policy").get_long()
+
+    # If we are not localizing reference contexts, then we need to add the
+    # referenced project files to the dependencies list.
+    include_references = not obj.get_attribute("localize_contexts").get_bool()
+
     result.add(*_get_system_dependencies())
     result.add(*_get_extra_uploads(obj))
     result.add(*get_scan(obj, policy, include_references))
 
-    # tell the list to expand  any "*" or <UDIM> in place
+    # tell the list to look on disk and expand  any "*" or <UDIM> in place
     result.glob()
 
     return result
 
 
 def _get_extra_uploads(obj):
-    """Get user specified uploads from the extra_uploads attribute."""
+    """
+    Collects any files specified through the extra uploads window.
+
+    They are stored in a list attribute on theConductorJob item./
+    
+    Args:
+        obj (ConductorJob): item being processed.
+    
+    Returns:
+        PathList: Collected paths.
+    """
     result = PathList()
     extras_attr = obj.get_attribute("extra_uploads")
     paths = ix.api.CoreStringArray()
@@ -123,21 +158,32 @@ def _get_extra_uploads(obj):
 
 
 def get_scan(obj, policy, include_references=True):
-    """Scan all path attrs for dependencies according to the given policy.
+    """
+    Scan all path attrs for dependencies according to the given policy.
 
-    If policy is not None, first replace all UDIM tags with a "*" so
-    they may be globbed. File sequences may be resolved one of 2 ways.
-    If policy is GLOB, then hashes in filenames will be replaced by a
-    "*" and globbed later. If policy is SMART then for each filename, we
-    look at its sequence definition and calculate the frames that will
-    be needed for the frame range being rendered.
+    If policy is not None: First replace all UDIM tags with a "*" so they may be
+    globbed. 
+
+    File sequences may be resolved one of 2 ways:
+    1. If policy is GLOB, then hashes in filenames will be replaced by a "*" and
+        globbed later. 
+    2. If policy is SMART then for each filename, we look at its sequence
+        definition and calculate the frames that will be needed for the frame
+        range being rendered.
+
+    Args:
+        obj (ConductorJob): Item being processed.
+        policy (Enum): NONE, GLOB, SMART
+        include_references (bool, optional): Whether to scan for references. Defaults to True.
+    
+    Returns:
+        PathList: Collected paths
     """
     result = PathList()
 
     if not policy:
         return result
     for attr in ix.api.OfAttr.get_path_attrs():
-        item_name = attr.get_parent_object().get_name()
         if _should_ignore(attr):
             continue
 
@@ -174,21 +220,22 @@ def get_scan(obj, policy, include_references=True):
                     )
                 )
 
-    #
     # We ignored references in _should_ignore for 2 reasons.
-    # 1. We only want them if we are not localizing them.
-    # 2. Getting ref contexts from OfAttr.get_path_attrs() is buggy
-    # so it's best to get them through the root context resolve_all_contexts()
+    # 1. We only want them if we are not localizing them
+    #    (include_references==True).
+    # 2. Getting ref contexts from OfAttr.get_path_attrs() is buggy so it's best
+    #    to get them through the root context with resolve_all_contexts()
     if include_references:
         contexts = ix.api.OfContextSet()
         ix.application.get_factory().get_root().resolve_all_contexts(contexts)
         for context in contexts:
             if context.is_reference() and not context.is_disabled():
                 try:
-                    result.add(context.get_attribute("filename").get_string())
+                    filename = context.get_attribute("filename").get_string()
+                    result.add(filename)
                 except ValueError as ex:
                     ix.log_error(
-                        "{} - while resolving reference: {}.filename = {}".format(
+                        "{} - while resolving reference {}.filename = {}".format(
                             str(ex), str(context), filename
                         )
                     )
@@ -197,11 +244,18 @@ def get_scan(obj, policy, include_references=True):
 
 
 def _is_project_reference(attr):
-    """Does the attribute reference a clarisse project?
+    """
+    Does the attribute reference a clarisse project?
 
-    If so, we don't include it in the depedency scan because ultimately
-    it will be made local. Check the extension, because Alembic and
-    pixar formats are also possible.
+    If so, we don't include it in the depedency scan because ultimately it will
+    be made local. Check the extension, because Alembic and pixar formats are
+    also possible.
+
+    Args:
+        attr (OfAttr): Attribute to query
+
+    Returns:
+         bool: Is the attribute a reference
     """
     obj = attr.get_parent_object()
     if obj.get_class_name() == "Generic":
@@ -214,10 +268,14 @@ def _is_project_reference(attr):
 
 
 def _should_ignore(attr):
-    """Is the attribute needed.attribute.
-
-    Ignore if private, disabled, output filename, or reference. We don't
-    need refs because we make them local on the client.
+    """
+    Is the attribute needed
+    
+    Args:
+        attr (OfAttr): Attribute to query
+    
+    Returns:
+        bool: True if the path at this attribute should be ignored
     """
     if attr.get_parent_object().is_disabled():
         return True
@@ -232,17 +290,21 @@ def _should_ignore(attr):
 
 
 def _evaluate_static_expression(target_attr):
-    """Evaluate the static part of the expression.
+    """
+    Evaluate the static part of an attribute containing an expression.
 
-    Assume expression is in active state, otherwise we wouldn't be here.
+    Assume expression is in active state, (otherwise we wouldn't be here).
 
-    We are doing this because we want literal paths that are needed for
-    the upload. The easiest and most reliable way to evaluate variables
-    in the expression is to simply use get_string(). However, if we do
-    that, it will evaluate time varying variables like $3F for the current
-    frame only.  NOTE, it does not resolve hash placeholders like ###. 
-    So to keep the time vaiang varables variable, we replace them with
-    python named format strings like {frame:0nd} where n is the padding.
+    We are doing this because we want literal paths that are needed for the
+    upload. The easiest and most reliable way to evaluate variables in the
+    expression would be to use get_string(). However, if we do that, it will
+    evaluate time varying variables like $3F for the current frame only.  
+
+    So to keep the time varying varables variable, we replace them with python named format strings
+    like {frame:0nd} where n is the padding.
+
+    NOTE: It does not resolve hash placeholders like ### so we can leave them as is. 
+    NOTE 2: Can't remember why I used {frame:04d} rather than change to ####.
 
     $CDIR/bugs_seq/bugs.####.jpg becomes
     /Users/julian/projects/fish/clarisse/bugs_seq/bugs.####.jpg
@@ -250,10 +312,16 @@ def _evaluate_static_expression(target_attr):
     $CDIR/bugs_seq/bugs.$4F.jpg becomes
     /Users/julian/projects/fish/clarisse/bugs_seq/bugs.{frame:04d}.jpg
 
-    With these time varying placeholders left intact, we can expand
-    using either the SMART scan policy, or a simple GLOB.
-    """
+    With these time varying placeholders left intact, we can expand correctly
+    later using either the SMART scan policy, or a simple GLOB.
 
+    Args:
+        target_attr (OfAttr): Attribute to query,
+    
+    Returns:
+        string: The attribute value with all $variables resolved except those
+        that rely on time.
+    """
     orig_expr = target_attr.get_expression()
 
     static_expr = re.sub(
@@ -269,11 +337,24 @@ def _evaluate_static_expression(target_attr):
 
 
 def _smart_expand(obj, attr, filename):
-    """Expand filenames when policy is SMART.
-
-    At this point, filenames may have hashes and/or frame_format
-    {frame:02d} style placeholders that represent frame ranges.
     """
+    Expand filenames when policy is SMART.
+
+    Takes into account the frame range to be rendered, and the frame
+    specification of any msource animated maps along with their offset. Then
+    resolves filenames for that intersection of sequences.
+    
+    Args:
+        obj (ConductorJob):  Item being processed. attr (OfAttr): Attribute to
+        query. 
+        filename (string): File template to expand. It may have hashes
+        and/or frame_format {frame:02d} style placeholders to represent frame
+        ranges
+
+    Returns:
+        list(strings): Expanded filenames
+    """
+
     result = []
     main_seq = frames_ui.main_frame_sequence(obj)
 
@@ -309,15 +390,27 @@ def _smart_expand(obj, attr, filename):
 
 
 def _attribute_sequence(attr, intersector):
-    """Get the sequence associated with a filename attribute.
+    """
+    Get the sequence associated with a filename attribute.
 
-    Many attributes have an associated sequence_mode attribute, which
-    when set to 1 signifies varying frames, and makes available start,
-    end, and offset attributes to help specify the sequence. Work out
-    the intersection with main sequence because during dependency
-    scanning, we can optimize the number of frames to upload if we use
-    only those frames specified in the sequence attribute, and intersect
-    them with the frame range specified in the job node.
+     Many attributes have an associated sequence_mode attribute, which when set
+    to 1 signifies varying frames and makes available start, end, and offset
+    attributes to help specify the sequence. 
+
+    We work out the intersection of that sequence with the main sequence because
+    during dependency scanning, we can optimize the number of frames to upload
+    if we use only those frames specified in the sequence attribute, and
+    intersect them with the frame range specified in the job node.
+
+    Args:
+        attr (OfAttr): Attribute to query,
+        intersector (Sequence): The main sequence as defined by the ConductorJob
+        frames override, or by the images being rendered.
+
+    Returns:
+        dict: 
+            The sequence defined by the attribute intersected with the main sequence.
+            The sequence the sequence while at the render frames.
     """
 
     obj = attr.get_parent_object()

@@ -2,7 +2,6 @@
 
 import os
 import re
-import errno
 import sys
 import argparse
 import subprocess
@@ -21,13 +20,12 @@ def get_bounding_frames(*fame_specs):
         range_match = RANGE_RE.match(spec)
 
         if not (range_match or number_match):
-            raise ValueError("Spec format must be 'start<:end<%step>>")
+            raise ValueError("Spec format must be 'start[:end[%step]]")
         if range_match:
             start, end, _ = [int(n or 1) for n in range_match.groups()]
         else:
             start = end = int(number_match.groups()[0])
 
-        print start, end
         if start < min_frame:
             min_frame = start
         if end > max_frame:
@@ -44,7 +42,9 @@ def generate_prerender_script_arg(args):
     script_directory = os.path.dirname(sys.argv[0])
     prep_script = os.path.join(script_directory, "ct_prep.py")
     min_frame, max_frame = get_bounding_frames(*args.image_frames_list)
-    return "{} -range {:d} {:d} -images {}".format(prep_script, min_frame, max_frame, " ".join(args.image))
+    return "{} -range {:d} {:d} -images {}".format(
+        prep_script, min_frame, max_frame, " ".join(args.image)
+    )
 
 
 def main():
@@ -52,15 +52,14 @@ def main():
     """
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-image_frames_list',
-                        nargs='*',
-                        type=str, required=True,
-                        help="List of image frame specs."
-                        )
-    parser.add_argument('-image',
-                        nargs='*',
-                        type=str,
-                        help="List of images.")
+    parser.add_argument(
+        "-image_frames_list",
+        nargs="*",
+        type=str,
+        required=True,
+        help="List of image frame specs.",
+    )
+    parser.add_argument("-image", nargs="*", type=str, help="List of images.")
 
     args, pass_through_args = parser.parse_known_args()
 
@@ -76,24 +75,36 @@ def main():
 
     cnode_args = ["cnode"] + pass_through_args
 
-    config_path =  os.path.join(os.path.dirname(sys.argv[0]), "clarisse.cfg")
-    cnode_args += ["-config_file", config_path, "-log_width", 0 ,"-search_path", "./", "-stats"]
- 
+    config_path = os.path.join(os.path.dirname(sys.argv[0]), "clarisse.cfg")
+    cnode_args += [
+        "-config_file",
+        config_path,
+        "-log_width",
+        0,
+        "-search_path",
+        "./",
+        "-stats",
+        "-log_level",
+        "Debug5",
+        "-license_server",
+        "conductor_ilise:40500",
+    ]
+
     if args.image:
         cnode_args += ["-image"] + args.image
         cnode_args += ["-image_frames_list"] + args.image_frames_list
 
     cnode_args += ["-script"] + [generate_prerender_script_arg(args)]
 
-    sys.stdout.write("Running command:..\n{}\nfrom:\n{}\n".format(
-        " ".join(cnode_args), work_dir))
+    sys.stdout.write(
+        "Running command:..\n{}\nfrom:\n{}\n".format(" ".join(cnode_args), work_dir)
+    )
 
     os.chdir(work_dir)
 
-    p = subprocess.Popen(cnode_args,  stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
+    p = subprocess.Popen(cnode_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    for line in iter(p.stdout.readline, b''):
+    for line in iter(p.stdout.readline, b""):
         sys.stdout.write(line)
         sys.stdout.flush()
 
