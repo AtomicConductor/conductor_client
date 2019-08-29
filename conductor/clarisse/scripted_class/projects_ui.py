@@ -30,7 +30,7 @@ def update(obj, data_block):
     """
     Fetch projects afresh and repopulate menu.
 
-    Args:å
+    Args:
         obj (ConductorJob):
         data_block (ConductorDataBlock): Singleton object that has a cached list of projects.
     """

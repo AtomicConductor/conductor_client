@@ -100,10 +100,9 @@ def set_docs(s_class):
         """Files to uploaded in addition to any files found by dependency scanning.""",
     )
 
-    s_class.set_attr_doc("choose_packages", """Opens the package chooser panel.""")
-
     s_class.set_attr_doc(
-        "packages", """Packages made available to the remote compute instances."""
+        "clarisse_version",
+        """Choose the version of Clarisse to run on the render nodes.""",
     )
 
     s_class.set_attr_doc(

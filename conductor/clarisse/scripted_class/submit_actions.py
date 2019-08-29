@@ -182,25 +182,22 @@ def _validate_images(node):
 
 def _validate_packages(obj):
     """
-    For now, just make sure clarisse is present in packages
+    Make sure a Clarisse version is selected.
 
     Args:
         obj (ConductorJob):
     """
-    attr = obj.get_attribute("packages")
-    paths = ix.api.CoreStringArray()
-    attr.get_values(paths)
-    if any(path.startswith("clarisse") for path in paths):
-        return
-    ix.log_error(
-        "No Clarisse package detected. \
-        Please use the package chooser to find one."
-    )
+    if not (
+        obj.get_attribute("clarisse_version")
+        .get_applied_preset_label()
+        .startswith("clarisse")
+    ):
+        ix.log_error("No Clarisse package selected.")
 
 
 def _validate_project(obj):
     """
-    Check that the project is set.
+    Check the project is set.
 
     Args:
         obj (ConductorJob):

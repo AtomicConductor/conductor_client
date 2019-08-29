@@ -3,8 +3,8 @@ Module concerned with refreshing the datablock and the attribute editor.
 """
 
 import ix
-from conductor.clarisse.clarisse_info import ClarisseInfo
 from conductor.clarisse.scripted_class import (
+    clarisse_version_ui,
     debug_ui,
     frames_ui,
     instances_ui,
@@ -48,18 +48,10 @@ def refresh(_, **kw):
     nodes = ix.api.OfObjectArray()
     ix.application.get_factory().get_all_objects("ConductorJob", nodes)
 
-    host = ClarisseInfo().get()
-    detected_host_paths = data_block.package_tree().get_all_paths_to(**host)
-
     for obj in nodes:
-
         projects_ui.update(obj, data_block)
         instances_ui.update(obj, data_block)
+        clarisse_version_ui.update(obj, data_block)
         frames_ui.update_frame_stats_message(obj)
-
-        packages_attr = obj.get_attribute("packages")
-        if not packages_attr.get_value_count():
-            for path in detected_host_paths:
-                packages_attr.add_string(path)
 
     debug_ui.refresh_log_level(nodes)

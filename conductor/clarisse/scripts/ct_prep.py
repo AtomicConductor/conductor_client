@@ -179,8 +179,9 @@ def ensure_image_directories(images):
     directories = []
     for image_path in images:
         image = ix.get_item(image_path)
-        directories.append(os.path.dirname(image.get_attribute("save_as").get_string()))
-
+        directory = os.path.dirname(image.get_attribute("save_as").get_string())
+        directories.append(directory)
+        sys.stdout.write("{} save to disk at: {}\n".format(image_path, directory))
     mkdir_p(directories)
 
 
@@ -192,11 +193,13 @@ def mkdir_p(dirs):
         dirs (list): directories to create
     """
     for d in dirs:
+        sys.stdout.write("Ensure directory: {} exists\n".format(d))
         try:
             os.makedirs(d)
-            sys.stdout.write("Made Directory:{}\n".format(d))
+            sys.stdout.write("Successfully made Directory:{}\n".format(d))
         except OSError as ex:
             if ex.errno == errno.EEXIST and os.path.isdir(d):
+                sys.stdout.write("Directory exists: {}\n".format(d))
                 pass
             else:
                 raise

@@ -25,9 +25,7 @@ from conductor.native.lib.data_block import PROJECT_NOT_SET
 
 DEFAULT_CMD_TEMPLATE = "<ct_temp_dir>/ct_cnode <ct_render_package> "
 DEFAULT_CMD_TEMPLATE += "-image <ct_sources> -image_frames_list <ct_chunks> "
-DEFAULT_CMD_TEMPLATE += (
-    "-tile_rendering <ct_tiles> <ct_tile_number> -license_server conductor_ilise:40500"
-)
+DEFAULT_CMD_TEMPLATE += "-tile_rendering <ct_tiles> <ct_tile_number>"
 
 
 DEFAULT_TITLE = "<ct_job>"
@@ -135,7 +133,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         self.declare_frames_attributes(s_class)
         self.declare_machines_attributes(s_class)
         self.declare_upload_attributes(s_class)
-        self.declare_packages_attributes(s_class)
         self.declare_environment_attributes(s_class)
         self.declare_task_attributes(s_class)
         self.declare_packaging_attributes(s_class)
@@ -283,6 +280,15 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             "general",
         )
         attr.set_hidden(True)
+
+        attr = s_class.add_attribute(
+            "clarisse_version",
+            OfAttr.TYPE_LONG,
+            OfAttr.CONTAINER_SINGLE,
+            OfAttr.VISUAL_HINT_DEFAULT,
+            "general",
+        )
+        attr.set_long(0)
 
     def declare_frames_attributes(self, s_class):
         """
@@ -468,25 +474,6 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.CONTAINER_LIST,
             OfAttr.VISUAL_HINT_DEFAULT,
             "cached_upload_list",
-        )
-        attr.set_read_only(True)
-
-    def declare_packages_attributes(self, s_class):
-        """
-        Creates button and list to help set the Clarisse package version.
-
-        Args:
-            s_class (ScriptedClass):  The scripted class.
-        """
-
-        self.add_action(s_class, "choose_packages", "packages")
-
-        attr = s_class.add_attribute(
-            "packages",
-            OfAttr.TYPE_STRING,
-            OfAttr.CONTAINER_LIST,
-            OfAttr.VISUAL_HINT_DEFAULT,
-            "packages",
         )
         attr.set_read_only(True)
 

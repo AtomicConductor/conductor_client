@@ -57,8 +57,8 @@ class Job(object):
 
         self.tokens = self._set_tokens(parent_tokens)
 
+        self.clarisse_package = self._get_clarisse_package()
         self.environment = self._get_environment()
-        self.package_ids = self._get_package_ids()
         self.dependencies = deps.collect(self.node)
 
         try:
@@ -143,11 +143,7 @@ class Job(object):
         """
 
         package_tree = ConductorDataBlock(product="clarisse").package_tree()
-
-        paths = ix.api.CoreStringArray()
-        self.node.get_attribute("packages").get_values(paths)
-        paths = list(paths)
-        package_env = package_tree.get_environment(paths)
+        package_env = package_tree.get_environment([self.clarisse_package["name"]])
 
         extra_vars = self._get_extra_env_vars()
         package_env.extend(extra_vars)
@@ -172,25 +168,18 @@ class Job(object):
 
         return package_env
 
-    def _get_package_ids(self):
+    def _get_clarisse_package(self):
         """
-        Package Ids for chosen packages.
+        Package id and name for chosen Clarisse version.
 
         Returns:
-            list: package ids as list of strings.
+            dict: name and id.
         """
         package_tree = ConductorDataBlock(product="clarisse").package_tree()
-        paths = ix.api.CoreStringArray()
-        self.node.get_attribute("packages").get_values(paths)
-        results = []
-        for path in paths:
-            name = path.split("/")[-1]
-            package = package_tree.find_by_name(name)
-            if package:
-                package_id = package.get("package_id")
-                if package_id:
-                    results.append(package_id)
-        return results
+        clarisse_version_att = self.node.get_attribute("clarisse_version")
+        name = clarisse_version_att.get_applied_preset_label()
+        package = package_tree.find_by_name(name)
+        return {"name": name, "id": package.get("package_id")}
 
     def _get_output_directory(self):
         """
@@ -326,7 +315,7 @@ class Job(object):
             if self.instance["preemptible"]
             else {}
         )
-        result["software_package_ids"] = self.package_ids
+        result["software_package_ids"] = [self.clarisse_package["id"]]
         result["preemptible"] = self.instance["preemptible"]
         result["environment"] = dict(self.environment)
         result["enforced_md5s"] = {}

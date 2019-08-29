@@ -1,17 +1,24 @@
 #!/usr/bin/env python
 
 """
-Wrapper around cnode
+Wrapper which runs on the render node (or locally) to render a task.
+
+It accepts any args that cnode accepts.
 """
+
+import argparse
 import os
 import re
-import sys
-import argparse
 import subprocess
+import sys
 
 NUMBER_RE = re.compile(r"^(\d+)$")
 RANGE_RE = re.compile(r"^(?:(\d+):(\d+)(?:\%(\d+))?)+$")
 BIG_NUMBER = 99999999
+
+# Path containing this script and other aux files, like the Clarisse config.
+SCRIPT_DIR = os.path.dirname(sys.argv[0])
+DEFAULT_CONFIG_FILE = os.path.join(SCRIPT_DIR, "clarisse.cfg")
 
 
 def get_bounding_frames(*fame_specs):
@@ -60,14 +67,18 @@ def generate_prerender_script_arg(args):
         project://scene/imgLow
 
     Args:
-        args (list): image and frame range arguments
+        images (list): list of image paths
+        range (int, int) The bounding range being rendered.
+
+    Note the choice of images instead of image. This is because you can't
+    provide argument names to the pre-render script that are also known by
+    cnode. Cnode already has an image arg.
 
     Returns:
         string: script with args
     """
 
-    script_directory = os.path.dirname(sys.argv[0])
-    prep_script = os.path.join(script_directory, "ct_prep.py")
+    prep_script = os.path.join(SCRIPT_DIR, "ct_prep.py")
     min_frame, max_frame = get_bounding_frames(*args.image_frames_list)
     return "{} -range {:d} {:d} -images {}".format(
         prep_script, min_frame, max_frame, " ".join(args.image)
@@ -76,10 +87,13 @@ def generate_prerender_script_arg(args):
 
 def main():
     """
-    Mainn function to run cnode with conductor adjustments.
+    Main function to run cnode with conductor adjustments.
     """
+
+    print "START!!!!!"
     parser = argparse.ArgumentParser()
 
+    # images and image frames list are required.
     parser.add_argument(
         "-image_frames_list",
         nargs="*",
@@ -87,7 +101,45 @@ def main():
         required=True,
         help="List of image frame specs.",
     )
-    parser.add_argument("-image", nargs="*", type=str, help="List of images.")
+    parser.add_argument(
+        "-image", nargs="*", type=str, help="List of images.", required=True
+    )
+    # User can override the following flags in the task template.
+
+    # Currently the users default clarisse.cfg is copied to /tmp/conductor
+    # during submission. User may want a special Config to be in place on the
+    # rendernode, in which case they can provide one to override this.
+    parser.add_argument(
+        "-config_file",
+        type=str,
+        default=DEFAULT_CONFIG_FILE,
+        help="Specify the config file used by CNODE. (default: %(default)s)",
+    )
+
+    # Unlikely this will be overridden, but until corev2.1 works the same as
+    # legacy, we'll need to override it with the hyphenated version of the
+    # server name.
+    parser.add_argument(
+        "-license_server",
+        type=str,
+        default="conductor_ilise:40500",
+        help="Specify ILISE license server network location. (default: %(default)s)",
+    )
+
+    # Logs in the Conductor UI are more readable when not wrapped at 80 columns.
+    parser.add_argument(
+        "-log_width",
+        type=int,
+        default=0,
+        help="Set the width of the log. 0 means unlimited. (default: %(default)s)",
+    )
+
+    parser.add_argument(
+        "-tile_rendering",
+        type=int, nargs=2,
+        default=[1,1],
+        help="Specify : number_of_tiles tile_index (1-based).",
+    )
 
     args, pass_through_args = parser.parse_known_args()
 
@@ -101,38 +153,35 @@ def main():
 
     cnode_args = ["cnode"] + pass_through_args
 
-    config_path = os.path.join(os.path.dirname(sys.argv[0]), "clarisse.cfg")
-
-    # These args are generally args we've decided to put in the wrapper rather
-    # than allow the user to specify them in the task command.
+    # Add some defaults.
     cnode_args += [
         "-config_file",
-        config_path,
-        "-log_width",
-        0,
-        "-search_path",
-        "./",
-        "-stats",
-        "-log_level",
-        "Debug5",
+        args.config_file,
         "-license_server",
-        "conductor_ilise:40500",
+        args.license_server,
+        "-log_width",
+        str(args.log_width),
     ]
 
-    if args.image:
-        cnode_args += ["-image"] + args.image
-        cnode_args += ["-image_frames_list"] + args.image_frames_list
+    # Adds a tile rendering flag only if there are actually multiple tiles. We
+    # don't want to add the flag in the case of one tile, because it will put
+    # tile number info in the filenames.
+    if args.tile_rendering[0] > 1:
+        cnode_args += ["-tile_rendering", str(args.tile_rendering[0]),  str(args.tile_rendering[1]) ]
 
+    # These flags are required so no need to check their existence here.
+    cnode_args += ["-image"] + args.image
+    cnode_args += ["-image_frames_list"] + args.image_frames_list
+
+    # script arg must go at the end.
     cnode_args += ["-script"] + [generate_prerender_script_arg(args)]
 
     sys.stdout.write(
-        "Running command:..\n{}\nfrom:\n{}\n".format(" ".join(cnode_args), work_dir)
+        "Running command:..\n{}\nfrom directory:\n{}\n".format(" ".join(cnode_args), work_dir)
     )
-
     os.chdir(work_dir)
 
     p = subprocess.Popen(cnode_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
     for line in iter(p.stdout.readline, b""):
         sys.stdout.write(line)
         sys.stdout.flush()
