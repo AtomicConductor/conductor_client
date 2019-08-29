@@ -39,6 +39,7 @@ import os
 import shutil
 import sys
 import traceback
+import re
 
 import conductor.clarisse.scripted_class.dependencies as deps
 import conductor.clarisse.utils as cu
@@ -49,7 +50,9 @@ from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 
-
+LETTER_RX = re.compile(r"([A-Z]):/")
+TEMPFOLDER_RX = re.compile(r"^\s+temp_folder.*$")
+ 
 def _localize_contexts():
     """
     Make all clarisse reference contexts local.
@@ -377,8 +380,33 @@ class Submission(object):
         """
         for entry in deps.system_dependencies():
             if os.path.isfile(entry["src"]):
-                ix.log_info("Copy {} to {}".format(entry["src"], entry["dest"]))
-                shutil.copy(entry["src"], entry["dest"])
+                if entry["src"].endswith(".cfg"):
+                    # clarisse.cfg causes crash on the rendernode if it points
+                    # to temp dirs with drive letters and such
+                    legalize_for_linux_and_copy(entry)
+                else:
+                    ix.log_info("Copy {} to {}".format(entry["src"], entry["dest"]))
+                    shutil.copy(entry["src"], entry["dest"])
+
+    def legalize_for_linux_and_copy(entry):
+        """
+        Remove windows related stuff.
+
+        We have to do this to the clarisse.cfg file (or whatever the user
+        chooses to call it) so that it doesn't crash the rendernode.
+
+        Args:
+            entry (dict):  source (src) and destination (dest) for the file
+        """
+        with open(entry["src"], 'r') as file :
+            filedata = file.read()
+
+        filedata = re.sub(LETTER_RX, "/", filedata))
+        filedata = re.sub(TEMPFOLDER_RX, "", filedata))
+    
+        with open(entry["dest"], 'w') as dest:
+        dest.write(filedata)
+
 
     def _after_submit(self):
         """Clean up, and potentially other post submission actions."""

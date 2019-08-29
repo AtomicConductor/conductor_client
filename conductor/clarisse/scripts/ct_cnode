@@ -165,7 +165,7 @@ def main():
 
     # Adds a tile rendering flag only if there are actually multiple tiles. We
     # don't want to add the flag in the case of one tile, because it will put
-    # tile number info in the filenames.
+    # extraneous tile number info in the filenames.
     if args.tile_rendering[0] > 1:
         cnode_args += ["-tile_rendering", str(args.tile_rendering[0]),  str(args.tile_rendering[1]) ]
 
