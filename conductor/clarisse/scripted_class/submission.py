@@ -52,7 +52,8 @@ from conductor.native.lib.gpath import Path
 
 LETTER_RX = re.compile(r"([A-Z]):/")
 TEMPFOLDER_RX = re.compile(r"^\s+temp_folder.*$")
- 
+
+
 def _localize_contexts():
     """
     Make all clarisse reference contexts local.
@@ -81,6 +82,26 @@ def _remove_conductor():
     ix.application.get_factory().get_objects("ConductorJob", objects)
     for item in list(objects):
         ix.application.get_factory().remove_item(item.get_full_name())
+
+
+def legalize_for_linux_and_copy(entry):
+    """
+    Remove windows related stuff.
+
+    We have to do this to the clarisse.cfg file (or whatever the user
+    chooses to call it) so that it doesn't crash the rendernode.
+
+    Args:
+        entry (dict):  source (src) and destination (dest) for the file
+    """
+    with open(entry["src"], "r") as src_file:
+        filedata = src_file.read()
+
+    filedata = re.sub(LETTER_RX, "/", filedata)
+    filedata = re.sub(TEMPFOLDER_RX, "", filedata)
+
+    with open(entry["dest"], "w") as dest_file:
+        dest_file.write(filedata)
 
 
 class Submission(object):
@@ -387,26 +408,6 @@ class Submission(object):
                 else:
                     ix.log_info("Copy {} to {}".format(entry["src"], entry["dest"]))
                     shutil.copy(entry["src"], entry["dest"])
-
-    def legalize_for_linux_and_copy(entry):
-        """
-        Remove windows related stuff.
-
-        We have to do this to the clarisse.cfg file (or whatever the user
-        chooses to call it) so that it doesn't crash the rendernode.
-
-        Args:
-            entry (dict):  source (src) and destination (dest) for the file
-        """
-        with open(entry["src"], 'r') as file :
-            filedata = file.read()
-
-        filedata = re.sub(LETTER_RX, "/", filedata))
-        filedata = re.sub(TEMPFOLDER_RX, "", filedata))
-    
-        with open(entry["dest"], 'w') as dest:
-        dest.write(filedata)
-
 
     def _after_submit(self):
         """Clean up, and potentially other post submission actions."""
