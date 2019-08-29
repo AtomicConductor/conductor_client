@@ -163,7 +163,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
             OfAttr.VISUAL_HINT_DEFAULT,
             "debug",
         )
-        attr.set_long(5)
+        attr.set_long(1)
         for i, level in enumerate(loggeria.LEVELS):
             attr.add_preset(level, str(i))
 

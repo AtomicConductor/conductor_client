@@ -51,7 +51,7 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 
 LETTER_RX = re.compile(r"([A-Z]):/")
-TEMPFOLDER_RX = re.compile(r"^\s+temp_folder.*$")
+TEMPFOLDER_RX = re.compile(r"temp_folder.*")
 
 
 def _localize_contexts():
@@ -98,7 +98,7 @@ def legalize_for_linux_and_copy(entry):
         filedata = src_file.read()
 
     filedata = re.sub(LETTER_RX, "/", filedata)
-    filedata = re.sub(TEMPFOLDER_RX, "", filedata)
+    filedata = re.sub(TEMPFOLDER_RX, " ", filedata)
 
     with open(entry["dest"], "w") as dest_file:
         dest_file.write(filedata)
