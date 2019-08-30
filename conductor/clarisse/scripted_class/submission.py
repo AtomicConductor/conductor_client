@@ -381,12 +381,14 @@ class Submission(object):
         for entry in deps.system_dependencies():
             if os.path.isfile(entry["src"]):
                 if entry["src"].endswith(".cfg"):
-                    ix.log_info(
-                        "Copy with mods {} to {}".format(entry["src"], entry["dest"])
-                    )
                     safe_config = cfg.legalize(entry["src"])
                     with open(entry["dest"], "w") as dest:
                         dest.write(safe_config)
+
+                    ix.log_info(
+                        "Copy with mods {} to {}".format(entry["src"], entry["dest"])
+                    )
+
                 else:
                     ix.log_info("Copy {} to {}".format(entry["src"], entry["dest"]))
                     shutil.copy(entry["src"], entry["dest"])
