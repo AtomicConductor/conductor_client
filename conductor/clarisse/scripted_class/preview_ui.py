@@ -144,12 +144,11 @@ class PreviewWindow(ix.api.GuiWindow):
 
     def on_write_but(self, sender, eventid):
         """
-        Write the render package file(s) out. This allows you to run one of the
-        task commands in your own shell.
+        Write the render package file(s) out. This allows users to run a
+        task command in their own shell.
         """
         with cu.waiting_cursor():
-            package_path = self.submission.write_render_package()
-        ix.log_info("Wrote package to {}".format(package_path))
+            self.submission.write_render_package()
 
     def on_go_but(self, sender, eventid):
         """
