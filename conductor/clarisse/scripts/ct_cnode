@@ -90,7 +90,6 @@ def main():
     Main function to run cnode with conductor adjustments.
     """
 
-    print "START!!!!!"
     parser = argparse.ArgumentParser()
 
     # images and image frames list are required.
@@ -136,8 +135,9 @@ def main():
 
     parser.add_argument(
         "-tile_rendering",
-        type=int, nargs=2,
-        default=[1,1],
+        type=int,
+        nargs=2,
+        default=[1, 1],
         help="Specify : number_of_tiles tile_index (1-based).",
     )
 
@@ -167,7 +167,11 @@ def main():
     # don't want to add the flag in the case of one tile, because it will put
     # extraneous tile number info in the filenames.
     if args.tile_rendering[0] > 1:
-        cnode_args += ["-tile_rendering", str(args.tile_rendering[0]),  str(args.tile_rendering[1]) ]
+        cnode_args += [
+            "-tile_rendering",
+            str(args.tile_rendering[0]),
+            str(args.tile_rendering[1]),
+        ]
 
     # These flags are required so no need to check their existence here.
     cnode_args += ["-image"] + args.image
@@ -177,7 +181,9 @@ def main():
     cnode_args += ["-script"] + [generate_prerender_script_arg(args)]
 
     sys.stdout.write(
-        "Running command:..\n{}\nfrom directory:\n{}\n".format(" ".join(cnode_args), work_dir)
+        "Running command:..\n{}\nfrom directory:\n{}\n".format(
+            " ".join(cnode_args), work_dir
+        )
     )
     os.chdir(work_dir)
 
