@@ -18,7 +18,6 @@ from conductor.clarisse.scripted_class import (
     job,
     missing_files_ui,
     notifications_ui,
-    packages_ui,
     preview_ui,
     projects_ui,
     refresh,
@@ -44,7 +43,6 @@ reload(instances_ui)
 reload(job)
 reload(task)
 reload(notifications_ui)
-reload(packages_ui)
 reload(projects_ui)
 reload(submission)
 reload(submit_actions)
