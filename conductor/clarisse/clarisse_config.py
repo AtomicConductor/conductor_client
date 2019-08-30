@@ -62,7 +62,7 @@ def legalize(filename):
                     state += 1
                     continue
                 line = re.sub(LETTER_RX, "/", line)
-                line = re.sub(WIN_LETTER_RX, "\\", line)
+                # line = re.sub(WIN_LETTER_RX, "\\", line)
                 result.append(line)
             elif open_regex.match(stripped_line):
                 state += 1
