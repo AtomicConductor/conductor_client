@@ -51,12 +51,9 @@ def legalize(filename):
     start_regexes = [re.compile(r"^" + x + r" {$") for x in BLACKLIST]
     open_regex = re.compile(r"^.* {$")
     close_regex = re.compile(r"^}")
-    print "START PROCESSING"
     with open(filename, "r") as src_file:
-        print "OPEN"
         for line in src_file:
             stripped_line = line.strip()
-            print "stripped_line: " , stripped_line
             if state == 0:
                 if any(rx.match(stripped_line) for rx in start_regexes):
                     state += 1

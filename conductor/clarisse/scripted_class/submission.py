@@ -378,22 +378,14 @@ class Submission(object):
         ../clarisse_config.py
         """
         for entry in deps.system_dependencies():
-            print "entry[src]", entry["src"]
             if os.path.isfile(entry["src"]):
-                print "entry[src] IS FILE", entry["src"]
                 if entry["src"].endswith(".cfg"):
-                    print "entry[src] endswith .cfg", entry["src"]
-                    print "GET SAFE DATA"
                     safe_config = ccfg.legalize(entry["src"])
-                    print "GOT SAFE DATA!!!"
-
                     with open(entry["dest"], "w") as dest:
                         dest.write(safe_config)
-
                     ix.log_info(
                         "Copy with mods {} to {}".format(entry["src"], entry["dest"])
                     )
-
                 else:
                     ix.log_info("Copy {} to {}".format(entry["src"], entry["dest"]))
                     shutil.copy(entry["src"], entry["dest"])
