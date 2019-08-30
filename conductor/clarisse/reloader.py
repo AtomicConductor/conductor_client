@@ -6,7 +6,7 @@ For development mode, we can reload modules with a button push.
 The button is available when the env var CONDUCTOR_MODE == "dev".
 It reloads files imported by ConductorJob. Not ConductorJob itself.
 """
-from conductor.clarisse import utils
+from conductor.clarisse import utils, clarisse_config
 from conductor.clarisse.scripted_class import (
     attr_docs,
     debug_ui,
@@ -29,6 +29,7 @@ from conductor.clarisse.scripted_class import (
 from conductor.native.lib import gpath, gpath_list, sequence
 
 reload(utils)
+reload(clarisse_config)
 reload(refresh)
 reload(dependencies)
 reload(debug_ui)
