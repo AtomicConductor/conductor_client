@@ -40,10 +40,11 @@ import shutil
 import sys
 import traceback
 import re
+import ix
 
 import conductor.clarisse.scripted_class.dependencies as deps
 import conductor.clarisse.utils as cu
-import ix
+import conductor.clarisse.clarisse_config as cfg
 from conductor.clarisse.scripted_class import missing_files_ui
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
@@ -84,26 +85,6 @@ def _remove_conductor():
         ix.application.get_factory().remove_item(item.get_full_name())
 
 
-def legalize_for_linux_and_copy(entry):
-    """
-    Remove windows related stuff.
-
-    We have to do this to the clarisse.cfg file (or whatever the user
-    chooses to call it) so that it doesn't crash the rendernode.
-
-    Args:
-        entry (dict):  source (src) and destination (dest) for the file
-    """
-    with open(entry["src"], "r") as src_file:
-        filedata = src_file.read()
-
-    filedata = re.sub(LETTER_RX, "/", filedata)
-    filedata = re.sub(TEMPFOLDER_RX, " ", filedata)
-
-    with open(entry["dest"], "w") as dest_file:
-        dest_file.write(filedata)
-
-
 class Submission(object):
     """
     Submission holds all data needed for a submission.
@@ -113,8 +94,8 @@ class Submission(object):
     used to create a dry run to show the user what will happen.
 
     A Submission also sets a list of tokens that the user can access as <angle
-    bracket> tokens in order to build strings in the UI such as commands and job
-    titles.
+    bracket> tokens in order to build strings in the UI such as commands, job
+    title, and (soon to be added) metadata.
     """
 
     def __init__(self, obj):
@@ -395,16 +376,20 @@ class Submission(object):
 
     def _copy_system_dependencies_to_temp(self):
         """
-        Copy over all system dfependencies:
+        Copy over all system dependencies to a tmp folder.
 
-        Wrapper scripts, config files etc.
+        Wrapper scripts, config files etc. The clarisse.cfg file is special. See
+        ../clarisse_config.py
         """
         for entry in deps.system_dependencies():
             if os.path.isfile(entry["src"]):
                 if entry["src"].endswith(".cfg"):
-                    # clarisse.cfg causes crash on the rendernode if it points
-                    # to temp dirs with drive letters and such
-                    legalize_for_linux_and_copy(entry)
+                    ix.log_info(
+                        "Copy with mods {} to {}".format(entry["src"], entry["dest"])
+                    )
+                    safe_config = cfg.legalize(entry["src"])
+                    with open(entry["dest"], "w") as dest:
+                        dest.write(safe_config)
                 else:
                     ix.log_info("Copy {} to {}".format(entry["src"], entry["dest"]))
                     shutil.copy(entry["src"], entry["dest"])
