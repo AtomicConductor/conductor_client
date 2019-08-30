@@ -7,6 +7,7 @@ import re
 
 import ix
 from conductor.clarisse.scripted_class import frames_ui
+from conductor.native.lib.gpath import Path
 from conductor.native.lib.gpath_list import PathList
 from conductor.native.lib.sequence import Sequence
 
@@ -61,8 +62,8 @@ def system_dependencies():
     )
 
     for script in CONDUCTOR_SCRIPTS:
-        src_path = os.path.join(conductor_scripts_directory, script)
-        dest_path = os.path.join(conductor_tmp_dir, script)
+        src_path = Path(os.path.join(conductor_scripts_directory, script)).posix_path()
+        dest_path = Path(os.path.join(conductor_tmp_dir, script)).posix_path()
 
         result.append({"src": src_path, "dest": dest_path})
 
@@ -73,8 +74,10 @@ def system_dependencies():
         .get_string()
     )
 
-    config_src_file = os.path.join(config_dir, CLARISSE_CFG_FILENAME)
-    config_dest_file = os.path.join(conductor_tmp_dir, CLARISSE_CFG_FILENAME)
+    config_src_file = Path(os.path.join(config_dir, CLARISSE_CFG_FILENAME)).posix_path()
+    config_dest_file = Path(
+        os.path.join(conductor_tmp_dir, CLARISSE_CFG_FILENAME)
+    ).posix_path()
 
     result.append({"src": config_src_file, "dest": config_dest_file})
 
