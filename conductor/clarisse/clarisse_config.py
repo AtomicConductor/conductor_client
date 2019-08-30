@@ -66,4 +66,5 @@ def legalize(filename):
                 state += 1
             elif close_regex.match(stripped_line):
                 state -= 1
+    print result
     return "".join(result)
