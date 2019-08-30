@@ -35,12 +35,19 @@ def legalize(filename):
     contained blocks will also be removes, but must end the opening line with an
     open brace.
 
-    Args:
+    state 0 means we are searching for blocks to remove. state >0 means we are
+    moving through a block that will be removed. We count the opening and
+    closing braces to know when we are done.
+
+    Args: 
         filename (string): the config file
 
-    Returns:
-        string: Contents of the file, minus ythe blacklisted sections
+    Returns: string: 
+    `   Contents of the file, minus the blacklisted sections
     """
+
+
+
     state = 0
     result = []
     start_regexes = [re.compile(r"^" + x + r" {$") for x in BLACKLIST]
