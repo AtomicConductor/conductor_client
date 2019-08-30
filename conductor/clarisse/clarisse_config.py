@@ -39,6 +39,10 @@ def legalize(filename):
     moving through a block that will be removed. We count the opening and
     closing braces to know when we are done.
 
+    TODO:
+        This can be tested without loading Clarisse. Therefore, write some
+        tests.
+
     Args:
         filename (string): the config file
 
