@@ -379,8 +379,11 @@ class Submission(object):
         ../clarisse_config.py
         """
         for entry in deps.system_dependencies():
+            print "entry[src]", entry["src"]
             if os.path.isfile(entry["src"]):
+                print "entry[src] IS FILE", entry["src"]
                 if entry["src"].endswith(".cfg"):
+                    print "entry[src] endswith .cfg", entry["src"]
                     safe_config = cfg.legalize(entry["src"])
                     with open(entry["dest"], "w") as dest:
                         dest.write(safe_config)
