@@ -48,25 +48,10 @@ tags
 GPATH
 GTAGS
 
-# houdini
-conductor/houdini/**/backup/
-conductor/houdini/notes/
-
-# sublime
-conductor_client.sublime-*
-
 #build
 build.env
 tmp/
 codeship.aes
-
-
-# analysis
-.prospector.yaml
-
-# mkdocs
-site/
-unused_css/
 
 # vscode
 .vscode
