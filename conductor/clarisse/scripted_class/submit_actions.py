@@ -6,7 +6,7 @@ that will be sent to Conductor.
 
 Submit, send jobs straight to Conductor.
 """
-
+import os
 import ix
 import conductor.clarisse.utils as cu
 from conductor.clarisse.scripted_class import preview_ui
