@@ -1,7 +1,7 @@
 import re
 
 LETTER_RX = re.compile(r"([A-Z]):/")
-WIN_LETTER_RX = re.compile(r"([A-Z]):\\"):
+WIN_LETTER_RX = re.compile(r"([A-Z]):\\")
 
 BLACKLIST = [
     "recent_file_categories",
@@ -39,14 +39,12 @@ def legalize(filename):
     moving through a block that will be removed. We count the opening and
     closing braces to know when we are done.
 
-    Args: 
+    Args:
         filename (string): the config file
 
-    Returns: string: 
+    Returns: string:
     `   Contents of the file, minus the blacklisted sections
     """
-
-
 
     state = 0
     result = []
@@ -61,8 +59,8 @@ def legalize(filename):
                 if any(rx.match(stripped_line) for rx in start_regexes):
                     state += 1
                     continue
-                line = re.sub(LETTER_RX, "/", line))
-                line = re.sub(WIN_LETTER_RX, "\\", line))
+                line = re.sub(LETTER_RX, "/", line)
+                line = re.sub(WIN_LETTER_RX, "\\", line)
                 result.append(line)
             elif open_regex.match(stripped_line):
                 state += 1
