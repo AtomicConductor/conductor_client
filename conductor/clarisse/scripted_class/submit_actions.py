@@ -7,11 +7,12 @@ that will be sent to Conductor.
 Submit, send jobs straight to Conductor.
 """
 
+import ix
 import conductor.clarisse.utils as cu
 from conductor.clarisse.scripted_class import preview_ui
 from conductor.clarisse.scripted_class.submission import Submission
 from conductor.native.lib.data_block import PROJECT_NOT_SET, ConductorDataBlock
-import ix
+from conductor.native.lib.gpath_list import PathList
 
 SUCCESS_CODES_SUBMIT = [201, 204]
 
@@ -150,11 +151,18 @@ def _validate(node):
 
 def _validate_images(node):
     """
-    Check some images or layers are present to be rendered.
-    Then check that they are set up to save to disk.
+    Check that images or layers are present and set up to be rendered.
+
+    Also check that the when there are many output paths, their common path is
+    not the filesystem root, as this will be the submission's output_path
+    property.
+
+    Args:
+        node (ConductorJob): Node
     """
     images = ix.api.OfObjectArray()
     node.get_attribute("images").get_values(images)
+    out_paths = PathList()
     if not images.get_count():
         ix.log_error("No render images. Please reference one or more image items")
 
@@ -178,6 +186,17 @@ def _validate_images(node):
                     image.get_full_name()
                 )
             )
+
+        try:
+            directory = os.path.dirname(save_path)
+            out_paths.add(directory)
+        except ValueError as ex:
+            ix.log_error("{} - while resolving {}".format(str(ex), directory))
+
+    if out_paths.common_path() == "/":
+        ix.log_error(
+            "The common ancestor path for your output files is the filesystem root: '/'. You should check to make sure they are written to a common subfolder."
+        )
 
 
 def _validate_packages(obj):

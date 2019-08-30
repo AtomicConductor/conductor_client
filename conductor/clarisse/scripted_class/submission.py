@@ -51,9 +51,6 @@ from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 
-LETTER_RX = re.compile(r"([A-Z]):/")
-TEMPFOLDER_RX = re.compile(r"temp_folder.*")
-
 
 def _localize_contexts():
     """
