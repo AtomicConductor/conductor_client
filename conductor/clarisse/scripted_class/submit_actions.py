@@ -195,7 +195,7 @@ def _validate_images(node):
 
     common_path = out_paths.common_path()
 
-    if common_path.depth() == "/":
+    if common_path.depth == 0:
         ix.log_error(
             "Your output files should be rendered to a common subfolder.  Not the filesystem root. {}".format(
                 common_path.posix_path()
