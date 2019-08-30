@@ -39,12 +39,11 @@ import os
 import shutil
 import sys
 import traceback
-import re
 import ix
 
 import conductor.clarisse.scripted_class.dependencies as deps
 import conductor.clarisse.utils as cu
-import conductor.clarisse.clarisse_config
+import conductor.clarisse.clarisse_config as ccfg
 from conductor.clarisse.scripted_class import missing_files_ui
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
@@ -385,9 +384,9 @@ class Submission(object):
                 if entry["src"].endswith(".cfg"):
                     print "entry[src] endswith .cfg", entry["src"]
                     print "GET SAFE DATA"
-                    safe_config = clarisse_config.legalize(entry["src"])
+                    safe_config = ccfg.legalize(entry["src"])
                     print "GOT SAFE DATA!!!"
-                    
+
                     with open(entry["dest"], "w") as dest:
                         dest.write(safe_config)
 
