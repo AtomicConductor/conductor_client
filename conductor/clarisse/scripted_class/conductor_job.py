@@ -15,7 +15,6 @@ from conductor.clarisse.scripted_class import (
     extra_uploads_ui,
     frames_ui,
     notifications_ui,
-    packages_ui,
     projects_ui,
     refresh,
     submit_actions,
@@ -55,9 +54,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         # crashes if an exception is thrown from a scripted class. See
         # https://www.isotropix.com/user/bugtracker/363 .
         try:
-            if action_name == "choose_packages":
-                packages_ui.build(obj, data)
-            elif action_name == "manage_extra_uploads":
+            if action_name == "manage_extra_uploads":
                 extra_uploads_ui.build(obj, data)
             elif action_name == "manage_extra_environment":
                 environment_ui.build(obj, data)
