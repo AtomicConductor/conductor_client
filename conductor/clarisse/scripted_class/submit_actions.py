@@ -193,9 +193,11 @@ def _validate_images(node):
         except ValueError as ex:
             ix.log_error("{} - while resolving {}".format(str(ex), directory))
 
-    if out_paths.common_path() == "/":
+    common_path = out_paths.common_path()
+    print common_path
+    if common_path == "/":
         ix.log_error(
-            "The common ancestor path for your output files is the filesystem root: '/'. You should check to make sure they are written to a common subfolder."
+            "Your output files should be rendered to a common subfolder.  Not the filesystem root."
         )
 
 
