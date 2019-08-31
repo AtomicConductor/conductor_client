@@ -120,13 +120,13 @@ class MissingFilesWindow(ix.api.GuiWindow):
 
 def proceed(files):
     """
-    Show the window and pass in the missiong file paths
+    Show the window and pass in the missing file paths
 
     Args:
-        files (list of strings): Unique, ready sorted, list of miussubg files.
+        files (list of strings): Unique, ready sorted, list of missing files.
 
     Returns:
-        bool: whether or not the user wants to continue the submission or cancel
+        bool: whether or not the user wants to continue the submission or cancel.
     """
     if not files:
         return True

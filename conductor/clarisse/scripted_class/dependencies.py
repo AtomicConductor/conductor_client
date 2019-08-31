@@ -37,13 +37,13 @@ def system_dependencies():
     """
     Provides a list of system files to be sent to the render node.
 
-   These will be copied to a directory in preparation for uploading.
+    These will be copied to a directory in preparation for uploading.
 
-   This is part of a strategy to satisfy 2 constraints.
-   1. Dont store special logic on the sidecar.
-   2. Don't make the render command un-runnable on the local machine.
+    This is part of a strategy to satisfy 2 constraints.
+    1. Dont store special logic on the sidecar.
+    2. Don't make the render command un-runnable on the local machine.
 
-   See docs in ct_cnode and ct_prep for more info.
+    See docs in ct_cnode and ct_prep for more info.
 
     Returns:
         list: Each element is a source/destination pair of paths.
@@ -403,7 +403,7 @@ def _attribute_sequence(attr, intersector):
     """
     Get the sequence associated with a filename attribute.
 
-     Many attributes have an associated sequence_mode attribute, which when set
+    Many attributes have an associated sequence_mode attribute, which when set
     to 1 signifies varying frames and makes available start, end, and offset
     attributes to help specify the sequence.
 

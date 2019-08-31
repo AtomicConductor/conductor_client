@@ -153,6 +153,10 @@ class PreviewWindow(ix.api.GuiWindow):
     def on_go_but(self, sender, eventid):
         """
         Submit and hide(destroy) the window.
+
+        TODO: This UI shouldn't really be responsible for submitting the job. It
+        should return a boolean indicating whether the user wants to continue
+        with the submission (like the missing_files UI). Change it soon.
         """
         with cu.waiting_cursor():
             responses = self.submission.submit()

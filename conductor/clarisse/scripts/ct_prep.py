@@ -1,7 +1,9 @@
 """
 Pre render script to run inside clarisse on the render node.
 
-It mainly deals with drive letters.
+Strips drive letters on windows. 
+Ensures images are renderable for the given range.
+Ensures directories exist for renders.
 """
 import argparse
 import errno

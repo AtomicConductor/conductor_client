@@ -42,6 +42,11 @@ def legalize(filename):
     TODO:
         This can be tested without loading Clarisse. Therefore, write some
         tests.
+    TODO 2:
+        The config file specifies a temp directory which is not writable on the
+        render node. The result is permission errors in the render log and
+        poslsibly a performance hit. We should search and replace it with
+        something like /<output_dir>/temp.
 
     Args:
         filename (string): the config file
