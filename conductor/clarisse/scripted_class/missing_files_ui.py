@@ -90,7 +90,6 @@ class MissingFilesWindow(ix.api.GuiWindow):
             "Continue",
         )
         self.go_but.set_constraints(C_RIGHT, C_BOTTOM, C_RIGHT, C_BOTTOM)
-        # self.go_but.set_enable(can_submit)
 
         self.connect(self.go_but, "EVT_ID_PUSH_BUTTON_CLICK", self.on_go_but)
 
