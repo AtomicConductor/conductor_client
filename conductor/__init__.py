@@ -18,5 +18,3 @@ log_level = loggeria.LEVEL_MAP.get(log_level_name)
 loggeria.setup_conductor_logging(
     logger_level=log_level, console_formatter=loggeria.FORMATTER_VERBOSE
 )
-# if log_level:
-#     loggeria.set_conductor_log_level(log_level)
