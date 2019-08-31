@@ -5,10 +5,6 @@ RX_LETTER = re.compile(r"^([a-zA-Z]):")
 RX_DOLLAR_VAR = re.compile(r"\$([A-Za-z][A-Z,a-z0-9_]+)")
 
 
-# class ValueError(ValueError):
-#     pass
-
-
 def _expand_context(path, context):
     result = path
     if context:
