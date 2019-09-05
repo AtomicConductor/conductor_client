@@ -21,7 +21,7 @@ class Job(object):
     Class Job holds all data for one Conductor Job in Clarisse.
 
     Jobs are owned by a Submission and a Job owns potentially many Tasks. Like a
-    Submission, it also manages a list of tokens the user can access in thhe
+    Submission, it also manages a list of tokens the user can access in the
     task template and other ConductorJob attributes.
     """
 

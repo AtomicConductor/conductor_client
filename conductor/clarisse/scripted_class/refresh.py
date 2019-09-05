@@ -18,7 +18,7 @@ def force_ae_refresh(node):
     Trigger an attribute editor refresh.
 
     Args:
-        node (ConductorJob): item whose attrmibute editor to refresh.
+        node (ConductorJob): item whose attribute editor to refresh.
     """
     attr = node.get_attribute("instance_type")
     count = attr.get_preset_count()

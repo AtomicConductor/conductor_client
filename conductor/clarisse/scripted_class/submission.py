@@ -29,7 +29,7 @@ If they don't localize, then:
 
 
 In this case the submission may contain xrefs nested to any level and we do a
-pretty good job of resolving them. However, if the render errors due to xrfef
+pretty good job of resolving them. However, if the render errors due to xref
 the localize method is the fallback.
 """
 
@@ -73,7 +73,7 @@ def _remove_conductor():
 
     This ensures the render logs are not polluted by complaints about Conductor
     nodes. This can only be done in the situation where we localize contexts,
-    because in that case we get tto reload the scene after submission.
+    because in that case we get to reload the scene after submission.
     """
     objects = ix.api.OfObjectArray()
     ix.application.get_factory().get_objects("ConductorJob", objects)
@@ -257,7 +257,7 @@ class Submission(object):
         Submit all jobs.
 
         Returns:
-            list: list of response dictionariues, containing response codes
+            list: list of response dictionaries, containing response codes
             and descriptions.
         """
 
@@ -365,9 +365,7 @@ class Submission(object):
         try:
             os.makedirs(tmpdir)
         except OSError as ex:
-            if ex.errno == errno.EEXIST and os.path.isdir(tmpdir):
-                pass
-            else:
+            if not (ex.errno == errno.EEXIST and os.path.isdir(tmpdir)):
                 raise
 
     def _copy_system_dependencies_to_temp(self):

@@ -194,15 +194,14 @@ def resolved_scout_sequence(obj):
 
     Returns:
         Sequence: If do_scout is off then returning None indicates all frames
-        will be
-    rendered.
+        will be rendered.
 
-        If do_scout is on and the set of scout frames intersects the
-    main frames, then return the intersection.
+    If do_scout is on and the set of scout frames intersects the main frames,
+    then return the intersection.
 
     If scout frames does not intersect the main frames, then the user intended
     to scout but ended up with no frames. This produces None. If it becomes a
-    problem with people inadvertently rendering a whole sequence thhen we can
+    problem with people inadvertently rendering a whole sequence then we can
     implement a warning popup or something.
 
     """

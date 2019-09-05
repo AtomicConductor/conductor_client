@@ -19,7 +19,7 @@ def handle_project(obj, attr):
 
     Args:
         obj (ConductorJob):
-        attr (OfAttr): Atribute that changed.
+        attr (OfAttr): Attribute that changed.
     """
     label = attr.get_applied_preset_label()
     if label:
