@@ -21,12 +21,12 @@ class Task(object):
         command any tokens that were used are correctly resolved.
 
         Args:
-            chunk (Sequence): The frames to be rendered. command_attr
-            (OfAttr): The task template attribute. sources (list(dict(OfObject,
-            Sequence))):  list of images along with a sequence that represents
-            the frames they will be rendered for. tile_spec (tuple): The number
-            of tiles and the current tile number. parent_tokens (dict):Angle
-            bracket tokens.
+            chunk (Sequence): The frames to be rendered.
+            command_attr (OfAttr): The task template attribute.
+            sources (list(dict(OfObject, Sequence))):  list of images along with
+            a sequence that represents the frames they will be rendered for.
+            tile_spec (tuple): The number of tiles and the current tile number.
+            parent_tokens (dict):Angle bracket tokens.
         """
 
         self.chunk = chunk
@@ -78,7 +78,7 @@ class Task(object):
         The command and frame spec.
 
         Returns:
-            dict: Frames withh which to determine if its a scout frame, and the
+            dict: Frames with which to determine if its a scout frame, and the
             resolved command itself.
         """
         return {"frames": str(self.chunk), "command": self.command}

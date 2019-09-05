@@ -123,7 +123,7 @@ ignore-mixin-members=yes
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
-# Isotropx module is ix and is not available to the linter.
+# Isotropix module is ix and is not available to the linter.
 ignored-modules=ix
 
 # List of classes names for which member attributes should not be checked

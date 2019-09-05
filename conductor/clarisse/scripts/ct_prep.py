@@ -73,13 +73,13 @@ def resolve_contexts():
     Find the root context and recurse down, resolving xrefs in children.
 
     If a context (A) is a reference to another file and that file
-    contains a reference contxt (B), and A's filepath is wrong, then we
+    contains a reference context (B), and A's filepath is wrong, then we
     don't know anything about B, so we can't gather all contexts in one
     hit and replace drive letters. We must recurse down, and for each
     reference context, resolve its path and then visit the contexts it
     contains.
 
-    We have to disable the app dfor this operation otherwise it tends to crash Clarisse.
+    We have to disable the app for this operation otherwise it tends to crash Clarisse.
     """
     contexts = ix.api.OfContextSet()
     ix.application.get_factory().get_root().resolve_all_contexts(contexts)

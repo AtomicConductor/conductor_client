@@ -17,7 +17,7 @@ def handle_use_custom_frames(obj, attr):
 
     Args:
         obj (ConductorJob):
-        attr (OfAttr): Atribute that changed.
+        attr (OfAttr): Attribute that changed.
     """
     hide = not attr.get_bool()
     obj.get_attribute("custom_frames").set_hidden(hide)
@@ -155,7 +155,7 @@ def main_frame_sequence(obj):
     Generates Sequence that represents current settings.
 
     If using custom frames, then the value in the custom frames attribute are
-    used, otherwise calc;ulate the union of image sequences.
+    used, otherwise calculate the union of image sequences.
 
     Args:
         obj (ConductorJob): Item whose attribute to get parameters from.

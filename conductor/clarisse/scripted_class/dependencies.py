@@ -137,7 +137,7 @@ def _get_extra_uploads(obj):
     """
     Collects any files specified through the extra uploads window.
 
-    They are stored in a list attribute on theConductorJob item./
+    They are stored in a list attribute on the ConductorJob item.
 
     Args:
         obj (ConductorJob): item being processed.
@@ -351,7 +351,7 @@ def _smart_expand(obj, attr, filename):
     Expand filenames when policy is SMART.
 
     Takes into account the frame range to be rendered, and the frame
-    specification of any msource animated maps along with their offset. Then
+    specification of any source animated maps along with their offset. Then
     resolves filenames for that intersection of sequences.
 
     Args:

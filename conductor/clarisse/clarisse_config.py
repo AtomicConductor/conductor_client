@@ -52,7 +52,7 @@ def legalize(filename):
         filename (string): the config file
 
     Returns: string:
-    `   Contents of the file, minus the blacklisted sections
+        Contents of the file, minus the blacklisted sections
     """
 
     state = 0
