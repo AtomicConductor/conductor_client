@@ -289,11 +289,31 @@ class Sequence(object):
         return result
 
     def expand_dollar_f(self, *templates):
-        """Expands $ templates such as those containing $3F or $F.
+        """
+        Expands $ templates such as those containing $3F or $F.
 
-        If one (or any number less than len), then they will be cycled
-        because we always want to return the number of filenames that the 
-        sequence dictates.
+        If a single template is given, such as image.$2F.exr, and the sequence
+        contains [1,2,4] then the result will be:
+        [
+            "image.01.exr",
+            "image.02.exr",
+            "image.04.exr"
+        ]
+        However, if there are 3 templates, such as:
+        a_1/image.$2F.exr
+        a_2/image.$2F.exr
+        a_4/image.$2F.exr
+        then the result will be:
+        [
+            a_1/image.01.exr,
+            a_2/image.02.exr,
+            a_4/image.04.exr
+        ]
+        i.e. there will always be len(sequence) elements in the result.
+
+        The intention is that the number of templates given be either 1 or
+        len(sequence), but for completeness, we cycle if there is some number
+        between, and clip if there are too many.
         """
         result = []
         for f, template in zip(self._iterable, itertools.cycle(templates)):
