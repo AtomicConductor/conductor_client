@@ -13,20 +13,19 @@ submission flow.
    in a batch undo block, then when you undo, there are extra nodes in the
    project.
 
-Users can choose to localize contexts before submission (off by default) If they
-turn it on then the flow is:
-1. Make sure the user has saved the file. (they might need it)
-5. Make contexts local.
-6. Remove Conductor nodes.
-7. Save the render package.
-8. Do the submission.
-9. Reload the saved file. This is slow for very big projects because of the time
-   to reload the broject.
+Users can choose to localize contexts before submission (off by default).
+If they turn it on then the flow is:
+*. Make sure the user has saved the file. (they might need it)
+*. Make contexts local.
+*. Remove Conductor nodes.
+*. Save the render package.
+*. Do the submission.
+*. Reload the saved file. This is slow for very big projects because of the time
+   to reload the project.
 
 If they don't localize, then:
-1. Save the render package.
-2. Do the submission.
-
+*. Save the render package.
+*. Do the submission.
 
 In this case the submission may contain xrefs nested to any level and we do a
 pretty good job of resolving them. However, if the render errors due to xref

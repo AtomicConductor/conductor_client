@@ -1,7 +1,7 @@
 """
 Responds to events in the machines section of the ConductorJob attribute editor.
 
-NOTE: In a future version we will also save the name of the instance type.This
+NOTE: In a future version we will also save the name of the instance type. This
     is because the value is numeric, but the menu is built dynamically from the
     list of instance types. So by stashing the name we can try to repair it if
     the list changes order between sessions.
