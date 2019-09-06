@@ -20,6 +20,7 @@ import itertools
 
 NUMBER_RE = re.compile(r"^(\d+)$")
 RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
+RX_FRAME = re.compile(r"\$(\d?)F")
 
 
 def _clamp(minval, val, maxval):
@@ -43,15 +44,17 @@ def _resolve_start_end_step(*args):
         if range_match:
             start, end, step = [int(n or 1) for n in range_match.groups()]
         else:
-            start, end, step = [int(number_match.groups()[0]), int(
-                number_match.groups()[0]), 1]
+            start, end, step = [
+                int(number_match.groups()[0]),
+                int(number_match.groups()[0]),
+                1,
+            ]
     else:
         start, end = [int(n) for n in [args[0], args[1]]]
         step = int(args[2]) if len(args) == 3 else 1
     start, end = sorted([start, end])
     if step < 1 or start < 0:
-        raise ValueError(
-            "Args must have non-negative range and positive step")
+        raise ValueError("Args must have non-negative range and positive step")
     return (start, end, step)
 
 
@@ -66,7 +69,7 @@ def _to_frames(arg):
         return sorted(set(arg))
     arg = str(arg)
     the_set = set()
-    for part in [x.strip() for x in arg.split(',')]:
+    for part in [x.strip() for x in arg.split(",")]:
         number_matches = NUMBER_RE.match(part)
         if number_matches:
             vals = number_matches.groups()
@@ -86,18 +89,19 @@ class Sequence(object):
     @staticmethod
     def permutations(template, **kw):
         for vals in itertools.product(
-                *(iter(Sequence.create(spec)) for spec in kw.values())):
+            *(iter(Sequence.create(spec)) for spec in kw.values())
+        ):
             subs = dict(zip(kw, vals))
             yield template % subs
 
     @staticmethod
     def is_valid_spec(spec):
         try:
-            value = spec.strip(',')
+            value = spec.strip(",")
         except AttributeError:
             raise TypeError("Frame spec must be a string")
         valid = bool(value)
-        for part in [x.strip() for x in value.split(',')]:
+        for part in [x.strip() for x in value.split(",")]:
             if not (NUMBER_RE.match(part) or RANGE_RE.match(part)):
                 valid = False
                 break
@@ -141,9 +145,7 @@ class Sequence(object):
 
         num = len(self._iterable)
         chunk_size = kw.get("chunk_size", num)
-        self._chunk_size = (
-            num if chunk_size < 1 else sorted([num, chunk_size])[0]
-        )
+        self._chunk_size = num if chunk_size < 1 else sorted([num, chunk_size])[0]
 
         self._chunk_strategy = kw.get("chunk_strategy", "linear")
 
@@ -179,8 +181,7 @@ class Sequence(object):
         result = []
         for i in xrange(0, len(self._iterable), self._chunk_size):
             result.append(
-                Sequence.create(
-                    list(self._iterable)[i:i + self._chunk_size])
+                Sequence.create(list(self._iterable)[i : i + self._chunk_size])
             )
         return result
 
@@ -207,8 +208,7 @@ class Sequence(object):
         if self._chunk_strategy == "cycle":
             return self._cycle_chunks()
         if self._chunk_strategy == "progressions":
-            return Progression.factory(
-                self._iterable, max_size=self._chunk_size)
+            return Progression.factory(self._iterable, max_size=self._chunk_size)
         return self._linear_chunks()
 
     def chunk_count(self):
@@ -219,10 +219,7 @@ class Sequence(object):
         chunk size directly
         """
         if self._chunk_strategy == "progressions":
-            return len(
-                Progression.factory(
-                    self._iterable,
-                    max_size=self._chunk_size))
+            return len(Progression.factory(self._iterable, max_size=self._chunk_size))
         return int(math.ceil(len(self._iterable) / float(self._chunk_size)))
 
     def intersection(self, iterable):
@@ -237,7 +234,8 @@ class Sequence(object):
         return Sequence.create(
             common_frames,
             chunk_size=self._chunk_size,
-            chunk_strategy=self._chunk_strategy)
+            chunk_strategy=self._chunk_strategy,
+        )
 
     def union(self, iterable):
         """Generate a Sequence that is the union of an iterable with this
@@ -251,7 +249,8 @@ class Sequence(object):
         return Sequence.create(
             union_frames,
             chunk_size=self._chunk_size,
-            chunk_strategy=self._chunk_strategy)
+            chunk_strategy=self._chunk_strategy,
+        )
 
     def offset(self, value):
         """Generate a new Sequence with all values offset.
@@ -263,7 +262,8 @@ class Sequence(object):
         return Sequence.create(
             offset_frames,
             chunk_size=self._chunk_size,
-            chunk_strategy=self._chunk_strategy)
+            chunk_strategy=self._chunk_strategy,
+        )
 
     def expand(self, template):
         """Expand a hash template with this sequence.
@@ -277,10 +277,53 @@ class Sequence(object):
             raise ValueError("Template must contain hashes.")
 
         format_template = re.sub(
-            '(#+)', lambda match: "{{0:0{:d}d}}".format(len(match.group(1))),
-            template)
+            r"(#+)", lambda match: "{{0:0{:d}d}}".format(len(match.group(1))), template
+        )
 
         return [format_template.format(el) for el in self._iterable]
+
+    def expand_format(self, *templates):
+        result = []
+        for f, template in zip(self._iterable, itertools.cycle(templates)):
+            result.append(template.format(frame=f))
+        return result
+
+    def expand_dollar_f(self, *templates):
+        """
+        Expands $ templates such as those containing $3F or $F.
+
+        If a single template is given, such as image.$2F.exr, and the sequence
+        contains [1,2,4] then the result will be:
+        [
+            "image.01.exr",
+            "image.02.exr",
+            "image.04.exr"
+        ]
+        However, if there are 3 templates, such as:
+        a_1/image.$2F.exr
+        a_2/image.$2F.exr
+        a_4/image.$2F.exr
+        then the result will be:
+        [
+            a_1/image.01.exr,
+            a_2/image.02.exr,
+            a_4/image.04.exr
+        ]
+        i.e. there will always be len(sequence) elements in the result.
+
+        The intention is that the number of templates given be either 1 or
+        len(sequence), but for completeness, we cycle if there is some number
+        between, and clip if there are too many.
+        """
+        result = []
+        for f, template in zip(self._iterable, itertools.cycle(templates)):
+            format_template = re.sub(
+                r"\$(\d?)F",
+                lambda match: "{{frame:0{:d}d}}".format(int(match.group(1) or 0)),
+                template,
+            )
+            result.append(format_template.format(frame=f))
+        return result
 
     def subsample(self, count):
         """Take a selection of elements from the sequence.
@@ -321,13 +364,12 @@ class Sequence(object):
         return isinstance(self, Progression)
 
     def to(self, range_sep, step_sep, block_sep):
-        return str(self).replace(
-            "-",
-            range_sep).replace(
-            "x",
-            step_sep).replace(
-            ",",
-            block_sep)
+        return (
+            str(self)
+            .replace("-", range_sep)
+            .replace("x", step_sep)
+            .replace(",", block_sep)
+        )
 
     @property
     def chunk_size(self):
@@ -364,7 +406,7 @@ class Sequence(object):
     def __str__(self):
         """String representation contains the stringified progressions."""
         progs = Progression.factory(self._iterable)
-        return (',').join([str(p) for p in progs])
+        return (",").join([str(p) for p in progs])
 
     def __repr__(self):
         """Repr contains whats necessary to recreate."""
@@ -372,7 +414,6 @@ class Sequence(object):
 
 
 class Progression(Sequence):
-
     def __init__(self, start, end, step, **kw):
         if any(n < 0 for n in [start, end]):
             raise ValueError("Can't create Progression with negative frames")
@@ -486,3 +527,4 @@ def _should_add(element, progression, max_size):
     if len(progression) == max_size:
         return False
     return progression[1] - progression[0] == element - progression[-1]
+
