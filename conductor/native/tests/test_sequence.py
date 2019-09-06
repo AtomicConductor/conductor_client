@@ -1,3 +1,7 @@
+""" test sequence
+
+   isort:skip_file
+"""
 import os
 import sys
 import unittest
@@ -438,6 +442,88 @@ class ExpandFilenameTest(unittest.TestCase):
         template = "image.26.exr"
         with self.assertRaises(ValueError):
             s.expand(template)
+
+
+
+class ResolveDollarTimeVarsTest(unittest.TestCase):
+
+    def test_resolve_one_file_no_padding(self):
+        s = Sequence.create("1")
+        template = "image.$F.exr"
+        result = s.expand_dollar_f(template)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "image.1.exr")
+
+    def test_resolve_no_match_leaves_untouched(self):
+        s = Sequence.create("1")
+        template = "image.ho.exr"
+        result = s.expand_dollar_f(template)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "image.ho.exr")
+
+    def test_resolve_many_matches(self):
+        s = Sequence.create("1")
+        template = "image.$F.$5F.$2F.exr"
+        result = s.expand_dollar_f(template)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "image.1.00001.01.exr")
+
+
+    def test_resolve_one_template_to_many_filenames(self):
+        s = Sequence.create("1-5")
+        template = "image.$2F.exr"
+        result = s.expand_dollar_f(template)
+        self.assertEqual(len(result), 5)
+        self.assertIn("image.02.exr", result)
+        self.assertIn("image.05.exr", result)
+
+    def test_resolve_many_templates_to_many_filenames(self):
+        s = Sequence.create("1-3")
+        templates = ["/folder_1/image.$2F.exr", "/folder_2/image.$2F.exr", "/folder_3/image.$2F.exr"]
+        result = s.expand_dollar_f(*templates)
+        self.assertEqual(len(result), 3)
+        self.assertIn("/folder_2/image.02.exr", result)
+        self.assertIn("/folder_3/image.03.exr", result)
+
+class ResolveFormatTest(unittest.TestCase):
+
+    def test_resolve_one_file_no_padding(self):
+        s = Sequence.create("1")
+        template = "image.{frame}.exr"
+        result = s.expand_format(template)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "image.1.exr")
+
+    def test_resolve_no_match_leaves_untouched(self):
+        s = Sequence.create("1")
+        template = "image.ho.exr"
+        result = s.expand_format(template)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "image.ho.exr")
+
+    def test_resolve_many_matches(self):
+        s = Sequence.create("1")
+        template = "image.{frame}.{frame:05d}.{frame:02d}.exr"
+        result = s.expand_dollar_f(template)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "image.1.00001.01.exr")
+
+
+    def test_resolve_one_template_to_many_filenames(self):
+        s = Sequence.create("1-5")
+        template = "image.{frame:02d}.exr"
+        result = s.expand_dollar_f(template)
+        self.assertEqual(len(result), 5)
+        self.assertIn("image.02.exr", result)
+        self.assertIn("image.05.exr", result)
+
+    def test_resolve_many_templates_to_many_filenames(self):
+        s = Sequence.create("1-3")
+        templates = ["/folder_1/image.{frame:02d}.exr", "/folder_2/image.{frame:02d}.exr", "/folder_3/image.{frame:02d}.exr"]
+        result = s.expand_dollar_f(*templates)
+        self.assertEqual(len(result), 3)
+        self.assertIn("/folder_2/image.02.exr", result)
+        self.assertIn("/folder_3/image.03.exr", result)
 
 
 class ToCustomSpecTest(unittest.TestCase):

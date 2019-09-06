@@ -1,3 +1,7 @@
+""" test package_env
+
+   isort:skip_file
+"""
 import os
 import sys
 import unittest
