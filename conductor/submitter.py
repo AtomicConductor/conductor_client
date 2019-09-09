@@ -73,10 +73,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
     # The text in the title bar of the UI
     _window_title = company_name
 
-    # The instance type that is set by default in the UI. This integer
-    # corresponds to the core count of the conductor instance type
-    default_instance_type = "n1-standard-16"
-
     link_color = "rgb(200,100,100)"
 
     software_packages = None
@@ -285,11 +281,10 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         if default_preempted_autoretry_count is not None:
             self.setAutoretryCount(default_preempted_autoretry_count)
 
-        # Set the default instance type to one specified in user config, or user default value
-        # Note that user prefs will override this value (if one exists)
-        instance_type = CONFIG.get("instance_type") or self.default_instance_type
-        instance_type = self._instance_types.get(instance_type, instance_type)  # default to desired instance_type (even if it doesn't exist)
-        self.setInstanceType(instance_type)
+        # Set the default instance type to one specified in user config
+        instance_type = CONFIG.get("instance_type")
+        if instance_type:
+            self.setInstanceType(instance_type)
 
         # Set the default project by querying the config
         default_project = CONFIG.get('project')
@@ -568,14 +563,10 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def setInstanceType(self, instance_type):
         '''
-        Set the UI's "Instance Type" combobox.  This is done by specifying the
-        core count int.
+        Set the UI's "Instance Type" combobox, if it is currently available.
         '''
-
+        # If instance type isn't currently available, default to the first item.
         item_idx = self.ui_instance_type_cmbx.findData(instance_type)
-        if item_idx == -1:
-            # Instance type isn't currently available, no-op.
-            return
         return self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
 
     def getInstanceType(self):

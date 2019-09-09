@@ -391,8 +391,6 @@ class Config():
     required_keys = []
     default_config = {'base_url': 'atomic-light-001.appspot.com',
                       'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
-                      'instance_cores': 16,
-                      'instance_flavor': "standard",
                       'priority': 5,
                       'local_upload': True,
                       'md5_caching': True,
