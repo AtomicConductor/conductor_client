@@ -565,7 +565,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         Set the UI's "Instance Type" combobox, if it is currently available.
         '''
-        # If instance type isn't currently available, default to the first item.
         item_idx = self.ui_instance_type_cmbx.findData(instance_type)
         return self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
 
