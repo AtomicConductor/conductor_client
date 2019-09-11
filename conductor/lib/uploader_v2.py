@@ -16,7 +16,7 @@ import requests
 from conductor import CONFIG
 from conductor.lib import api_client, common, exceptions, loggeria
 from conductor.lib.downloader import DecAuthorize  # , DecDownloaderRetry
-from conductor.lib.downloader import HistoryWorker, get_bearer_token
+from conductor.lib.downloader import HistoryWorker
 
 # define constant for logging
 EXCEPTION = "exception"
@@ -140,7 +140,7 @@ class Uploader(object):
             - HistoryWorker  # logs out history of downloaded files
         """
 
-        bearer = get_bearer_token()
+        bearer = api_client.get_bearer_token()
         account = api_client.account_id_from_jwt(bearer.value)
         LOGGER.info("account: %s", account)
 
@@ -638,7 +638,7 @@ class Backend:
 
     @classmethod
     def headers(cls):
-        bearer = get_bearer_token()
+        bearer = api_client.get_bearer_token()
         return {
             "accept-version": "v1",
             # "content-type": "application/json",

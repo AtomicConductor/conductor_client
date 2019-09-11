@@ -8,9 +8,12 @@ import jwt
 
 from conductor import CONFIG
 from conductor.lib import common, auth
-from conductor.lib.downloader import get_bearer_token
+from conductor.lib.downloader import Backend
 
 logger = logging.getLogger(__name__)
+
+# Reusable authentication token  used across all processes/threads
+BEARER_TOKEN = multiprocessing.Array('c', 2000)
 
 # A convenience tuple of network exceptions that can/should likely be retried by the retry decorator
 CONNECTION_EXCEPTIONS = (requests.exceptions.HTTPError,
@@ -189,6 +192,22 @@ def get_api_key_bearer_token(creds_file=None):
         with open(creds_file, "w") as fp:
             fp.write(json.dumps(credentials_dict))
     return
+
+
+def get_bearer_token(refresh=False):
+    '''
+    Return the bearer token from a cached(global) variable.  If there is no
+    cached value, then fetch a new bearer token and return it (and cache it).
+
+    Note that that BEARER_TOKEN is not a simple string.  It's a process/thread-safe
+    object.
+    '''
+    global BEARER_TOKEN
+
+    if refresh or not BEARER_TOKEN.value:
+        BEARER_TOKEN.value = Backend.bearer_token()
+
+    return BEARER_TOKEN
 
 
 def account_id_from_jwt(token):
