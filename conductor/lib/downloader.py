@@ -1223,12 +1223,6 @@ class Backend:
             raise
 
     @classmethod
-    @common.dec_timer_exit(log_level=logging.DEBUG)
-    def bearer_token(cls):
-        creds = api_client.read_conductor_credentials(True)
-        return creds
-
-    @classmethod
     @DecAuthorize()
     def get(cls, path, params, headers):
         '''

@@ -30,7 +30,7 @@ except ImportError, e:
 
 
 from conductor import CONFIG
-from conductor.lib import common, api_client, loggeria
+from conductor.lib import api_client, common, loggeria
 
 CHUNK_SIZE = 1024
 
