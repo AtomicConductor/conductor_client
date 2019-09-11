@@ -8,6 +8,7 @@ import jwt
 
 from conductor import CONFIG
 from conductor.lib import common, auth
+from conductor.lib.downloader import get_bearer_token
 
 logger = logging.getLogger(__name__)
 
@@ -221,6 +222,33 @@ def get_creds_path(api_key=False):
     else:
         creds_file = os.path.join(config_path, "credentials")
     return creds_file
+
+
+def retrieve_instance_types(as_dict=False):
+    '''
+    Get the list of available instances types.
+    '''
+    bearer = get_bearer_token()
+    account_id = api_client.account_id_from_jwt(bearer.value)
+
+    api = ApiClient()
+    payload, response_code = api.make_request('api/v1/instance-types',
+                                              use_api_key=True)
+    data = json.loads(payload)
+    if not (response_code == 200 or data):
+        return []
+
+    # The 'data' k/v contains the list of instance types in the following format:
+    # [
+    #    {cores: 16, description: "16 core, 64GB Mem", name: "m5.4xlarge", memory: 64.0}
+    #    {cores: 48, description: "48 core, 192GB Mem", name: "m5.12xlarge", memory: 192.0}
+    # ]
+    instance_types = data['data']
+    logger.debug('Found available instance types: %s', instance_types)
+
+    if as_dict:
+        return dict([(instance["description"], instance) for instance in instance_types])
+    return instance_types
 
 
 def request_projects(statuses=("active",)):

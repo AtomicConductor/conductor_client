@@ -14,7 +14,7 @@ except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import conductor
-from conductor.lib import common, conductor_submit, downloader, downloader2, uploader, loggeria
+from conductor.lib import api_client, common, conductor_submit, downloader, downloader2, uploader, loggeria
 
 
 def parse_args():
@@ -148,7 +148,7 @@ def parse_args():
                                      'Type of machine to run on ("standard", "highmem", or "highcpu")'))
 
     submit_parser.add_argument("--instance_type",
-                               choices=[instance["name"] for instance in common.get_conductor_instance_types()],
+                               choices=[instance["name"] for instance in api_client.retrieve_instance_types()],
                                help='Type of instance to run the job on')
 
     submit_parser.add_argument("--preemptible",
