@@ -1,5 +1,6 @@
 import json
 import logging
+import multiprocessing
 import os
 import requests
 import time
@@ -8,7 +9,6 @@ import jwt
 
 from conductor import CONFIG
 from conductor.lib import common, auth
-from conductor.lib.downloader import Backend
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +205,7 @@ def get_bearer_token(refresh=False):
     global BEARER_TOKEN
 
     if refresh or not BEARER_TOKEN.value:
-        BEARER_TOKEN.value = Backend.bearer_token()
+        BEARER_TOKEN.value = read_conductor_credentials(True)
 
     return BEARER_TOKEN
 
@@ -248,21 +248,23 @@ def retrieve_instance_types(as_dict=False):
     Get the list of available instances types.
     '''
     bearer = get_bearer_token()
-    account_id = api_client.account_id_from_jwt(bearer.value)
+    account_id = account_id_from_jwt(bearer.value)
 
     api = ApiClient()
-    payload, response_code = api.make_request('api/v1/instance-types',
-                                              use_api_key=True)
-    data = json.loads(payload)
-    if not (response_code == 200 or data):
-        return []
+    response, response_code = api.make_request('api/v1/instance-types',
+                                               use_api_key=True,
+                                               raise_on_error=False)
+    if response_code not in (200, ):
+        msg = "Failed to get instance types"
+        msg += "\nError %s ...\n%s" % (response_code, response)
+        raise Exception(msg)
 
     # The 'data' k/v contains the list of instance types in the following format:
     # [
     #    {cores: 16, description: "16 core, 64GB Mem", name: "m5.4xlarge", memory: 64.0}
     #    {cores: 48, description: "48 core, 192GB Mem", name: "m5.12xlarge", memory: 192.0}
     # ]
-    instance_types = data['data']
+    instance_types = json.loads(response).get('data', [])
     logger.debug('Found available instance types: %s', instance_types)
 
     if as_dict:
