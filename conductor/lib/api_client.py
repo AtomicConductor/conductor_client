@@ -249,53 +249,19 @@ def request_projects(statuses=("active",)):
     return projects
 
 
-def request_software_packages(sidecar_id=None):
+def request_software_packages():
     '''
-    Query Conductor for all software packages for the given sidecar_id.  If no
-    sidecar_id is given then get the latest packages (uses latest sidecar_id)
+    Query Conductor for all software packages for the currently available sidecar.
     '''
     api = ApiClient()
 
-    logger.debug("sidecar_id: %s", sidecar_id)
-
-    if sidecar_id:
-        uri = 'api/v1/ee/packages/%s' % sidecar_id
-    else:
-        uri = 'api/v1/ee/packages'
-
-    logger.debug("uri: %s", uri)
-
+    uri = 'api/v1/ee/packages'
     response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False,
                                                use_api_key=True)
 #     logger.debug("response: %s", response)
 #     logger.debug("response: %s", response_code)
     if response_code not in [200]:
-        msg = "Failed to get software packages for sidecar: %s" % sidecar_id
+        msg = "Failed to get software packages for latest sidecar"
         msg += "\nError %s ...\n%s" % (response_code, response)
         raise Exception(msg)
     return json.loads(response).get("data", [])
-
-
-def request_sidecar(sidecar_id=None):
-    '''
-    Return the sidecar entity for the given sidecar_id.  If no sidecar_id is
-    given, return the latest sidecar
-    '''
-    logger.debug("sidecar_id: %s", sidecar_id)
-
-    api = ApiClient()
-    uri = 'api/v1/ee/sidecars'
-    if sidecar_id:
-        uri += "/%s" % sidecar_id
-
-    logger.debug("uri: %s", uri)
-    response, response_code = api.make_request(uri_path=uri, verb="GET", raise_on_error=False,
-                                               use_api_key=True)
-    logger.debug("response: %s", response)
-    logger.debug("response: %s", response_code)
-    if response_code not in [200]:
-        msg = "Failed to get sidecar from %s" % uri
-        msg += "\nError %s ...\n%s" % (response_code, response)
-        raise Exception(msg)
-
-    return json.loads(response)
