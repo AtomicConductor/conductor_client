@@ -22,4 +22,6 @@ def update(obj, data_block):
     instance_type_att = obj.get_attribute("instance_type")
     instance_type_att.remove_all_presets()
     for i, instance_type in enumerate(instance_types):
-        instance_type_att.add_preset(instance_type["description"], str(i))
+        instance_type_att.add_preset(
+            instance_type["description"].encode("utf-8"), str(i)
+        )
