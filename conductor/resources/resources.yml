@@ -1418,6 +1418,8 @@ package_ids:
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
                 "4.03.02": 63a7413e901d4a674e625bea7c035a33
+                "4.04.03": b2786d25670bea527d4283aa38425efb
+                "4.12.02": 5396de681502958f909b3994ba9cc910
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1493,6 +1495,8 @@ package_ids:
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
                 "4.03.02": 63a7413e901d4a674e625bea7c035a33
+                "4.04.03": b2786d25670bea527d4283aa38425efb
+                "4.12.02": 5396de681502958f909b3994ba9cc910
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1568,6 +1572,8 @@ package_ids:
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
                 "4.03.02": 63a7413e901d4a674e625bea7c035a33
+                "4.04.03": b2786d25670bea527d4283aa38425efb
+                "4.12.02": 5396de681502958f909b3994ba9cc910
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1645,6 +1651,8 @@ package_ids:
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
                 "4.03.02": 63a7413e901d4a674e625bea7c035a33
+                "4.04.03": b2786d25670bea527d4283aa38425efb
+                "4.12.02": 5396de681502958f909b3994ba9cc910
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1722,6 +1730,8 @@ package_ids:
                 "3.60.03": 47147c0857472c6d740bb415ad2baa15
                 "3.60.04": efae83fc6aa519ebce84ad78b3ec2689
                 "4.03.02": 63a7413e901d4a674e625bea7c035a33
+                "4.04.03": b2786d25670bea527d4283aa38425efb
+                "4.12.02": 5396de681502958f909b3994ba9cc910
             arnold-maya:
                 "1.3.0.1": aa12431901e3f5131ff7de7684a1c8f6
                 "1.3.1.0": 0b46953debbbfa33ff5ab1c7f1243f01
@@ -1796,6 +1806,9 @@ package_ids:
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
                 "4.03.02": 46724233e6e0df9f69979d58ddadb3ca
+                "4.04.03": e8b1258d14bd1c800576ebbc332f91db
+                "4.12.01": d6c5dffd448b88cc42c939a4ce996709
+                "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1850,6 +1863,9 @@ package_ids:
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
                 "4.03.02": 46724233e6e0df9f69979d58ddadb3ca
+                "4.04.03": e8b1258d14bd1c800576ebbc332f91db
+                "4.12.01": d6c5dffd448b88cc42c939a4ce996709
+                "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1903,6 +1919,9 @@ package_ids:
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
                 "4.03.02": 46724233e6e0df9f69979d58ddadb3ca
+                "4.04.03": e8b1258d14bd1c800576ebbc332f91db
+                "4.12.01": d6c5dffd448b88cc42c939a4ce996709
+                "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1955,6 +1974,9 @@ package_ids:
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
                 "4.03.02": 46724233e6e0df9f69979d58ddadb3ca
+                "4.04.03": e8b1258d14bd1c800576ebbc332f91db
+                "4.12.01": d6c5dffd448b88cc42c939a4ce996709
+                "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -1996,6 +2018,9 @@ package_ids:
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
                 "4.03.02": 46724233e6e0df9f69979d58ddadb3ca
+                "4.04.03": e8b1258d14bd1c800576ebbc332f91db
+                "4.12.01": d6c5dffd448b88cc42c939a4ce996709
+                "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -2049,6 +2074,9 @@ package_ids:
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
                 "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
                 "4.03.02": 46724233e6e0df9f69979d58ddadb3ca
+                "4.04.03": e8b1258d14bd1c800576ebbc332f91db
+                "4.12.01": d6c5dffd448b88cc42c939a4ce996709
+                "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
             arnold-maya:
                 "2.0.1": 75267da8444add2de1a9ce615834e81a
                 "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
@@ -2094,6 +2122,8 @@ package_ids:
                 "3.0.8": faa67470d482114013218e55b173e9cc
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+
+
     "nuke":
         "8.0v1":
             package: c8467d09a1cf38e7940a0f87bd01d5da
