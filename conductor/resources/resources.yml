@@ -497,6 +497,7 @@ package_ids:
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
                 "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
+                "21.8": 9ff8ced4f51edd4684ae7983cefef19e
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -583,6 +584,7 @@ package_ids:
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
                 "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
+                "21.8": 9ff8ced4f51edd4684ae7983cefef19e
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -668,6 +670,7 @@ package_ids:
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
                 "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
+                "21.8": 9ff8ced4f51edd4684ae7983cefef19e
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -754,6 +757,7 @@ package_ids:
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
                 "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
+                "21.8": 9ff8ced4f51edd4684ae7983cefef19e
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -840,6 +844,7 @@ package_ids:
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
                 "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
+                "21.8": 9ff8ced4f51edd4684ae7983cefef19e
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -926,6 +931,7 @@ package_ids:
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
                 "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
+                "21.8": 9ff8ced4f51edd4684ae7983cefef19e
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -1012,6 +1018,7 @@ package_ids:
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
                 "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
+                "21.8": 9ff8ced4f51edd4684ae7983cefef19e
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -1097,6 +1104,7 @@ package_ids:
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
                 "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
+                "21.8": 9ff8ced4f51edd4684ae7983cefef19e
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -1183,6 +1191,7 @@ package_ids:
                 "21.5": 47ef9c62ec986b35516094cbf321d77f
                 "21.6": a3a3e5e98293b1fcd87432296f158cb4
                 "21.7": f13f1b5df9ec1130fe6d5723bc8fa151
+                "21.8": 9ff8ced4f51edd4684ae7983cefef19e
             yeti:
                 "2.0.26": f620fcf5c9e2bd7f0dc647b7bc3a180b
                 "2.1.0": 664e1023da17797ef8d9b8c08647b69f
@@ -1251,6 +1260,7 @@ package_ids:
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
                 "21.6": 04116397b91f786baa0852ee6a33484a
                 "21.7": f8c5244b19e6b577737990ff211447a0
+                "21.8": 4be76eb1402a4d5b4f0986bd9300c06e
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1321,6 +1331,7 @@ package_ids:
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
                 "21.6": 04116397b91f786baa0852ee6a33484a
                 "21.7": f8c5244b19e6b577737990ff211447a0
+                "21.8": 4be76eb1402a4d5b4f0986bd9300c06e
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1391,6 +1402,7 @@ package_ids:
                 "21.5": 8357f93b33879389aa12dcd89f70f3ea
                 "21.6": 04116397b91f786baa0852ee6a33484a
                 "21.7": f8c5244b19e6b577737990ff211447a0
+                "21.8": 4be76eb1402a4d5b4f0986bd9300c06e
             yeti:
                 "2.1.0": 82119097eed76bf061c1a568b0e78b5e
                 "2.1.1": 100a8027177d7cff4d4fbdb88f726bbb
@@ -1467,6 +1479,7 @@ package_ids:
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
                 "21.7": 94df29e845e81cd69b2afe611a347a72
+                "21.8": 9afb1189abc167f59426007f6a8db0c0
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1553,6 +1566,7 @@ package_ids:
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
                 "21.7": 94df29e845e81cd69b2afe611a347a72
+                "21.8": 9afb1189abc167f59426007f6a8db0c0
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1639,8 +1653,12 @@ package_ids:
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
                 "21.7": 94df29e845e81cd69b2afe611a347a72
+                "21.8": 9afb1189abc167f59426007f6a8db0c0
                 "1.0": 61fb1e0d0ca32ab4cb7b709e651c7293 #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and identifies all 3 versions as version "1.0" in maya)
-                "22.3 @ 1923583":  df45dbf20acb69e38d163cdf75d8746b # renderman 22.3_1923604. Note sure why maya plugin reports it as build "1923583"
+                "22.3 @ 1923583": df45dbf20acb69e38d163cdf75d8746b # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version)
+                "22.4 @ 1946009": b3af4d5bd68e395e6efe95078a6160e1   
+                "22.5 @ 1970143": cbc5006bdb2368b91fe26f827f6039ca
+                "22.6 @ 1987952": 74841d506f09517da5ae3ddd256afe18
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1727,8 +1745,12 @@ package_ids:
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
                 "21.7": 94df29e845e81cd69b2afe611a347a72
+                "21.8": 9afb1189abc167f59426007f6a8db0c0
                 "1.0": 61fb1e0d0ca32ab4cb7b709e651c7293 #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and identifies all 3 versions as version "1.0" in maya)
-                "22.3 @ 1923583":  df45dbf20acb69e38d163cdf75d8746b # renderman 22.3_1923604. Note sure why maya plugin reports it as build "1923583"
+                "22.3 @ 1923583": df45dbf20acb69e38d163cdf75d8746b # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version)
+                "22.4 @ 1946009": b3af4d5bd68e395e6efe95078a6160e1   
+                "22.5 @ 1970143": cbc5006bdb2368b91fe26f827f6039ca
+                "22.6 @ 1987952": 74841d506f09517da5ae3ddd256afe18
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1815,8 +1837,12 @@ package_ids:
                 "21.5": cb14ddba549aefa42f8f047e6682f470
                 "21.6": 5c058e15fd8be1105e18db9687444898
                 "21.7": 94df29e845e81cd69b2afe611a347a72
+                "21.8": 9afb1189abc167f59426007f6a8db0c0
                 "1.0": 61fb1e0d0ca32ab4cb7b709e651c7293 #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and identifies all 3 versions as version "1.0" in maya)
-                "22.3 @ 1923583":  df45dbf20acb69e38d163cdf75d8746b # renderman 22.3_1923604. Note sure why maya plugin reports it as build "1923583"
+                "22.3 @ 1923583": df45dbf20acb69e38d163cdf75d8746b # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version)
+                "22.4 @ 1946009": b3af4d5bd68e395e6efe95078a6160e1   
+                "22.5 @ 1970143": cbc5006bdb2368b91fe26f827f6039ca
+                "22.6 @ 1987952": 74841d506f09517da5ae3ddd256afe18
             yeti:
                 "2.1.0": 56ee9e6997ccb7152793b341f068bb38
                 "2.1.1": daa939be7dc3308540fa058bdd8683bc
@@ -1885,9 +1911,12 @@ package_ids:
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
+                "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
-                "22.3 @ 1923583":  3714867f9dc803d50c19a060bbc843d6 # renderman 22.3_1923604. Note sure why maya plugin reports it as build "1923583" 
-
+                "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
+                "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1951,9 +1980,12 @@ package_ids:
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
+                "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
-                "22.3 @ 1923583":  3714867f9dc803d50c19a060bbc843d6 # renderman 22.3_1923604. Note sure why maya plugin reports it as build "1923583" 
-
+                "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
+                "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -2016,8 +2048,12 @@ package_ids:
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
+                "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
-                "22.3 @ 1923583":  3714867f9dc803d50c19a060bbc843d6 # renderman 22.3_1923604. Note sure why maya plugin reports it as build "1923583" 
+                "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
+                "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -2069,9 +2105,12 @@ package_ids:
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
+                "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
-                "22.3 @ 1923583":  3714867f9dc803d50c19a060bbc843d6 # renderman 22.3_1923604. Note sure why maya plugin reports it as build "1923583" 
-
+                "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
+                "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -2124,9 +2163,12 @@ package_ids:
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
+                "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
-                "22.3 @ 1923583":  3714867f9dc803d50c19a060bbc843d6 # renderman 22.3_1923604. Note sure why maya plugin reports it as build "1923583" 
-
+                "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
+                "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -2189,9 +2231,12 @@ package_ids:
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
+                "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
-                "22.3 @ 1923583":  3714867f9dc803d50c19a060bbc843d6 # renderman 22.3_1923604. Note sure why maya plugin reports it as build "1923583" 
-
+                "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
+                "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
+                "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
