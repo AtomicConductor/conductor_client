@@ -1509,6 +1509,7 @@ package_ids:
                 "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
+                "7.0.1": 340844a53f76c3576607d7a44f55ebf8
 
         "Autodesk Maya 2017 Security Fix": # We're treating this as SP0
             package: c14b3fcde1e0d8bd66f88a4e750856b6
@@ -1596,6 +1597,7 @@ package_ids:
                 "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
+                "7.0.1": 340844a53f76c3576607d7a44f55ebf8
 
         "Autodesk Maya 2017 Update 3":
             package: 23f1d45354dd7eacf852386a659a8309
@@ -1688,6 +1690,7 @@ package_ids:
                 "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
+                "7.0.1": 340844a53f76c3576607d7a44f55ebf8
 
         "Autodesk Maya 2017 Update 4":
             package: 830958e28d6e02263af4f0971f036473
@@ -1780,6 +1783,7 @@ package_ids:
                 "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
+                "7.0.1": 340844a53f76c3576607d7a44f55ebf8
 
         "Autodesk Maya 2017 Update 5":
             package: 40b7a0da3efc58046f95269d533fbbed
@@ -1872,6 +1876,7 @@ package_ids:
                 "2.2.10": a895c11331eeea402c4e79b204b021d0
             golaem:
                 "6.2.4": 2678102480821dbec9e7a814b317dccf
+                "7.0.1": 340844a53f76c3576607d7a44f55ebf8
 
         "Autodesk Maya 2018":
             package: 460411ee5c24661ed354863bcb3d7c21
@@ -1944,6 +1949,7 @@ package_ids:
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+                "7.0.1": a429b694702c8e55f4431b23d2bd4e46
 
         "Autodesk Maya 2018.1":
             package: 38015a170f892bf61e5275deac8dd421
@@ -2016,6 +2022,7 @@ package_ids:
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+                "7.0.1": a429b694702c8e55f4431b23d2bd4e46
 
         "Autodesk Maya 2018.2":
             package: f7e93d6431686b48648a7bee94145d06
@@ -2088,6 +2095,7 @@ package_ids:
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+                "7.0.1": a429b694702c8e55f4431b23d2bd4e46
                 
         "Autodesk Maya 2018.3":
             package: c5b15175fe9575885244ae2f452f6c56
@@ -2135,6 +2143,7 @@ package_ids:
                 "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+                "7.0.1": a429b694702c8e55f4431b23d2bd4e46
 
         "Autodesk Maya 2018.4":
             package: f8a07ea6790a40abe2c06e404ff5849e
@@ -2207,6 +2216,7 @@ package_ids:
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+                "7.0.1": a429b694702c8e55f4431b23d2bd4e46
 
         "Autodesk Maya 2018.5":
             package: ef8023e09bc3e3a87d111e162aa1ad77
@@ -2279,6 +2289,7 @@ package_ids:
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+                "7.0.1": a429b694702c8e55f4431b23d2bd4e46
 
 
     "nuke":
