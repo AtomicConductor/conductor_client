@@ -504,7 +504,11 @@ def collect_dependencies(node_attrs):
                     if not plug_value:
                         continue
 
-                    # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
+                    # Resolve any unresolved paths (i.e. relative paths, environment variables?, etc)
+                    # NOTE: that for relative paths, this simply prefixes the value with the maya project
+                    # directory (i.e. it doesn't have any real smarts about path resolution, etc).
+                    # NOTE: that this command will oftentimes return filepaths with an ending "/" on
+                    # it for some reason. Strip this out at the end of the function
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
                     logger.debug("%s: %s", plug_name, path)
 
@@ -513,9 +517,12 @@ def collect_dependencies(node_attrs):
                     if node_type == "xgmPalette":
                         maya_filepath = cmds.file(query=True, sceneName=True)
                         palette_filepath = os.path.join(os.path.dirname(maya_filepath), plug_value)
-                        xgen_dependencies = scrape_palette_node(node, palette_filepath)
+                        xgen_dependencies = scrape_palette_node(node, palette_filepath) + [palette_filepath]
                         logger.debug("xgen_dependencies: %s", xgen_dependencies)
                         dependencies += xgen_dependencies
+                        # continue here so that we don't append the path to dependencies later on.
+                        # (the path that would have been appended is actually not the correct path).
+                        continue
 
                     # ---- VRAY SCRAPING -----
                     if node_type == "VRayScene":
