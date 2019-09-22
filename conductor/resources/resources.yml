@@ -2364,6 +2364,86 @@ package_ids:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 "7.0.1": a429b694702c8e55f4431b23d2bd4e46
 
+        "Autodesk Maya 2019":
+            package: 732e688c522899625db1627adaa7cf3e
+            v-ray-maya:
+                "4.12.01": 92d17c7696eb5224df635c452cd3e1d9
+                "4.12.02": e58d3840447aa580e7129384db390365
+            arnold-maya:
+                "3.1.2.1": 90c9532d1c19e14624ec376ddb00a55b
+                "3.1.2.2": 8e87ae3ee8c721aad91f8a9e9c25db7e
+                "3.2.0": a56572e83b22a7f65ae0b90c341ae380
+                "3.2.0.1": b835940a73c0a23c3477357d0e85d173
+                "3.2.0.2": b4215d5d3f17044c36ec9603d7e4ca0f
+                "3.2.1": 547bc1807249afcb6746a20d539c8873
+                "3.2.2": cbe7c9bfa18c6e6c659f949177df3464
+                "3.2.1.1": 1a41b8c8bdecad489219800b46413d6c
+                "3.3.0": 349a5215172a144af69a51f7d18cb307
+            renderman-maya:
+                "22.4 @ 1946009": 7b3408bb02095191a5d66f0aac07feac
+                "22.5 @ 1970143": 265cbb9ceb0d162eedfca690504f45b5
+                "22.6 @ 1987952": 4e74cb32aeb1a318d258744b990f5335
+            yeti:
+                "3.1.15": d3f4a93bb8d4e08fbd7a00be77fd3a27
+                "3.1.17": 91a9b9a3cacf51a8f28ae38138c95a16
+                "3.5.1": 079d6da4826f77b20d13828ed914910b
+                "3.5.2": 8020c42dbb67966a00e0ddf02cc2009e
+            golaem:
+                "7.0.1": 5f0d9900a24d4ebb8783cbaee2e2ba82
+
+        "Autodesk Maya 2019.1":
+            package: e9912c6c9a3d9a7dfa0d255fb5a21f82
+            v-ray-maya:
+                "4.12.01": 92d17c7696eb5224df635c452cd3e1d9
+                "4.12.02": e58d3840447aa580e7129384db390365
+            arnold-maya:
+                "3.1.2.1": 90c9532d1c19e14624ec376ddb00a55b
+                "3.1.2.2": 8e87ae3ee8c721aad91f8a9e9c25db7e
+                "3.2.0": a56572e83b22a7f65ae0b90c341ae380
+                "3.2.0.1": b835940a73c0a23c3477357d0e85d173
+                "3.2.0.2": b4215d5d3f17044c36ec9603d7e4ca0f
+                "3.2.1": 547bc1807249afcb6746a20d539c8873
+                "3.2.2": cbe7c9bfa18c6e6c659f949177df3464
+                "3.2.1.1": 1a41b8c8bdecad489219800b46413d6c
+                "3.3.0": 349a5215172a144af69a51f7d18cb307
+            renderman-maya:
+                "22.4 @ 1946009": 7b3408bb02095191a5d66f0aac07feac
+                "22.5 @ 1970143": 265cbb9ceb0d162eedfca690504f45b5
+                "22.6 @ 1987952": 4e74cb32aeb1a318d258744b990f5335
+            yeti:
+                "3.1.15": d3f4a93bb8d4e08fbd7a00be77fd3a27
+                "3.1.17": 91a9b9a3cacf51a8f28ae38138c95a16
+                "3.5.1": 079d6da4826f77b20d13828ed914910b
+                "3.5.2": 8020c42dbb67966a00e0ddf02cc2009e
+            golaem:
+                "7.0.1": 5f0d9900a24d4ebb8783cbaee2e2ba82
+
+        "Autodesk Maya 2019.2":
+            package: a655bc8351720034555d09d82d0af07c
+            v-ray-maya:
+                "4.12.01": 92d17c7696eb5224df635c452cd3e1d9
+                "4.12.02": e58d3840447aa580e7129384db390365
+            arnold-maya:
+                "3.1.2.1": 90c9532d1c19e14624ec376ddb00a55b
+                "3.1.2.2": 8e87ae3ee8c721aad91f8a9e9c25db7e
+                "3.2.0": a56572e83b22a7f65ae0b90c341ae380
+                "3.2.0.1": b835940a73c0a23c3477357d0e85d173
+                "3.2.0.2": b4215d5d3f17044c36ec9603d7e4ca0f
+                "3.2.1": 547bc1807249afcb6746a20d539c8873
+                "3.2.2": cbe7c9bfa18c6e6c659f949177df3464
+                "3.2.1.1": 1a41b8c8bdecad489219800b46413d6c
+                "3.3.0": 349a5215172a144af69a51f7d18cb307
+            renderman-maya:
+                "22.4 @ 1946009": 7b3408bb02095191a5d66f0aac07feac
+                "22.5 @ 1970143": 265cbb9ceb0d162eedfca690504f45b5
+                "22.6 @ 1987952": 4e74cb32aeb1a318d258744b990f5335
+            yeti:
+                "3.1.15": d3f4a93bb8d4e08fbd7a00be77fd3a27
+                "3.1.17": 91a9b9a3cacf51a8f28ae38138c95a16
+                "3.5.1": 079d6da4826f77b20d13828ed914910b
+                "3.5.2": 8020c42dbb67966a00e0ddf02cc2009e
+            golaem:
+                "7.0.1": 5f0d9900a24d4ebb8783cbaee2e2ba82
 
     "nuke":
         "8.0v1":
