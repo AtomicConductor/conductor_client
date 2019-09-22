@@ -2291,6 +2291,79 @@ package_ids:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 "7.0.1": a429b694702c8e55f4431b23d2bd4e46
 
+        "Autodesk Maya 2018.6":
+            package: bcfe5df6e2361d77ca7d7b9da76e351b
+            v-ray-maya:
+                "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
+                "3.60.03": 4948a81728a1612262ce781ed3c35511
+                "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
+                "4.03.02": 46724233e6e0df9f69979d58ddadb3ca
+                "4.04.03": e8b1258d14bd1c800576ebbc332f91db
+                "4.12.01": d6c5dffd448b88cc42c939a4ce996709
+                "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
+            arnold-maya:
+                "2.0.1": 75267da8444add2de1a9ce615834e81a
+                "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
+                "2.0.2.3": 0172d14d1aa2abbd56ba4b579c4c0577
+                "2.0.2.4": ed3839551e44709a7820cec9307a23fe
+                "2.1.0": cbe8d96aea67a3f39d17918f69312432
+                "2.1.0.1": 95a2241e0efdba008eec42deef13c24d
+                "2.1.0.2": 0c4af05117037150629d43e7a85c8389
+                "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
+                "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
+                "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.1": c07b1199c9995b3eac749898e95168f6
+                "3.0.1.1": 26e9640b903142f64f9177ae028d0006
+                "3.1.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.1": acacb46b8470d1fecc478741bbcaab5f
+                "3.1.2": 5469fbc1bb476d9bb3ee8dcb1c3dbf41
+                "3.1.2.1": 6331c580f0eb8d64fae9b4330449c8b0
+                "3.1.2.2": 65bd7a3fb5467d950b2abdc3670e9bd9
+                "3.2.0": 0f5c85f847bfcca874ca7e57c7840dfa
+                "3.2.0.1": a13babea6910eb7e33ac5f804c0e75b8
+                "3.2.0.2": 452d3830b64dc08a81aabaf0b745e239
+                "3.2.1": bc01c36af946e8600e05c5a630bc6a1c
+                "3.2.2": 9fa1e7de57dfe6c17cb0d479b4ebf280
+                "3.2.1.1": 936dac0a489071942be623da35dd71fb
+                "3.3.0": f6f36673273201b8eef21b5c3dd48f12
+            renderman-maya:
+                "21.6": 914263d130a20364759697ba1aef15f1
+                "21.7": de37d61acba42b6e5961d63982b8381c
+                "21.8": 121a32084130fa034d81507ef5c942a2
+                "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya) 
+                "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version)
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
+                "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
+                "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
+            yeti:
+                "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
+                "2.2.1": 94e2209873200b6f9513aa5430c94699
+                "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
+                "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
+                "2.2.4": 64950eaef0d9ae5a6b72da9a8deab4bd
+                "2.2.5": 25eee62bbcca44249ec55153a79c96ae
+                "2.2.6": c7ae678b1b7c406ef3bea0627a03e5f1
+                "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
+                "2.2.8": 341553d46e46aa87ab03e63de60232ff
+                "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+                "2.2.10": 8108a51d187f50fad082bfc53cd1f150
+                "3.0.0": 336091bfb39f0056b28c8bb0e872b6ec
+                "3.0.1": 3679830f2272fbea0d76ad826e23b5c3
+                "3.0.2": cc69eb97c2e8e4703922ca8cdd75ce21
+                "3.0.3": d9c015771218dba8b43f4c6b8456401d
+                "3.0.4": d3e71f895ea19ad44150ad74318c4484
+                "3.0.5": b8888692a7c23e9be77038308dfca210
+                "3.0.6": 0e99fe1776212f57054efb91f957bffa
+                "3.0.7": 5945522322a9768acd12199666ad4dcf
+                "3.0.8": faa67470d482114013218e55b173e9cc
+                "3.1.15": faf558c6f642b58762055f13c08b9a14
+                "3.1.17": 4dde33570714ba989d3aff16cecea0c0
+                "3.5.1": e58369bb0add6c7560cff5fc88123bf0
+                "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
+            golaem:
+                "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+                "7.0.1": a429b694702c8e55f4431b23d2bd4e46
+
 
     "nuke":
         "8.0v1":
