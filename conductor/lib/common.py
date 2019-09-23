@@ -15,6 +15,7 @@ import time
 import traceback
 import yaml
 
+
 BYTES_1KB = 1024
 BYTES_1MB = BYTES_1KB ** 2
 BYTES_1GB = BYTES_1KB ** 3
@@ -390,8 +391,6 @@ class Config():
     required_keys = []
     default_config = {'base_url': 'atomic-light-001.appspot.com',
                       'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
-                      'instance_cores': 16,
-                      'instance_flavor': "standard",
                       'priority': 5,
                       'local_upload': True,
                       'md5_caching': True,
@@ -570,19 +569,6 @@ def load_resources_file():
 
     with open(resources_filepath, 'r') as file_:
         return yaml.safe_load(file_)
-
-
-def get_conductor_instance_types(as_dict=False):
-    '''
-    Get the list of available instances types from the resources.yml file
-    '''
-    resources = load_resources_file()
-    instance_types = resources.get("instance_types") or []
-
-    if as_dict:
-        return dict([(instance["name"], instance) for instance in instance_types])
-
-    return instance_types
 
 
 def get_conductor_gpu_configs():

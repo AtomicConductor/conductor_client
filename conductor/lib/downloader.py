@@ -38,9 +38,6 @@ LOG_FORMATTER = logging.Formatter('%(asctime)s  %(message)s')
 DEBUG_LOG_FORMATTER = logging.Formatter(
     '%(asctime)s  %(name)s%(levelname)9s  %(processName)s %(threadName)s:  %(message)s')
 
-# Reusable authentication token  used across all processes/threads
-BEARER_TOKEN = multiprocessing.Array('c', 2000)
-
 # Global run-state variable that decorators and other functions can use to
 # know when they should exit
 RUN_STATE = multiprocessing.Array('c', 'stoppingorstuff')
@@ -70,7 +67,7 @@ class DecAuthorize(object):
             '''
 
             # Get the bearer token (either from cache or create a new one if necessary)
-            bearer_token = get_bearer_token()
+            bearer_token = api_client.get_bearer_token()
 
             # update the functions headers dictionary, overwriting/adding an
             # "authorization" key/value
@@ -84,7 +81,7 @@ class DecAuthorize(object):
                 # and call the original function again
                 if  error.response.status_code in [301, 302, 401]:
                     LOGGER.debug("Bearer token expired (401). Fetching a new one: %s", error)
-                    bearer_token = get_bearer_token(refresh=True)
+                    bearer_token = api_client.get_bearer_token(refresh=True)
                     kwargs["headers"].update(make_auth_header(bearer_token.value))
                     return function(*args, **kwargs)
 
@@ -270,7 +267,7 @@ class Downloader(object):
             - DownloadWorker # Downloads files
             - HistoryWorker  # logs out history of downloaded files
         """
-        bearer = get_bearer_token()
+        bearer = api_client.get_bearer_token()
         account = api_client.account_id_from_jwt(bearer.value)
         LOGGER.info("account: %s", account)
 
@@ -1156,7 +1153,7 @@ class Backend:
 
     @classmethod
     def headers(cls):
-        bearer = get_bearer_token()
+        bearer = api_client.get_bearer_token()
         return{"accept-version": "v1",
                "authorization": "Bearer %s" % bearer.value}
 
@@ -1224,12 +1221,6 @@ class Backend:
                 return
         except:
             raise
-
-    @classmethod
-    @common.dec_timer_exit(log_level=logging.DEBUG)
-    def bearer_token(cls):
-        creds = api_client.read_conductor_credentials(True)
-        return creds
 
     @classmethod
     @DecAuthorize()
@@ -1325,22 +1316,6 @@ def empty_queue(queue):
     return items
 
 
-def get_bearer_token(refresh=False):
-    '''
-    Return the bearer token from a cached(global) variable..  If there is no
-    cached value, then fetch a new bearer token and return it (and cache it).
-
-    Note that that BEARER_TOKEN is not a simple string.  It's a process/thread-safe
-    object
-    '''
-    global BEARER_TOKEN
-
-    if refresh or not BEARER_TOKEN.value:
-        BEARER_TOKEN.value = Backend.bearer_token()
-
-    return BEARER_TOKEN
-
-
 def safe_mkdirs(dirpath):
     '''
     Create the given directory.  If it already exists, suppress the exception.
@@ -1373,7 +1348,7 @@ def run_downloader(args):
     set_logging(log_level, log_dirpath)
 
     LOGGER.debug('Downloader args: %s', args)
-    get_bearer_token()
+    api_client.get_bearer_token()
     downloader = Downloader(args)
     downloader.start_daemon()
 
