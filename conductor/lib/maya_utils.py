@@ -1557,6 +1557,36 @@ class VrayInfo(MayaPluginInfo):
         rx = r'{}\.{}\.{}'.format(rx_major, rx_minor, rx_release)
         return rx
 
+    @classmethod
+    def get_version(cls):
+        '''
+        Starting with vray 4.x ("Next"), vray-for-maya changed the way it records/provides its
+        version information.  Instead of returning a version string, e.g. "4.04.03", it simply returns
+        "Next", which isn't terribly specific.  We can find the specific version information  by
+        querying maya's FileInfo ("vrayBuild"), which will provide a string such as:
+            '4.04.03.00010 665a78e'
+        We'll then parse that down to '4.04.03'
+        '''
+        # regex for vray's build string (from Maya's FileInfo)
+        rx_vray_next = r'^\d+\.\d+\.\d+'
+
+        # First, try getting the version information the standard way
+        version = super(VrayInfo, cls).get_version()
+
+        # If the version is vray "next", then find the actual version info in maya's FileInfo.
+        if "next" in version.lower():
+            # Look for the build string. This actually returns a list (one item or empty).
+            build_info = cmds.fileInfo('vrayBuild', query=True)
+            if not build_info:
+                raise Exception("Could not find Vray Next build string")
+            build_str = build_info[0]
+            match = re.search(rx_vray_next, build_str)
+            version = match.group() if match else None
+            if not version:
+                raise Exception("Could not parse vray build version string: %r" % build_str)
+
+        return version
+
 
 class ArnoldInfo(MayaPluginInfo):
     '''
