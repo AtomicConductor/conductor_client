@@ -1,8 +1,20 @@
 
-# v2.9.1  -  2019.09.23
+# v2.10.0  -  2019.09.23
 
-* **Submitter:** Instance type selection now supports Google Cloud's n1-standard-1, n1-highcpu-2, and n1-highcpu-4 instance types.
+* **Submitter:** Instance type selection now supports Google Cloud's 
+    * n1-standard-1
+    * n1-highcpu-2 
+    * n1-highcpu-4
 
+* **Package auto-matching support** 
+  * **Golaem:** 7.0.1 
+  * **Maya:** 2018.6, 2019, 2019.1, 2019.2 
+  * **Maya to Arnold:** 3.1.2.1, 3.1.2.2, 3.2.0, 3.2.0.1, 3.2.0.2, 3.2.1, 3.2.2, 3.2.1.1, 3.3.0
+  * **Nuke:** Nuke11.2v7, 11.3v5 
+  * **Renderman for Maya:** 21.8, 22.4, 22.5, 22.6
+  * **V-Ray for Maya:** 4.04.03, 4.12.01, 4.12.02
+  * **Yeti:** 3.1.15, 3.1.17, 3.5.1, 3.5.2
+  
 # v2.9.1  -  2019.08.30
 
 #### Added
