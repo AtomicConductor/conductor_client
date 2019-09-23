@@ -1,4 +1,8 @@
 
+# v2.9.1  -  2019.09.23
+
+* **Submitter:** Instance type selection now supports Google Cloud's n1-standard-1, n1-highcpu-2, and n1-highcpu-4 instance types.
+
 # v2.9.1  -  2019.08.30
 
 #### Added
