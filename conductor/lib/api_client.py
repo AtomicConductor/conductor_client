@@ -1,5 +1,6 @@
 import json
 import logging
+import multiprocessing
 import os
 import requests
 import time
@@ -10,6 +11,9 @@ from conductor import CONFIG
 from conductor.lib import common, auth
 
 logger = logging.getLogger(__name__)
+
+# Reusable authentication token  used across all processes/threads
+BEARER_TOKEN = multiprocessing.Array('c', 2000)
 
 # A convenience tuple of network exceptions that can/should likely be retried by the retry decorator
 CONNECTION_EXCEPTIONS = (requests.exceptions.HTTPError,
@@ -190,6 +194,22 @@ def get_api_key_bearer_token(creds_file=None):
     return
 
 
+def get_bearer_token(refresh=False):
+    '''
+    Return the bearer token from a cached(global) variable.  If there is no
+    cached value, then fetch a new bearer token and return it (and cache it).
+
+    Note that that BEARER_TOKEN is not a simple string.  It's a process/thread-safe
+    object.
+    '''
+    global BEARER_TOKEN
+
+    if refresh or not BEARER_TOKEN.value:
+        BEARER_TOKEN.value = read_conductor_credentials(True)
+
+    return BEARER_TOKEN
+
+
 def account_id_from_jwt(token):
     """
     Fetch the accounts id from a jwt token value.
@@ -221,6 +241,32 @@ def get_creds_path(api_key=False):
     else:
         creds_file = os.path.join(config_path, "credentials")
     return creds_file
+
+
+def request_instance_types(as_dict=False):
+    '''
+    Get the list of available instances types.
+    '''
+    api = ApiClient()
+    response, response_code = api.make_request('api/v1/instance-types',
+                                               use_api_key=True,
+                                               raise_on_error=False)
+    if response_code not in (200, ):
+        msg = "Failed to get instance types"
+        msg += "\nError %s ...\n%s" % (response_code, response)
+        raise Exception(msg)
+
+    # The 'data' k/v contains the list of instance types in the following format:
+    # [
+    #    {cores: 16, description: "16 core, 64GB Mem", name: "m5.4xlarge", memory: 64.0}
+    #    {cores: 48, description: "48 core, 192GB Mem", name: "m5.12xlarge", memory: 192.0}
+    # ]
+    instance_types = json.loads(response).get('data', [])
+    logger.debug('Found available instance types: %s', instance_types)
+
+    if as_dict:
+        return dict([(instance["description"], instance) for instance in instance_types])
+    return instance_types
 
 
 def request_projects(statuses=("active",)):

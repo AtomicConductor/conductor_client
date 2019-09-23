@@ -13,7 +13,7 @@ while developing
 import json
 import os
 
-from conductor.lib import common
+from conductor.lib import api_client, common
 from conductor.native.lib import package_tree as ptree
 
 if os.environ.get("CONDUCTOR_MOCK_API_CLIENT"):
@@ -83,7 +83,7 @@ class ConductorDataBlock:
     class __ConductorDataBlock:
         def __init__(self, **kw):
             self._projects = _projects()
-            self._instance_types = common.get_conductor_instance_types()
+            self._instance_types = api_client.request_instance_types()
             self._package_tree = ptree.PackageTree(_packages(), **kw)
 
         def __str__(self):
