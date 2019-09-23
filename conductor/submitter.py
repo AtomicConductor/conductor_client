@@ -91,7 +91,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
 
         # Fetch and cache all available instance types
-        self._instance_types = api_client.retrieve_instance_types(as_dict=True)
+        self._instance_types = api_client.request_instance_types(as_dict=True)
 
         # Create widgets
         self.createUI()

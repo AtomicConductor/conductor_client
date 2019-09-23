@@ -148,7 +148,7 @@ def parse_args():
                                      'Type of machine to run on ("standard", "highmem", or "highcpu")'))
 
     submit_parser.add_argument("--instance_type",
-                               choices=[instance["name"] for instance in api_client.retrieve_instance_types()],
+                               choices=[instance["name"] for instance in api_client.request_instance_types()],
                                help='Type of instance to run the job on')
 
     submit_parser.add_argument("--preemptible",

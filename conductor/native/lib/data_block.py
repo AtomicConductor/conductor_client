@@ -83,7 +83,7 @@ class ConductorDataBlock:
     class __ConductorDataBlock:
         def __init__(self, **kw):
             self._projects = _projects()
-            self._instance_types = api_client.retrieve_instance_types()
+            self._instance_types = api_client.request_instance_types()
             self._package_tree = ptree.PackageTree(_packages(), **kw)
 
         def __str__(self):

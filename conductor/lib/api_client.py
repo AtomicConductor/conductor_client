@@ -243,13 +243,10 @@ def get_creds_path(api_key=False):
     return creds_file
 
 
-def retrieve_instance_types(as_dict=False):
+def request_instance_types(as_dict=False):
     '''
     Get the list of available instances types.
     '''
-    bearer = get_bearer_token()
-    account_id = account_id_from_jwt(bearer.value)
-
     api = ApiClient()
     response, response_code = api.make_request('api/v1/instance-types',
                                                use_api_key=True,
