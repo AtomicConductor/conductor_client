@@ -23,7 +23,7 @@ def set_docs(s_class):
     )
 
     s_class.set_attr_doc(
-        "images",
+        "images_and_layers",
         """Sets the items to be rendered. Images or Layers must have their Render to Disk attribute set. The Save As field must contain a filename.""",
     )
 

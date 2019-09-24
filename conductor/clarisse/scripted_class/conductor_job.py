@@ -27,7 +27,7 @@ DEFAULT_CMD_TEMPLATE += "-image <ct_sources> -image_frames_list <ct_chunks> "
 DEFAULT_CMD_TEMPLATE += "-tile_rendering <ct_tiles> <ct_tile_number>"
 
 
-DEFAULT_TITLE = "<ct_job>"
+DEFAULT_TITLE = "$PNAME"
 
 
 class ConductorJob(ix.api.ModuleScriptedClassEngine):
@@ -102,7 +102,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 frames_ui.handle_scout_frames(obj, attr)
             elif attr_name == "chunk_size":
                 frames_ui.handle_chunk_size(obj, attr)
-            elif attr_name == "images":
+            elif attr_name == "images_and_layers":
                 frames_ui.handle_images(obj, attr)
             elif attr_name == "notify":
                 notifications_ui.notify_changed(obj, attr)
@@ -248,7 +248,7 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
         attr.set_string(DEFAULT_TITLE)
 
         attr = s_class.add_attribute(
-            "images",
+            "images_and_layers",
             OfAttr.TYPE_REFERENCE,
             OfAttr.CONTAINER_LIST,
             OfAttr.VISUAL_HINT_DEFAULT,
