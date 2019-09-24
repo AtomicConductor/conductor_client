@@ -11,7 +11,9 @@ NOTE: In a future version we will also save the name of the instance type. This
 
 def update(obj, data_block):
     """
-    Rebuilds the instance types menu.
+    Rebuilds the instance types menu. 
+    
+    Until we have a cost field, items are sorted by cores and memory.
 
     Args:
         obj (ConductorJob): Item on which to rebuild menu.
@@ -21,7 +23,9 @@ def update(obj, data_block):
     instance_types = data_block.instance_types()
     instance_type_att = obj.get_attribute("instance_type")
     instance_type_att.remove_all_presets()
-    for i, instance_type in enumerate(instance_types):
+    for i, instance_type in enumerate(
+        sorted(instance_types, key=lambda x: (x["cores"], x["memory"]))
+    ):
         instance_type_att.add_preset(
             instance_type["description"].encode("utf-8"), str(i)
         )

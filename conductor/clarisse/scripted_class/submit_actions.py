@@ -161,7 +161,7 @@ def _validate_images(node):
         node (ConductorJob): Node
     """
     images = ix.api.OfObjectArray()
-    node.get_attribute("images").get_values(images)
+    node.get_attribute("images_and_layers").get_values(images)
     out_paths = PathList()
     if not images.get_count():
         ix.log_error("No render images. Please reference one or more image items")
