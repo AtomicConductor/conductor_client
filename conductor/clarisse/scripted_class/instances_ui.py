@@ -12,8 +12,6 @@ NOTE: In a future version we will also save the name of the instance type. This
 def update(obj, data_block):
     """
     Rebuilds the instance types menu. 
-    
-    Until we have a cost field, items are sorted by cores and memory.
 
     Args:
         obj (ConductorJob): Item on which to rebuild menu.
