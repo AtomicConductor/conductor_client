@@ -1,7 +1,23 @@
 #!/bin/bash -xe
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
-RELEASE_VERSION=${CI_BRANCH}
+
+with_client=false
+if [ $# -eq 2 ] && [ $2 == "--with_client" ] ; then
+    if [  !  -f /artifacts/build/dc/linux64/current-version.txt ] ; then
+        echo "Desktop client does not exist"
+        exit 1
+    fi
+    version=$( cat /artifacts/build/dc/win64/current-version.txt | cut -d" " -f1 )
+    RELEASE_VERSION="v${version}"
+    with_client=true
+else
+    RELEASE_VERSION=${CI_BRANCH}
+fi
+
+
+
+
 VERSION="conductor-${RELEASE_VERSION}-0.x86_64"
 DIST_VER=${1}
 BUILD_DIR=/artifacts/build/el${DIST_VER}
@@ -30,6 +46,11 @@ cp -r ${SRC_DIR}/bin \
       ${SRC_DIR}/maya_shelf \
       ${SRC_DIR}/nuke_menu \
       ${RPM_BUILDROOT}/opt/conductor
+
+if [ $with_client = true ]; then
+    DESKTOP_CLIENT_DIR=/artifacts/build/dc/linux64
+    cp -r  ${DESKTOP_CLIENT_DIR}/* ${RPM_BUILDROOT}/opt/conductor
+fi
 
 cp conductor.spec ${BUILD_DIR}/rpm/SPECS
 mv ${RPM_BUILDROOT}/opt/conductor/bin/conductor \

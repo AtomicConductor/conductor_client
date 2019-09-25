@@ -5,12 +5,12 @@
 
 with_client=false
 if [ $# -eq 1 ] && [ $1 == "--with_client" ] ; then
-    with_client=true
-    DESKTOP_CLIENT_CONTENTS=/artifacts/build/dc/macos64/conductor-desktop.app/Contents
-    if [  !  -d "$DESKTOP_CLIENT_CONTENTS" ] ; then
+    if [  !  -f /artifacts/build/dc/macos64/current-version.txt ] ; then
         echo "Desktop client does not exist"
         exit 1
     fi
+    with_client=true
+    
 fi
 
 echo "with_client: $with_client"
@@ -48,6 +48,7 @@ cp conductor ${BUILD_DIR}/root/Applications/Conductor.app/Contents/MacOS/bin
 echo "/Applications/Conductor.app/Contents/MacOS/bin" > ${BUILD_DIR}/root/etc/paths.d/conductor
 
 if [ $with_client = true ]; then
+    DESKTOP_CLIENT_CONTENTS=/artifacts/build/dc/macos64/conductor-desktop.app/Contents
     mkdir -p ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Frameworks
     sed "s/Conductor Desktop/Conductor/g" ${DESKTOP_CLIENT_CONTENTS}/Info.plist > ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Info.plist
     cp -r  ${DESKTOP_CLIENT_CONTENTS}/Frameworks/*   ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Frameworks
@@ -72,4 +73,5 @@ ${UTIL_DIR}/mkbom -u 0 -g 80 root flat/base.pkg/Bom
 popd
 popd
 
+exit 0
 
