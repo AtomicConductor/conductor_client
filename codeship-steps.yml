@@ -1,5 +1,17 @@
 - type: parallel
-  tag: ^v\d*\.\d*\.\d*$
+  tag: v0.0.0
+  steps:
+  - type: serial
+    steps:
+    - name: Fetch MacOS desktop client
+      service: python
+      command: /src/installers/osx/fetch_client.sh
+    - service: deb
+      name: Build MacOS installer with desktop client
+      command: /src/installers/osx/build.sh --with_client
+
+- type: parallel
+  tag: ^(?!v0.0.0)v\d*\.\d*\.\d*$
   steps:
   - service: deb
     name: Build Windows installer
@@ -13,12 +25,15 @@
   - service: el7
     name: Build EL-7
     command: /src/installers/rpm/build.sh 7
+
+
 - name: Publish
-  tag: ^v\d*\.\d*\.\d*$
+  tag: ^(?!v0.0.0)v\d*\.\d*\.\d*$
   service: python
   command: python /src/installers/build/publish.py
 
 - name: No Tag
   service: deb
   tag: ^((!^v\d*\.\d*\.\d*$).)*$
-  command: echo "No matching tag.  Not building"
+  command: echo "No matching tag. Not building"
+
