@@ -7,38 +7,38 @@
     command: /src/installers/build/setup_desktop_client.sh
   - type: parallel
     steps:
+    # - type: serial
+    #   steps:
+    #   - name: Fetch MacOS desktop client
+    #     service: python
+    #     command: /src/installers/build/fetch_client.sh macos64
+    #   - name: Build MacOS installer with desktop client
+    #     service: deb
+    #     command: /src/installers/osx/build.sh --with_client
     - type: serial
       steps:
-      - name: Fetch MacOS desktop client
-        service: python
-        command: /src/installers/build/fetch_client.sh macos64
-      - name: Build MacOS installer with desktop client
-        service: deb
-        command: /src/installers/osx/build.sh --with_client
-    - type: serial
-      steps:
-      - name: Fetch Windows desktop client
-        service: python
-        command: /src/installers/build/fetch_client.sh win64
+      # - name: Fetch Windows desktop client
+      #   service: python
+      #   command: /src/installers/build/fetch_client.sh win64
       - service: deb
         name: Build Windows installer with desktop client
         command: /src/installers/windows/build.sh --with_client
-    - type: serial
-      steps:
-      - name: Fetch Linux desktop client
-        service: python
-        command: /src/installers/build/fetch_client.sh linux64
-      - type: parallel
-        steps:
-        - name: Build EL-6 installer with desktop
-          service: el6
-          command: /src/installers/rpm/build.sh 6 --with_client
-        - service: el7
-          name: Build EL-7 installer with desktop client
-          command: /src/installers/rpm/build.sh 7 --with_client
-  - name: Publish with desktop client
-    service: python
-    command: /src/installers/build/publish_with_client.sh
+    # - type: serial
+    #   steps:
+    #   - name: Fetch Linux desktop client
+    #     service: python
+    #     command: /src/installers/build/fetch_client.sh linux64
+    #   - type: parallel
+    #     steps:
+    #     - name: Build EL-6 installer with desktop
+    #       service: el6
+    #       command: /src/installers/rpm/build.sh 6 --with_client
+    #     - service: el7
+    #       name: Build EL-7 installer with desktop client
+    #       command: /src/installers/rpm/build.sh 7 --with_client
+  # - name: Publish with desktop client
+  #   service: python
+  #   command: /src/installers/build/publish_with_client.sh
 
 # regular client tools build
 - type: serial

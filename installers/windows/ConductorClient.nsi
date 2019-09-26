@@ -16,6 +16,7 @@
 !define REG_ROOT "HKCU"
 !define UNINSTALL_PATH "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
 
+
 ######################################################################
 
 VIProductVersion  "${VERSION}"
@@ -36,7 +37,7 @@ XPStyle on
 InstallDirRegKey "${REG_ROOT}" "${UNINSTALL_PATH}" "UninstallString"
 InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
-######################################################################
+
 
 !include "MUI2.nsh"
 !define MUI_ICON conductor_128.ico
@@ -66,8 +67,13 @@ InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
 !include "EnvVarUpdate.nsh"
 
+!include "StdUtils.nsh"
+
+
+
 
 ######################################################################
+
 
 Section -MainProgram
 ${INSTALL_TYPE}
@@ -85,6 +91,7 @@ ${EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "A" "HKLM" "$INSTDIR\Conductor"
 
 SectionEnd
 
+
 ######################################################################
 
 Section -Icons_Reg
@@ -101,11 +108,38 @@ WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}"  "URLInfoAbout" "${WEB_SITE}"
 !endif
 SectionEnd
 
+
 ######################################################################
 
-Function .onInstSuccess
-    MessageBox MB_OK "Conductor now checks C:\Users\<username>\AppData\Roaming\Conductor Technologies\Conductor\config.yml as the default location for a config file. If you already use a config.yml please move it to this location to avoid any conflicts"
-FunctionEnd
+; Function finishpageaction
+; CreateShortcut "$desktop\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe"
+; FunctionEnd
+
+
+; !define MUI_FINISHPAGE_SHOWREADME ""
+; !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
+; !define MUI_FINISHPAGE_SHOWREADME_TEXT "Create Desktop Shortcut"
+; !define MUI_FINISHPAGE_SHOWREADME_FUNCTION finishpageaction
+
+
+
+; RequestExecutionLevel user ;no elevation needed for this test
+; ShowInstDetails show
+Section
+	DetailPrint "Going to pin Conductor..."
+	${StdUtils.InvokeShellVerb} $0 "$INSTDIR\Conductor\" "conductor-desktop.exe" ${StdUtils.Const.ShellVerb.PinToTaskbar}
+	DetailPrint "Result: $0"
+SectionEnd
+
+#########################################
+
+
+
+######################################################################
+
+; Function .onInstSuccess
+;     MessageBox MB_OK "Conductor now checks C:\Users\<username>\AppData\Roaming\Conductor Technologies\Conductor\config.yml as the default location for a config file. If you already use a config.yml please move it to this location to avoid any conflicts"
+; FunctionEnd
 
 ######################################################################
 
