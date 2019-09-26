@@ -1,29 +1,24 @@
 #!/bin/bash -xe
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
-
 with_client=false
 if [ $# -eq 2 ] && [ $2 = "--with_client" ] ; then
-    if [  !  -f /artifacts/build/dc/linux64/current-version.txt ] ; then
+    if [  !  -f /artifacts/build/dc/current-version.txt ] ; then
         echo "Desktop client does not exist"
         exit 1
     fi
-    version=$( cat /artifacts/build/dc/win64/current-version.txt | cut -d" " -f1 )
+    version=$( cat /artifacts/build/dc/current-version.txt | cut -d" " -f1 )
     RELEASE_VERSION="v${version}"
     with_client=true
 else
     RELEASE_VERSION=${CI_BRANCH}
 fi
 
-
-
-
 VERSION="conductor-${RELEASE_VERSION}-0.x86_64"
 DIST_VER=${1}
 BUILD_DIR=/artifacts/build/el${DIST_VER}
 SRC_DIR=/src
 RPM_BUILDROOT=${BUILD_DIR}/rpm/BUILDROOT/conductor-${RELEASE_VERSION}-0.el${DIST_VER}.x86_64
-
 
 mkdir -p ${BUILD_DIR}
 mkdir -p ${BUILD_DIR}/python

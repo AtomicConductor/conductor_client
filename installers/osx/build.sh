@@ -2,18 +2,14 @@
 #This is mostly based on the tutorial:
 #http://bomutils.dyndns.org/tutorial.html
 
-
 with_client=false
 if [ $# -eq 1 ] && [ $1 = "--with_client" ] ; then
-    if [  !  -f /artifacts/build/dc/macos64/current-version.txt ] ; then
+    if [  !  -f /artifacts/build/dc/current-version.txt ] ; then
         echo "Desktop client does not exist"
         exit 1
     fi
     with_client=true
-    
 fi
-
-echo "--------------------------*************************** with_client: $with_client"
 
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
@@ -48,17 +44,13 @@ cp conductor ${BUILD_DIR}/root/Applications/Conductor.app/Contents/MacOS/bin
 echo "/Applications/Conductor.app/Contents/MacOS/bin" > ${BUILD_DIR}/root/etc/paths.d/conductor
 
 if [ $with_client = true ]; then
-
-    echo "--------------------------*************************** COPYING IN DESKTOP CLIENT:"
-
-
     DESKTOP_CLIENT_CONTENTS=/artifacts/build/dc/macos64/conductor-desktop.app/Contents
     mkdir -p ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Frameworks
     sed "s/Conductor Desktop/Conductor/g" ${DESKTOP_CLIENT_CONTENTS}/Info.plist > ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Info.plist
     cp -r  ${DESKTOP_CLIENT_CONTENTS}/Frameworks/*   ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Frameworks
     cp -r  ${DESKTOP_CLIENT_CONTENTS}/MacOS/*  ${BUILD_DIR}/root/Applications/Conductor.app/Contents/MacOS
     cp -r  ${DESKTOP_CLIENT_CONTENTS}/Resources/*  ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Resources
-    VERSION=$( xmllint --xpath "/plist/dict/key[.='CFBundleVersion']/following-sibling::string[1]/node()"  ${DESKTOP_CLIENT_CONTENTS}/Info.plist )
+    VERSION=$( cat /artifacts/build/dc/current-version.txt | cut -d" " -f1 )
     RELEASE_VERSION="v${VERSION}"
 else
     sed "s/{VERSION}/${VERSION}/" info.plist > ${BUILD_DIR}/root/Applications/Conductor.app/Contents/info.plist
@@ -76,6 +68,4 @@ ${UTIL_DIR}/mkbom -u 0 -g 80 root flat/base.pkg/Bom
 ( cd flat && xar --compression none -cf "/artifacts/conductor-${RELEASE_VERSION}.pkg" * )
 popd
 popd
-
-exit 0
 

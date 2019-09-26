@@ -1,64 +1,71 @@
-
-- name: Setup
-  service: python
-  command: mkdir -p /src/tmp/build/dc
-
-- type: parallel
+# client tools build with desktop client
+- type: serial
   tag: v0.0.0
   steps:
-  - type: serial
+  - name: Setup
+    service: python
+    command: /src/installers/build/setup_desktop_client.sh
+  - type: parallel
     steps:
-    - name: Fetch MacOS desktop client
-      service: python
-      command: /src/installers/build/fetch_client.sh macos64
-    - name: Build MacOS installer with desktop client
-      service: deb
-      command: /src/installers/osx/build.sh --with_client
-  - type: serial
-    steps:
-    - name: Fetch Windows desktop client
-      service: python
-      command: /src/installers/build/fetch_client.sh win64
-    - service: deb
-      name: Build Windows installer with desktop client
-      command: /src/installers/windows/build.sh --with_client
-  - type: serial
-    steps:
-    - name: Fetch Linux desktop client
-      service: python
-      command: /src/installers/build/fetch_client.sh linux64
-    - type: parallel
+    - type: serial
       steps:
-      - name: Build EL-6 installer with desktop
-        service: el6
-        command: /src/installers/rpm/build.sh 6 --with_client
-      - service: el7
-        name: Build EL-7 installer with desktop client
-        command: /src/installers/rpm/build.sh 7 --with_client
+      - name: Fetch MacOS desktop client
+        service: python
+        command: /src/installers/build/fetch_client.sh macos64
+      - name: Build MacOS installer with desktop client
+        service: deb
+        command: /src/installers/osx/build.sh --with_client
+    - type: serial
+      steps:
+      - name: Fetch Windows desktop client
+        service: python
+        command: /src/installers/build/fetch_client.sh win64
+      - service: deb
+        name: Build Windows installer with desktop client
+        command: /src/installers/windows/build.sh --with_client
+    - type: serial
+      steps:
+      - name: Fetch Linux desktop client
+        service: python
+        command: /src/installers/build/fetch_client.sh linux64
+      - type: parallel
+        steps:
+        - name: Build EL-6 installer with desktop
+          service: el6
+          command: /src/installers/rpm/build.sh 6 --with_client
+        - service: el7
+          name: Build EL-7 installer with desktop client
+          command: /src/installers/rpm/build.sh 7 --with_client
+  - name: Publish with desktop client
+    service: python
+    command: /src/installers/build/publish_with_client.sh
 
-- type: parallel
+# regular client tools build
+- type: serial
   tag: ^v[^0]\d*.\d+.\d+|v\d+.[^0]\d*.\d+|v\d+.\d+.[^0]\d*$
   steps:
-  - service: deb
-    name: Build Windows installer
-    command: /src/installers/windows/build.sh
-  - service: deb
-    name: Build MacOS installer
-    command: /src/installers/osx/build.sh
-  - service: el6
-    name: Build EL-6
-    command: /src/installers/rpm/build.sh 6
-  - service: el7
-    name: Build EL-7
-    command: /src/installers/rpm/build.sh 7
+  - type: parallel
+    tag: ^v[^0]\d*.\d+.\d+|v\d+.[^0]\d*.\d+|v\d+.\d+.[^0]\d*$
+    steps:
+    - service: deb
+      name: Build Windows installer
+      command: /src/installers/windows/build.sh
+    - service: deb
+      name: Build MacOS installer
+      command: /src/installers/osx/build.sh
+    - service: el6
+      name: Build EL-6 installer
+      command: /src/installers/rpm/build.sh 6
+    - service: el7
+      name: Build EL-7 installer
+      command: /src/installers/rpm/build.sh 7
+  - name: Publish
+    tag: ^v[^0]\d*.\d+.\d+|v\d+.[^0]\d*.\d+|v\d+.\d+.[^0]\d*$
+    service: python
+    command: python /src/installers/build/publish.py
 
-# - name: Publish
-#   tag: ^v[^0]\d*.\d+.\d+|v\d+.[^0]\d*.\d+|v\d+.\d+.[^0]\d*$
-#   service: python
-#   command: python /src/installers/build/publish.py
-
-# - name: No Tag
-#   service: deb
-#   tag: ^((!^v\d*\.\d*\.\d*$).)*$
-#   command: echo "No matching tag. Not building"
+- name: No Tag
+  service: deb
+  tag: ^((!^v\d*\.\d*\.\d*$).)*$
+  command: echo "No matching tag. Not building"
 
