@@ -4,7 +4,7 @@
 
 
 with_client=false
-if [ $# -eq 1 ] && [ $1 == "--with_client" ] ; then
+if [ $# -eq 1 ] && [ $1 = "--with_client" ] ; then
     if [  !  -f /artifacts/build/dc/macos64/current-version.txt ] ; then
         echo "Desktop client does not exist"
         exit 1
@@ -13,7 +13,7 @@ if [ $# -eq 1 ] && [ $1 == "--with_client" ] ; then
     
 fi
 
-echo "with_client: $with_client"
+echo "--------------------------*************************** with_client: $with_client"
 
 pushd $( dirname "${BASH_SOURCE[0]}" )
 
@@ -48,6 +48,10 @@ cp conductor ${BUILD_DIR}/root/Applications/Conductor.app/Contents/MacOS/bin
 echo "/Applications/Conductor.app/Contents/MacOS/bin" > ${BUILD_DIR}/root/etc/paths.d/conductor
 
 if [ $with_client = true ]; then
+
+    echo "--------------------------*************************** COPYING IN DESKTOP CLIENT:"
+
+
     DESKTOP_CLIENT_CONTENTS=/artifacts/build/dc/macos64/conductor-desktop.app/Contents
     mkdir -p ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Frameworks
     sed "s/Conductor Desktop/Conductor/g" ${DESKTOP_CLIENT_CONTENTS}/Info.plist > ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Info.plist

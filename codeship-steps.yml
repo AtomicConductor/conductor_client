@@ -1,7 +1,7 @@
 
 - name: Setup
   service: python
-  command:  mkdir -p /src/tmp/build/dc
+  command: mkdir -p /src/tmp/build/dc
 
 - type: parallel
   tag: v0.0.0

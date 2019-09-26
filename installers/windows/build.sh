@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 with_client=false
-if [ $# -eq 1 ] && [ $1 == "--with_client" ] ; then
+if [ $# -eq 1 ] && [ $1 = "--with_client" ] ; then
     if [  !  -f /artifacts/build/dc/win64/current-version.txt ] ; then
         echo "Desktop client does not exist"
         exit 1

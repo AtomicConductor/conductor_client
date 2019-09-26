@@ -3,7 +3,7 @@ pushd $( dirname "${BASH_SOURCE[0]}" )
 
 
 with_client=false
-if [ $# -eq 2 ] && [ $2 == "--with_client" ] ; then
+if [ $# -eq 2 ] && [ $2 = "--with_client" ] ; then
     if [  !  -f /artifacts/build/dc/linux64/current-version.txt ] ; then
         echo "Desktop client does not exist"
         exit 1
