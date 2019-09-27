@@ -4,7 +4,7 @@
   * Submitter title defaults to $PNAME.
   * Images attribute changed to images_and_layers.
   * Instance types menu entries are now ordered by machine spec.
-  * Pre render script also replaces backslashes as well as drive letters.
+  * Pre render script replaces backslashes as well as drive letters.
   * Better error on failure to make subdirectories.
 
 # v2.10.0  -  2019.09.23
