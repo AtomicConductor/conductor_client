@@ -140,7 +140,7 @@ def range_frame_sequence(obj):
     """
 
     images = ix.api.OfObjectArray()
-    obj.get_attribute("images").get_values(images)
+    obj.get_attribute("images_and_layers").get_values(images)
 
     seq = _union_sequence(list(images))
     if not seq:

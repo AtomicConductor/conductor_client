@@ -39,7 +39,7 @@ def main():
     parser = argparse.ArgumentParser(description=desc)
 
     parser.add_argument(
-        "-strip_drive_letters",
+        "-convert_windows_paths",
         action="store_true",
         default=True,
         help="If this was submitted from windows, strip drive letters.",
@@ -52,14 +52,14 @@ def main():
     parser.add_argument("-images", nargs="+", type=str, help="Image object names.")
 
     options, _ = parser.parse_known_args()
-    ix.log_info("strip_drive_letters {}".format(options.strip_drive_letters))
+    ix.log_info("convert_windows_paths {}".format(options.convert_windows_paths))
 
     resolve_contexts()
 
     # strip regular drive letters AFTER resolving contexts so we catch any paths
     # that were inside contexts.
-    if options.strip_drive_letters:
-        strip_drive_letters()
+    if options.convert_windows_paths:
+        convert_windows_paths()
 
     if options.range and options.images:
         start, end = options.range
@@ -89,7 +89,7 @@ def resolve_contexts():
 
 def resolve(ctx):
     """
-    Recursively strip drive letters from xref contexts and discover their children.
+    Recursively fix windows paths in xref contexts and discover their children.
 
     Args:
         ctx (OfContext): parent context.
@@ -98,7 +98,7 @@ def resolve(ctx):
 
     if ctx.is_reference():
         attr = ctx.get_attribute("filename")
-        strip_drive_letter(attr)
+        convert_windows_path(attr)
 
     next_level = level + 1
     contexts = ix.api.OfContextSet()
@@ -107,23 +107,23 @@ def resolve(ctx):
         resolve(ctx)
 
 
-def strip_drive_letters():
+def convert_windows_paths():
     """
-    Strip drive letters from regular path attrs.
+    Fix windows paths in regular path attrs.
     """
     attrs = ix.api.OfAttr.get_path_attrs()
     total = len(list(attrs))
     ix.log_info("Stripping drive letters for {:d} paths".format(total))
     count = 0
     for attr in attrs:
-        if strip_drive_letter(attr):
+        if convert_windows_path(attr):
             count += 1
-    ix.log_info("Done stripping {:d} of {:d} drive letters".format(count, total))
+    ix.log_info("Done conforming {:d} of {:d} paths".format(count, total))
 
 
-def strip_drive_letter(attr):
+def convert_windows_path(attr):
     """
-    Strip drive letter from one path attribute.
+    Fix windows paths in one path attribute.
 
     Args:
         attr (OfAttr): Attribute to modify.
@@ -135,10 +135,16 @@ def strip_drive_letter(attr):
     attr_name = attr.get_name()
     item_name = attr.get_parent_object().get_name()
 
-    if path and LETTER_RX.match(path):
-        ix.log_info("Strip: {}.{} {}".format(item_name, attr_name, path))
-        attr.set_string(re.sub(LETTER_RX, "", path))
-        return True
+    if path:
+        result = re.sub(LETTER_RX, "", path).replace("\\", "/")
+        if result == path:
+            ix.log_info("Path OK: {}.{} {}".format(item_name, attr_name, path))
+        else:
+            attr.set_string(result)
+            ix.log_info(
+                "Conformed: {}.{} {} -> {}".format(item_name, attr_name, path, result)
+            )
+            return True
     return False
 
 
@@ -204,6 +210,9 @@ def mkdir_p(dirs):
                 sys.stdout.write("Directory exists: {}\n".format(d))
                 pass
             else:
+                sys.stderr.write(
+                    "There's something wrong with the path: ('{}')\n".format(d)
+                )
                 raise
 
 
