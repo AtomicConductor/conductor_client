@@ -7,11 +7,8 @@
 !define APP_NAME "Conductor"
 !define COMP_NAME "Conductor Technologies"
 !define WEB_SITE "http://www.conductortech.com/"
-#!define VERSION "00.00.00.01"
 !define COPYRIGHT "${COMP_NAME}"
 !define DESCRIPTION "Conductor Client"
-#!define LICENSE_TXT "eula.txt"
-#!define INSTALLER_NAME "ConductorClient.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
 !define REG_ROOT "HKCU"
 !define UNINSTALL_PATH "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
@@ -67,9 +64,6 @@ InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
 !include "EnvVarUpdate.nsh"
 
-; !include "StdUtils.nsh"
-
-
 
 
 ######################################################################
@@ -110,38 +104,12 @@ SectionEnd
 
 
 ######################################################################
-
-; Function finishpageaction
-; CreateShortcut "$desktop\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe"
-; FunctionEnd
-
-
-; !define MUI_FINISHPAGE_SHOWREADME ""
-; !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
-; !define MUI_FINISHPAGE_SHOWREADME_TEXT "Create Desktop Shortcut"
-; !define MUI_FINISHPAGE_SHOWREADME_FUNCTION finishpageaction
-
-
-
-; RequestExecutionLevel user ;no elevation needed for this test
-; ShowInstDetails show
-; Section
-; 	DetailPrint "Going to pin Conductor..."
-; 	${StdUtils.InvokeShellVerb} $0 "$INSTDIR\Conductor\" "conductor-desktop.exe" ${StdUtils.Const.ShellVerb.PinToTaskbar}
-; 	DetailPrint "Result: $0"
-; SectionEnd
-
-#########################################
-
-
-
-######################################################################
 Function .onInstSuccess
 !ifdef WITH_CLIENT
 SetShellVarContext current
 CreateDirectory "$SMPROGRAMS\Conductor Technologies"
-CreateShortCut "$SMPROGRAMS\Conductor Technologies\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe" "" "$INSTDIR\Conductor\conductor_128.ico"
-CreateShortCut "$DESKTOP\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe" "" "$INSTDIR\Conductor\conductor_128.ico"
+CreateShortCut "$SMPROGRAMS\Conductor Technologies\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe" "" "$INSTDIR\Conductor\conductor_white.ico"
+CreateShortCut "$DESKTOP\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe" "" "$INSTDIR\Conductor\conductor_white.ico"
 MessageBox MB_OK "A shortcut to Conductor's Desktop agent has been created on your desktop and in the start menu."
 !else    ; 
 MessageBox MB_OK "Conductor now checks C:\Users\<username>\AppData\Roaming\Conductor Technologies\Conductor\config.yml as the default location for a config file. If you already use a config.yml please move it to this location to avoid any conflicts"
