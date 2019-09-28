@@ -67,7 +67,7 @@ InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
 !include "EnvVarUpdate.nsh"
 
-!include "StdUtils.nsh"
+; !include "StdUtils.nsh"
 
 
 
@@ -125,26 +125,36 @@ SectionEnd
 
 ; RequestExecutionLevel user ;no elevation needed for this test
 ; ShowInstDetails show
-Section
-	DetailPrint "Going to pin Conductor..."
-	${StdUtils.InvokeShellVerb} $0 "$INSTDIR\Conductor\" "conductor-desktop.exe" ${StdUtils.Const.ShellVerb.PinToTaskbar}
-	DetailPrint "Result: $0"
-SectionEnd
+; Section
+; 	DetailPrint "Going to pin Conductor..."
+; 	${StdUtils.InvokeShellVerb} $0 "$INSTDIR\Conductor\" "conductor-desktop.exe" ${StdUtils.Const.ShellVerb.PinToTaskbar}
+; 	DetailPrint "Result: $0"
+; SectionEnd
 
 #########################################
 
 
 
 ######################################################################
-
-; Function .onInstSuccess
-;     MessageBox MB_OK "Conductor now checks C:\Users\<username>\AppData\Roaming\Conductor Technologies\Conductor\config.yml as the default location for a config file. If you already use a config.yml please move it to this location to avoid any conflicts"
-; FunctionEnd
-
+Function .onInstSuccess
+!ifdef WITH_CLIENT
+SetShellVarContext current
+CreateDirectory "$SMPROGRAMS\Conductor Technologies"
+CreateShortCut "$SMPROGRAMS\Conductor Technologies\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe" "" "$INSTDIR\Conductor\conductor_128.ico"
+CreateShortCut "$DESKTOP\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe" "" "$INSTDIR\Conductor\conductor_128.ico"
+MessageBox MB_OK "A shortcut to Conductor's Desktop agent has been created on your desktop and in the start menu."
+!else    ; 
+MessageBox MB_OK "Conductor now checks C:\Users\<username>\AppData\Roaming\Conductor Technologies\Conductor\config.yml as the default location for a config file. If you already use a config.yml please move it to this location to avoid any conflicts"
+!endif
+FunctionEnd
 ######################################################################
 
 Section Uninstall
 ${INSTALL_TYPE}
+
+
+Delete "$DESKTOP\Conductor.lnk"
+Delete "$SMPROGRAMS\Conductor Technologies\Conductor.lnk"
 
 Delete "$INSTDIR\uninstall.exe"
 !ifdef WEB_SITE

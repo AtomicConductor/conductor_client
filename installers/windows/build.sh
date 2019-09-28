@@ -21,6 +21,7 @@ cp -r ${SRC_DIR}/bin \
       ${SRC_DIR}/nuke_menu \
       ${SRC_DIR}/installers/windows/python \
       ${SRC_DIR}/installers/windows/conductor.bat \
+      ${SRC_DIR}/installers/windows/conductor_128.ico \
       ${BUILD_DIR}/Conductor
 
 cp -r ${SRC_DIR}/installers/windows/conductor_128.ico \
@@ -38,7 +39,14 @@ if [ $with_client = true ]; then
 fi
 
 pushd ${BUILD_DIR}
-./nsis/bin/makensis -DVERSION="${RELEASE_VERSION:1}.0"\
-                    -DINSTALLER_NAME="/artifacts/conductor-${RELEASE_VERSION}.exe"\
-                    ConductorClient.nsi
+if [ $with_client = true ]; then
+    ./nsis/bin/makensis -DVERSION="${RELEASE_VERSION:1}.0"\
+                        -DWITH_CLIENT="1"\
+                        -DINSTALLER_NAME="/artifacts/conductor-${RELEASE_VERSION}.exe"\
+                        ConductorClient.nsi
+else
+    ./nsis/bin/makensis -DVERSION="${RELEASE_VERSION:1}.0"\
+                        -DINSTALLER_NAME="/artifacts/conductor-${RELEASE_VERSION}.exe"\
+                        ConductorClient.nsi
+fi
 popd
