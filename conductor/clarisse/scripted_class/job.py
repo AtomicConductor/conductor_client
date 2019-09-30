@@ -93,7 +93,7 @@ class Job(object):
         """
 
         images = ix.api.OfObjectArray()
-        self.node.get_attribute("images").get_values(images)
+        self.node.get_attribute("images_and_layers").get_values(images)
 
         use_custom = self.node.get_attribute("use_custom_frames").get_bool()
 
@@ -195,7 +195,7 @@ class Job(object):
         out_paths = PathList()
 
         images = ix.api.OfObjectArray()
-        self.node.get_attribute("images").get_values(images)
+        self.node.get_attribute("images_and_layers").get_values(images)
 
         for image in images:
             directory = os.path.dirname(image.get_attribute("save_as").get_string())
