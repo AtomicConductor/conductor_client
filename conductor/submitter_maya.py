@@ -264,7 +264,11 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         # Workspace/Project arg. Only add flag if a workspace has been indicated in the submitter ui
         workspace = self.extended_advanced_widget.getWorkspaceDir()
-        project_arg = "-proj %s" % file_utils.quote_path(workspace) if workspace.strip() else ""
+        # Strip the lettered drive from the workspace (if one exists).
+        # This is a hack to allow a Windows filepath to be properly used
+        # as an argument in a linux shell on the backend. Not pretty.
+        workspace_nodrive = file_utils.strip_drive_letter(workspace)
+        project_arg = "-proj %s" % file_utils.quote_path(workspace_nodrive) if workspace_nodrive.strip() else ""
 
         chunk_size = self.getChunkSize()
         frames_str = self.getFrameRangeString()
