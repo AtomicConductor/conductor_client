@@ -263,8 +263,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         render_layer_args = ("-rl " + ",".join(render_layers)) if render_layers else ""
 
         # Workspace/Project arg. Only add flag if a workspace has been indicated in the submitter ui
-        workspace = self.extended_advanced_widget.getWorkspaceDir()
-        project_arg = "-proj %s" % file_utils.quote_path(workspace) if workspace.strip() else ""
+        workspace = self.extended_advanced_widget.getWorkspaceDir().strip() or ""
+        workspace = file_utils.strip_drive_letter(workspace)
+        project_arg = "-proj %s" % file_utils.quote_path(workspace)
 
         chunk_size = self.getChunkSize()
         frames_str = self.getFrameRangeString()
