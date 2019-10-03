@@ -7,14 +7,12 @@
 !define APP_NAME "Conductor"
 !define COMP_NAME "Conductor Technologies"
 !define WEB_SITE "http://www.conductortech.com/"
-#!define VERSION "00.00.00.01"
 !define COPYRIGHT "${COMP_NAME}"
 !define DESCRIPTION "Conductor Client"
-#!define LICENSE_TXT "eula.txt"
-#!define INSTALLER_NAME "ConductorClient.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
 !define REG_ROOT "HKCU"
 !define UNINSTALL_PATH "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
+
 
 ######################################################################
 
@@ -36,7 +34,7 @@ XPStyle on
 InstallDirRegKey "${REG_ROOT}" "${UNINSTALL_PATH}" "UninstallString"
 InstallDir "$PROGRAMFILES\${COMP_NAME}"
 
-######################################################################
+
 
 !include "MUI2.nsh"
 !define MUI_ICON conductor_128.ico
@@ -67,7 +65,9 @@ InstallDir "$PROGRAMFILES\${COMP_NAME}"
 !include "EnvVarUpdate.nsh"
 
 
+
 ######################################################################
+
 
 Section -MainProgram
 ${INSTALL_TYPE}
@@ -85,6 +85,7 @@ ${EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "A" "HKLM" "$INSTDIR\Conductor"
 
 SectionEnd
 
+
 ######################################################################
 
 Section -Icons_Reg
@@ -101,16 +102,27 @@ WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}"  "URLInfoAbout" "${WEB_SITE}"
 !endif
 SectionEnd
 
+
 ######################################################################
-
 Function .onInstSuccess
-    MessageBox MB_OK "Conductor now checks C:\Users\<username>\AppData\Roaming\Conductor Technologies\Conductor\config.yml as the default location for a config file. If you already use a config.yml please move it to this location to avoid any conflicts"
+!ifdef WITH_CLIENT
+SetShellVarContext current
+CreateDirectory "$SMPROGRAMS\Conductor Technologies"
+CreateShortCut "$SMPROGRAMS\Conductor Technologies\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe" "" "$INSTDIR\Conductor\conductor_white.ico"
+CreateShortCut "$DESKTOP\Conductor.lnk" "$INSTDIR\Conductor\conductor-desktop.exe" "" "$INSTDIR\Conductor\conductor_white.ico"
+MessageBox MB_OK "A shortcut to Conductor's Desktop agent has been created on your desktop and in the start menu."
+!else    ; 
+MessageBox MB_OK "Conductor now checks C:\Users\<username>\AppData\Roaming\Conductor Technologies\Conductor\config.yml as the default location for a config file. If you already use a config.yml please move it to this location to avoid any conflicts"
+!endif
 FunctionEnd
-
 ######################################################################
 
 Section Uninstall
 ${INSTALL_TYPE}
+
+
+Delete "$DESKTOP\Conductor.lnk"
+Delete "$SMPROGRAMS\Conductor Technologies\Conductor.lnk"
 
 Delete "$INSTDIR\uninstall.exe"
 !ifdef WEB_SITE
@@ -128,10 +140,11 @@ ${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Tech
 ${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\conductor\resources"
 ${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\nuke_menu"
 ${un.EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
-${un.EnvVarUpdate} $0 "HOUDINI_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\houdini"
+
 RMDir /r /REBOOTOK "$PROGRAMFILES\Conductor Technologies"
 
 #### Remove legacy installation artifacts
+${un.EnvVarUpdate} $0 "HOUDINI_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\houdini"
 ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
 ${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor"
 ${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\python\Lib\site-packages"
@@ -139,7 +152,6 @@ ${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Co
 ${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\conductor\resources"
 ${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\nuke_menu"
 ${un.EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "R" "HKCU" "$APPDATA\ConductorIO\Conductor\config.yml"
-
 RMDir /r /REBOOTOK "$PROGRAMFILES\ConductorIO"
 ####
 

@@ -1,24 +1,75 @@
-- type: parallel
-  tag: ^v\d*\.\d*\.\d*$
+# client tools build with desktop client
+# To build the desktop-client version, use tag: v0.0.0
+# To use jet steps to test locally, use:
+# jet steps --tag v0.0.0   --ci-branch v0.0.0
+#
+
+# Client tools build with desktop client
+- type: serial
+  tag: v0.0.0
   steps:
-  - service: deb
-    name: Build Windows installer
-    command: /src/installers/windows/build.sh
-  - service: deb
-    name: Build MacOS installer
-    command: /src/installers/osx/build.sh
-  - service: el6
-    name: Build EL-6
-    command: /src/installers/rpm/build.sh 6
-  - service: el7
-    name: Build EL-7
-    command: /src/installers/rpm/build.sh 7
-- name: Publish
-  tag: ^v\d*\.\d*\.\d*$
-  service: python
-  command: python /src/installers/build/publish.py
+  - name: Fetch desktop client version info
+    service: python
+    command: /src/installers/build/setup_desktop_client.sh
+  - type: parallel
+    steps:
+    - type: serial
+      steps:
+      - name: Fetch MacOS desktop client
+        service: python
+        command: /src/installers/build/fetch_client.sh macos64
+      - name: Build MacOS installer with desktop client
+        service: deb
+        command: /src/installers/osx/build.sh --with_client
+    - type: serial
+      steps:
+      - name: Fetch Windows desktop client
+        service: python
+        command: /src/installers/build/fetch_client.sh win64
+      - service: deb
+        name: Build Windows installer with desktop client
+        command: /src/installers/windows/build.sh --with_client
+    - type: serial
+      steps:
+      - name: Fetch Linux desktop client
+        service: python
+        command: /src/installers/build/fetch_client.sh linux64
+      - type: parallel
+        steps:
+        - name: Build EL-6 installer with desktop
+          service: el6
+          command: /src/installers/rpm/build.sh 6 --with_client
+        - service: el7
+          name: Build EL-7 installer with desktop client
+          command: /src/installers/rpm/build.sh 7 --with_client
+  - name: Publish with desktop client
+    service: python
+    command: /src/installers/build/publish_with_client.sh
+
+# Regular client tools build
+- type: serial
+  tag: ^v[^0]\d*.\d+.\d+|v\d+.[^0]\d*.\d+|v\d+.\d+.[^0]\d*$
+  steps:
+  - type: parallel
+    steps:
+    - service: deb
+      name: Build Windows installer
+      command: /src/installers/windows/build.sh
+    - service: deb
+      name: Build MacOS installer
+      command: /src/installers/osx/build.sh
+    - service: el6
+      name: Build EL-6 installer
+      command: /src/installers/rpm/build.sh 6
+    - service: el7
+      name: Build EL-7 installer
+      command: /src/installers/rpm/build.sh 7
+  - name: Publish
+    service: python
+    command: python /src/installers/build/publish.py
 
 - name: No Tag
   service: deb
   tag: ^((!^v\d*\.\d*\.\d*$).)*$
-  command: echo "No matching tag.  Not building"
+  command: echo "No matching tag. Not building"
+
