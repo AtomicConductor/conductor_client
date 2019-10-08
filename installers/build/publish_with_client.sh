@@ -10,7 +10,7 @@ aws s3 cp ./conductor-v${version}.exe ${bucket}
 aws s3 cp ./conductor-v${version}-0.el6.x86_64.rpm ${bucket}
 aws s3 cp ./conductor-v${version}-0.el7.x86_64.rpm ${bucket}
 
-aws s3 cp ./conductor-v${version}.pkg ${bucket}/conductor-latest.pkg
-aws s3 cp ./conductor-v${version}.exe ${bucket}/conductor-latest.exe
-aws s3 cp ./conductor-v${version}-0.el6.x86_64.rpm ${bucket}/conductor-latest-0.el6.x86_64.rpm
-aws s3 cp ./conductor-v${version}-0.el7.x86_64.rpm ${bucket}/conductor-latest-0.el7.x86_64.rpm
+aws s3 cp ./conductor-v${version}.pkg ${bucket}conductor-latest.pkg
+aws s3 cp ./conductor-v${version}.exe ${bucket}conductor-latest.exe
+aws s3 cp ./conductor-v${version}-0.el6.x86_64.rpm ${bucket}conductor-latest-0.el6.x86_64.rpm
+aws s3 cp ./conductor-v${version}-0.el7.x86_64.rpm ${bucket}conductor-latest-0.el7.x86_64.rpm
