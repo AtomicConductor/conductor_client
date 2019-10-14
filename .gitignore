@@ -56,3 +56,8 @@ codeship.aes
 # vscode
 .vscode
 conductor_client.code-workspace
+
+
+conductor/desktop/export/fbs/target
+conductor/desktop/modules/qtquick/resources/maroon
+conductor/desktop/modules/home/resources/static

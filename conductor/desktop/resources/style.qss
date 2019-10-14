@@ -1,0 +1,11 @@
+* { 
+  font-size: 10pt
+}
+
+
+QTreeWidget#ui_navbar_trwgt {
+  
+  font-size: 18pt
+  
+  
+}

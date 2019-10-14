@@ -2,4 +2,5 @@ pyaml
 requests
 urllib3
 Qt.py
+QtPy==1.9.0
 PyJWT

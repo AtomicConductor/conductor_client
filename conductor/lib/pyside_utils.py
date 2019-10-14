@@ -56,6 +56,17 @@ class UiLoader(QtUiTools.QUiLoader):
         return widget
 
 
+def apply_style_file(widget, *style_filepaths, append=False):
+
+    style = "" if not append else widget.styleSheet()
+    for style_filepath in style_filepaths:
+        with open(style_filepath) as f:
+            style += f.read()
+    from pprint import pprint, pformat
+    pprint(style)
+    widget.setStyleSheet(style)
+
+
 def wait_cursor(func):
     """
     Wraps the decorated function so that while it is running, the mouse
@@ -158,7 +169,7 @@ def launch_error_box(title, message, parent=None):
     checkbox.hide()
 
     # set the minimum width/height of the QErrorMessage
-    dialog.setStyleSheet("QErrorMessage{min-width: 560px; min-height: 320px;}");
+    dialog.setStyleSheet("QErrorMessage{min-width: 560px; min-height: 320px;}")
 
     return dialog.exec_()
 
@@ -216,6 +227,7 @@ def launch_yes_no_dialog(title, message, show_not_again_checkbox=True, parent=No
     yes = dialog.exec_()
     dont_notify_again = dialog.checkBox.isChecked()
     return bool(yes), dont_notify_again
+
 
 def launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=True, parent=None):
     '''
@@ -286,6 +298,7 @@ def launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=True, pa
 
     return yes, dont_notify_again
 
+
 def get_widgets_by_property(widget, property_name, match_value=False, property_value=None):
     '''
     For the given widget, return all child widgets (and potentially the original widget),
@@ -324,10 +337,10 @@ class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
     def initializeUi(self):
         self.setCheckboxStyleSheet()
 
-    def contextMenuEvent(self, event):
-        selected_item = self.itemAt(event.pos())
-        menu = self._make_context_menu(selected_item)
-        menu.exec_(event.globalPos())
+#     def contextMenuEvent(self, event):
+#         selected_item = self.itemAt(event.pos())
+#         menu = self._make_context_menu(selected_item)
+#         menu.exec_(event.globalPos())
 
     def _make_context_menu(self, selected_item):
         menu = QtWidgets.QMenu()

@@ -1,0 +1,31 @@
+QHeaderView::section {
+    border: 0px;
+    color: hsl(0, 0%, 72%);
+    background-color: hsl(0, 0%, 26%);
+    padding: 10px;
+    font-size: 11pt;
+}
+
+QTreeView {
+  outline: 0;
+  font-size: 10pt;
+}
+
+
+QTreeWidget::item {
+    height: 25px;
+    background-color: hsl(0, 0%, 26%);
+    color: hsl(0, 0%, 62%);
+    padding: 5px;
+}
+
+
+QTreeView::item:selected {
+    background-color: palette(Highlight);
+    color: hsl(0, 0%, 72%);
+ }
+
+QTreeView::item:selected:active:focus {
+    background-color:  palette(Highlight);  
+ }
+

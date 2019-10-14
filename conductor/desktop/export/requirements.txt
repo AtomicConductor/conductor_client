@@ -1,0 +1,16 @@
+-r ../../../requirements.txt
+
+#### Linux #####
+# /home/lschlosser/git/external/pyinstaller
+
+#### macOS #####
+/Users/vagrant/pyinstaller
+
+
+#git+https://github.com/pyinstaller/pyinstaller.git@develop
+fbs==0.8.4
+PySide2==5.12.5
+qtmodern==0.1.4
+python-dateutil==2.8.0
+
+
