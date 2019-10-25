@@ -268,15 +268,26 @@ class UploadWorker(worker.ThreadWorker):
         Instead, we wrap this method in a retry decorator.
         '''
 
-        headers = {'Content-MD5': md5,
-                   'Content-Type': 'application/octet-stream'}
+        if "amazonaws" in upload_url:
+            headers = {'Content-Type': 'application/octet-stream'}
 
-        return self.api_client.make_request(conductor_url=upload_url,
-                                            headers=headers,
-                                            data=self.chunked_reader(filename),
-                                            verb='PUT',
-                                            tries=1,
-                                            use_api_key=True)
+            with open(filename, 'rb') as fh:
+                return self.api_client._make_request(verb="PUT",
+                                                     conductor_url=upload_url,
+                                                     headers=headers,
+                                                     params=None,
+                                                     data=fh)
+
+        else:
+            headers = {'Content-MD5': md5,
+                       'Content-Type': 'application/octet-stream'}
+
+            return self.api_client.make_request(conductor_url=upload_url,
+                                                headers=headers,
+                                                data=self.chunked_reader(filename),
+                                                verb='PUT',
+                                                tries=1,
+                                                use_api_key=True)
 
 
 class Uploader(object):
