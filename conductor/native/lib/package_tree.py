@@ -92,7 +92,7 @@ def _is_product(pkg, **kw):
             return True
         return False
 
-    for key, value in kw.iteritems():
+    for key, value in kw.items():
         pkg_value = pkg[key]
         if value and value != pkg_value:
             return False

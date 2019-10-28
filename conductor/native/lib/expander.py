@@ -47,4 +47,4 @@ class Expander(object):
             return AngleBracketTemplate(item.strip()).substitute(self._context)
         except KeyError:
             raise KeyError("Invalid token. Valid tokens are: {}".format(
-                self._context.keys()))
+                list(self._context.keys())))

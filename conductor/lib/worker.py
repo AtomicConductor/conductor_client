@@ -1,4 +1,4 @@
-import Queue
+import queue
 import traceback
 import threading
 import logging
@@ -224,7 +224,7 @@ class MetricStore():
 
     def __init__(self):
         self.metric_store = {}
-        self.update_queue = Queue.Queue()
+        self.update_queue = queue.Queue()
         self.started = False
 
     def join(self):
@@ -258,7 +258,7 @@ class MetricStore():
         variable, step_size, filename = args
 
         # initialize variable to 0 if not set
-        if not self.metric_store.has_key(variable):
+        if variable not in self.metric_store:
             self.metric_store[variable] = 0
 
         # increment variable by step_size
@@ -277,14 +277,14 @@ class MetricStore():
     def do_set_dict(self, *args):
         dict_name, key, value = args
 
-        if not self.metric_store.has_key(dict_name):
+        if dict_name not in self.metric_store:
             self.metric_store[dict_name] = {}
 
         self.metric_store[dict_name][key] = value
 
     def get_dict(self, dict_name, key=None):
         # if dict_name does not exist, return an empty dict
-        if not self.metric_store.has_key(dict_name):
+        if dict_name not in self.metric_store:
             return {}
 
         # if key was not provided, return full dict
@@ -301,7 +301,7 @@ class MetricStore():
         list_name, value = args
 
         # initialize to empty list if not yet created
-        if not self.metric_store.has_key(list_name):
+        if list_name not in self.metric_store:
             self.metric_store[list_name] = []
 
         # append value to list
@@ -342,9 +342,9 @@ class JobManager():
         self.error = []
         self.workers = []
         self.reporters = []
-        self.error_queue = Queue.Queue()
+        self.error_queue = queue.Queue()
         self.metric_store = MetricStore()
-        self.work_queues = [Queue.Queue()]
+        self.work_queues = [queue.Queue()]
         self.job_description = job_description
         self.reporter_description = reporter_description
 
@@ -442,7 +442,7 @@ class JobManager():
                 # the last worker does not need an output queue
                 kwargs['out_queue'] = None
             else:
-                next_queue = Queue.Queue()
+                next_queue = queue.Queue()
                 self.work_queues.append(next_queue)
                 kwargs['out_queue'] = next_queue
 

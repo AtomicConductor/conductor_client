@@ -258,7 +258,7 @@ def get_renderer_plugin(renderer_name):
 
     # Cycle through all  all of the global render settings nodes
     for node in cmds.renderer(renderer_name, q=True, globalsNodes=True) or []:
-        for plugin_name, node_types in plugin_node_types.iteritems():
+        for plugin_name, node_types in plugin_node_types.items():
             if cmds.nodeType(node) in node_types:
                 return plugin_name
 
@@ -455,7 +455,7 @@ def get_render_layers_info():
 
         cameras = []
         # cycle through all renderable camereras in the maya scene
-        for camera in cmds.ls(type="camera", long=True):
+        for camera in cmds.ls(type="camera", int=True):
             if not cmds.getAttr("%s.renderable" % camera):
                 continue
             camera_info = {}
@@ -490,7 +490,7 @@ def collect_dependencies(node_attrs):
 
     all_node_types = cmds.allNodeTypes()
 
-    for node_type, node_attrs in node_attrs.iteritems():
+    for node_type, node_attrs in node_attrs.items():
         if node_type not in all_node_types:
             logger.debug("skipping unknown node type: %s", node_type)
             continue
@@ -651,7 +651,7 @@ def scrape_yeti_graph(yeti_node):
     search_paths = node_search_paths + pg_image_search_paths
     logger.debug("combined image search paths: %s", search_paths)
 
-    for node_type, attr_names in yeti_input_attrs.iteritems():
+    for node_type, attr_names in yeti_input_attrs.items():
         logger.debug("Traversing yeti %s nodes", node_type)
         node_filepaths = scrape_yeti_node_type(yeti_node, node_type, attr_names, search_paths=node_search_paths)
         filepaths.extend(node_filepaths)
@@ -1182,7 +1182,7 @@ def parse_xgen_command(cmd_str):
             args[attr].append(part)
 
     command_args = {}
-    for flag, value in args.iteritems():
+    for flag, value in args.items():
         if len(value) == 1:
             value = value[0]
         command_args[flag] = value
@@ -1232,16 +1232,16 @@ def scrape_xgen_file(filepath):
 
     paths = []
 
-    for module_type, module_attrs in xgen_attrs.iteritems():
+    for module_type, module_attrs in xgen_attrs.items():
         for module in palette_modules.get(module_type, []):
             for module_attr_info in module_attrs:
-                for module_attr, attr_conditions in module_attr_info.iteritems():
+                for module_attr, attr_conditions in module_attr_info.items():
                     logger.debug("Scraping %s.%s", module_type, module_attr)
                     if _are_conditions_met(module, attr_conditions or {}):
                         value = module.get(module_attr, "")
                         # Convert the raw parsed string value to a list of values (split by whitespace),
                         # filtering out any empty values.
-                        values = filter(None, [v.strip(' \t\r\n') for v in value.split()])
+                        values = [_f for _f in [v.strip(' \t\r\n') for v in value.split()] if _f]
                         if values:
                             # Use the last item in the values. This is a huge assumption (that we'll always
                             # only want the last item, but it's the best we have without a proper
@@ -1259,7 +1259,7 @@ def _are_conditions_met(module, attr_conditions):
     '''
     Return True if the all of the given conditions are met for the the given xgen module values
     '''
-    for condition_attr, condition_value in attr_conditions.iteritems():
+    for condition_attr, condition_value in attr_conditions.items():
         if module.get(condition_attr) != condition_value:
             logger.debug("Condition: %r != %r", module.get(condition_attr), condition_value)
             return False

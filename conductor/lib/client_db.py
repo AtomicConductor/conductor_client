@@ -17,7 +17,7 @@ def get_default_db_filepath():
     Depending on the platform, this will be located in some sort of temporary
     directory, such as:
         - /usr/temp  (linux)
-        - c:\users\<username>\appdata\local\temp  (windows)
+        - c:\\users\<username>\appdata\local\temp  (windows)
 
     '''
     return os.path.join(tempfile.gettempdir(), DB_FILENAME)
@@ -54,7 +54,7 @@ class TableDB(object):
 
 
     @classmethod
-    def connnect_to_db(cls, db_filepath, timeout=300, db_perms=0666):
+    def connnect_to_db(cls, db_filepath, timeout=300, db_perms=0o666):
         '''
         Create a connection to the database with the specified database filepath and
         return the connection object
@@ -241,7 +241,7 @@ class FilesDB(TableDB):
                 ##### SIZE #####
                 # the size of the file (in bytes)
                 {"name": "size",
-                "python_type": (int, long),
+                "python_type": (int, int),
                 "sqlite_type": "INTEGER"},
 
                 ##### MD5 #####
@@ -394,7 +394,7 @@ def chunker(list_, chunk_size):
     given size (length), containing the contents of the the orginal list
 
     '''
-    return (list_[pos:pos + chunk_size] for pos in xrange(0, len(list_), chunk_size))
+    return (list_[pos:pos + chunk_size] for pos in range(0, len(list_), chunk_size))
 
 
 

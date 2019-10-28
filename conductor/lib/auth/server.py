@@ -4,11 +4,11 @@ import inspect
 import json
 import mimetypes
 import select
-import SocketServer
-import urlparse
+import socketserver
+import urllib.parse
 import time
 
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 keep_running = True
 credentials_file = ""
@@ -24,9 +24,9 @@ class Handler(BaseHTTPRequestHandler):
 
     @staticmethod
     def _write_credentials(credentials):
-        print ("Writing credentials to %s" % credentials_file)
+        print(("Writing credentials to %s" % credentials_file))
         if not os.path.exists(os.path.dirname(credentials_file)):
-            print("Creating creds directory %s" % os.path.dirname(credentials_file))
+            print(("Creating creds directory %s" % os.path.dirname(credentials_file)))
             os.makedirs(os.path.dirname(credentials_file))
         with open(credentials_file, 'w') as token_file:
             token_file.write(json.dumps(credentials))
@@ -38,28 +38,28 @@ class Handler(BaseHTTPRequestHandler):
         #  Handle arg string
         self._set_headers()
         print ("Got a response!")
-        url_args = urlparse.parse_qs(urlparse.urlsplit(self.path).query)
+        url_args = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
         if 'access_token' not in url_args:
             return
 
-        print url_args
+        print(url_args)
         credentials_dict = {
             "access_token": url_args['access_token'][0],
             "token_type": "Bearer",
             "expiration": int(time.time()) + int(url_args['expires_in'][0]),
             "scope": url_args['scope']
         }
-        print "Creds dict = %s" % credentials_dict
+        print("Creds dict = %s" % credentials_dict)
         self._write_credentials(credentials_dict)
         path = os.path.sep.join((self.web_root, "index.html"))
-        print "path = %s" % path
+        print("path = %s" % path)
         try:
-            with open(path,'r') as src:
+            with open(path, 'r') as src:
                 content = src.read()
         except IOError:
             self.send_response(404)
             return
-        self.wfile.write(content)
+        self.wfile.write(content.encode())
         global keep_running
         keep_running = False
         return
@@ -72,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
 def retry_loop(server):
     while True:
         try:
-            return SocketServer.BaseServer.handle_request(server)
+            return socketserver.BaseServer.handle_request(server)
         except (OSError, select.error) as e:
             if e.args[0] != errno.EINTR:
                 raise

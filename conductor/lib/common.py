@@ -395,7 +395,7 @@ class Config():
                       'local_upload': True,
                       'md5_caching': True,
                       'log_level': "INFO"}
-    default_config_locations = {'linux2': os.path.join(os.getenv('HOME', ''), '.conductor', 'config.yml'),
+    default_config_locations = {'linux': os.path.join(os.getenv('HOME', ''), '.conductor', 'config.yml'),
                                 'win32': os.path.join(os.getenv('APPDATA', ''), 'Conductor Technologies', 'Conductor', 'config.yml'),
                                 'darwin': os.path.join(os.getenv('HOME', ''), 'Application Support/Conductor', 'config.yml')}
 
@@ -464,7 +464,7 @@ class Config():
         prefix = 'CONDUCTOR_'
         skipped_variables = ['CONDUCTOR_CONFIG']
         environment_config = {}
-        for var_name, var_value in os.environ.iteritems():
+        for var_name, var_value in os.environ.items():
             # skip these options
             if not var_name.startswith(prefix) or var_name in skipped_variables:
                 continue
@@ -655,14 +655,14 @@ def load_yaml(filepath, safe=True, omit_tags=False):
         Instead of loading the yaml tag as an object, simply return a string that
         indicated that it was omitted.
         '''
-        return tag_suffix + u' <TAG OMITTED>'
+        return tag_suffix + ' <TAG OMITTED>'
 
     if omit_tags:
         # Create our own Loader class and add our omission constructor to it
         class TmpLoader(loader):
             pass
         loader = TmpLoader
-        yaml.add_multi_constructor(u'', ommitter_constructor, Loader=loader)
+        yaml.add_multi_constructor('', ommitter_constructor, Loader=loader)
 
     logger.debug("Using yaml loader: %s", loader.__name__)
 

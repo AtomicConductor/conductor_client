@@ -2,7 +2,7 @@
 
 import os
 import sys
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import subprocess
 import traceback
 import logging
@@ -11,7 +11,7 @@ import imp
 
 try:
     imp.find_module('conductor')
-except ImportError, e:
+except ImportError as e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from conductor import CONFIG
@@ -76,7 +76,7 @@ class Updater(object):
     def get_upstream_revision():
         client_version_endpoint = os.path.join(CONFIG['url'],'clientref')
         try:
-            upstream_response = urllib2.urlopen(client_version_endpoint).read()
+            upstream_response = urllib.request.urlopen(client_version_endpoint).read()
             json_response = json.loads(upstream_response)
             upstream_rev = json_response['ref']
             logging.debug("upstream_rev is '%s'" % upstream_rev)

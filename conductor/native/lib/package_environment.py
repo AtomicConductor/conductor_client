@@ -84,7 +84,7 @@ class PackageEnvironment(object):
         See the tests /tests/test_package_environment.py for example
         use.
         """
-        for key, val in self._env.iteritems():
+        for key, val in self._env.items():
             yield key, val
 
     def __getitem__(self, key):

@@ -1,5 +1,5 @@
 import webbrowser
-import server
+from . import server
 import logging
 
 

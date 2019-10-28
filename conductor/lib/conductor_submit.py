@@ -14,7 +14,7 @@ import types
 
 try:
     imp.find_module('conductor')
-except ImportError, e:
+except ImportError as e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
@@ -32,7 +32,7 @@ class Submit(object):
     Help:
         $ python conductor_submit.py -h
     """
-    metadata_types = types.StringTypes
+    metadata_types = (str,)
 
     def __init__(self, args):
         self.timeid = int(time.time())
@@ -408,7 +408,7 @@ class Submit(object):
                 submit_dict['machine_flavor'] = self.machine_flavor
 
         logger.debug("send_job JOB ARGS:")
-        for arg_name, arg_value in sorted(submit_dict.iteritems()):
+        for arg_name, arg_value in sorted(submit_dict.items()):
             logger.debug("\t%s: %s", arg_name, arg_value)
 
         logger.info("Sending Job...")
@@ -480,14 +480,14 @@ class Submit(object):
                 raise Exception("Could not upload files:\n%s" % upload_error_message)
             # Get the resulting dictionary of the file's and their corresponding md5 hashes
             upload_md5s = uploader_.return_md5s()
-            for path, md5 in upload_md5s.iteritems():
+            for path, md5 in upload_md5s.items():
                 upload_files[path] = md5
 
         # If the NOT uploading locally (i.e. offloading the work to the uploader daemon
         else:
             # update the upload_files dictionary with md5s that should be enforced
             # this will override the None values with actual md5 hashes
-            for filepath, md5 in self.enforced_md5s.iteritems():
+            for filepath, md5 in self.enforced_md5s.items():
                 logger.debug("filepath is %s" % filepath)
                 processed_filepaths = file_utils.process_upload_filepath(filepath)
                 assert len(processed_filepaths) == 1, "Did not get exactly one filepath: %s" % processed_filepaths
@@ -558,7 +558,7 @@ class Submit(object):
         # reusable error/warning message
         error_msg = 'Metadata %%s %%s is not of a supported type. Got %%s. Expected %s' % " or ".join([type_.__name__ for type_ in cls.metadata_types])
 
-        for key, value in metadata.iteritems():
+        for key, value in metadata.items():
 
             key_type = type(key)
             if key_type not in cls.metadata_types:
@@ -591,7 +591,7 @@ class Submit(object):
         '''
 
         # All the types that are supported for casting to metadata type
-        cast_types = (bool, int, long, float, str, unicode)
+        cast_types = (bool, int, float, str)
 
         value_type = type(value)
 
@@ -603,7 +603,7 @@ class Submit(object):
 
         # Otherwise, attempt to cast the value to unicode
         try:
-            return unicode(value)
+            return str(value)
         except:
             cast_error = "Casting failure. " + cast_error
             logger.error(cast_error)

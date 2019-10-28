@@ -97,7 +97,7 @@ def wait_message(title, message):
             # TODO: This stupid for-loop with a print statement is hack to force a redraw/update to the dialog. Otherwise it's blank.
             # Tried a million things.  This is the only one that works..most of the time.
             for _ in range(5):
-                print "",
+                print("", end=' ')
                 QtWidgets.QApplication.processEvents()
             try:
                 return func(*args, **kwds)
@@ -394,7 +394,7 @@ class CheckBoxTreeWidget(QtWidgets.QTreeWidget):
                                "QTreeWidget:indicator:unchecked:disabled": self.icon_filepath_unchecked_disabled}
         stylesheet = ""
 
-        for indicator, filepath in indicator_filepaths.iteritems():
+        for indicator, filepath in indicator_filepaths.items():
             stylesheet += "%s { image: url(%s);}" % (indicator, filepath.replace("\\", "/"))  # The filepaths must always use forward slashes (regardless of platform)
 
         self.setStyleSheet(stylesheet)
@@ -730,7 +730,7 @@ class UserPrefs(object):
         logger.debug("Writing group settings: %s/", group or "ROOT")
         if group:
             self.qsettings.beginGroup(group)
-        for key, value in values.iteritems():
+        for key, value in values.items():
             self.qsettings.setValue(key, value)
         self.qsettings.sync()
         if group:
@@ -1156,7 +1156,7 @@ class UiFilePrefs(FilePrefs):
         '''
 
         logger.debug("Loading User Widget prefs for file: %s", filepath)
-        for widget_name, widget_value in self.getFileWidgetPrefs(filepath).iteritems():
+        for widget_name, widget_value in self.getFileWidgetPrefs(filepath).items():
             if widget_value is not None:
                 widget = self.getWidgetByName(widget_name)
                 self.widget_mapper.setWidgetValue(widget, widget_value)
@@ -1166,7 +1166,7 @@ class UiFilePrefs(FilePrefs):
         Load/apply any global user prefs.
         '''
         logger.debug("Loading User Global Widget prefs")
-        for widget_name, widget_value in self.getGlobalWidgetPrefs().iteritems():
+        for widget_name, widget_value in self.getGlobalWidgetPrefs().items():
             if widget_value is not None:
                 widget = self.getWidgetByName(widget_name)
                 self.widget_mapper.setWidgetValue(widget, widget_value)

@@ -3,9 +3,9 @@ import time
 import json
 import logging
 import os
-import Queue
+import queue
 import sys
-import thread
+import _thread
 from threading import Thread
 import traceback
 
@@ -32,7 +32,7 @@ class MD5Worker(worker.ThreadWorker):
     def do_work(self, job, thread_int):
         logger.debug('job is %s', job)
         filename, submission_time_md5 = job
-        assert isinstance(filename, (str, unicode)), "Filepath not of expected type. Got %s" % type(filename)
+        assert isinstance(filename, str), "Filepath not of expected type. Got %s" % type(filename)
         filename = str(filename)
         current_md5 = self.get_md5(filename)
         # if a submission time md5 was provided then check against it
@@ -101,7 +101,7 @@ class MD5OutputWorker(worker.ThreadWorker):
             logger.debug('md5outputworker got poison pill')
             self.ship_batch()
             self.mark_done()
-            thread.exit()
+            _thread.exit()
 
     # helper function to ship batch
     def ship_batch(self):
@@ -128,7 +128,7 @@ class MD5OutputWorker(worker.ThreadWorker):
 
             # This happens if no new messages are put into the queue after
             # waiting for self.wait_time seconds
-            except Queue.Empty:
+            except queue.Empty:
                 self.ship_batch()
                 continue
             except Exception:
@@ -206,7 +206,7 @@ class FileStatWorker(worker.ThreadWorker):
         '''
 
         # iterate through a dict of (filepath: upload_url) pairs
-        for path, upload_url in job.iteritems():
+        for path, upload_url in job.items():
             if not os.path.isfile(path):
                 return None
             # logger.debug('stat: %s', path)
@@ -476,9 +476,9 @@ class Uploader(object):
                 try:
                     logger.info(self.manager.worker_queue_status_text())
                     logger.info(self.upload_status_text())
-                except Exception, e:
-                    print e
-                    print traceback.format_exc()
+                except Exception as e:
+                    print(e)
+                    print(traceback.format_exc())
                     # pass
             sleep()
 
@@ -529,7 +529,7 @@ class Uploader(object):
             logger.info('project: %s', project)
             logger.info('upload_id is %s', upload_id)
             logger.info('upload_files %s:(truncated)\n\t%s',
-                        len(upload_files), "\n\t".join(upload_files.keys()[:5]))
+                        len(upload_files), "\n\t".join(list(upload_files.keys())[:5]))
 
             # reset counters
             self.num_files_to_process = len(upload_files)
@@ -552,7 +552,7 @@ class Uploader(object):
             self.create_print_status_thread()
 
             # load tasks into worker pools
-            for path, md5 in upload_files.iteritems():
+            for path, md5 in upload_files.items():
                 self.manager.add_task((path, md5))
 
             # wait for work to finish
@@ -571,7 +571,7 @@ class Uploader(object):
             if self.upload_id:
                 finished_upload_files = {path: {"source": path,
                                                 "md5": md5}
-                                         for path, md5 in self.return_md5s().iteritems()}
+                                         for path, md5 in self.return_md5s().items()}
 
                 self.mark_upload_finished(self.upload_id, finished_upload_files)
 
@@ -602,7 +602,7 @@ class Uploader(object):
                     time.sleep(self.sleep_time)
                     continue
 
-                print ''  # to make a newline after the 204 loop
+                print('')  # to make a newline after the 204 loop
                 # logger.debug('recieved next upload from app: %s\n\t%s', resp_code, resp_str)
 
                 try:

@@ -108,7 +108,7 @@ class Uploader(object):
 
         # Cycle through each worker, and change the share object's state
         # value to "stopping
-        for worker, run_state in self._workers.iteritems():
+        for worker, run_state in self._workers.items():
             LOGGER.debug("changing %s from %s to %s", worker.name,
                          run_state.value, self.STATE_STOPPING)
             run_state.value = self.STATE_STOPPING
@@ -294,7 +294,7 @@ class UploaderWorker(multiprocessing.Process):
             fields["filepath"] = self.current_upload.get("filepath")
             fields["upload_id"] = self.current_upload.get("upload_id")
             fields["md5"] = self.current_upload.get("md5")
-        log_fields = ["%s=%s" % (key, val) for key, val in fields.iteritems()]
+        log_fields = ["%s=%s" % (key, val) for key, val in fields.items()]
         log_msg = "%s %s" % (message,  " ".join(log_fields))
         if level == EXCEPTION:
             LOGGER.exception(log_msg)
@@ -606,7 +606,7 @@ class FileGenerator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         """
         Generator implementation
         """

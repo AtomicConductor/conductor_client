@@ -101,7 +101,7 @@ class PathList(object):
         def _all_the_same(rhs):
             return all(n == rhs[0] for n in rhs[1:])
 
-        levels = zip(*[p.all_components for p in self._entries])
+        levels = list(zip(*[p.all_components for p in self._entries]))
 
         common = [x[0] for x in takewhile(_all_the_same, levels)]
         return Path(common or "/")
@@ -136,7 +136,7 @@ class PathList(object):
         self._deduplicate()
         return iter(self._entries)
 
-    def next(self):
+    def __next__(self):
         """Get the next element.
 
         Deduplicate just in time.

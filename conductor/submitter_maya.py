@@ -21,7 +21,7 @@ else:
 
 try:
     imp.find_module('conductor')
-except ImportError, e:
+except ImportError as e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -342,7 +342,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     def getPluginsProductInfo(self):
         plugins_info = []
         host_version = maya_utils.MayaInfo.get_version()
-        for plugin_product, plugin_version in maya_utils.get_plugin_info().iteritems():
+        for plugin_product, plugin_version in maya_utils.get_plugin_info().items():
             package_id = package_utils.get_plugin_package_id(self.product, host_version, plugin_product, plugin_version, strict=False)
             plugin_info = {"host_product": self.product,
                            "host_version": host_version,
@@ -411,7 +411,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             enforced_md5s = self.getEnforcedMd5s()
 
         # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
-        raw_dependencies.extend(enforced_md5s.keys())
+        raw_dependencies.extend(list(enforced_md5s.keys()))
 
         # Process all of the dependendencies. This will create a dictionary of dependencies, and whether they are considred Valid or not (bool)
         dependencies = file_utils.process_dependencies(raw_dependencies)
@@ -421,7 +421,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # software-specific behavior. We're going to need start seperating behavior via classes (perhaps
         # one for each renderer type?)
         if maya_utils.is_arnold_renderer() and maya_utils.is_arnold_tx_enabled():
-            tx_filepaths = file_utils.get_tx_paths(dependencies.keys(), existing_only=True)
+            tx_filepaths = file_utils.get_tx_paths(list(dependencies.keys()), existing_only=True)
             processed_tx_filepaths = file_utils.process_dependencies(tx_filepaths)
             dependencies.update(processed_tx_filepaths)
 
@@ -491,7 +491,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # IF there are any error messages (stored in the dict values)
         if any(dependencies.values()):
             message = ""
-            for _, error_message in dependencies.iteritems():
+            for _, error_message in dependencies.items():
                 if error_message:
                     message += "\n%s" % error_message
 
@@ -522,7 +522,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
 
         # Grab the file dependencies from data (note that this comes from the presubmission phase
-        conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
+        conductor_args["upload_paths"] = list((data.get("dependencies") or {}).keys())
         return conductor_args
 
     def runConductorSubmission(self, data):
@@ -600,4 +600,4 @@ def get_maya_window():
     Return the Qt instance of Maya's MainWindow
     '''
     mainWindowPtr = OpenMayaUI.MQtUtil.mainWindow()
-    return wrapInstance(long(mainWindowPtr), QtWidgets.QMainWindow)
+    return wrapInstance(int(mainWindowPtr), QtWidgets.QMainWindow)

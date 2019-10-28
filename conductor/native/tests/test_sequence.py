@@ -236,12 +236,12 @@ class IntersectionTest(unittest.TestCase):
 
     def test_does_intersect(self):
         s = Sequence.create("1-10")
-        i = s.intersection(range(5, 15))
+        i = s.intersection(list(range(5, 15)))
         self.assertEqual(list(i), list(range(5, 11)))
 
     def test_does_not_intersect(self):
         s = Sequence.create("1-10")
-        i = s.intersection(range(25, 35))
+        i = s.intersection(list(range(25, 35)))
         self.assertEqual(i, None)
 
 
@@ -249,7 +249,7 @@ class UnionTest(unittest.TestCase):
 
     def test_creates_union_from_range(self):
         s = Sequence.create("1-10")
-        u = s.union(range(5, 15))
+        u = s.union(list(range(5, 15)))
         self.assertEqual(list(u), list(range(1, 15)))
 
     def test_creates_union_from_other_sequence(self):
@@ -320,7 +320,7 @@ class ProgressionsTest(unittest.TestCase):
         self.assertEqual(str(result[1]), "8-12x2")
 
     def test_from_range(self):
-        result = Progression.factory(xrange(2, 97, 3))
+        result = Progression.factory(range(2, 97, 3))
         self.assertEqual(len(result), 1)
         self.assertEqual(len(result[0]), 32)
 
@@ -333,7 +333,7 @@ class ProgressionsTest(unittest.TestCase):
         self.assertEqual(len(result), 3)
 
     def test_range_max_16(self):
-        result = Progression.factory(xrange(2, 197, 3), max_size=16)
+        result = Progression.factory(range(2, 197, 3), max_size=16)
         self.assertEqual(len(result[0]), 16)
         self.assertEqual(len(result), 5)
 

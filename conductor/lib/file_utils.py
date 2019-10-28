@@ -430,7 +430,7 @@ def get_rx_matches(path_expression, expressions, limit=0):
     return matches
 
 
-def create_file(filepath, mode=0660):
+def create_file(filepath, mode=0o660):
     '''
     Create an empty file with the given permissions (octal)
     '''

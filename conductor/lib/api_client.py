@@ -4,7 +4,7 @@ import multiprocessing
 import os
 import requests
 import time
-import urlparse
+import urllib.parse
 import jwt
 
 from conductor import CONFIG
@@ -84,7 +84,7 @@ class ApiClient():
 
         # Construct URL
         if not conductor_url:
-            conductor_url = urlparse.urljoin(CONFIG['url'], uri_path)
+            conductor_url = urllib.parse.urljoin(CONFIG['url'], uri_path)
 #         logger.debug('conductor_url: %s', conductor_url)
 
         if not verb:

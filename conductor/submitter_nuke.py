@@ -7,7 +7,7 @@ import imp
 
 try:
     imp.find_module('conductor')
-except ImportError, e:
+except ImportError as e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -50,7 +50,7 @@ class NukeWidget(QtWidgets.QWidget):
         '''
         self.ui_write_nodes_trwgt.clear()
         assert isinstance(write_nodes, dict), "write_nodes argument must be a dict. Got: %s" % type(write_nodes)
-        for write_node, selected in write_nodes.iteritems():
+        for write_node, selected in write_nodes.items():
             tree_item = QtWidgets.QTreeWidgetItem([write_node])
             self.ui_write_nodes_trwgt.addTopLevelItem(tree_item)
 
@@ -286,7 +286,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             enforced_md5s = self.getEnforcedMd5s()
 
         # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
-        raw_dependencies.extend(enforced_md5s.keys())
+        raw_dependencies.extend(list(enforced_md5s.keys()))
 
         dependencies = file_utils.process_dependencies(raw_dependencies)
         output_path, write_paths = self.getOutputPath()
@@ -323,7 +323,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # match, then add the write nodes to the title which the user has
         # selected in the UI
         selected_write_nodes = self.extended_widget.getSelectedWriteNodes()
-        all_write_nodes = nuke_utils.get_all_write_nodes().keys()
+        all_write_nodes = list(nuke_utils.get_all_write_nodes().keys())
 
         # If all write nodes are being rendered, then don't specify them in the job title
         if set(selected_write_nodes) == set(all_write_nodes):
@@ -354,7 +354,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         # IF there are any error messages (stored in the dict values)
         if any(dependencies.values()):
             message = ""
-            for _, error_message in dependencies.iteritems():
+            for _, error_message in dependencies.items():
                 if error_message:
                     message += "\n%s" % error_message
 
@@ -390,7 +390,7 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
         conductor_args["enforced_md5s"] = data.get("enforced_md5s") or {}
 
         # Grab the file dependencies from data (note that this comes from the presubmission phase
-        conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
+        conductor_args["upload_paths"] = list((data.get("dependencies") or {}).keys())
 
         # the output path gets dynamically generated based upon which write nodes the user has selected
         conductor_args["output_path"] = data["output_path"]

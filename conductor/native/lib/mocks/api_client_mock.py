@@ -34,7 +34,7 @@ class ApiClientMock(object):
     def make_request(self, **kw):
         path = kw.get("uri_path", "")
 
-        print "Using mock %s call to %s" % (self.__class__.__name__, path)
+        print("Using mock %s call to %s" % (self.__class__.__name__, path))
 
         if path.startswith("api/v1/projects"):
             return [json.dumps(PROJECTS_RESPONSE), 200]

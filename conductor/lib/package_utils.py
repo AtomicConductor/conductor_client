@@ -89,10 +89,10 @@ def get_matching_packages(software_info, packages):
     package_info = dict(software_info)
 
     # Strip out None/empty values
-    software_info = dict((k.lower(), v.lower()) for k, v in software_info.iteritems() if v not in [None, ""])
+    software_info = dict((k.lower(), v.lower()) for k, v in software_info.items() if v not in [None, ""])
 
     for package in packages:
-        if all(item in package.items() for item in package_info.items()):
+        if all(item in list(package.items()) for item in list(package_info.items())):
             matched_packages.append(package)
 
     return matched_packages
@@ -112,12 +112,12 @@ def get_host_from_packages(cls, package, source_packages):
     plugin_host_version = package["plugin_host_version"]
 
     #If the given package has a host package, retrieve the host package from the app.
-    print "source_packages", source_packages
+    print("source_packages", source_packages)
     plugin_host_version = cls._cast_host_version(plugin_host_version)
     for package in source_packages:
 #             logger.debug("Searching for host package in package: %s", package["package"])
         if package["product"] == plugin_host_product:
-            print package["product"], package.get("major_version")
+            print(package["product"], package.get("major_version"))
             if package.get("major_version") == plugin_host_version:
                 return package
 

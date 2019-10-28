@@ -12,7 +12,7 @@ import functools
 import logging
 import multiprocessing
 import os
-import Queue
+import queue
 import requests
 
 from conductor import CONFIG
@@ -234,7 +234,7 @@ class Downloader(object):
         """
 
         # Cycle through each worker, and change the share object's state value to "stopping
-        for worker, run_state in self._workers.iteritems():
+        for worker, run_state in self._workers.items():
             LOGGER.debug(
                 "changing %s from %s to %s",
                 worker.name,
@@ -919,7 +919,7 @@ class DownloadWorker(multiprocessing.Process):
         to signal them to stop. Join all child processes to block until they all
         exit properly
         """
-        for worker, state in self._workers.iteritems():
+        for worker, state in self._workers.items():
             LOGGER.debug("changing %s from %s to %s", worker.name, state.value, Downloader.STATE_STOPPING)
             state.value = Downloader.STATE_STOPPING
 
@@ -1308,7 +1308,7 @@ def empty_queue(queue):
     while True:
         try:
             items.append(queue.get_nowait())
-        except Queue.Empty:
+        except queue.Empty:
             break
         except:
             LOGGER.exception("recovered from exception:\n%s")

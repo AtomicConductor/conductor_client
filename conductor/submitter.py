@@ -425,7 +425,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         # loop by order of log_level value
         for level_name, level_value in sorted(
-                loggeria.LEVEL_MAP.iteritems(), key=operator.itemgetter(1), reverse=True):
+                iter(loggeria.LEVEL_MAP.items()), key=operator.itemgetter(1), reverse=True):
             # Generate the function that the menu action will call
             func = functools.partial(
                 loggeria.set_conductor_log_level,
@@ -491,7 +491,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
 
         self.ui_instance_type_cmbx.clear()
-        for instance_type in sorted(self._instance_types.values(), key=operator.itemgetter("cores", "memory"), reverse=True):
+        for instance_type in sorted(list(self._instance_types.values()), key=operator.itemgetter("cores", "memory"), reverse=True):
             self.ui_instance_type_cmbx.addItem(instance_type['description'], userData=instance_type)
 
     def populateGpuCmbx(self):
@@ -724,7 +724,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         # Print out the values for each argument
         logger.debug("runConductorSubmission ARGS:")
-        for arg_name, arg_value in conductor_args.iteritems():
+        for arg_name, arg_value in conductor_args.items():
             logger.debug("%s: %s", arg_name, arg_value)
 
         return self._runSubmission(conductor_args)
@@ -732,8 +732,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
     @pyside_utils.wait_cursor
     @pyside_utils.wait_message("Conductor", "Submitting Conductor Job...")
     def _runSubmission(self, conductor_args):
-        print "xXXXXXXXXXXXXXXXXXxxXXXxXxXxxXXXxxxxXxXx"
-        print conductor_args
+        print("xXXXXXXXXXXXXXXXXXxxXXXxXxXxxXXXxxxxXxXx")
+        print(conductor_args)
         try:
             submission = conductor_submit.Submit(conductor_args)
             response, response_code = submission.main()
@@ -1228,7 +1228,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         # Hack for pyside. If there is only one package id, it will return it
         # as unicode type (rather than a lost of 1 string)
-        if isinstance(software_package_ids, unicode):
+        if isinstance(software_package_ids, str):
             software_package_ids = [str(software_package_ids)]
         software_package_ids += (CONFIG.get("software_package_ids") or [])
 
@@ -1238,8 +1238,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             software_package_ids = self.autoDetectPackageIds()
 
         # get the package dictionaries from their package id
-        software_packages = filter(None, [self.software_packages.get(
-            package_id) for package_id in set(software_package_ids)])
+        software_packages = [_f for _f in [self.software_packages.get(
+            package_id) for package_id in set(software_package_ids)] if _f]
 
         # if there are any packages, then populate the treewidget with them
         if software_packages:
@@ -1249,8 +1249,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self.ui_job_software_trwgt.clear()
         package_ids = self.autoDetectPackageIds()
 
-        software_packages = filter(
-            None, [self.software_packages.get(package_id) for package_id in package_ids])
+        software_packages = [_f for _f in [self.software_packages.get(package_id) for package_id in package_ids] if _f]
         if software_packages:
             self.populateJobSoftwareTrwgt(software_packages)
 
@@ -1384,8 +1383,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         # Get packages that are host packages (i.e. not plugins). This is the
         # "top" of the hierarchy
-        host_packages = [package for package in self.software_packages.values(
-        ) if not package["plugin_host_product"]]
+        host_packages = [package for package in list(self.software_packages.values(
+        )) if not package["plugin_host_product"]]
 
         # Create a tree item for every package (we'll group/parent them later)
         # TODO:(LWS) This really ought to be a more clever recursive function.
@@ -1524,11 +1523,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         # Construct the text to give the "Version" column. concatenate all
         # version tiers together
-        software_version = ".".join(filter(None, [package.get(v) for v in
+        software_version = ".".join([_f for _f in [package.get(v) for v in
                                                   ["major_version",
                                                    "minor_version",
                                                    "release_version",
-                                                   "build_version"]]))
+                                                   "build_version"]] if _f])
         tree_item = QtWidgets.QTreeWidgetItem(
             [software_name, software_version])
         tree_item.package_id = package["package_id"]
@@ -1674,11 +1673,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         # Construct the text to give the "Version" column. concatenate all
         # version tiers together
-        software_version = ".".join(filter(None, [package.get(v) for v in
+        software_version = ".".join([_f for _f in [package.get(v) for v in
                                                   ["major_version",
                                                    "minor_version",
                                                    "release_version",
-                                                   "build_version"]]))
+                                                   "build_version"]] if _f])
         return software_name + " " + software_version
 
     def validateJobPackages(self):
@@ -1714,7 +1713,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         for package in job_packages:
             packages_by_product[package["product"]].append(package)
         duplicate_product_strs = []
-        for product_packages in packages_by_product.values():
+        for product_packages in list(packages_by_product.values()):
             if len(product_packages) > 1:
                 s_ = "- %s  (%s)" % (product_packages[0]["product"], " vs ".join(
                     [self._constructJobPackageStr(p) for p in product_packages]))
@@ -1915,7 +1914,7 @@ class TaskFramesGenerator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         """Everytime the object is iterated on, return a tuple that contains
         two items:
 
@@ -2086,7 +2085,7 @@ class TaskFramesGenerator(object):
         ranges = []
         for _, group in groupby(
                 enumerate(frames), lambda index_item: index_item[0] - index_item[1]):
-            group_ = map(operator.itemgetter(1), group)
+            group_ = list(map(operator.itemgetter(1), group))
             if ends_only:
                 ranges.append((group_[0], group_[-1]))
             else:

@@ -8,7 +8,7 @@ import functools
 import imp
 import json
 import os
-import Queue
+import queue
 import logging
 import logging.handlers
 import re
@@ -19,13 +19,13 @@ import sys
 import tempfile
 import time
 import threading
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import hashlib
 
 
 try:
     imp.find_module('conductor')
-except ImportError, e:
+except ImportError as e:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
@@ -35,8 +35,8 @@ from conductor.lib import api_client, common, loggeria
 CHUNK_SIZE = 1024
 
 CONNECTION_EXCEPTIONS = (requests.exceptions.SSLError,
-                         urllib2.HTTPError,
-                         urllib2.URLError)
+                         urllib.error.HTTPError,
+                         urllib.error.URLError)
 
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
 
@@ -299,9 +299,9 @@ class Downloader(object):
     def start(self, job_ids=None, task_id=None, summary_interval=10):
         # Create new queues
         self.start_time = time.time()
-        self.pending_queue = Queue.Queue()
-        self.downloading_queue = Queue.Queue()
-        self.history_queue = Queue.Queue()
+        self.pending_queue = queue.Queue()
+        self.downloading_queue = queue.Queue()
+        self.history_queue = queue.Queue()
 
         # If a job id has been specified then only load the queue up with that work
         if job_ids:
@@ -455,7 +455,7 @@ class Downloader(object):
             downloads = _get_job_download(endpoint, self.api_client, job_id, task_id)
             if downloads:
                 for task_download in downloads.get("downloads", []):
-                    print "putting in queue: %s" % task_download
+                    print("putting in queue: %s" % task_download)
                     self.pending_queue.put(task_download, block=True)
 
     @common.dec_catch_exception(raise_=True)
@@ -561,7 +561,7 @@ class Downloader(object):
 
                     logger.debug("chmodding directory: %s", dirpath)
                     try:
-                        chmod(dirpath, 0777)
+                        chmod(dirpath, 0o777)
                     except:
                         logger.warning("Failed to chmod filepath  %s", dirpath)
 
@@ -724,7 +724,7 @@ class Downloader(object):
 
         # Set file permissions
         logger.debug('\tsetting file perms to 666')
-        chmod(local_filepath, 0666)
+        chmod(local_filepath, 0o666)
 
     def _update_file_state_callback(self, file_state, filepath, file_size, bytes_processed, log_level):
         '''
@@ -1066,7 +1066,7 @@ def prepare_dest_dirpath(dir_path):
     logger.debug("Creating destination directory if necessary: %s", dir_path)
     safe_mkdirs(dir_path)
     logger.debug("chmodding directory: %s", dir_path)
-    chmod(dir_path, 0777)
+    chmod(dir_path, 0o777)
 
 
 # @dec_random_exception(percentage_chance=0.05)

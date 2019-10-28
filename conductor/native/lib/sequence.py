@@ -76,7 +76,7 @@ def _to_frames(arg):
             the_set.add(int(vals[0]))
         elif RANGE_RE.match(part):
             start, end, step = _resolve_start_end_step(part)
-            the_set = the_set.union(xrange(start, end + 1, step))
+            the_set = the_set.union(range(start, end + 1, step))
         elif part:
             # There should be no other non-empty parts
             raise ValueError("Invalid frame spec")
@@ -89,9 +89,9 @@ class Sequence(object):
     @staticmethod
     def permutations(template, **kw):
         for vals in itertools.product(
-            *(iter(Sequence.create(spec)) for spec in kw.values())
+            *(iter(Sequence.create(spec)) for spec in list(kw.values()))
         ):
-            subs = dict(zip(kw, vals))
+            subs = dict(list(zip(kw, vals)))
             yield template % subs
 
     @staticmethod
@@ -130,7 +130,7 @@ class Sequence(object):
             return Progression(frames[0], frames[0], 1, **kw)
         step = frames[1] - frames[0]
         # if a frames can be expressed as a range, it is a progression
-        if range(frames[0], frames[-1] + 1, step) == frames:
+        if list(range(frames[0], frames[-1] + 1, step)) == frames:
             return Progression(frames[0], frames[-1], step, **kw)
         return Sequence(frames, **kw)
 
@@ -179,7 +179,7 @@ class Sequence(object):
     def _linear_chunks(self):
         """Generate chunks in sorted order."""
         result = []
-        for i in xrange(0, len(self._iterable), self._chunk_size):
+        for i in range(0, len(self._iterable), self._chunk_size):
             result.append(
                 Sequence.create(list(self._iterable)[i : i + self._chunk_size])
             )
@@ -417,7 +417,7 @@ class Progression(Sequence):
     def __init__(self, start, end, step, **kw):
         if any(n < 0 for n in [start, end]):
             raise ValueError("Can't create Progression with negative frames")
-        self._iterable = xrange(start, end + 1, step)
+        self._iterable = range(start, end + 1, step)
         self.chunk_size = kw.get("chunk_size", -1)
         self._chunk_strategy = kw.get("chunk_strategy", "linear")
 

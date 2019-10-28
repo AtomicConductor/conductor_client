@@ -5,7 +5,7 @@ import yaml
 import errno
 import mimetypes
 
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 keep_running = True
 

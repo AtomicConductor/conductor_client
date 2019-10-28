@@ -96,7 +96,7 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
     logger = get_conductor_logger()
 
     if logger_level:
-        assert logger_level in LEVEL_MAP.values(), "Not a valid log level: %s" % logger_level
+        assert logger_level in list(LEVEL_MAP.values()), "Not a valid log level: %s" % logger_level
         # Set the main log level. Note that if this is super restrive, you
         # won't see handler messages, regardless of the handlers' log level
         logger.setLevel(logger_level)
@@ -121,7 +121,7 @@ def setup_conductor_logging(logger_level=DEFAULT_LEVEL_LOGGER,
     # Create a file handler if a filepath was given
     if log_filepath:
         if file_level:
-            assert file_level in LEVEL_MAP.values(), "Not a valid log level: %s" % file_level
+            assert file_level in list(LEVEL_MAP.values()), "Not a valid log level: %s" % file_level
         # Rotating file handler. Rotates every day (24 hours). Stores 7 days at
         # a time.
         file_handler = create_file_handler(
@@ -171,7 +171,7 @@ def create_file_handler(filepath, level=None, formatter=None, multiproc=False):
 
 def set_conductor_log_level(log_level):
     """Set the "conductor" package's logger to the given log level."""
-    assert log_level in LEVEL_MAP.keys(), "Invalid log_level: %s" % log_level
+    assert log_level in list(LEVEL_MAP.keys()), "Invalid log_level: %s" % log_level
     logger = get_conductor_logger()
     logger.setLevel(log_level)
     logger.info("Changed log level to %s", log_level)
