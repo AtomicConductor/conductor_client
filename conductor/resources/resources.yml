@@ -252,6 +252,8 @@ maya_dependency_attrs:
 
 # Arnold .ass file depdency node attrs
 arnold_dependency_attrs:
+    image:
+        - filename   
     MayaFile: 
         - filename
     xgen_procedural:

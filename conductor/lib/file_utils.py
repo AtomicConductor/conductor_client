@@ -484,3 +484,44 @@ def strip_drive_letter(filepath):
     '''
     rx_drive = r'^[a-z]:'
     return re.sub(rx_drive, "", filepath, flags=re.I)
+
+
+def find_in_search_paths(relative_paths, search_paths, raise_missing=False):
+    '''
+    Attempt to locate the given relative paths on disk by constructing their absolute paths using
+    the given search_paths. Return a dict where the key is the relative path and the value is the
+    found absolute path.  If the relative path cannot be located on disk, its value will be None.
+    If raise_missing (bool) is True, an exception will be raised if any relative paths cannot be
+    found.
+
+    Note that search_paths are used for constructing precise paths, i.e. sub directories of said
+    search_paths are *not* recursively searched.
+
+    Note that if a relative path exists in more than one search path, the first search_path will be
+    reported (similar to how environment variable paths are used).
+
+    relative_paths: list of str. The relative filepaths to search for, e.g.  [ "cat.png", "data/frog.png"].
+    search_paths: list of str. The directories from which to construct absolute paths from, e.g.
+        ["/users/conductor/data", "/tmp/images"]
+
+    return dict, e.g.
+        {
+          'cat.png': '/users/conductor/data/cat.png',
+          'data/frog.png': '/tmp/images/data/frog,
+          'barney.gif': None,
+        }
+
+    '''
+    resolved_paths = {}
+    for search_path in search_paths:
+        for relative_path in relative_paths:
+            resolved_path = os.path.join(search_path, relative_path)
+            logger.debug("Searching for resolved file at: %s", resolved_path)
+            if os.path.exists(resolved_path):
+                resolved_paths[relative_path] = resolved_path
+
+    missing_paths = [path for path in relative_paths if path not in resolved_paths]
+    if missing_paths and raise_missing:
+        raise Exception("Could not resolve relative paths: %s from search paths: %s" % (missing_paths, search_paths))
+    resolved_paths.update(dict([missing_path, None] for missing_path in missing_paths))
+    return resolved_paths
