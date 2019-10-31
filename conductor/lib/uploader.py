@@ -276,6 +276,8 @@ class UploadWorker(worker.ThreadWorker):
             headers = {'Content-Type': 'application/octet-stream'}
 
             with open(filename, 'rb') as fh:
+                # TODO: update make_request to be flexible with auth headers
+                # TODO: support chunked or streamed data
                 return self.api_client._make_request(verb="PUT",
                                                      conductor_url=upload_url,
                                                      headers=headers,
