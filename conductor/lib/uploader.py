@@ -263,20 +263,37 @@ class UploadWorker(worker.ThreadWorker):
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def do_upload(self, upload_url, filename, md5):
         '''
-        Note that we don't rely on the make_request's own retry mechanism because
+        Note that for GCS we don't rely on the make_request's own retry mechanism because
         we need to recreate the chunked_reader generator before retrying the request.
         Instead, we wrap this method in a retry decorator.
+
+        We cannot reuse make_request method for S3 because it adds auth headers that
+        S3 does not accept. S3 also requires additional signatures to support chunked data.
+        For now S3 uploads will read all data in memory resulting in a smaller supported size.
         '''
 
-        headers = {'Content-MD5': md5,
-                   'Content-Type': 'application/octet-stream'}
+        if "amazonaws" in upload_url:
+            headers = {'Content-Type': 'application/octet-stream'}
 
-        return self.api_client.make_request(conductor_url=upload_url,
-                                            headers=headers,
-                                            data=self.chunked_reader(filename),
-                                            verb='PUT',
-                                            tries=1,
-                                            use_api_key=True)
+            with open(filename, 'rb') as fh:
+                # TODO: update make_request to be flexible with auth headers
+                # TODO: support chunked or streamed data
+                return self.api_client._make_request(verb="PUT",
+                                                     conductor_url=upload_url,
+                                                     headers=headers,
+                                                     params=None,
+                                                     data=fh)
+
+        else:
+            headers = {'Content-MD5': md5,
+                       'Content-Type': 'application/octet-stream'}
+
+            return self.api_client.make_request(conductor_url=upload_url,
+                                                headers=headers,
+                                                data=self.chunked_reader(filename),
+                                                verb='PUT',
+                                                tries=1,
+                                                use_api_key=True)
 
 
 class Uploader(object):
