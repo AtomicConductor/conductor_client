@@ -156,7 +156,7 @@ def resolve_knob_path(knob):
     '''
     raw_value = knob.value()
     logger.debug("Resolving tcl expressions (if any) on %s value: %r", knob.fullyQualifiedName(), raw_value)
-    path = nuke.runIn(knob.node().fullName(), "nuke.tcl('return %s')" % raw_value.replace("'", "\\'"))
+    path = nuke.runIn(knob.node().fullName(), "nuke.tcl('return \"%s\"')" % raw_value.replace("'", "\\'"))
 
     # If the path is empty/none, simply return.  no further processing necessary
     if not path:
