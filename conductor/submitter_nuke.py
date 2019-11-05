@@ -220,7 +220,10 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
             if filepath:
                 write_paths.append(filepath)
 
-        output_path = file_utils.get_common_dirpath(write_paths)
+        # Derive common write directory across Write nodes.
+        output_path = file_utils.get_common_dirpath(write_paths) or ""
+        # Coerce output_path to conform to Conductor expectations.
+        output_path = file_utils.conform_platform_filepath(output_path)
         return output_path, write_paths
 
     def checkSaveBeforeSubmission(self):
