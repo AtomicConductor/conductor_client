@@ -3,20 +3,10 @@
 * **Clarisse submitter:**
   * Catch invalid glob path that caused Clarisse to crash.
 
-# v2.10.4  -  2019.11.04
+# v2.11.1  -  2019.10.31
 
-* **Nuke Submitter:**
-    * Coerce Nuke's output_path format to Conductor expectations..
-
-# v2.10.3  -  2019.11.04
-
-* **Nuke Submitter:**
-    * Hotfix. add quotation marks around path.
-
-# v2.10.2  -  2019.10.31
-
-* **Maya Submitter:**
-    * Search .ass files for Image nodes and resolve relative paths.
+* **Uploader:**
+    * Support Uploading to AWS Buckets.
 
 # v2.10.1  -  2019.09.26
 
