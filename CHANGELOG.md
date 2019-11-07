@@ -1,6 +1,26 @@
 # Unreleased
 
-* **Clarisse submitter:** 
+* **Clarisse submitter:**
+  * Catch invalid glob path that caused Clarisse to crash.
+
+# v2.10.4  -  2019.11.04
+
+* **Nuke Submitter:**
+    * Coerce Nuke's output_path format to Conductor expectations..
+
+# v2.10.3  -  2019.11.04
+
+* **Nuke Submitter:**
+    * Hotfix. add quotation marks around path.
+
+# v2.10.2  -  2019.10.31
+
+* **Maya Submitter:**
+    * Search .ass files for Image nodes and resolve relative paths.
+
+# v2.10.1  -  2019.09.26
+
+* **Clarisse submitter:**
   * Submitter title defaults to $PNAME.
   * Images attribute changed to images_and_layers.
   * Instance types menu entries are now ordered by machine spec.
@@ -9,23 +29,23 @@
 
 # v2.10.0  -  2019.09.23
 
-* **Submitter:** Instance type selection now supports Google Cloud's 
+* **Submitter:** Instance type selection now supports Google Cloud's
     * n1-standard-1
-    * n1-highcpu-2 
+    * n1-highcpu-2
     * n1-highcpu-4
 
-* **Package auto-matching support** 
-  * **Golaem:** 7.0.1 
-  * **Maya:** 2018.6, 2019, 2019.1, 2019.2 
+* **Package auto-matching support**
+  * **Golaem:** 7.0.1
+  * **Maya:** 2018.6, 2019, 2019.1, 2019.2
   * **Maya to Arnold:** 3.1.2.1, 3.1.2.2, 3.2.0, 3.2.0.1, 3.2.0.2, 3.2.1, 3.2.2, 3.2.1.1, 3.3.0
-  * **Nuke:** Nuke11.2v7, 11.3v5 
+  * **Nuke:** Nuke11.2v7, 11.3v5
   * **Renderman for Maya:** 21.8, 22.4, 22.5, 22.6
   * **V-Ray for Maya:** 4.04.03, 4.12.01, 4.12.02
   * **Yeti:** 3.1.15, 3.1.17, 3.5.1, 3.5.2
-  
+
 # v2.9.1  -  2019.08.30
 
-* **Clarisse:** 
+* **Clarisse:**
   * **Layers:** Supports rendering of individual image layers without rendering the containing image.
   * **Missing files:** You can proceed with a render if some dependencies are missing. You are shown a list of missing files first. Offending files are removed from the upload list, which would previously cause a submission failure.
   * **clarisse.cfg:** Supports shipping of the clarisse.cfg file so that preferences such as "output AOV to separate files" are respected. It has been necessary to strip some UI-focused categories to avoid a crash on Windows.
