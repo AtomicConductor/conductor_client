@@ -16,8 +16,6 @@ NATIVE_MODULE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if NATIVE_MODULE not in sys.path:
     sys.path.insert(0, NATIVE_MODULE)
 
-sys.modules["glob"] = __import__("conductor.native.lib.mocks.glob", fromlist=["dummy"])
-
 
 class BadInputTest(unittest.TestCase):
     def test_badly_formed_drive_letter(self):
