@@ -114,14 +114,22 @@ class PathList(object):
         results because it may have been a legitimate zero result if it
         was globbable but matched nothing. So we test for glob
         characters (*|?|[) to determine whether to attempt a glob.
+
+        However, if it looks like a glob, but the glob library can't
+        handle it, then we have to assume it really is a filename with 
+        glob-like characters, and then we just add the literal path 
+        unchanged. See the test: test_ignore_invalid_glob().
         """
         self._deduplicate()
         result = []
         for entry in self._entries:
             pp = entry.posix_path()
             if GLOBBABLE_REGEX.search(pp):
-                globs = glob.glob(entry.posix_path())
-                result += globs
+                try:
+                    globs = glob.glob(entry.posix_path())
+                    result += globs
+                except re.error:
+                    result.append(pp)
             else:
                 result.append(pp)
         self._entries = [Path(g) for g in result]
