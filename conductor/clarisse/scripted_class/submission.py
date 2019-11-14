@@ -125,11 +125,13 @@ class Submission(object):
             )
         )
         self.render_package_path = self._get_render_package_path()
-        self.should_delete_render_package = self.node.get_attribute(
-            "clean_up_render_package"
-        ).get_bool()
-
         self.local_upload = self.node.get_attribute("local_upload").get_bool()
+
+        self.should_delete_render_package = (
+            self.node.get_attribute("clean_up_render_package").get_bool()
+            and self.local_upload
+        )
+
         self.force_upload = self.node.get_attribute("force_upload").get_bool()
         self.upload_only = self.node.get_attribute("upload_only").get_bool()
         self.project = self._get_project()

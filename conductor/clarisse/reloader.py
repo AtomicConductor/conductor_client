@@ -24,6 +24,7 @@ from conductor.clarisse.scripted_class import (
     submission,
     submit_actions,
     task,
+    upload_ui,
 )
 from conductor.native.lib import gpath, gpath_list, sequence
 
@@ -47,4 +48,5 @@ reload(projects_ui)
 reload(submission)
 reload(submit_actions)
 reload(preview_ui)
+reload(upload_ui)
 reload(attr_docs)
