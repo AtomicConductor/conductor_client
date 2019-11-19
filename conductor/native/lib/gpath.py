@@ -97,6 +97,9 @@ class Path(object):
     def startswith(self, path):
         return self.posix_path().startswith(path.posix_path())
 
+    def endswith(self, suffix):
+        return self.posix_path().endswith(suffix)
+
     def __len__(self):
         return len(self.posix_path())
 
@@ -129,4 +132,4 @@ class Path(object):
 
     @property
     def tail(self):
-        return self._components[-1]
+        return self._components[-1] if self._components else None

@@ -241,5 +241,23 @@ class PathCollapseDotsTest(unittest.TestCase):
             Path("/a/b/../../../")
 
 
+class PathComponentsTest(unittest.TestCase):
+    def test_path_gets_tail(self):
+        p = Path("/a/b/c")
+        self.assertEqual(p.tail, "c")
+
+    def test_path_gets_none_when_no_tail(self):
+        p = Path("/")
+        self.assertEqual(p.tail, None)
+
+    def test_path_ends_with(self):
+        p = Path("/a/b/cdef")
+        self.assertTrue(p.endswith("ef"))
+
+    def test_path_not_ends_with(self):
+        p = Path("/a/b/cdef")
+        self.assertFalse(p.endswith("eg"))
+
+
 if __name__ == "__main__":
     unittest.main()

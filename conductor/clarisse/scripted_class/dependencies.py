@@ -125,6 +125,7 @@ def collect(obj):
 
     result.add(*_get_system_dependencies())
     result.add(*_get_extra_uploads(obj))
+
     result.add(*get_scan(obj, policy, include_references))
 
     # tell the list to look on disk and expand  any "*" or <UDIM> in place
@@ -229,8 +230,21 @@ def get_scan(obj, policy, include_references=True):
     #    (include_references==True).
     # 2. Getting ref contexts from OfAttr.get_path_attrs() is buggy so it's best
     #    to get them through the root context with resolve_all_contexts()
+
+    # We convert all project refverences to a conductor version because we will
+    # be replacing them. (Windows)
     if include_references:
-        result.add(*_scan_for_references())
+        refs = _scan_for_references()
+        for ref in refs:
+            if ref.endswith(".project"):
+                result.add(
+                    re.sub(
+                        r"(\.ct\.project|\.project)", ".ct.project", ref.posix_path()
+                    )
+                )
+            else:
+                result.add(ref)
+
     return result
 
 
