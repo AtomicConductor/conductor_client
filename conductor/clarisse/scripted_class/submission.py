@@ -38,7 +38,10 @@ import os
 import shutil
 import sys
 import traceback
+
 import ix
+
+import fileinput
 
 import conductor.clarisse.scripted_class.dependencies as deps
 import conductor.clarisse.utils as cu
@@ -220,9 +223,9 @@ class Submission(object):
 
         try:
             if self.timestamp_render_package:
-                return Path("{}_ct{}.project".format(path, self.timestamp))
+                return Path("{}_{}.ct.project".format(path, self.timestamp))
             else:
-                return Path("{}_ct.project".format(path))
+                return Path("{}.ct.project".format(path))
         except ValueError:
             ix.log_error(
                 'Cannot create a submission from this file: "{}". Has it ever been saved?'.format(
@@ -263,7 +266,8 @@ class Submission(object):
         """
 
         submission_args = self.get_args()
-        self.write_render_package()
+        # self.write_render_package()
+        self._before_submit()
 
         do_submission, submission_args = self.legalize_upload_paths(submission_args)
         results = []
@@ -290,6 +294,12 @@ class Submission(object):
 
         self._after_submit()
         return results
+
+    def _before_submit(self):
+        self.write_render_package()
+        self.convert_windows_project_references()
+
+
 
     def write_render_package(self):
         """
@@ -318,6 +328,76 @@ class Submission(object):
 
         ix.log_info("Wrote package to {}".format(package_file))
         return package_file
+
+    def convert_windows_project_references(self, submission_args):
+        gpaths = PathList()
+        gpaths.add(self.render_package_path)
+        contexts = ix.api.OfContextSet()
+        ix.application.get_factory().get_root().resolve_all_contexts(contexts)
+        for context in contexts:
+            if context.is_reference() and not context.is_disabled():
+                try:
+                    filename = context.get_attribute("filename").get_string()
+                    if filename.endswith(".project"):
+                        gpaths.add(filename)
+                except ValueError as ex:
+                    ix.log_error(
+                        "{} - while resolving reference {}.filename = {}".format(
+                            str(ex), str(context), filename
+                        )
+                    )
+        
+        # Now we have a list of all filenames that need to be adjusted.
+        # So we rewrite each file, and any references to any of the other files.
+        # Pretty sure that contexts are returned in depyth order, so for each 
+        # file we only need  
+
+       
+        for i,gpath in enumerate(gpaths):
+
+            self._fix_paths(gpath)
+ 
+
+    def _fix_paths(self, gpath):
+        regex = r'\sfilename\s"([A-Za-z]:.*\.project)"'
+        filename = gpath.posix_path()
+        out_filename = re.sub(r"(\.ct\.project|\.project)", ".ct.project", gpath.posix_path())
+
+        if (out_filename == filename)
+        for line in fileinput.input( gpath.posix_path() , inplace=True):
+            result = 
+            print('{} {}'.format(fileinput.filelineno(), line), end='') # for Python 3
+            # print "%d: %s" % (fileinput.filelineno(), line), # for Python 2
+
+
+
+
+        def replace(file_path, pattern, subst):
+            #Create temp file
+            fh, abs_path = mkstemp()
+            with fdopen(fh,'w') as new_file:
+                with open(file_path) as old_file:
+                    for line in old_file:
+                        new_file.write(line.replace(pattern, subst))
+            #Remove original file
+            remove(file_path)
+            #Move new file
+            move(abs_path, file_path)
+
+        with open(gpath.posix_path(), "r") as f:   # Opens file and casts as f 
+            for line in f:
+
+            [line.rstrip('\n') for line in file]
+
+            f.write("Hello World form " + f.name)       # Writing
+
+
+         # filename "G:\\IsotropixContent\\Ces_Content\\MgScn_BrDg_LIB\\Downloaded\\3d\\rock_sandstone_rjFuh\\Aset_rock_sandstone_M_rjFuh_4K_Albedo.jpg"
+
+
+
+
+
 
     def legalize_upload_paths(self, submission_args):
         """
