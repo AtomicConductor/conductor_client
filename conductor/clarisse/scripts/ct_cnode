@@ -144,14 +144,7 @@ def main():
     cnode_args = ["cnode"] + pass_through_args
 
     # Add some defaults.
-    cnode_args += [
-        "-config_file",
-        args.config_file,
-        # "-license_server",
-        # args.license_server,
-        "-log_width",
-        str(args.log_width),
-    ]
+    cnode_args += ["-config_file", args.config_file, "-log_width", str(args.log_width)]
 
     # Adds a tile rendering flag only if there are actually multiple tiles. We
     # don't want to add the flag in the case of one tile, because it will put
