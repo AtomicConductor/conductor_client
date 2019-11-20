@@ -18,6 +18,7 @@ from conductor.clarisse.scripted_class import (
     projects_ui,
     refresh,
     submit_actions,
+    upload_ui,
 )
 from conductor.lib import loggeria
 from conductor.native.lib.data_block import PROJECT_NOT_SET
@@ -110,6 +111,8 @@ class ConductorJob(ix.api.ModuleScriptedClassEngine):
                 notifications_ui.handle_email_addresses(obj, attr)
             elif attr_name == "conductor_log_level":
                 debug_ui.handle_log_level(obj, attr)
+            elif attr_name == "local_upload":
+                upload_ui.handle_local_upload(obj, attr)
             else:
                 pass
         except RuntimeError as ex:
