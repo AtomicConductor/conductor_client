@@ -408,20 +408,20 @@ class Submission(object):
         Returns:
             string: The line to write
         """
-        win_project_match = re.match(WIN_PROJECT_REGEX, line)
-        win_path_match = re.match(WIN_PATH_REGEX, line)
-
-        if win_project_match:
+        match = re.match(WIN_PROJECT_REGEX, line)
+        if match:
             ix.log_info("MATCHING LINE: {}".format(line))
             path = re.sub(
                 PROJECT_EXTENSION_REGEX,
                 CT_PROJECT_EXTENSION,
-                Path(win_project_match.group(1)).posix_path(with_drive=False),
+                Path(match.group(1)).posix_path(with_drive=False),
             )
-            line = line.replace(win_project_match.group(1), path)
-        elif win_path_match:
-            path = Path(win_path_match.group(1)).posix_path(with_drive=False)
-            line = line.replace(win_path_match.group(1), path)
+            return line.replace(match.group(1), path)
+
+        match = re.match(WIN_PATH_REGEX, line)
+        if match:
+            path = Path(match.group(1)).posix_path(with_drive=False)
+            return line.replace(match.group(1), path)
 
         return line
 
