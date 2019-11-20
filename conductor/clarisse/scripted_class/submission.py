@@ -37,6 +37,8 @@ import errno
 import os
 import shutil
 import sys
+import re
+
 import traceback
 
 import ix
@@ -51,6 +53,12 @@ from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
 from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
+from conductor.native.lib.gpath_list import PathList
+
+WIN_PROJECT_REGEX = r'.*"([A-Z]:(/|\\).*\.project)"'
+WIN_PATH_REGEX = r'.*"([A-Z]:(/|\\).*)"'
+PROJECT_EXTENSION_REGEX = r"(\.ct\.project|\.project)"
+CT_PROJECT_EXTENSION = ".ct.project"
 
 
 def _localize_contexts():
@@ -266,7 +274,6 @@ class Submission(object):
         """
 
         submission_args = self.get_args()
-        # self.write_render_package()
         self._before_submit()
 
         do_submission, submission_args = self.legalize_upload_paths(submission_args)
@@ -296,10 +303,16 @@ class Submission(object):
         return results
 
     def _before_submit(self):
+        """
+        Prepare the project files that will be shipped.
+
+        We first write out the current project file. Then we
+        find additional referenced project files and adjust
+        paths in all of them so they may be rendered on linux
+        render nodes.
+        """
         self.write_render_package()
-        self.convert_windows_project_references()
-
-
+        self.linuxify_project_files()
 
     def write_render_package(self):
         """
@@ -329,7 +342,15 @@ class Submission(object):
         ix.log_info("Wrote package to {}".format(package_file))
         return package_file
 
-    def convert_windows_project_references(self, submission_args):
+    def linuxify_project_files(self):
+        """
+        Make copies of project files suitable for linux.
+
+        Copies have the special conductor extension: ".ct.project".
+        We convert all paths to posix. We also adjust references to
+        other projects to point to the ".ct.project" version.
+        """
+        ix.log_info("Writing Windows_project_references")
         gpaths = PathList()
         gpaths.add(self.render_package_path)
         contexts = ix.api.OfContextSet()
@@ -346,58 +367,63 @@ class Submission(object):
                             str(ex), str(context), filename
                         )
                     )
-        
+
         # Now we have a list of all filenames that need to be adjusted.
         # So we rewrite each file, and any references to any of the other files.
-        # Pretty sure that contexts are returned in depyth order, so for each 
-        # file we only need  
-
-       
-        for i,gpath in enumerate(gpaths):
-
+        for gpath in gpaths:
+            ix.log_info("_fix_paths in {}".format(gpath.posix_path()))
             self._fix_paths(gpath)
- 
 
     def _fix_paths(self, gpath):
-        regex = r'\sfilename\s"([A-Za-z]:.*\.project)"'
+        """
+        Fix paths for one file.
+
+        If the file already has the .ct.project extension, overwrite it,
+        (so we don't end up with .ct.ct.ct.ct.project)
+        Otherwise create a new file with ".ct" in it.
+        """
         filename = gpath.posix_path()
-        out_filename = re.sub(r"(\.ct\.project|\.project)", ".ct.project", gpath.posix_path())
+        out_filename = re.sub(
+            PROJECT_EXTENSION_REGEX, CT_PROJECT_EXTENSION, gpath.posix_path()
+        )
+        ix.log_info("{} -> {}".format(filename, out_filename))
 
-        if (out_filename == filename)
-        for line in fileinput.input( gpath.posix_path() , inplace=True):
-            result = 
-            print('{} {}'.format(fileinput.filelineno(), line), end='') # for Python 3
-            # print "%d: %s" % (fileinput.filelineno(), line), # for Python 2
+        if out_filename == filename:
+            for line in fileinput.input(filename, inplace=True):
+                sys.stdout.write(self._prep_replacement(line))
+        else:
+            with open(out_filename, "w+") as outfile:
+                with open(filename, "r+") as infile:
+                    for line in infile:
+                        outfile.write(self._prep_replacement(line))
 
+    def _prep_replacement(self, line):
+        """
+        Detect paths in the line of text and make a replacement.
 
+        Args:
+            line (string): line from the file.
+        Otherwise return the input untouched.
 
+        Returns:
+            string: The line to write
+        """
+        win_project_match = re.match(WIN_PROJECT_REGEX, line)
+        win_path_match = re.match(WIN_PATH_REGEX, line)
 
-        def replace(file_path, pattern, subst):
-            #Create temp file
-            fh, abs_path = mkstemp()
-            with fdopen(fh,'w') as new_file:
-                with open(file_path) as old_file:
-                    for line in old_file:
-                        new_file.write(line.replace(pattern, subst))
-            #Remove original file
-            remove(file_path)
-            #Move new file
-            move(abs_path, file_path)
+        if win_project_match:
+            ix.log_info("MATCHING LINE: {}".format(line))
+            path = re.sub(
+                PROJECT_EXTENSION_REGEX,
+                CT_PROJECT_EXTENSION,
+                Path(win_project_match.group(1)).posix_path(with_drive=False),
+            )
+            line = line.replace(win_project_match.group(1), path)
+        elif win_path_match:
+            path = Path(win_path_match.group(1)).posix_path(with_drive=False)
+            line = line.replace(win_path_match.group(1), path)
 
-        with open(gpath.posix_path(), "r") as f:   # Opens file and casts as f 
-            for line in f:
-
-            [line.rstrip('\n') for line in file]
-
-            f.write("Hello World form " + f.name)       # Writing
-
-
-         # filename "G:\\IsotropixContent\\Ces_Content\\MgScn_BrDg_LIB\\Downloaded\\3d\\rock_sandstone_rjFuh\\Aset_rock_sandstone_M_rjFuh_4K_Albedo.jpg"
-
-
-
-
-
+        return line
 
     def legalize_upload_paths(self, submission_args):
         """
