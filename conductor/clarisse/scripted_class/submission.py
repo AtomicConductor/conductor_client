@@ -55,8 +55,8 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 from conductor.native.lib.gpath_list import PathList
 
-WIN_PROJECT_REGEX = r'.*"([A-Z]:(/|\\).*\.project)"'
-WIN_PATH_REGEX = r'.*"([A-Z]:(/|\\).*)"'
+WIN_PROJECT_REGEX = r'.*"([A-Za-z]:(/|\\).*\.project)"'
+WIN_PATH_REGEX = r'.*"([A-Za-z]:(/|\\).*)"'
 PROJECT_EXTENSION_REGEX = r"(\.ct\.project|\.project)"
 CT_PROJECT_EXTENSION = ".ct.project"
 
