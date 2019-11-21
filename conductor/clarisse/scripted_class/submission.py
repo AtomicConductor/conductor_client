@@ -55,10 +55,8 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 from conductor.native.lib.gpath_list import PathList
 
-PROJECT_PATH_REGEX = r'.*".*\.project"'
 
-WIN_PROJECT_REGEX = r'.*"(([A-Za-z]:)?(/|\\).*\.project)"'
-WIN_PATH_REGEX = r'.*"([A-Za-z]:(/|\\).*)"'
+PATH_LINE_REGEX = r'\s+(?:filename|filename_sys|save_as)\s+"(.*)"\s+'
 PROJECT_EXTENSION_REGEX = r"(\.ct\.project|\.project)"
 CT_PROJECT_EXTENSION = ".ct.project"
 
@@ -308,13 +306,15 @@ class Submission(object):
         """
         Prepare the project files that will be shipped.
 
-        We first write out the current project file. Then we
-        find additional referenced project files and adjust
-        paths in all of them so they may be rendered on linux
-        render nodes.
+        We first write out the current project file. 
+        
+        Then (on Windows) we find additional referenced project 
+        files and adjust paths in all of them so they may be 
+        rendered on linux render nodes.
         """
         self.write_render_package()
-        self.linuxify_project_files()
+        if os.name == "nt":
+            self.linuxify_project_files()
 
     def write_render_package(self):
         """
@@ -346,15 +346,16 @@ class Submission(object):
 
     def linuxify_project_files(self):
         """
-        Make copies of project files suitable for linux.
+        Make copies of project files on Windows that are suitable for linux.
 
         Copies have the special conductor extension: ".ct.project".
         We convert all paths to posix. We also adjust references to
         other projects to point to the ".ct.project" version.
+
         """
-        ix.log_info("Writing Windows_project_references")
-        gpaths = PathList()
-        gpaths.add(self.render_package_path)
+        ix.log_info("Adjust project references for Linux")
+        paths = PathList()
+        paths.add(self.render_package_path)
         contexts = ix.api.OfContextSet()
         ix.application.get_factory().get_root().resolve_all_contexts(contexts)
         for context in contexts:
@@ -362,7 +363,7 @@ class Submission(object):
                 try:
                     filename = context.get_attribute("filename").get_string()
                     if filename.endswith(".project"):
-                        gpaths.add(filename)
+                        paths.add(filename)
                 except ValueError as ex:
                     ix.log_error(
                         "{} - while resolving reference {}.filename = {}".format(
@@ -371,12 +372,12 @@ class Submission(object):
                     )
 
         # Now we have a list of all filenames that need to be adjusted.
-        # So we rewrite each file, and any references to any of the other files.
-        for gpath in gpaths:
-            ix.log_info("_fix_paths in {}".format(gpath.posix_path()))
-            self._fix_paths(gpath)
+        # So we rewrite each file, and any references to other files they may contain.
+        for path in paths:
+            ix.log_info("Adjust paths in {}".format(path.posix_path()))
+            self._linuxify_file(path)
 
-    def _fix_paths(self, gpath):
+    def _linuxify_file(self, path):
         """
         Fix paths for one file.
 
@@ -384,46 +385,36 @@ class Submission(object):
         (so we don't end up with .ct.ct.ct.ct.project)
         Otherwise create a new file with ".ct" in it.
         """
-        filename = gpath.posix_path()
+        filename = path.posix_path()
         out_filename = re.sub(
-            PROJECT_EXTENSION_REGEX, CT_PROJECT_EXTENSION, gpath.posix_path()
+            PROJECT_EXTENSION_REGEX, CT_PROJECT_EXTENSION, path.posix_path()
         )
         ix.log_info("{} -> {}".format(filename, out_filename))
 
         if out_filename == filename:
             for line in fileinput.input(filename, inplace=True):
-                sys.stdout.write(self._prep_replacement(line))
+                sys.stdout.write(self._replace_path(line))
         else:
             with open(out_filename, "w+") as outfile:
                 with open(filename, "r+") as infile:
                     for line in infile:
-                        outfile.write(self._prep_replacement(line))
+                        outfile.write(self._replace_path(line))
 
-    def _prep_replacement(self, line):
+    def _replace_path(self, line):
         """
         Detect paths in the line of text and make a replacement.
 
         Args:
             line (string): line from the file.
-        Otherwise return the input untouched.
 
         Returns:
-            string: The line to write
+            string: The line, possibly with replaced path
         """
 
-        match = re.match(WIN_PROJECT_REGEX, line)
+        match = re.match(PATH_LINE_REGEX, line)
         if match:
-            ix.log_info("MATCHING LINE: {}".format(line))
-            path = re.sub(
-                PROJECT_EXTENSION_REGEX,
-                CT_PROJECT_EXTENSION,
-                Path(match.group(1)).posix_path(with_drive=False),
-            )
-            return line.replace(match.group(1), path)
-
-        match = re.match(WIN_PATH_REGEX, line)
-        if match:
-            path = Path(match.group(1)).posix_path(with_drive=False)
+            path = Path(match.group(1), no_expand=True).posix_path(with_drive=False)
+            path = re.sub(PROJECT_EXTENSION_REGEX, CT_PROJECT_EXTENSION, path)
             return line.replace(match.group(1), path)
 
         return line

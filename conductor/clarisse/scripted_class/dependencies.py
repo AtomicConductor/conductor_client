@@ -231,19 +231,24 @@ def get_scan(obj, policy, include_references=True):
     # 2. Getting ref contexts from OfAttr.get_path_attrs() is buggy so it's best
     #    to get them through the root context with resolve_all_contexts()
 
-    # We make a new extension for all project reference paths (".ct.project")
+    # On Windows, we make a new extension for all project reference paths (".ct.project")
     # because we will be replacing them with a linuxified version of the file.
     if include_references:
         refs = _scan_for_references()
-        for ref in refs:
-            if ref.endswith(".project"):
-                result.add(
-                    re.sub(
-                        r"(\.ct\.project|\.project)", ".ct.project", ref.posix_path()
+        if os.name == "nt":
+            for ref in refs:
+                if ref.endswith(".project"):
+                    result.add(
+                        re.sub(
+                            r"(\.ct\.project|\.project)",
+                            ".ct.project",
+                            ref.posix_path(),
+                        )
                     )
-                )
-            else:
-                result.add(ref)
+                else:
+                    result.add(ref)
+        else:
+            result.add(*refs)
 
     return result
 
