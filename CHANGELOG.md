@@ -1,5 +1,11 @@
 # Unreleased
 
+
+# v2.11.5 -  2019.11.25
+
+* **Clarisse submitter:** 
+  * Path manipulation code now runs on Windows only.
+
 # v2.11.4 -  2019.11.19
 
 * **Clarisse submitter:** 
