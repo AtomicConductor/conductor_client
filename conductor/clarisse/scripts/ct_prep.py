@@ -79,7 +79,7 @@ def ensure_image_directories(images):
         directory = os.path.dirname(image.get_attribute("save_as").get_string())
         directories.append(directory)
         sys.stdout.write("{} save to disk at: {}\n".format(image_path, directory))
-    mkdir_p(directories)
+    mkdir_p(list(set(directories)))
 
 
 def mkdir_p(dirs):
@@ -100,7 +100,9 @@ def mkdir_p(dirs):
                 pass
             else:
                 sys.stderr.write(
-                    "There's something wrong with the path: ('{}')\n".format(d)
+                    "There's something wrong with the path: ('{}'), : {}\n".format(
+                        d, os.strerror(ex.errno)
+                    )
                 )
                 raise
 

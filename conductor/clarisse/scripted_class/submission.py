@@ -36,6 +36,8 @@ import datetime
 import errno
 import os
 import shutil
+import tempfile
+
 import sys
 import re
 
@@ -55,10 +57,35 @@ from conductor.native.lib.data_block import ConductorDataBlock
 from conductor.native.lib.gpath import Path
 from conductor.native.lib.gpath_list import PathList
 
-
-PATH_LINE_REGEX = r'\s+(?:filename|filename_sys|save_as)\s+"(.*)"\s+'
 PROJECT_EXTENSION_REGEX = r"(\.ct\.project|\.project)"
 CT_PROJECT_EXTENSION = ".ct.project"
+
+
+def _get_path_line_regex():
+    """
+    Generate a regex to help identify filepath attributes.
+
+    As we scan project files to replace windows paths, we use this regex which
+    will be something like: r'\s+(?:filename|filename_sys|save_as)\s+"(.*)"\s+' 
+    only longer.
+    """
+    classes = ix.application.get_factory().get_classes()
+    file_attrs = []
+    for klass in classes.get_classes():
+        attr_count = klass.get_attribute_count()
+        for i in range(attr_count):
+            attr = klass.get_attribute(i)
+            hint = attr.get_visual_hint()
+            if hint in [
+                ix.api.OfAttr.VISUAL_HINT_FILENAME_SAVE,
+                ix.api.OfAttr.VISUAL_HINT_FILENAME_OPEN,
+                ix.api.OfAttr.VISUAL_HINT_FOLDER,
+            ]:
+                file_attrs.append(attr.get_name())
+
+    file_attrs = list(set(file_attrs))
+    file_attrs.sort()
+    return r"\s+(?:" + "|".join(file_attrs) + r')\s+"(.*)"\s+'
 
 
 def _localize_contexts():
@@ -314,7 +341,8 @@ class Submission(object):
         """
         self.write_render_package()
         if os.name == "nt":
-            self.linuxify_project_files()
+            self._linuxify_project_references()
+            self._linuxify_render_package()
 
     def write_render_package(self):
         """
@@ -344,18 +372,19 @@ class Submission(object):
         ix.log_info("Wrote package to {}".format(package_file))
         return package_file
 
-    def linuxify_project_files(self):
+    def _linuxify_project_references(self):
         """
         Make copies of project files on Windows that are suitable for linux.
 
         Copies have the special conductor extension: ".ct.project".
         We convert all paths to posix. We also adjust references to
-        other projects to point to the ".ct.project" version.
+        other projects to point to the ".ct.project" version, because the 
+        .ct.project version will also be linuxified.
 
         """
         ix.log_info("Adjust project references for Linux")
         paths = PathList()
-        paths.add(self.render_package_path)
+
         contexts = ix.api.OfContextSet()
         ix.application.get_factory().get_root().resolve_all_contexts(contexts)
         for context in contexts:
@@ -373,34 +402,44 @@ class Submission(object):
 
         # Now we have a list of all filenames that need to be adjusted.
         # So we rewrite each file, and any references to other files they may contain.
+        PATH_LINE_REGEX = _get_path_line_regex()
         for path in paths:
             ix.log_info("Adjust paths in {}".format(path.posix_path()))
-            self._linuxify_file(path)
+            self._linuxify_file(path.posix_path(), PATH_LINE_REGEX)
 
-    def _linuxify_file(self, path):
+    def _linuxify_render_package(self):
+        """
+        Adjust reference pasths for windows.
+        """
+        PATH_LINE_REGEX = _get_path_line_regex()
+        temp_path = os.path.join(
+            tempfile.gettempdir(), next(tempfile._get_candidate_names())
+        )
+        shutil.copy2(self.render_package_path.posix_path(), temp_path)
+
+        os.remove(self.render_package_path.posix_path())
+        self._linuxify_file(
+            temp_path, PATH_LINE_REGEX, self.render_package_path.posix_path()
+        )
+
+    def _linuxify_file(self, filename, path_regex, dest_path=None):
         """
         Fix paths for one file.
 
-        If the file already has the .ct.project extension, overwrite it,
-        (so we don't end up with .ct.ct.ct.ct.project)
-        Otherwise create a new file with ".ct" in it.
+        If the file already has the .ct.project extension, replace it too,
         """
-        filename = path.posix_path()
-        out_filename = re.sub(
-            PROJECT_EXTENSION_REGEX, CT_PROJECT_EXTENSION, path.posix_path()
-        )
-        ix.log_info("{} -> {}".format(filename, out_filename))
+        out_filename = dest_path
+        if not dest_path:
+            out_filename = re.sub(
+                PROJECT_EXTENSION_REGEX, CT_PROJECT_EXTENSION, filename
+            )
 
-        if out_filename == filename:
-            for line in fileinput.input(filename, inplace=True):
-                sys.stdout.write(self._replace_path(line))
-        else:
-            with open(out_filename, "w+") as outfile:
-                with open(filename, "r+") as infile:
-                    for line in infile:
-                        outfile.write(self._replace_path(line))
+        with open(out_filename, "w+") as outfile:
+            with open(filename, "r+") as infile:
+                for line in infile:
+                    outfile.write(self._replace_path(line, path_regex))
 
-    def _replace_path(self, line):
+    def _replace_path(self, line, path_regex):
         """
         Detect paths in the line of text and make a replacement.
 
@@ -411,7 +450,7 @@ class Submission(object):
             string: The line, possibly with replaced path
         """
 
-        match = re.match(PATH_LINE_REGEX, line)
+        match = re.match(path_regex, line)
         if match:
             path = Path(match.group(1), no_expand=True).posix_path(with_drive=False)
             path = re.sub(PROJECT_EXTENSION_REGEX, CT_PROJECT_EXTENSION, path)

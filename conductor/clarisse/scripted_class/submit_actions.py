@@ -109,8 +109,7 @@ def submit(*args):
     if state not in [SAVE_STATE_UNMODIFIED, SAVE_STATE_SAVED, SAVE_STATE_DONT_CARE]:
         ix.log_warning("Submission cancelled.")
         return
-    _validate_images(node)
-    _validate_packages(node)
+    _validate(node)
 
     with cu.waiting_cursor():
         submission = Submission(node)
