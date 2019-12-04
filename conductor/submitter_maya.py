@@ -34,6 +34,10 @@ logger = logging.getLogger(__name__)
 
 
 class MayaWidget(QtWidgets.QWidget):
+    
+    RENDER_LOG_LEVELS = {'arnold': ["Errors", "Warnings", "Info", "Debug"] }
+    RENDER_DEFAULT_LEVEL = {'arnold': 3}
+    RENDER_LOG_ARG = {'arnold': '-ai:lve'}    
 
     # The .ui designer filepath
     _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'maya.ui')
@@ -80,11 +84,21 @@ class MayaWidget(QtWidgets.QWidget):
         '''
         Return the names of the render layers that have their checkboxes checked on
         '''
+        active_renderer = maya_utils.get_active_renderer()
         selected_layers = []
-        for row_idx in range(self.ui_render_layers_trwgt.topLevelItemCount()):
-            item = self.ui_render_layers_trwgt.topLevelItem(row_idx)
-            if item.checkState(0) == QtCore.Qt.Checked:
-                selected_layers.append(item.text(0))
+        
+        # If the active renderer is renderman, then we must explicitly declare it (see comment above).
+        # We must also clear out the specified render layers because renderman 22 doesn't accept the rl
+        # flag anymore. By not specifying any render layers, *all* active render layers will be rendered
+        # TODO:(lws). This is really nasty/dangerous. Hopefully pixar/renderman will re-add support
+        # for specifying render layers ASAP!
+        if active_renderer != "renderman":
+        
+            for row_idx in range(self.ui_render_layers_trwgt.topLevelItemCount()):
+                item = self.ui_render_layers_trwgt.topLevelItem(row_idx)
+                if item.checkState(0) == QtCore.Qt.Checked:
+                    selected_layers.append(item.text(0))
+        
         return selected_layers
 
     def getUploadOnlyBool(self):
@@ -101,12 +115,64 @@ class MayaWidget(QtWidgets.QWidget):
         the Render Layers widget.
         '''
         self.ui_render_layers_trwgt.setDisabled(toggled)
+        
+    def setRenderLogLevelWidgetVisibility(self):
+        '''
+        The render log level widget will only be shown if the current renderer
+        has an option to adjust the log level.
+        '''
+        current_renderer = maya_utils.get_current_renderer() 
 
+        show = current_renderer in self.RENDER_LOG_LEVELS
+        
+        if show:
+            self.ui_render_log_level_cbox.addItems(self.RENDER_LOG_LEVELS[current_renderer])
+            self.ui_render_log_level_cbox.setCurrentIndex(self.RENDER_DEFAULT_LEVEL[current_renderer])
+            
+        self.ui_render_log_label.setVisible(show)
+        self.ui_render_log_level_cbox.setVisible(show)            
+            
+    def get_render_log_arg(self):
+        '''
+        Returns the render log level argument requred for the 'Render' CLI
+        '''
+        
+        current_renderer = maya_utils.get_current_renderer()
+        logArg = self.RENDER_LOG_ARG.get(current_renderer, "")
+        logLevel = self.ui_render_log_level_cbox.currentIndex()
+        
+        return "{} {}".format(logArg, logLevel)
+    
+    def get_base_render_argument(self):
+        
+        active_renderer = maya_utils.get_active_renderer()
+        # If the active renderer is rman/renderman, then we must explicitly declare it
+        # as the renderer in the command.  Otherwise the output path is not respected.
+        # I assume this is a renderman bug.
+        # TODO:(lws). This is a super ugly exception case that we need to better manage/abstract
+        if active_renderer == "renderManRIS":
+            renderer_arg = "-r rman"
+        # If the active renderer is renderman, then we must explicitly declare it (see comment above).
+        # We must also clear out the specified render layers because renderman 22 doesn't accept the rl
+        # flag anymore. By not specifying any render layers, *all* active render layers will be rendered
+        # TODO:(lws). This is really nasty/dangerous. Hopefully pixar/renderman will re-add support
+        # for specifying render layers ASAP!
+        elif active_renderer == "renderman":
+            renderer_arg = "-r renderman"
+            
+        elif active_renderer =='arnold':
+            renderer_arg = "-r arnold"
+            
+        else: 
+            renderer_arg = ""
+            
+        return renderer_arg
 
 class MayaAdvancedWidget(QtWidgets.QWidget):
     '''
     Maya-specific widget within the Advanced tab of the submitter
     '''
+    
     # The .ui designer filepath
     _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'maya_advanced.ui')
 
@@ -182,6 +248,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         self.extended_widget.refreshUi()
         self.extended_advanced_widget.setWorkspaceDir(maya_utils.get_workspace_dirpath())
         self.setOutputDir(maya_utils.get_image_dirpath())
+        self.extended_widget.setRenderLogLevelWidgetVisibility()
 
     def setGpuWidgetVisibility(self):
         '''
@@ -238,26 +305,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Get the user-selected render layers
         render_layers = self.extended_widget.getSelectedRenderLayers()
 
-        active_renderer = maya_utils.get_active_renderer()
-        # If the active renderer is rman/renderman, then we must explicitly declare it
-        # as the renderer in the command.  Otherwise the output path is not respected.
-        # I assume this is a renderman bug.
-        # TODO:(lws). This is a super ugly exception case that we need to better manage/abstract
-        if active_renderer == "renderManRIS":
-            renderer_arg = "-r rman"
-        # If the active renderer is renderman, then we must explicitly declare it (see comment above).
-        # We must also clear out the specified render layers because renderman 22 doesn't accept the rl
-        # flag anymore. By not specifying any render layers, *all* active render layers will be rendered
-        # TODO:(lws). This is really nasty/dangerous. Hopefully pixar/renderman will re-add support
-        # for specifying render layers ASAP!
-        elif active_renderer == "renderman":
-            renderer_arg = "-r renderman"
-            render_layers = []
-
-        # For any other renderers, we don't need to specify the renderer arg (the renderer indicated
-        # in the maya scene will be used).
-        else:
-            renderer_arg = ""
+        renderer_arg = self.get_base_render_argument()
+                    
+        renderer_arg += self.extended_widget.get_render_log_arg()            
 
         # construct -rl flag (omit it if no render layers specified)
         render_layer_args = ("-rl " + ",".join(render_layers)) if render_layers else ""
