@@ -13,6 +13,9 @@ from maya import cmds, mel
 # Conductor libs
 from conductor.lib import common, package_utils, file_utils
 
+MAYA_PARENT_WINDOW = 'MayaWindow'
+CONDUCTOR_MENU = 'ConductorMenu'
+
 logger = logging.getLogger(__name__)
 
 
@@ -1374,11 +1377,26 @@ def get_node_by_type(node_type, must_exist=True, many=False):
     return ""
 
 
-def build_conductor_menu():
+def unload_conductor_menu():
     '''
-    This is an encapsulated proof on concept of what a Conductor menu could look like.
+    Remove/destroy the Conductor menu (if it exists)
+    '''
+    if cmds.about(batch=True):
+        logger.debug("Batch mode detected. Aborting Conductor menu destruction..")
+        return
 
-    Build/inject Conductor's menu into maya's main window bar. Replace any existing instances of 
+    # Delete any existing instance of the menu
+    if cmds.menu(CONDUCTOR_MENU, q=True, exists=True):
+        cmds.menu(CONDUCTOR_MENU, e=True, deleteAllItems=True)
+        cmds.deleteUI(CONDUCTOR_MENU, )
+        logger.debug("Conductor menu destroyed")
+
+
+def load_conductor_menu():
+    '''
+    This is a simple proof on concept of what a Conductor menu could look like.
+
+    Build/inject Conductor's menu into maya's main window bar. Replace any existing instances of
     the menu.
 
     +---------------------+
@@ -1391,62 +1409,14 @@ def build_conductor_menu():
     | About               |
     | Help                |
     +---------------------+
-
-
-    Ignore below (scrap notes/code)
-    ---------------------------------------------------------------------------
-    https://ozh.github.io/ascii-tables/
-        - header location: None
-        - Output style: ASCII (mysql style)
-        - Custome Separator: ~
-
-    Global vars of interest
-        $gMainWindowMenu
-        $gPreviousMenuMode
-        $gMainWindow
-        $gRenderingMenus
-        $gAnimationMenus
-        $gDynamicsMenus
-        $gMainRenderMenu
-
-
-    #     MENU_SETS = (
-    #         "renderingMenuSet",
-    #         "commonMenuSet",
-    #     )
-    # 
-    #     menu_sets = cmds.menuSet(allMenuSets=True)
-    #     for menu_set in MENU_SETS:
-    #         print "looking for %s menuset" % menu_set
-    #         if menu_set in menu_sets:
-    #             print "Found %s menuset" % menu_set
-    #             break
-    #     else:
-    #         cmds.error("Failed to build conductor menu. Expected Menu Sets do not exist: %s", MENU_SETS)
-    #
-    #
-    # #     cmds.menu(CONDUCTOR_MENU, label='Conductor', parent=MAYA_PARENT_WINDOW, tearOff=True)
-    #
-    #     # Set the active menuset to the menuset we want to append to
-    #     print "setting active menuset to %s" % menu_set
-    #     cmds.setMenuMode(menu_set)
-    #     cmds.menuSet(currentMenuSet=menu_set)
-    #
-    #     print "adding menu to %s menuSet" % cmds.menuSet(q=True, currentMenuSet=True)
-    #     cmds.menuSet(addMenu=CONDUCTOR_MENU)
+    https://ozh.github.io/ascii-tables/  header location=None Output style=ASCII (mysql style) Custome Separator=~
     '''
-
-    MAYA_PARENT_WINDOW = 'MayaWindow'
-    CONDUCTOR_MENU = 'ConductorMenu'
 
     if cmds.about(batch=True):
         logger.debug("Batch mode detected. Aborting Conductor menu creation..")
         return
 
-    # Delete any existing instance of the menu
-    if cmds.menu(CONDUCTOR_MENU, q=True, exists=True):
-        cmds.menu(CONDUCTOR_MENU, e=True, deleteAllItems=True)
-        cmds.deleteUI(CONDUCTOR_MENU, )
+    unload_conductor_menu()
 
     cmds.menu(CONDUCTOR_MENU, label='Conductor', tearOff=True, parent=MAYA_PARENT_WINDOW)
     cmds.menuItem(
@@ -1490,6 +1460,7 @@ def build_conductor_menu():
         parent=CONDUCTOR_MENU,
     )
 
+    logger.debug("Conductor menu created")
 
 # def get_plugins_info():
 #     plugins_info = []
