@@ -13,8 +13,8 @@ import subprocess
 import sys
 import time
 import traceback
-import yaml
 
+import yaml
 
 BYTES_1KB = 1024
 BYTES_1MB = BYTES_1KB ** 2
@@ -405,7 +405,7 @@ class Config():
         # create config. precedence is default, ENV, CLI
         combined_config = self.default_config
         combined_config.update(self.get_environment_config())
-        combined_config.update(self.get_user_config())
+        combined_config.update(self.get_user_config() or {})
 
         # verify that we have the required params
         self.verify_required_params(combined_config)
