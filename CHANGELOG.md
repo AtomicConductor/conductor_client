@@ -1,5 +1,11 @@
 # Unreleased
 
+* **Configuration file:** Fixed bug where empty config.yaml could not be parsed.
+
+# v2.11.6 -  2019.11.30
+
+* **Clarisse submitter:** 
+  * Better detection of windows paths to be replaced. Less chance of false positives.
 
 # v2.11.5 -  2019.11.25
 
