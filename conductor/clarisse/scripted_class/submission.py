@@ -34,22 +34,18 @@ the localize method is the fallback.
 
 import datetime
 import errno
+import fileinput
 import os
-import shutil
-import tempfile
-
-import sys
 import re
-
+import shutil
+import sys
+import tempfile
 import traceback
 
-import ix
-
-import fileinput
-
+import conductor.clarisse.clarisse_config as ccfg
 import conductor.clarisse.scripted_class.dependencies as deps
 import conductor.clarisse.utils as cu
-import conductor.clarisse.clarisse_config as ccfg
+import ix
 from conductor.clarisse.scripted_class import missing_files_ui
 from conductor.clarisse.scripted_class.job import Job
 from conductor.lib import conductor_submit
@@ -340,7 +336,7 @@ class Submission(object):
         rendered on linux render nodes.
         """
         self.write_render_package()
-        if os.name == "nt":
+        if cu.is_windows():
             self._linuxify_project_references()
             self._linuxify_render_package()
 

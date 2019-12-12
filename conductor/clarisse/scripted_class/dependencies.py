@@ -5,6 +5,7 @@ Collect dependencies
 import os
 import re
 
+import conductor.clarisse.utils as cu
 import ix
 from conductor.clarisse.scripted_class import frames_ui
 from conductor.native.lib.gpath import Path
@@ -235,7 +236,7 @@ def get_scan(obj, policy, include_references=True):
     # because we will be replacing them with a linuxified version of the file.
     if include_references:
         refs = _scan_for_references()
-        if os.name == "nt":
+        if cu.is_windows():
             for ref in refs:
                 if ref.endswith(".project"):
                     result.add(

@@ -1,6 +1,7 @@
 """
 Contexts for performing long or delicate functions.
 """
+import os
 from contextlib import contextmanager
 
 import ix
@@ -27,3 +28,7 @@ def disabled_app():
     app.disable()
     yield
     app.enable()
+
+
+def is_windows():
+    return os.name == "nt"

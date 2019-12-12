@@ -5,9 +5,10 @@ custom UI to be embedded.
 """
 
 import json
-import ix
 import os
+
 import conductor.clarisse.utils as cu
+import ix
 
 C_LEFT = ix.api.GuiWidget.CONSTRAINT_LEFT
 C_TOP = ix.api.GuiWidget.CONSTRAINT_TOP
@@ -149,7 +150,7 @@ class PreviewWindow(ix.api.GuiWindow):
         """
         with cu.waiting_cursor():
             self.submission.write_render_package()
-            if os.name == "nt":
+            if cu.is_windows():
                 self.submission.linuxify_project_files()
 
     def on_go_but(self, sender, eventid):
