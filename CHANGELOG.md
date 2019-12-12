@@ -1,5 +1,7 @@
 # Unreleased
 
+# v2.11.7 -  2019.12.09
+
 * **Configuration file:** Fixed bug where empty config.yaml could not be parsed.
 
 # v2.11.6 -  2019.11.30
