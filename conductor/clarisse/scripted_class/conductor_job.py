@@ -25,8 +25,8 @@ from conductor.native.lib.data_block import PROJECT_NOT_SET
 
 DEFAULT_CMD_TEMPLATE = "<ct_temp_dir>/ct_cnode <ct_render_package> "
 DEFAULT_CMD_TEMPLATE += "-image <ct_sources> -image_frames_list <ct_chunks> "
-DEFAULT_CMD_TEMPLATE += "-tile_rendering <ct_tiles> <ct_tile_number>"
-
+DEFAULT_CMD_TEMPLATE += "-tile_rendering <ct_tiles> <ct_tile_number> "
+DEFAULT_CMD_TEMPLATE += "-license_server conductor_ilise:40500"
 
 DEFAULT_TITLE = "$PNAME"
 
