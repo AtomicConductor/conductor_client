@@ -56,6 +56,12 @@ from conductor.native.lib.gpath_list import PathList
 PROJECT_EXTENSION_REGEX = r"(\.ct\.project|\.project)"
 CT_PROJECT_EXTENSION = ".ct.project"
 
+FILE_ATTR_HINTS = [
+    ix.api.OfAttr.VISUAL_HINT_FILENAME_SAVE,
+    ix.api.OfAttr.VISUAL_HINT_FILENAME_OPEN,
+    ix.api.OfAttr.VISUAL_HINT_FOLDER,
+]
+
 
 def _get_path_line_regex():
     """
@@ -69,19 +75,13 @@ def _get_path_line_regex():
     file_attrs = []
     for klass in classes.get_classes():
         attr_count = klass.get_attribute_count()
-        for i in range(attr_count):
+        for i in xrange(attr_count):
             attr = klass.get_attribute(i)
             hint = attr.get_visual_hint()
-            if hint in [
-                ix.api.OfAttr.VISUAL_HINT_FILENAME_SAVE,
-                ix.api.OfAttr.VISUAL_HINT_FILENAME_OPEN,
-                ix.api.OfAttr.VISUAL_HINT_FOLDER,
-            ]:
+            if hint in FILE_ATTR_HINTS:
                 file_attrs.append(attr.get_name())
 
-    file_attrs = list(set(file_attrs))
-    file_attrs.sort()
-    return r"\s+(?:" + "|".join(file_attrs) + r')\s+"(.*)"\s+'
+    return r"\s+(?:" + "|".join(sorted(set(file_attrs))) + r')\s+"(.*)"\s+'
 
 
 def _localize_contexts():
@@ -422,7 +422,7 @@ class Submission(object):
         """
         Fix paths for one file.
 
-        If the file already has the .ct.project extension, replace it too,
+        If the file already has the .ct.project extension, replace it too.
         """
         out_filename = dest_path
         if not dest_path:
