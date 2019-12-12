@@ -30,16 +30,6 @@ class BadInputTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.p = Path("A:a\\b:c")
 
-    def test_relative_input_literal(self):
-        with self.assertRaises(ValueError):
-            self.p = Path("a/b/c")
-
-    def test_relative_input_var(self):
-        env = {"DEPT": "texturing"}
-        with mock.patch.dict("os.environ", env):
-            with self.assertRaises(ValueError):
-                self.p = Path("$DEPT/a/b/c")
-
 
 class RootPath(unittest.TestCase):
     def test_root_path(self):
@@ -147,6 +137,28 @@ class PathExpansionTest(unittest.TestCase):
             self.assertEqual(self.p.windows_path(), "\\users\\joebloggs\\a\\b\\c")
             self.assertEqual(self.p.posix_path(), "/users/joebloggs/a/b/c")
 
+    def test_tilde_no_expand(self):
+        with mock.patch.dict("os.environ", self.env):
+            self.p = Path("~/a/b/c", no_expand=True)
+            self.assertEqual(self.p.posix_path(), "~/a/b/c")
+
+    def test_posix_var_no_expand(self):
+        with mock.patch.dict("os.environ", self.env):
+            self.p = Path("$SHOT/a/b/c", no_expand=True)
+            self.assertEqual(self.p.posix_path(), "$SHOT/a/b/c")
+
+    def no_expand_variable_considered_relative(self):
+        with mock.patch.dict("os.environ", self.env):
+            self.p = Path("$SHOT/a/b/c", no_expand=True)
+            self.assertTrue(self.p.relative)
+            self.assertFalse(self.p.absolute)
+
+    def expanded_variable_considered_absolute(self):
+        with mock.patch.dict("os.environ", self.env):
+            self.p = Path("$SHOT/a/b/c", no_expand=False)
+            self.assertFalse(self.p.relative)
+            self.assertTrue(self.p.absolute)
+
 
 class PathContextExpansionTest(unittest.TestCase):
     def setUp(self):
@@ -182,10 +194,6 @@ class PathContextExpansionTest(unittest.TestCase):
             self.p.posix_path(), "/some/root/bar_fly1_val/fooval/thefile.$F.jpg"
         )
 
-    def test_relative_path_var_fails(self):
-        with self.assertRaises(ValueError):
-            self.p = Path("$FOO/a/b/c", context=self.context)
-
 
 class PathLengthTest(unittest.TestCase):
     def test_len_with_drive_letter(self):
@@ -202,6 +210,10 @@ class PathLengthTest(unittest.TestCase):
 
     def test_depth_with_no_drive_letter(self):
         self.p = Path("\\aaa\\bbb/c")
+        self.assertEqual(self.p.depth, 3)
+
+    def test_depth_with_literal_rel_path(self):
+        self.p = Path("aaa\\bbb/c")
         self.assertEqual(self.p.depth, 3)
 
 
@@ -239,6 +251,30 @@ class PathCollapseDotsTest(unittest.TestCase):
     def test_raise_when_collapse_too_many_dots(self):
         with self.assertRaises(ValueError):
             Path("/a/b/../../../")
+
+
+class PathComponentsTest(unittest.TestCase):
+    def test_path_gets_tail(self):
+        p = Path("/a/b/c")
+        self.assertEqual(p.tail, "c")
+
+    def test_path_gets_none_when_no_tail(self):
+        p = Path("/")
+        self.assertEqual(p.tail, None)
+
+    def test_path_ends_with(self):
+        p = Path("/a/b/cdef")
+        self.assertTrue(p.endswith("ef"))
+
+    def test_path_not_ends_with(self):
+        p = Path("/a/b/cdef")
+        self.assertFalse(p.endswith("eg"))
+
+
+class RelativePathTest(unittest.TestCase):
+    def test_rel_path_does_not_raise(self):
+        p = Path("a/b/c")
+        self.assertEqual(p.posix_path(), "a/b/c")
 
 
 if __name__ == "__main__":

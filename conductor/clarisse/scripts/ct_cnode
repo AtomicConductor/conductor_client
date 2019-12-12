@@ -115,16 +115,6 @@ def main():
         help="Specify the config file used by CNODE. (default: %(default)s)",
     )
 
-    # Unlikely this will be overridden, but until corev2.1 works the same as
-    # legacy, we'll need to override it with the hyphenated version of the
-    # server name.
-    parser.add_argument(
-        "-license_server",
-        type=str,
-        default="conductor_ilise:40500",
-        help="Specify ILISE license server network location. (default: %(default)s)",
-    )
-
     # Logs in the Conductor UI are more readable when not wrapped at 80 columns.
     parser.add_argument(
         "-log_width",
@@ -154,14 +144,7 @@ def main():
     cnode_args = ["cnode"] + pass_through_args
 
     # Add some defaults.
-    cnode_args += [
-        "-config_file",
-        args.config_file,
-        "-license_server",
-        args.license_server,
-        "-log_width",
-        str(args.log_width),
-    ]
+    cnode_args += ["-config_file", args.config_file, "-log_width", str(args.log_width)]
 
     # Adds a tile rendering flag only if there are actually multiple tiles. We
     # don't want to add the flag in the case of one tile, because it will put

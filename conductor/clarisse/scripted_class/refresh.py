@@ -44,7 +44,15 @@ def refresh(_, **kw):
     """
 
     kw["product"] = "clarisse"
-    data_block = ConductorDataBlock(**kw)
+    try:
+        data_block = ConductorDataBlock(**kw)
+    except:
+        ix.log_error(
+            """
+Can't get data from Conductor. Your credentials file may be corrupt.
+Please delete it from here (~/.config/conductor/credentials) and try again.
+            """
+        )
     nodes = ix.api.OfObjectArray()
     ix.application.get_factory().get_all_objects("ConductorJob", nodes)
 

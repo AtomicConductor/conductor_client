@@ -1,8 +1,27 @@
 # Unreleased
-* **Clarisse submitter:**
+
+# v2.11.7 -  2019.12.09
+
+* **Configuration file:** Fixed bug where empty config.yaml could not be parsed.
+
+# v2.11.6 -  2019.11.30
+
+* **Clarisse submitter:** 
+  * Better detection of windows paths to be replaced. Less chance of false positives.
+
+# v2.11.5 -  2019.11.25
+
+* **Clarisse submitter:** 
+  * Path manipulation code now runs on Windows only.
+
+# v2.11.4 -  2019.11.19
+
+* **Clarisse submitter:** 
+  * Now handles windows path management offline by replacing paths in project files. In some situations links to resources in files with nested references could get erased while loading a project if all the references are not resolved. For this reason, its not sufficient to replace the paths in the session with the clarrisse sdk. Paths must be valid before the project loads. 
   * Fixed bug where render file would be cleaned up before the upload daemon had a chance to upload it.
 
-# v2.11.1
+# v2.11.3  -  2019.11.14
+
 * **Clarisse submitter:**
   * Catch invalid glob path that caused Clarisse to crash.
 
