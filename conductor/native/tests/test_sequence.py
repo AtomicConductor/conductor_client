@@ -330,25 +330,7 @@ class UnionTest(unittest.TestCase):
         u = s1.union(s2)
         self.assertEqual(list(u), list(Sequence.create("1-15")))
 
-
-class SequenceValidator(unittest.TestCase):
-    def test_is_valid_method_true(self):
-        self.assertTrue(Sequence.is_valid_spec("12-26x3, 1,7,8,2,4-9"))
-        self.assertTrue(Sequence.is_valid_spec("1"))
-        self.assertTrue(Sequence.is_valid_spec(",4-9,2,"))
-
-    def test_is_valid_method_false(self):
-        self.assertFalse(Sequence.is_valid_spec("12-26x3d, 1,7,8,2,4-9"))
-        self.assertFalse(Sequence.is_valid_spec(",4x9,2,"))
-        self.assertFalse(Sequence.is_valid_spec(" "))
-
-    def test_is_valid_method_bad_type(self):
-        with self.assertRaises(TypeError):
-            Sequence.is_valid_spec(1)
-        with self.assertRaises(TypeError):
-            Sequence.is_valid_spec(None)
-
-
+ 
 class SequenceIterator(unittest.TestCase):
     def test_iterator_sorted_no_dups(self):
         s = Sequence.create("1-10, 8-20x2, 19, 17")

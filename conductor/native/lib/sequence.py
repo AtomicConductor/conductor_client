@@ -15,6 +15,7 @@ as an arithmetic progression, i.e. first,last,step.
 A Sequence has methods to split itself into chunks. Chunks are
 subsequences and are themselves of type, Sequence or
 Progression.
+
 """
 import math
 import re
@@ -56,7 +57,7 @@ def _resolve_frames(*args):
                     int(match.group("step") or 1),
                 ]
                 if step < 1:
-                    raise ValueError("Spec must have positive steps")
+                    raise ValueError("Spec must have positive step values")
                 first, last = sorted([first, last])
                 frames += range(first, last + 1, step)
     else:  # args are inclusive range
@@ -99,10 +100,6 @@ class Sequence(object):
         elements. A Progression, which is a subclass of Sequence, can be
         expressed as an arithmetic progression: i.e. start, end, step.
         """
-        # if not args:
-        #     raise TypeError("Sequence#create needs at least one arg")
-        # if len(args) > 1:
-        # its a start, end, step - so return a Progression
 
         frames = _resolve_frames(*args)
         if not frames:
@@ -220,7 +217,7 @@ class Sequence(object):
         """Generate a Sequence that is the union of an iterable with this
         Sequence.
 
-        This is useful for getting a sequence that covers multiple
+        Useful for getting a sequence that covers multiple
         output ranges.
         """
         union_frames = set(self._iterable).union(set(iterable))
