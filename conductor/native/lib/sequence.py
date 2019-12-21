@@ -1,26 +1,33 @@
-"""A Sequence is a set of positive integers representing frames.
+"""A Sequence is a set of integers representing frames.
 
 To create a sequence, use the create method and pass either:
 
 frame spec: e.g. string  "1-10, 14, 20-50x4"
 range: one, two, or three integers representing start, end, step.
-iterable: something that implements __iter__, e.g. a list.
+iterable of ints: something that implements __iter__, e.g. a list.
+
+Ranges in a spec are inclusive, e.g. len(Sequence("1-3")) == 3
 
 If the input is valid, either a Sequence or a Progression will
 be created. A Progression is a Sequence that can be expressed
-as an arithmetic progression, i.e. start,end,step.
+as an arithmetic progression, i.e. first,last,step.
 
 A Sequence has methods to split itself into chunks. Chunks are
 subsequences and are themselves of type, Sequence or
 Progression.
+
 """
 import math
 import re
 import itertools
 
-NUMBER_RE = re.compile(r"^(\d+)$")
-RANGE_RE = re.compile(r"^(?:(\d+)-(\d+)(?:x(\d+))?)+$")
 RX_FRAME = re.compile(r"\$(\d?)F")
+
+PROGRESSION_SPEC_REGEX = re.compile(
+    r"^(?P<first>-?\d+)(-(?P<last>-?\d+)(x(?P<step>[1-9][0-9]*))?)?$"
+)
+
+SPLIT_SPEC_REGEX = re.compile(r"[ ,,]+")
 
 
 def _clamp(minval, val, maxval):
@@ -28,59 +35,50 @@ def _clamp(minval, val, maxval):
     return sorted([minval, val, maxval])[1]
 
 
-def _resolve_start_end_step(*args):
-    """Generate a valid start, end, step.
-
-    Args may be individual ints or strings. Start may be after end. Step
-    may be None or missing. Arg may be a single range string as 'start-
-    endxstep' where end and step are optional.
-    """
+def _resolve_frames(*args):
+    if not args:
+        raise TypeError("Need at least one arg")
+    frames = []
     if len(args) == 1:
-        arg = str(args[0])
-        number_match = NUMBER_RE.match(arg)
-        range_match = RANGE_RE.match(arg)
-        if not (range_match or number_match):
-            raise ValueError("Single arg must be 'start<-end<xstep>>")
-        if range_match:
-            start, end, step = [int(n or 1) for n in range_match.groups()]
+        arg = args[0]
+        if hasattr(arg, "__iter__"):
+            # arg is something like an array or range
+            frames = arg
         else:
-            start, end, step = [
-                int(number_match.groups()[0]),
-                int(number_match.groups()[0]),
-                1,
-            ]
-    else:
-        start, end = [int(n) for n in [args[0], args[1]]]
+            # arg is string spec
+            arg = str(arg)
+            for progression in SPLIT_SPEC_REGEX.split(arg):
+                match = PROGRESSION_SPEC_REGEX.match(progression)
+                if not match:
+                    raise ValueError("Arg must be 'start<-end<xstep>>")
+                first, last, step = [
+                    int(match.group("first")),
+                    int(match.group("last") or match.group("first")),
+                    int(match.group("step") or 1),
+                ]
+                if step < 1:
+                    raise ValueError("Spec must have positive step values")
+                first, last = sorted([first, last])
+                frames += range(first, last + 1, step)
+    else:  # args are inclusive range
+        first, last = sorted([int(n) for n in [args[0], args[1]]])
         step = int(args[2]) if len(args) == 3 else 1
-    start, end = sorted([start, end])
-    if step < 1 or start < 0:
-        raise ValueError("Args must have non-negative range and positive step")
-    return (start, end, step)
+        if step < 1:
+            raise ValueError("Step arg must be positive")
+        frames = xrange(first, last + 1, step)
+    return sorted(set(frames))
 
 
-def _to_frames(arg):
-    """Convert frame spec to a sorted unique set of frames.
-
-    Logic, If the arg has __iter__ it is not a string, but is iterable.
-    If it is a string break it up into ranges to build the list of
-    frames.
+def _start_end_step(arr):
     """
-    if hasattr(arg, "__iter__"):
-        return sorted(set(arg))
-    arg = str(arg)
-    the_set = set()
-    for part in [x.strip() for x in arg.split(",")]:
-        number_matches = NUMBER_RE.match(part)
-        if number_matches:
-            vals = number_matches.groups()
-            the_set.add(int(vals[0]))
-        elif RANGE_RE.match(part):
-            start, end, step = _resolve_start_end_step(part)
-            the_set = the_set.union(xrange(start, end + 1, step))
-        elif part:
-            # There should be no other non-empty parts
-            raise ValueError("Invalid frame spec")
-    return sorted(the_set)
+    Return start, end, step if the array is a progression.
+    """
+    if len(arr) == 1:
+        return (arr[0], arr[0], 1)
+    elif len(arr) == 2:
+        return (arr[0], arr[1], arr[1] - arr[0])
+    elif range(arr[0], arr[-1] + 1, arr[2] - arr[1]) == arr:
+        return (arr[0], arr[-1], arr[1] - arr[0])
 
 
 class Sequence(object):
@@ -95,19 +93,6 @@ class Sequence(object):
             yield template % subs
 
     @staticmethod
-    def is_valid_spec(spec):
-        try:
-            value = spec.strip(",")
-        except AttributeError:
-            raise TypeError("Frame spec must be a string")
-        valid = bool(value)
-        for part in [x.strip() for x in value.split(",")]:
-            if not (NUMBER_RE.match(part) or RANGE_RE.match(part)):
-                valid = False
-                break
-        return valid
-
-    @staticmethod
     def create(*args, **kw):
         """Factory which will create either a Sequence or a Progression.
 
@@ -115,23 +100,14 @@ class Sequence(object):
         elements. A Progression, which is a subclass of Sequence, can be
         expressed as an arithmetic progression: i.e. start, end, step.
         """
-        if not args:
-            raise TypeError("Sequence#create needs at least one arg")
-        if len(args) > 1:
-            # its a start, end, step - so return a Progression
-            start, end, step = _resolve_start_end_step(*args)
-            return Progression(start, end, step, **kw)
-        frames = _to_frames(args[0])
+
+        frames = _resolve_frames(*args)
         if not frames:
             raise TypeError("Can't create Sequence with no frames")
-        if any(n < 0 for n in frames):
-            raise ValueError("Can't create Sequence with negative frames")
-        if len(frames) == 1:
-            return Progression(frames[0], frames[0], 1, **kw)
-        step = frames[1] - frames[0]
-        # if a frames can be expressed as a range, it is a progression
-        if range(frames[0], frames[-1] + 1, step) == frames:
-            return Progression(frames[0], frames[-1], step, **kw)
+
+        progression_spec = _start_end_step(frames)
+        if progression_spec:
+            return Progression(*progression_spec, **kw)
         return Sequence(frames, **kw)
 
     def __init__(self, iterable, **kw):
@@ -241,7 +217,7 @@ class Sequence(object):
         """Generate a Sequence that is the union of an iterable with this
         Sequence.
 
-        This is useful for getting a sequence that covers multiple
+        Useful for getting a sequence that covers multiple
         output ranges.
         """
         union_frames = set(self._iterable).union(set(iterable))
@@ -415,8 +391,6 @@ class Sequence(object):
 
 class Progression(Sequence):
     def __init__(self, start, end, step, **kw):
-        if any(n < 0 for n in [start, end]):
-            raise ValueError("Can't create Progression with negative frames")
         self._iterable = xrange(start, end + 1, step)
         self.chunk_size = kw.get("chunk_size", -1)
         self._chunk_strategy = kw.get("chunk_strategy", "linear")
