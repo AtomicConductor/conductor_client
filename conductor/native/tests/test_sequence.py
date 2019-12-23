@@ -37,10 +37,10 @@ class ResolveFramesTest(unittest.TestCase):
         self.assertEqual(s[2], 5)
         self.assertEqual(len(s), 3)
 
-    def negative_integer_args(self):
+    def test_negative_integer_args(self):
         s = _resolve_frames(-5, -1, 2)
-        self.assertEqual(s[0], 5)
-        self.assertEqual(s[2], 1)
+        self.assertEqual(s[0], -5)
+        self.assertEqual(s[1], -3)
         self.assertEqual(len(s), 3)
 
     def test_array(self):
@@ -330,7 +330,7 @@ class UnionTest(unittest.TestCase):
         u = s1.union(s2)
         self.assertEqual(list(u), list(Sequence.create("1-15")))
 
- 
+
 class SequenceIterator(unittest.TestCase):
     def test_iterator_sorted_no_dups(self):
         s = Sequence.create("1-10, 8-20x2, 19, 17")
