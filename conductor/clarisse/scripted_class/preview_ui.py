@@ -150,8 +150,6 @@ class PreviewWindow(ix.api.GuiWindow):
         """
         with cu.waiting_cursor():
             self.submission.write_render_package()
-            if cu.is_windows():
-                self.submission.linuxify_project_files()
 
     def on_go_but(self, sender, eventid):
         """

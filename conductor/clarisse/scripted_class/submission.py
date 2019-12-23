@@ -336,9 +336,6 @@ class Submission(object):
         rendered on linux render nodes.
         """
         self.write_render_package()
-        if cu.is_windows():
-            self._linuxify_project_references()
-            self._linuxify_render_package()
 
     def write_render_package(self):
         """
@@ -366,6 +363,16 @@ class Submission(object):
             ix.log_error("Failed to export render package {}".format(package_file))
 
         ix.log_info("Wrote package to {}".format(package_file))
+
+        if cu.is_windows():
+            ix.log_info("Windows path adjustments")
+            self._linuxify_project_references()
+            ix.log_info("Linuxified prioject references")
+            self._linuxify_render_package()
+            ix.log_info("Linuxified render project file")
+        else:
+            ix.log_info("Not using Windows")
+
         return package_file
 
     def _linuxify_project_references(self):
