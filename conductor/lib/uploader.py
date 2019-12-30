@@ -46,7 +46,8 @@ class MD5Worker(worker.ThreadWorker):
                 logger.error(message)
                 raise Exception(message)
         self.metric_store.set_dict('file_md5s', filename, current_md5)
-        return (filename, current_md5)
+        size_bytes = os.path.getsize(filename)
+        return (filename, current_md5, size_bytes)
 
     def get_md5(self, filepath):
         '''
@@ -120,7 +121,10 @@ class MD5OutputWorker(worker.ThreadWorker):
                 self.check_for_poison_pill(file_md5_tuple)
 
                 # add (filepath: md5) to the batch dict
-                self.batch[file_md5_tuple[0]] = file_md5_tuple[1]
+                self.batch[file_md5_tuple[0]] = {
+                    'md5': file_md5_tuple[1],
+                    'size_bytes': file_md5_typle[2],
+                }
 
                 # if the batch is self.batch_size, ship it
                 if len(self.batch) == self.batch_size:
@@ -142,7 +146,7 @@ class MD5OutputWorker(worker.ThreadWorker):
 
 class HttpBatchWorker(worker.ThreadWorker):
     '''
-    This worker receives a batched dict of (filename: md5) pairs and makes a
+    This worker receives a batched dict of (filename: {'md5': <MD5>, 'size_bytes': <bytes>)) pairs and makes a
     batched http api call which returns a list of (filename: signed_upload_url)
     of files that need to be uploaded.
 
