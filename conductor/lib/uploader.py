@@ -234,9 +234,13 @@ class UploadWorker(worker.ThreadWorker):
         self.report_size = 10485760  # 10M
         self.api_client = api_client.ApiClient()
 
-    def chunked_reader(self, filename, max_bytes=None):
+    def chunked_reader(self, filename, chunk_number=None, max_bytes=None):
         bytes_read = 0
         with open(filename, 'rb') as fp:
+            # Move file pointer to the beginning of the chunk.
+            if chunk_number is not None:
+                fp.seek(chunk_number * self.chunk_size)
+
             while worker.WORKING and not common.SIGINT_EXIT:
                 # Stop processing the file after `max_bytes` bytes read.
                 if max_bytes is not None:
@@ -256,20 +260,27 @@ class UploadWorker(worker.ThreadWorker):
 
     def do_work(self, job, thread_int):
         filename = job[0]
-        upload_url = job[1]
+
+        # If file has only one upload URL, eg. < 5GB file for S3, wrap upload URL inside an iterable.
+        if type(upload_urls) not in (list, tuple):
+            upload_urls = (job[1],)
+        else:
+            upload_urls = job[1]
+
         md5 = self.metric_store.get_dict('file_md5s', filename)
-        try:
-            return self.do_upload(upload_url, filename, md5)
-        except:
-            logger.exception("Failed to upload file: %s because of:\n", filename)
-            real_md5 = common.get_base64_md5(filename)
-            error_message = "ALERT! File %s retried and still failed!\n" % filename
-            error_message += "expected md5 is %s, real md5 is %s" % (md5, real_md5)
-            logger.error(error_message)
-            raise
+        for i, upload_url in enumerate(upload_urls):
+            try:
+                return self.do_upload(upload_url, filename, md5, chunk_number=i)
+            except:
+                logger.exception("Failed to upload file: %s because of:\n", filename)
+                real_md5 = common.get_base64_md5(filename)
+                error_message = "ALERT! File %s retried and still failed!\n" % filename
+                error_message += "expected md5 is %s, real md5 is %s" % (md5, real_md5)
+                logger.error(error_message)
+                raise
 
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
-    def do_upload(self, upload_url, filename, md5):
+    def do_upload(self, upload_url, filename, md5, chunk_number=None):
         '''
         Note that for GCS we don't rely on the make_request's own retry mechanism because
         we need to recreate the chunked_reader generator before retrying the request.
@@ -288,7 +299,10 @@ class UploadWorker(worker.ThreadWorker):
                                                  conductor_url=upload_url,
                                                  headers=headers,
                                                  params=None,
-                                                 data=self.chunked_reader(filename, UploadWorker.S3_MAX_CHUNK_BYTES))
+                                                 data=self.chunked_reader(
+                                                    filename,
+                                                    chunk_number=chunk_number,
+                                                    max_bytes=UploadWorker.S3_MAX_CHUNK_BYTES))
         else:
             headers = {'Content-MD5': md5,
                        'Content-Type': 'application/octet-stream'}
