@@ -226,12 +226,12 @@ class UploadWorker(worker.ThreadWorker):
     This worker receives a (filepath: signed_upload_url) pair and performs an upload
     of the specified file to the provided url.
     '''
-    S3_MAX_CHUNK_BYTES = 5 * 1024 * 1024 * 1024  # 5GiB
+    S3_MAX_CHUNK_BYTES = 5 * common.BYTES_1GB
 
     def __init__(self, *args, **kwargs):
         super(UploadWorker, self).__init__(*args, **kwargs)
-        self.chunk_size = 1048576  # 1M
-        self.report_size = 10485760  # 10M
+        self.chunk_size = common.BYTES_1MB
+        self.report_size = 10 * common.BYTES_1MB
         self.api_client = api_client.ApiClient()
 
     def chunked_reader(self, filename, chunk_number=None, max_bytes=None):
