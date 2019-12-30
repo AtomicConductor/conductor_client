@@ -226,6 +226,7 @@ class UploadWorker(worker.ThreadWorker):
     This worker receives a (filepath: signed_upload_url) pair and performs an upload
     of the specified file to the provided url.
     '''
+    S3_MAX_CHUNK_BYTES = 5 * 1024 * 1024 * 1024  # 5GiB
 
     def __init__(self, *args, **kwargs):
         super(UploadWorker, self).__init__(*args, **kwargs)
@@ -233,9 +234,16 @@ class UploadWorker(worker.ThreadWorker):
         self.report_size = 10485760  # 10M
         self.api_client = api_client.ApiClient()
 
-    def chunked_reader(self, filename):
+    def chunked_reader(self, filename, max_bytes=None):
+        bytes_read = 0
         with open(filename, 'rb') as fp:
             while worker.WORKING and not common.SIGINT_EXIT:
+                # Stop processing the file after `max_bytes` bytes read.
+                if max_bytes is not None:
+                    bytes_read += self.chunk_size
+                    if bytes_read > max_bytes:
+                        break
+
                 data = fp.read(self.chunk_size)
                 if not data:
                     # we are done reading the file
@@ -275,15 +283,12 @@ class UploadWorker(worker.ThreadWorker):
         if "amazonaws" in upload_url:
             headers = {'Content-Type': 'application/octet-stream'}
 
-            with open(filename, 'rb') as fh:
-                # TODO: update make_request to be flexible with auth headers
-                # TODO: support chunked or streamed data
-                return self.api_client._make_request(verb="PUT",
-                                                     conductor_url=upload_url,
-                                                     headers=headers,
-                                                     params=None,
-                                                     data=fh)
-
+            # TODO: update make_request to be flexible with auth headers
+            return self.api_client._make_request(verb="PUT",
+                                                 conductor_url=upload_url,
+                                                 headers=headers,
+                                                 params=None,
+                                                 data=self.chunked_reader(filename, UploadWorker.S3_MAX_CHUNK_BYTES))
         else:
             headers = {'Content-MD5': md5,
                        'Content-Type': 'application/octet-stream'}
