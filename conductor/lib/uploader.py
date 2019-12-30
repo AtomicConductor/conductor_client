@@ -226,12 +226,11 @@ class UploadWorker(worker.ThreadWorker):
     This worker receives a (filepath: signed_upload_url) pair and performs an upload
     of the specified file to the provided url.
     '''
+    CHUNK_SIZE = common.BYTES_1MB
     S3_MAX_CHUNK_BYTES = 5 * common.BYTES_1GB
 
     def __init__(self, *args, **kwargs):
         super(UploadWorker, self).__init__(*args, **kwargs)
-        self.chunk_size = common.BYTES_1MB
-        self.report_size = 10 * common.BYTES_1MB
         self.api_client = api_client.ApiClient()
 
     def chunked_reader(self, filename, chunk_number=None, max_bytes=None):
@@ -239,16 +238,16 @@ class UploadWorker(worker.ThreadWorker):
         with open(filename, 'rb') as fp:
             # Move file pointer to the beginning of the chunk.
             if chunk_number is not None:
-                fp.seek(chunk_number * self.chunk_size)
+                fp.seek(chunk_number * UploadWorker.CHUNK_SIZE)
 
             while worker.WORKING and not common.SIGINT_EXIT:
                 # Stop processing the file after `max_bytes` bytes read.
                 if max_bytes is not None:
-                    bytes_read += self.chunk_size
+                    bytes_read += UploadWorker.CHUNK_SIZE
                     if bytes_read > max_bytes:
                         break
 
-                data = fp.read(self.chunk_size)
+                data = fp.read(UploadWorker.CHUNK_SIZE)
                 if not data:
                     # we are done reading the file
                     break
