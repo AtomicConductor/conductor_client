@@ -1,9 +1,10 @@
 import logging
 import os
 
+import conductor.lib.api_client
 import conductor.lib.conductor_submit as conductor_submit
 import conductor.lib.package_utils
-import conductor.lib.api_client
+
 
 LOG = logging.getLogger(__name__)
 
