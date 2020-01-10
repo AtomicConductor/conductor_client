@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 import time
 import json
 import logging
@@ -160,9 +161,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         self.project = kwargs.get('project')
 
     def make_request(self, job):
-        # TODO: update and add comments everywhere in here
-        # TODO: point this to new endpoint
-        uri_path = '/api/files/get_upload_urls'
+        uri_path = '/api/files/v2/get_upload_urls'
         headers = {'Content-Type': 'application/json'}
         data = {"upload_files": job,
                 "project": self.project}
@@ -325,23 +324,36 @@ class UploadWorker(worker.ThreadWorker):
             }
             complete_payload["completed_parts"].append(completed_part)
 
-        # TODO: define URL
-        self.api_client._make_request(verb="POST",
-                                             conductor_url=complete_url,
-                                             params=None,
-                                             data=complete_payload)
+        # Complete multipart upload in order to hydrate file in s3 for availability
+        uri_path = '/api/files/v2/complete_multipart'
+        headers = {'Content-Type': 'application/json'}
+        self.api_client.make_request(uri_path=uri_path,
+                                     verb='POST',
+                                     headers=headers,
+                                     data=complete_payload,
+                                     raise_on_error=True,
+                                     use_api_key=True)
 
         return uploads
 
-    def do_part_upload(self, upload_url, filename, md5, part_number=None):
+    def do_part_upload(self, upload_url, filename, part_number=None):
         with open(filename, 'rb') as fh:
             start = (part_number - 1) * MULTIPART_SIZE
             fh.seek(start)
-            return self.api_client._make_request(verb="PUT",
+            data = fh.read(MULTIPART_SIZE)
+            file_hash = hashlib.md5()
+            file_hash.update(data)
+            digest = file_hash.hexdigest()
+            resp = self.api_client._make_request(verb="PUT",
                                                  conductor_url=upload_url,
-                                                 headers={},
                                                  params=None,
-                                                 data=fh.read(MULTIPART_SIZE))
+                                                 data=fh.read(data))
+            etag = resp.headers['ETag']
+            if etag != digest:
+                error_message = "ETag for multipart upload part does not match expected md5"
+                error_message += "expected md5 is %s, returned md5 is %s" % (digest, etag)
+                raise Exception(error_message)
+            return resp
 
 
 class Uploader(object):
