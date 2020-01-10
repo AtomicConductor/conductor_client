@@ -13,6 +13,7 @@ from conductor import CONFIG
 from conductor.lib import api_client, common, worker, client_db, loggeria
 
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
+MULTIPART_SIZE = 1 * 1024 * 1024 * 1024
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,8 @@ class MD5Worker(worker.ThreadWorker):
                 logger.error(message)
                 raise Exception(message)
         self.metric_store.set_dict('file_md5s', filename, current_md5)
-        return (filename, current_md5)
+        size_bytes = os.path.getsize(filename)
+        return (filename, current_md5, size_bytes)
 
     def get_md5(self, filepath):
         '''
@@ -120,7 +122,10 @@ class MD5OutputWorker(worker.ThreadWorker):
                 self.check_for_poison_pill(file_md5_tuple)
 
                 # add (filepath: md5) to the batch dict
-                self.batch[file_md5_tuple[0]] = file_md5_tuple[1]
+                self.batch[file_md5_tuple[0]] = {
+                    'md5': file_md5_tuple[1],
+                    'size_bytes': file_md5_tuple[2],
+                }
 
                 # if the batch is self.batch_size, ship it
                 if len(self.batch) == self.batch_size:
@@ -155,6 +160,8 @@ class HttpBatchWorker(worker.ThreadWorker):
         self.project = kwargs.get('project')
 
     def make_request(self, job):
+        # TODO: update and add comments everywhere in here
+        # TODO: point this to new endpoint
         uri_path = '/api/files/get_upload_urls'
         headers = {'Content-Type': 'application/json'}
         data = {"upload_files": job,
@@ -206,7 +213,8 @@ class FileStatWorker(worker.ThreadWorker):
         '''
 
         # iterate through a dict of (filepath: upload_url) pairs
-        for path, upload_url in job.iteritems():
+        for upload in job:
+            path = upload["path"]
             if not os.path.isfile(path):
                 return None
             # logger.debug('stat: %s', path)
@@ -215,7 +223,7 @@ class FileStatWorker(worker.ThreadWorker):
             self.metric_store.increment('bytes_to_upload', byte_count)
             self.metric_store.increment('num_files_to_upload')
 
-            self.put_job((path, upload_url))
+            self.put_job(upload)
 
         # make sure we return None, so no message is automatically added to the out_queue
         return None
@@ -247,11 +255,13 @@ class UploadWorker(worker.ThreadWorker):
                 self.metric_store.increment('bytes_uploaded', len(data), filename)
 
     def do_work(self, job, thread_int):
-        filename = job[0]
-        upload_url = job[1]
+        filename = job["path"]
         md5 = self.metric_store.get_dict('file_md5s', filename)
         try:
-            return self.do_upload(upload_url, filename, md5)
+            if job["multipart"]:
+                return self.do_multipart_upload(job, filename, md5)
+            else:
+                return [self.do_upload(job["url"], filename, md5)]
         except:
             logger.exception("Failed to upload file: %s because of:\n", filename)
             real_md5 = common.get_base64_md5(filename)
@@ -273,14 +283,12 @@ class UploadWorker(worker.ThreadWorker):
         '''
 
         if "amazonaws" in upload_url:
-            headers = {'Content-Type': 'application/octet-stream'}
-
             with open(filename, 'rb') as fh:
                 # TODO: update make_request to be flexible with auth headers
                 # TODO: support chunked or streamed data
                 return self.api_client._make_request(verb="PUT",
                                                      conductor_url=upload_url,
-                                                     headers=headers,
+                                                     headers={},
                                                      params=None,
                                                      data=fh)
 
@@ -295,9 +303,48 @@ class UploadWorker(worker.ThreadWorker):
                                                 tries=1,
                                                 use_api_key=True)
 
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
+    def do_multipart_upload(self, job, filename, md5):
+        '''
+        The multipart completion call can take a long time on larger files. Tests on
+        larger files (~100GB) took between 1 and 2 seconds to complete.
+        '''
+        uploads = []
+        complete_payload = {
+            "upload_id": job["upload_id"],
+            "hash": md5,
+            "completed_parts": []
+        }
+
+        for part in job["parts"]:
+            resp = self.do_part_upload(part["url"], filename, md5, part_number=part["number"])
+            uploads.append(resp)
+            completed_part = {
+                "PartNumber": part["number"],
+                "ETag": resp.headers['ETag']
+            }
+            complete_payload["completed_parts"].append(completed_part)
+
+        # TODO: define URL
+        self.api_client._make_request(verb="POST",
+                                             conductor_url=complete_url,
+                                             params=None,
+                                             data=complete_payload)
+
+        return uploads
+
+    def do_part_upload(self, upload_url, filename, md5, part_number=None):
+        with open(filename, 'rb') as fh:
+            start = (part_number - 1) * MULTIPART_SIZE
+            fh.seek(start)
+            return self.api_client._make_request(verb="PUT",
+                                                 conductor_url=upload_url,
+                                                 headers={},
+                                                 params=None,
+                                                 data=fh.read(MULTIPART_SIZE))
+
 
 class Uploader(object):
-
     sleep_time = 10
 
     def __init__(self, args=None):
@@ -735,7 +782,6 @@ def resolve_arg(arg_name, args, config):
         return value
     # Otherwise use the value in the config if it's there, otherwise default to None
     return config.get(arg_name)
-
 
 # @common.dec_timer_exitlog_level=logging.DEBUG
 # def test_md5_system(dirpath):
