@@ -96,7 +96,7 @@ class MD5OutputWorker(worker.ThreadWorker):
         super(MD5OutputWorker, self).__init__(*args, **kwargs)
         self.batch_size = 20  # the controlls the batch size for http get_signed_urls
         self.wait_time = 1
-        self.batch = {}
+        self.batch = []
 
     def check_for_poison_pill(self, job):
         ''' we need to make sure we ship the last batch before we terminate '''
@@ -111,7 +111,7 @@ class MD5OutputWorker(worker.ThreadWorker):
         if self.batch:
             logger.debug('sending batch: %s', self.batch)
             self.put_job(self.batch)
-            self.batch = {}
+            self.batch = []
 
     def target(self, thread_int):
 
@@ -123,10 +123,11 @@ class MD5OutputWorker(worker.ThreadWorker):
                 self.check_for_poison_pill(file_md5_tuple)
 
                 # add (filepath: md5) to the batch dict
-                self.batch[file_md5_tuple[0]] = {
-                    'md5': file_md5_tuple[1],
+                self.batch.append({
+                    'path': file_md5_tuple[0],
+                    'hash': file_md5_tuple[1],
                     'size_bytes': file_md5_tuple[2],
-                }
+                })
 
                 # if the batch is self.batch_size, ship it
                 if len(self.batch) == self.batch_size:
@@ -316,7 +317,7 @@ class UploadWorker(worker.ThreadWorker):
         }
 
         for part in job["parts"]:
-            resp = self.do_part_upload(part["url"], filename, md5, part_number=part["number"])
+            resp = self.do_part_upload(part["url"], filename, part_number=part["number"])
             uploads.append(resp)
             completed_part = {
                 "PartNumber": part["number"],
@@ -346,11 +347,12 @@ class UploadWorker(worker.ThreadWorker):
             digest = file_hash.hexdigest()
             resp = self.api_client._make_request(verb="PUT",
                                                  conductor_url=upload_url,
+                                                 headers={},
                                                  params=None,
-                                                 data=fh.read(data))
+                                                 data=data)
             etag = resp.headers['ETag']
-            if etag != digest:
-                error_message = "ETag for multipart upload part does not match expected md5"
+            if etag.strip('"') != digest:
+                error_message = "ETag for multipart upload part does not match expected md5\n"
                 error_message += "expected md5 is %s, returned md5 is %s" % (digest, etag)
                 raise Exception(error_message)
             return resp
