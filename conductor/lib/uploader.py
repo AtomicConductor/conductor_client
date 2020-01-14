@@ -285,7 +285,7 @@ class UploadWorker(worker.ThreadWorker):
 
         if "amazonaws" in upload_url:
             headers = {'Content-Type': 'application/octet-stream'}
-            
+
             with open(filename, 'rb') as fh:
                 # TODO: update make_request to be flexible with auth headers
                 # TODO: support chunked or streamed data
