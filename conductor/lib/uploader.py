@@ -240,6 +240,7 @@ class UploadWorker(worker.ThreadWorker):
         self.chunk_size = 1048576  # 1M
         self.report_size = 10485760  # 10M
         self.api_client = api_client.ApiClient()
+        self.project = kwargs.get('project')
 
     def chunked_reader(self, filename):
         with open(filename, 'rb') as fp:
@@ -313,7 +314,8 @@ class UploadWorker(worker.ThreadWorker):
         complete_payload = {
             "upload_id": job["upload_id"],
             "hash": md5,
-            "completed_parts": []
+            "completed_parts": [],
+            "project": self.project
         }
 
         for part in job["parts"]:
@@ -321,7 +323,7 @@ class UploadWorker(worker.ThreadWorker):
             uploads.append(resp)
             completed_part = {
                 "PartNumber": part["number"],
-                "ETag": resp.headers['ETag']
+                "ETag": resp.headers['ETag'].strip('"')
             }
             complete_payload["completed_parts"].append(completed_part)
 
@@ -331,7 +333,7 @@ class UploadWorker(worker.ThreadWorker):
         self.api_client.make_request(uri_path=uri_path,
                                      verb='POST',
                                      headers=headers,
-                                     data=complete_payload,
+                                     data=json.dumps(complete_payload),
                                      raise_on_error=True,
                                      use_api_key=True)
 
@@ -394,7 +396,7 @@ class Uploader(object):
                 (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
                                        "project": project}),
                 (FileStatWorker, [], {'thread_count': 1}),
-                (UploadWorker, [], {'thread_count': self.args['thread_count']}),
+                (UploadWorker, [], {'thread_count': self.args['thread_count'], "project": project}),
             ]
 
         manager = worker.JobManager(job_description)
