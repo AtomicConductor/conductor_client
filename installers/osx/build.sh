@@ -44,7 +44,7 @@ cp conductor ${BUILD_DIR}/root/Applications/Conductor.app/Contents/MacOS/bin
 echo "/Applications/Conductor.app/Contents/MacOS/bin" > ${BUILD_DIR}/root/etc/paths.d/conductor
 
 if [ $with_client = true ]; then
-    DESKTOP_CLIENT_CONTENTS=/artifacts/build/dc/macos64/conductor-desktop.app/Contents
+    DESKTOP_CLIENT_CONTENTS=/artifacts/build/dc/macos64/conductor-companion.app/Contents
     mkdir -p ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Frameworks
     sed "s/Conductor Desktop/Conductor/g" ${DESKTOP_CLIENT_CONTENTS}/Info.plist > ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Info.plist
     cp -r  ${DESKTOP_CLIENT_CONTENTS}/Frameworks/*   ${BUILD_DIR}/root/Applications/Conductor.app/Contents/Frameworks
