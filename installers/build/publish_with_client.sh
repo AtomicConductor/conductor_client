@@ -4,7 +4,7 @@
 version=$( cat /artifacts/build/dc/current-version.txt | cut -d" " -f1 )
 headers="--metadata-directive REPLACE --cache-control max-age=0,no-cache,no-store,must-revalidate --acl public-read"
 
-bucket=s3://${AWS_S3_BUCKET_NAME}/conductor-desktop/
+bucket=s3://${AWS_S3_BUCKET_NAME}/companion/
 cd /artifacts
 
 
