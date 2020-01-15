@@ -1,4 +1,5 @@
 import os
+
 import re
 
 RX_LETTER = re.compile(r"^([a-zA-Z]):")
@@ -37,7 +38,9 @@ class Path(object):
         """Initialize a generic absolute path.
 
         If path is a list, then each element will be a component of the path. 
-        If it's a string then expand context variables, env vars and user. 
+        If it's a string then expand context variables.
+        Also expand, env vars and user unless explicitly told not to with the
+        no_expand option. 
         """
 
         if not path:
@@ -47,22 +50,23 @@ class Path(object):
             ipath = path[:]
             self._drive_letter = ipath.pop(0)[0] if RX_LETTER.match(ipath[0]) else None
             self._components = _normalize_dots(ipath)
+            self._absolute = True
         else:
             context = kw.get("context")
             if context:
                 path = _expand_context(path, context)
-            path = os.path.expanduser(os.path.expandvars(path))
+
+            if not kw.get("no_expand", False):
+                path = os.path.expanduser(os.path.expandvars(path))
 
             match = RX_LETTER.match(path)
             self._drive_letter = match.group(1) if match else None
             remainder = re.sub(RX_LETTER, "", path)
 
-            if remainder[0] not in ["/", "\\"]:
-                raise ValueError(
-                    "Not an absolute path. Starts with: '{}'".format(remainder[0])
-                )
-            if any((c in [":"]) for c in remainder):
-                raise ValueError("Bad characters in path:{}".format(remainder))
+            self._absolute = remainder[0] in ["/", "\\"]
+
+            if ":" in remainder:
+                raise ValueError("Bad characters in path '{}'".format(remainder))
 
             self._components = _normalize_dots(
                 [s for s in re.split("/|\\\\", remainder) if s]
@@ -72,7 +76,9 @@ class Path(object):
 
     def _construct_path(self, sep, with_drive_letter=True):
         """Reconstruct path for given path sep."""
-        result = "{}{}".format(sep, sep.join(self._components))
+        result = sep.join(self._components)
+        if self._absolute:
+            result = "{}{}".format(sep, result)
         if with_drive_letter and self._drive_letter:
             result = "{}:{}".format(self._drive_letter, result)
         return result
@@ -97,6 +103,9 @@ class Path(object):
     def startswith(self, path):
         return self.posix_path().startswith(path.posix_path())
 
+    def endswith(self, suffix):
+        return self.posix_path().endswith(suffix)
+
     def __len__(self):
         return len(self.posix_path())
 
@@ -117,6 +126,14 @@ class Path(object):
         return self._drive_letter or ""
 
     @property
+    def absolute(self):
+        return self._absolute
+
+    @property
+    def relative(self):
+        return not self._absolute
+
+    @property
     def components(self):
         return self._components or []
 
@@ -129,4 +146,4 @@ class Path(object):
 
     @property
     def tail(self):
-        return self._components[-1]
+        return self._components[-1] if self._components else None

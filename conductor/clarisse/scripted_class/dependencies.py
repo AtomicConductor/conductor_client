@@ -5,6 +5,7 @@ Collect dependencies
 import os
 import re
 
+import conductor.clarisse.utils as cu
 import ix
 from conductor.clarisse.scripted_class import frames_ui
 from conductor.native.lib.gpath import Path
@@ -125,6 +126,7 @@ def collect(obj):
 
     result.add(*_get_system_dependencies())
     result.add(*_get_extra_uploads(obj))
+
     result.add(*get_scan(obj, policy, include_references))
 
     # tell the list to look on disk and expand  any "*" or <UDIM> in place
@@ -229,8 +231,26 @@ def get_scan(obj, policy, include_references=True):
     #    (include_references==True).
     # 2. Getting ref contexts from OfAttr.get_path_attrs() is buggy so it's best
     #    to get them through the root context with resolve_all_contexts()
+
+    # On Windows, we make a new extension for all project reference paths (".ct.project")
+    # because we will be replacing them with a linuxified version of the file.
     if include_references:
-        result.add(*_scan_for_references())
+        refs = _scan_for_references()
+        if cu.is_windows():
+            for ref in refs:
+                if ref.endswith(".project"):
+                    result.add(
+                        re.sub(
+                            r"(\.ct\.project|\.project)",
+                            ".ct.project",
+                            ref.posix_path(),
+                        )
+                    )
+                else:
+                    result.add(ref)
+        else:
+            result.add(*refs)
+
     return result
 
 

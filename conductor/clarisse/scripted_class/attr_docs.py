@@ -78,7 +78,7 @@ def set_docs(s_class):
 
     s_class.set_attr_doc(
         "local_upload",
-        """Uploads files from your workstation, as opposed to using an upload daemon.""",
+        """Uploads files from your Clarisse session, as opposed to using an upload daemon.""",
     )
 
     s_class.set_attr_doc(
@@ -131,7 +131,7 @@ def set_docs(s_class):
 
     s_class.set_attr_doc(
         "clean_up_render_package",
-        """Removes the render project file after submission.""",
+        """Removes the render project file after submission. If local_upload is switched off, then this attribute will be hidden and the render project will not be removed.""",
     )
 
     s_class.set_attr_doc(

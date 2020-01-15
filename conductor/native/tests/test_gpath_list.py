@@ -226,6 +226,14 @@ class PathListTest(unittest.TestCase):
         d.glob()
         self.assertEqual(len(d), 20)
 
+    def test_glob_when_files_match_with_question_mark(self):
+        glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
+        d = PathList()
+        file = "/some/file.00?0.exr"
+        d.add(file)
+        d.glob()
+        self.assertEqual(len(d), 2)
+
     def test_glob_when_files_match_with_range(self):
         glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
         d = PathList()
@@ -233,14 +241,6 @@ class PathListTest(unittest.TestCase):
         d.add(file)
         d.glob()
         self.assertEqual(len(d), 9)
-
-    def test_glob_when_files_match_with_questoion_mark(self):
-        glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
-        d = PathList()
-        file = "/some/file.00?0.exr"
-        d.add(file)
-        d.glob()
-        self.assertEqual(len(d), 2)
 
     def test_glob_dedups_when_many_files_match(self):
         glob.populate(Sequence.create("1-20").expand("/some/file.####.exr"))
@@ -270,6 +270,21 @@ class PathListTest(unittest.TestCase):
         d.add("/some/file.*.exr", "/other/file1.exr", "/other/file2.exr")
         d.glob()
         self.assertEqual(len(d), 5)
+
+    def test_ignore_invalid_glob(self):
+        bad_glob = "/path/to/Model[b-a]"
+        glob.populate(bad_glob)
+        d = PathList()
+        d.add(bad_glob)
+        d.glob()
+        self.assertEqual(list(d)[0].posix_path(), bad_glob)
+
+    def test_ignore_invalid_nonexistent_glob(self):
+        bad_glob = "/path/to/Model[b-a]"
+        d = PathList()
+        d.add(bad_glob)
+        d.glob()
+        self.assertEqual(list(d)[0].posix_path(), bad_glob)
 
 
 if __name__ == "__main__":
