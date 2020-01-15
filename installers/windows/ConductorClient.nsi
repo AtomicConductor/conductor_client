@@ -104,13 +104,13 @@ SectionEnd
 
 
 ######################################################################
-Function .onInstSuccess
+Function .onInstSuccesss
 !ifdef WITH_CLIENT
 SetShellVarContext current
 CreateDirectory "$SMPROGRAMS\Conductor Technologies"
-CreateShortCut "$SMPROGRAMS\Conductor Technologies\Conductor.lnk" "$INSTDIR\Conductor\conductor-companion.exe" "" "$INSTDIR\Conductor\conductor_white.ico"
-CreateShortCut "$DESKTOP\Conductor.lnk" "$INSTDIR\Conductor\conductor-companion.exe" "" "$INSTDIR\Conductor\conductor_white.ico"
-MessageBox MB_OK "A shortcut to Conductor's Desktop agent has been created on your desktop and in the start menu."
+CreateShortCut "$SMPROGRAMS\Conductor Technologies\Conductor.lnk" "$INSTDIR\Conductor\conductor-companion.exe" "" "$INSTDIR\Conductor\companion-icon.ico"
+CreateShortCut "$DESKTOP\Conductor.lnk" "$INSTDIR\Conductor\conductor-companion.exe" "" "$INSTDIR\Conductor\companion-icon.ico"
+MessageBox MB_OK "A shortcut to Conductor's Companion app has been created on your desktop and in the start menu."
 !else    ; 
 MessageBox MB_OK "Conductor now checks C:\Users\<username>\AppData\Roaming\Conductor Technologies\Conductor\config.yml as the default location for a config file. If you already use a config.yml please move it to this location to avoid any conflicts"
 !endif
