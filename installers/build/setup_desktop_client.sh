@@ -7,4 +7,4 @@ if [  -d ${dest} ] ; then
 fi
 mkdir -p ${dest}
 
-aws s3 cp s3://${AWS_S3_BUCKET_NAME}/conductor-desktop/current-version.txt ${dest}
+aws s3 cp s3://${AWS_S3_BUCKET_NAME}/companion/current-version.txt ${dest}
