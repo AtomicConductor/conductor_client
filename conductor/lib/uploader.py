@@ -14,6 +14,10 @@ from conductor import CONFIG
 from conductor.lib import api_client, common, worker, client_db, loggeria
 
 LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(threadName)s:  %(message)s')
+
+# Files larger than 5GB will be uploaded in parts of this size
+# This value must be in sync with the File API
+# TODO: Query File API for this value
 MULTIPART_SIZE = 1 * 1024 * 1024 * 1024
 
 logger = logging.getLogger(__name__)
@@ -122,7 +126,7 @@ class MD5OutputWorker(worker.ThreadWorker):
 
                 self.check_for_poison_pill(file_md5_tuple)
 
-                # add (filepath: md5) to the batch dict
+                # add file info to the batch list
                 self.batch.append({
                     'path': file_md5_tuple[0],
                     'hash': file_md5_tuple[1],
@@ -149,9 +153,29 @@ class MD5OutputWorker(worker.ThreadWorker):
 
 class HttpBatchWorker(worker.ThreadWorker):
     '''
-    This worker receives a batched dict of (filename: md5) pairs and makes a
-    batched http api call which returns a list of (filename: signed_upload_url)
-    of files that need to be uploaded.
+    This worker receives a batched list of file info and makes a
+    batched http api call which returns a list of files with upload
+    info that need to be uploaded.
+
+    in_queue: {
+        "path": file_path,
+        "hash": md5,
+        "size_bytes": 123
+    }
+
+    out_queue: [
+        {
+            "hash": md5,
+            "url": signed_upload_url,
+            "multipart": True,
+            "path": file_path,
+            "upload_id": upload_id,
+            "parts": [
+                "number": 1,
+                "url": signed_multipart_url,
+            ]
+        }
+    ]
 
     Each item in the return list is added to the out_queue.
     '''
@@ -187,12 +211,12 @@ class HttpBatchWorker(worker.ThreadWorker):
 
 
 '''
-This worker subscribes to a queue of (path,signed_upload_url) pairs.
+This worker subscribes to a queue of file upload info.
 
 For each item on the queue, it determines the size (in bytes) of the files to be
 uploaded, and aggregates the total size for all uploads.
 
-It then places the triplet (filepath, upload_url, byte_size) onto the out_queue
+It then passes the input file upload info back into the out_queue
 
 The bytes_to_upload arg is used to hold the aggregated size of all files that need
 to be uploaded. Note: This is stored as an [int] in order to pass it by
@@ -206,13 +230,13 @@ class FileStatWorker(worker.ThreadWorker):
 
     def do_work(self, job, thread_int):
         '''
-        Job is a dict of filepath: signed_upload_url pairs.
-        The FileStatWorker iterates through the dict.
-        For each item, it aggregates the filesize in bytes, and passes each
-        pair as a tuple to the UploadWorker queue.
+        Job is a list of file upload info returned from File API.
+        The FileStatWorker iterates through the list.
+        For each item, it aggregates the filesize in bytes, and passes
+        the upload info into the UploadWorker queue.
         '''
 
-        # iterate through a dict of (filepath: upload_url) pairs
+        # iterate through a list of file upload info dicts
         for upload in job:
             path = upload["path"]
             if not os.path.isfile(path):
@@ -231,7 +255,7 @@ class FileStatWorker(worker.ThreadWorker):
 
 class UploadWorker(worker.ThreadWorker):
     '''
-    This worker receives a (filepath: signed_upload_url) pair and performs an upload
+    This worker receives file upload info and performs an upload
     of the specified file to the provided url.
     '''
 
@@ -256,6 +280,10 @@ class UploadWorker(worker.ThreadWorker):
                 self.metric_store.increment('bytes_uploaded', len(data), filename)
 
     def do_work(self, job, thread_int):
+        '''
+        If the file is larger than 5GB on S3, File API will return
+        multiple urls for a multipart upload.
+        '''
         filename = job["path"]
         md5 = self.metric_store.get_dict('file_md5s', filename)
         try:
@@ -280,7 +308,6 @@ class UploadWorker(worker.ThreadWorker):
 
         We cannot reuse make_request method for S3 because it adds auth headers that
         S3 does not accept. S3 also requires additional signatures to support chunked data.
-        For now S3 uploads will read all data in memory resulting in a smaller supported size.
         '''
 
         if "amazonaws" in upload_url:
@@ -309,6 +336,12 @@ class UploadWorker(worker.ThreadWorker):
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def do_multipart_upload(self, job, filename, md5):
         '''
+        Files larger than 5GB will be split into 1GB parts and hydrated in S3
+        once all parts are uploaded.
+
+        On successful part upload to S3, it will return an ETag. This value must be
+        tracked along with the part number in order to complete and hydrate the file in S3.
+
         The multipart completion call can take a long time on larger files. Tests on
         larger files (~100GB) took between 1 and 2 seconds to complete.
         '''
@@ -320,6 +353,7 @@ class UploadWorker(worker.ThreadWorker):
             "project": self.project
         }
 
+        # iterate over parts and upload
         for part in job["parts"]:
             resp = self.do_part_upload(part["url"], filename, part_number=part["number"])
             uploads.append(resp)
@@ -329,7 +363,7 @@ class UploadWorker(worker.ThreadWorker):
             }
             complete_payload["completed_parts"].append(completed_part)
 
-        # Complete multipart upload in order to hydrate file in s3 for availability
+        # Complete multipart upload in order to hydrate file in S3 for availability
         uri_path = '/api/files/v2/complete_multipart'
         headers = {'Content-Type': 'application/json'}
         self.api_client.make_request(uri_path=uri_path,
@@ -343,17 +377,26 @@ class UploadWorker(worker.ThreadWorker):
 
     def do_part_upload(self, upload_url, filename, part_number=None):
         with open(filename, 'rb') as fh:
+            # seek to the correct part position
             start = (part_number - 1) * MULTIPART_SIZE
             fh.seek(start)
+
+            # read up to MULTIPART_SIZE
             data = fh.read(MULTIPART_SIZE)
+
+            # calculate md5 in order to compare with returned ETag later
             file_hash = hashlib.md5()
             file_hash.update(data)
             digest = file_hash.hexdigest()
+
+            # upload part
             resp = self.api_client._make_request(verb="PUT",
                                                  conductor_url=upload_url,
                                                  headers={},
                                                  params=None,
                                                  data=data)
+
+            # verify data
             etag = resp.headers['ETag']
             if etag.strip('"') != digest:
                 error_message = "ETag for multipart upload part does not match expected md5\n"
