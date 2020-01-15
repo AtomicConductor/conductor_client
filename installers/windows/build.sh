@@ -21,7 +21,7 @@ cp -r ${SRC_DIR}/bin \
       ${SRC_DIR}/nuke_menu \
       ${SRC_DIR}/installers/windows/python \
       ${SRC_DIR}/installers/windows/conductor.bat \
-      ${SRC_DIR}/installers/windows/conductor_white.ico \
+      ${SRC_DIR}/installers/windows/companion-icon.ico \
       ${BUILD_DIR}/Conductor
 
 cp -r ${SRC_DIR}/installers/windows/conductor_128.ico \
