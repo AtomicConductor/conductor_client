@@ -40,14 +40,16 @@ class MayaRenderJob(job.Job):
                 start_frame = chunk_frames[0]
                 end_frame = chunk_frames[-1]
                 
+                command_args = {'cmd': self.cmd,
+                                'start_frame': start_frame,
+                                'end_frame': end_frame,
+                                'frame_step': self.frame_step,
+                                'render_layer': self.render_layer,
+                                'output_path': self.output_path,
+                                'project_path': self.project_path,
+                                'scene_path': self.scene_path} 
+                
                 task_data.append({"frames": "{}-{}".format(start_frame, end_frame),
-                                  "command": "{cmd} -s {start_frame} -e {end_frame} -b {frame_step} -rl {render_layer} -rd {output_path} -proj {project_path} -r arnold -ai:lve 2 {scene_path}".format(cmd=self.cmd,
-                                                                                                                                                                                                start_frame=start_frame,
-                                                                                                                                                                                                end_frame = end_frame,
-                                                                                                                                                                                                frame_step = self.frame_step,
-                                                                                                                                                                                                render_layer = self.render_layer,
-                                                                                                                                                                                                output_path = self.output_path,
-                                                                                                                                                                                                project_path = self.project_path,
-                                                                                                                                                                                                scene_path = self.scene_path)})
+                                  "command": "{cmd} -s {start_frame} -e {end_frame} -b {frame_step} -rl {render_layer} -rd {output_path} -proj {project_path} -r arnold -ai:lve 2 {scene_path}".format(**command_args)})
                 
             return task_data

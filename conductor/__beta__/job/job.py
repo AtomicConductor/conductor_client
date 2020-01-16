@@ -17,7 +17,7 @@ class Job(object):
     
         self.upload_paths = []
         self.software_packages_ids = []
-        self.owner = 'bob'
+        self.owner = None
         self.priority = 5
         self.location = ""
         self.instance_type = "n1-standard-8"
@@ -112,7 +112,7 @@ class Job(object):
         LOG.debug("Response Code: %s", response_code)
         LOG.debug("Response: %s", response)
          
-        if response_code in [201, 204]:
+        if response_code in (201, 204):
             LOG.info("Submission Complete")
  
         else:

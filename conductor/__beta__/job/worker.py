@@ -17,6 +17,9 @@ class DeadlineWorkerJobError(WorkerJobError):
     pass
 
 class DeadlineWorkerJob(WorkerJob):
+    
+    POST_TASK_SCRIPT_PATH = '/opt/Thinkbox/Deadline10/bin/shutdown_conductor_instance.py'
+    
     def __init__(self, *args , **kwargs):
     
         super(WorkerJob, self).__init__(*args, **kwargs)
@@ -34,7 +37,7 @@ class DeadlineWorkerJob(WorkerJob):
         self.deadline_proxy_root = None
         self.deadline_ssl_certificate = None
         self.deadline_use_ssl = True
-        self.deadline_client_version = "10.0.28.2" # "10.1.1.3"- this version is experiencing errors
+        self.deadline_client_version = "10.0.28.2" # "10.1.1.3"- this version is experiencing errors. Installation on docker is broken.
         
     def _get_task_data(self):
         task_data = []
@@ -65,9 +68,9 @@ class DeadlineWorkerJob(WorkerJob):
     def validate_job(self):
         
         if self.deadline_proxy_root is None:
-            raise DeadlineWorkerJobError("self.deadline_proxy_root has not been set. This must be the <hostname>:<port> of your Deadline RCS")
+            raise DeadlineWorkerJobError("deadline_proxy_root has not been set. This must be the <hostname>:<port> of your Deadline RCS")
         
         if self.deadline_ssl_certificate is None:
-            raise DeadlineWorkerJobError("self.deadline_ssl_certificate has not been set. This must be the local path to your Deadline client certificate")
+            raise DeadlineWorkerJobError("deadline_ssl_certificate has not been set. This must be the local path to your Deadline client certificate")
         
         return True
