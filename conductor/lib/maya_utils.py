@@ -202,19 +202,6 @@ def get_active_renderer():
     '''
     return cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
 
-def get_render_log_level():
-    '''
-    Return the log level for the current renderer. If the current renderer
-    isn't supported or doesn't have a log level option, None is returned.
-    '''
-    
-    log_level = None
-    
-    if is_arnold_renderer():
-        log_level = cmds.getAttr('defaultArnoldRenderOptions.log_verbosity')
-        
-    return log_level
-
 
 def get_renderer_info(renderer_name=None):
     '''
