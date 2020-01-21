@@ -551,17 +551,26 @@ class WidgetGettrSettr(object):
         return combobox.currentText()
 
     @classmethod
-    def setComboBoxValue(cls, combobox, value):
+    def setComboBoxValue(cls, combobox, value, missing_index=0):
         '''
         Define setter function for QComobobox widgets
 
-        Find the given text value in the combobox items.  If no items contain
-        the text, the index will be set to -1 (blank).  This makes sense, as
-        it will tell the user that their preference value is no longer valid, and
-        to select something different.
+        combobox: QCombobox widget.
+        value: str. The text value of the combobox item to set as the active item.  
+        missing_index: int. The index to set the combobox to in the event that the combobox does not 
+            contain an entry that matches the desired search value. A missing_index value of -1 will
+            result in the combobox being set to a blank value (i.e. no selection). The default value 
+            (0) will set the index to first item in the combobox (if the combobox has been populated 
+            with at least that many items).
+
         '''
-        # Ensure that value is cast to an int first
         entry_idx = combobox.findText(value)
+        # If the entry is not found (i.e -1), use the missing_index value instead. Make sure the
+        # combobox actually has an entryy at the at index. Otherwise set to blank.
+        if entry_idx == -1 and missing_index < combobox.count():
+            entry_idx = missing_index
+            logger.warning('Could not find "%s" item in combobox. Using "%s" item instead',
+                           value, combobox.itemText(entry_idx))
         combobox.setCurrentIndex(entry_idx)
 
     @classmethod
