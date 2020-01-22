@@ -35,6 +35,17 @@ logger = logging.getLogger(__name__)
 
 class MayaWidget(QtWidgets.QWidget):
 
+    RENDER_VERBOSITY_LEVELS = {
+        'arnold': {"Errors": 0,
+                   "Warnings": 1,
+                   "Info": 2,
+                   "Debug": 3,
+                   },
+    }
+
+    RENDER_VERBOSITY_DEFAULT_LEVEL = {"arnold": "Debug"}
+    RENDER_VERBOSITY_FLAG = {'arnold': '-ai:lve'}
+
     # The .ui designer filepath
     _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'maya.ui')
 
@@ -51,6 +62,15 @@ class MayaWidget(QtWidgets.QWidget):
     def refreshUi(self):
         render_layers_info = maya_utils.get_render_layers_info()
         self.populateRenderLayers(render_layers_info)
+
+        # Populate and show/hide the render verbosity combobox depending on which renderer is being used.
+        renderer = maya_utils.get_current_renderer()
+        show_verbosity_wgt = renderer in self.RENDER_VERBOSITY_LEVELS
+        if show_verbosity_wgt:
+            self.populateRenderVerbosity(renderer)
+            # Set the active verbosity level to the default value
+            self.setRenderVerbosity(self.RENDER_VERBOSITY_DEFAULT_LEVEL[renderer])
+        self.ui_render_verbosity_wgt.setVisible(show_verbosity_wgt)
 
     def populateRenderLayers(self, render_layers_info):
         '''
@@ -101,6 +121,57 @@ class MayaWidget(QtWidgets.QWidget):
         the Render Layers widget.
         '''
         self.ui_render_layers_trwgt.setDisabled(toggled)
+
+    def populateRenderVerbosity(self, renderer):
+        '''
+        Populate the Render Verbosity combobox for the given renderer. 
+        '''
+        verbosity_levels = self.RENDER_VERBOSITY_LEVELS.get(renderer, {})
+        self.ui_render_verbosity_cmbx.clear()
+        # populate combobox so that the most verbose levels are at the top of the list
+        for level_name, level_value in sorted(verbosity_levels.iteritems(), key=lambda x: x[-1], reverse=True):
+            self.ui_render_verbosity_cmbx.addItem(level_name, userData=level_value)
+
+    def setRenderVerbosity(self, verbosity_level, strict=True):
+        '''
+        Set the render verbosity combobox to the given verbosity level.
+        '''
+        index = self.ui_render_verbosity_cmbx.findText(verbosity_level)
+        if index == -1:
+            msg = "Verbosity combobox entry does not exist: %s" % verbosity_level
+            logger.warning(msg)
+            if strict:
+                raise Exception(msg)
+        self.ui_render_verbosity_cmbx.setCurrentIndex(index)
+
+    def getRenderVerbosity(self, as_data=False):
+        '''
+        Return the verbosity level that is currently set in the ui combobox.  If the verbosity  
+        widget is hidden (in the case of renderers that don't support a verbosity flag), return an 
+        empty string.
+
+        as_data: bool. If True, rather than returning the verbosity level string (as seen visually) return the combobox's 
+            data value (potentially an integer)
+        '''
+        if self.ui_render_verbosity_wgt.isVisible():
+            if as_data:
+                return self.ui_render_verbosity_cmbx.currentData()
+            return self.ui_render_verbosity_cmbx.currentText()
+        return ""
+
+    def constructVerbosityArg(self, renderer):
+        '''
+        Construct the render verbosity flag/argument for the current renderer, e.g. "-ai:lve Debug"
+        (for arnold). This might be completely empty (unavailable) for some renderers.  The verbosity
+        value is read from the submitter's verbosity combobox (if visible)
+        '''
+        # Only use the verbosity data if it's visible.
+        if self.ui_render_verbosity_wgt.isVisible():
+            varbosity_flag = self.RENDER_VERBOSITY_FLAG.get(renderer, "")
+            verbosity_level = self.getRenderVerbosity(as_data=True)
+            return "%s %s" % (varbosity_flag, verbosity_level)
+
+        return ""
 
 
 class MayaAdvancedWidget(QtWidgets.QWidget):
@@ -226,7 +297,20 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         '''
 
         # Create a template command that be be used for each task's command
-        cmd_template = "Render %s -s %s -e %s -b %s %s -rd /tmp/render_output/ %s %s"
+        # Note that some flags in the template may not be populated at all, hence why some arguments
+        # must provide the flag as well as the flag argument)
+        cmd_template = " ".join((
+            "Render",
+            "{renderer}",
+            "-s {start}",
+            "-e {end}",
+            "-b {step}",
+            "{verbosity}",
+            "{render_layers}",
+            "-rd /tmp/render_output/",
+            "{project}",
+            "{scene_file}",
+        ))
 
         # Retrieve the source maya file
         maya_filepath = self.getSourceFilepath()
@@ -235,32 +319,23 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # as an argument in a linux shell on the backend. Not pretty.
         maya_filepath_nodrive = file_utils.strip_drive_letter(maya_filepath)
 
-        # Get the user-selected render layers
-        render_layers = self.extended_widget.getSelectedRenderLayers()
-
+        # Query the maya scene for the active renderer (e.g. "arnold", or "vray")
         active_renderer = maya_utils.get_active_renderer()
-        # If the active renderer is rman/renderman, then we must explicitly declare it
-        # as the renderer in the command.  Otherwise the output path is not respected.
-        # I assume this is a renderman bug.
-        # TODO:(lws). This is a super ugly exception case that we need to better manage/abstract
-        if active_renderer == "renderManRIS":
-            renderer_arg = "-r rman"
-        # If the active renderer is renderman, then we must explicitly declare it (see comment above).
-        # We must also clear out the specified render layers because renderman 22 doesn't accept the rl
-        # flag anymore. By not specifying any render layers, *all* active render layers will be rendered
+
+        # Get the appropriate renderer flag/arg for the active renderer, e.g. "-r arnold"
+        renderer_arg = self._constructRendererArg(active_renderer)
+
+        # Get the user-selected render layers, and construct the -rl flag (omit it if no render layers specified)
+        # If the active renderer is renderman then we must not declare any render layers because
+        # renderman 22 doesn't accept the -rl flag anymore. However, note that by not specifying any
+        # render layers, *all* active render layers will be rendered.
         # TODO:(lws). This is really nasty/dangerous. Hopefully pixar/renderman will re-add support
         # for specifying render layers ASAP!
-        elif active_renderer == "renderman":
-            renderer_arg = "-r renderman"
-            render_layers = []
+        render_layers = self.extended_widget.getSelectedRenderLayers() if active_renderer not in ("renderman", ) else []
+        render_layers_arg = ("-rl " + ",".join(render_layers)) if render_layers else ""
 
-        # For any other renderers, we don't need to specify the renderer arg (the renderer indicated
-        # in the maya scene will be used).
-        else:
-            renderer_arg = ""
-
-        # construct -rl flag (omit it if no render layers specified)
-        render_layer_args = ("-rl " + ",".join(render_layers)) if render_layers else ""
+        # Get logging_verbosity argument for current renderer, e.g. "-ai:lve Debug"  (for arnold).
+        verbosity_arg = self.extended_widget.constructVerbosityArg(active_renderer)
 
         # Workspace/Project arg. Only add flag if a workspace has been indicated in the submitter ui
         workspace = self.extended_advanced_widget.getWorkspaceDir()
@@ -279,13 +354,16 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         tasks_data = []
         frames_generator = submitter.TaskFramesGenerator(frames, chunk_size=chunk_size, uniform_chunk_step=True)
         for start_frame, end_frame, step, task_frames in frames_generator:
-            task_cmd = cmd_template % (renderer_arg,
-                                       start_frame,
-                                       end_frame,
-                                       step,
-                                       render_layer_args,
-                                       project_arg,
-                                       file_utils.quote_path(maya_filepath_nodrive))
+            task_cmd = cmd_template.format(
+                renderer=renderer_arg,
+                start=start_frame,
+                end=end_frame,
+                step=step,
+                verbosity=verbosity_arg,
+                render_layers=render_layers_arg,
+                project=project_arg,
+                scene_file=file_utils.quote_path(maya_filepath_nodrive),
+            )
 
             # Generate tasks data
             # convert the list of frame ints into a single string expression
@@ -375,8 +453,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         We also collect dependencies  at this point and pass that
         data along...
         In order to validate the submission, dependencies must be collected
-        and inspected. Because we don't want to unnessarily collect dependencies
-        again (after validation succeeds), we also pass the depenencies along
+        and inspected. Because we don't want to unnecessarily collect dependencies
+        again (after validation succeeds), we also pass the dependencies along
         in the returned dictionary (so that we don't need to collect them again).
         '''
 
@@ -404,7 +482,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         # If uploading locally (i.e. not using  uploader daemon
         if self.getLocalUpload():
-            # Don't need to enforce md5s for the daemon (don't want to do unnessary md5 hashing here)
+            # Don't need to enforce md5s for the daemon (don't want to do unnecessary md5 hashing here)
             enforced_md5s = {}
         else:
             # Get all files that we want to have integrity enforcement when uploading via the daemon
@@ -413,12 +491,12 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # add md5 enforced files to dependencies. In theory these should already be included in the raw_dependencies, but let's cover our bases
         raw_dependencies.extend(enforced_md5s.keys())
 
-        # Process all of the dependendencies. This will create a dictionary of dependencies, and whether they are considred Valid or not (bool)
+        # Process all of the dependencies. This will create a dictionary of dependencies, and whether they are considered Valid or not (bool)
         dependencies = file_utils.process_dependencies(raw_dependencies)
 
         # If the renderer is arnold and "use .tx files is enabled", then add corresponding tx files.
         # TODO:(lws) This process shouldn't happen here. We can't keep tacking on things for random
-        # software-specific behavior. We're going to need start seperating behavior via classes (perhaps
+        # software-specific behavior. We're going to need start separating behavior via classes (perhaps
         # one for each renderer type?)
         if maya_utils.is_arnold_renderer() and maya_utils.is_arnold_tx_enabled():
             tx_filepaths = file_utils.get_tx_paths(dependencies.keys(), existing_only=True)
@@ -524,6 +602,30 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Grab the file dependencies from data (note that this comes from the presubmission phase
         conductor_args["upload_paths"] = (data.get("dependencies") or {}).keys()
         return conductor_args
+
+    def _constructRendererArg(self, renderer):
+        '''
+        For the given renderer, construct the appropriate -renderer flag to use when rendering from
+        the command line.  Oftentimes this is simply a 1:1 relationship between the renderer (name) 
+        and the renderer flag value to use.  But not always.
+        Note that historically we chose not to explicitly declare a renderer flag when constructing/
+        executing the Render command, and instead relied on the maya scene to implicitly dictate the
+        renderer via its own render settings. However, over time, more and more issues (bugs and/or
+        features)have mandated that we include the argument in the command itself.
+
+        --- Historic notes --- (may no longer be relevant)
+        - If the active renderer is rman/renderman, then we must explicitly declare it as the
+          renderer in the command.  Otherwise the output path is not respected. I assume this is a
+          renderman bug.
+        '''
+        # a mapping between the renderer name and it's corresponding command line flag value
+        # TODO:(lws) add additional renderers, e.g. vray
+        flags = {
+            "arnold": "arnold",
+            "renderManRIS": "rman,",
+            "renderman": "renderman",
+        }
+        return "-r %s" % flags.get(renderer, "file")
 
     def runConductorSubmission(self, data):
 
