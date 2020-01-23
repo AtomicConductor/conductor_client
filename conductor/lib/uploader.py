@@ -289,8 +289,7 @@ class UploadWorker(worker.ThreadWorker):
         try:
             if job["multipart"]:
                 return self.do_multipart_upload(job, filename, md5)
-            else:
-                return [self.do_upload(job["url"], filename, md5)]
+            return [self.do_upload(job["url"], filename, md5)]
         except:
             logger.exception("Failed to upload file: %s because of:\n", filename)
             real_md5 = common.get_base64_md5(filename)
