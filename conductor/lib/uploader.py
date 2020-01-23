@@ -355,11 +355,7 @@ class UploadWorker(worker.ThreadWorker):
         for part_number, part_url in enumerate(job["parts"]):
             resp = self.do_part_upload(part_url, filename, part_number=part_number)
             uploads.append(resp)
-            completed_part = {
-                "PartNumber": part_number,
-                "ETag": resp.headers['ETag'].strip('"')
-            }
-            complete_payload["completed_parts"].append(completed_part)
+            complete_payload["completed_parts"].append(resp.headers['ETag'].strip('"'))
 
         # Complete multipart upload in order to hydrate file in S3 for availability
         uri_path = '/api/files/v2/complete_multipart'
