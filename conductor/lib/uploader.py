@@ -171,8 +171,7 @@ class HttpBatchWorker(worker.ThreadWorker):
             "path": file_path,
             "upload_id": upload_id,
             "parts": [
-                "number": 1,
-                "url": signed_multipart_url,
+                signed_multipart_url,
             ]
         }
     ]
@@ -353,11 +352,11 @@ class UploadWorker(worker.ThreadWorker):
         }
 
         # iterate over parts and upload
-        for part in job["parts"]:
-            resp = self.do_part_upload(part["url"], filename, part_number=part["number"])
+        for part_number, part_url in enumerate(job["parts"]):
+            resp = self.do_part_upload(part_url, filename, part_number=part_number)
             uploads.append(resp)
             completed_part = {
-                "PartNumber": part["number"],
+                "PartNumber": part_number,
                 "ETag": resp.headers['ETag'].strip('"')
             }
             complete_payload["completed_parts"].append(completed_part)
@@ -374,7 +373,7 @@ class UploadWorker(worker.ThreadWorker):
 
         return uploads
 
-    def do_part_upload(self, upload_url, filename, part_number=None):
+    def do_part_upload(self, upload_url, filename, part_number):
         with open(filename, 'rb') as fh:
             # seek to the correct part position
             start = (part_number - 1) * MULTIPART_SIZE
