@@ -358,7 +358,7 @@ class UploadWorker(worker.ThreadWorker):
             complete_payload["completed_parts"].append(resp.headers['ETag'].strip('"'))
 
         # Complete multipart upload in order to hydrate file in S3 for availability
-        uri_path = '/api/files/v2/complete_multipart'
+        uri_path = '/api/files/v2/multipart/complete'
         headers = {'Content-Type': 'application/json'}
         self.api_client.make_request(uri_path=uri_path,
                                      verb='POST',
