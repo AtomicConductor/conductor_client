@@ -42,11 +42,11 @@ pushd ${BUILD_DIR}
 if [ $with_client = true ]; then
     ./nsis/bin/makensis -DVERSION="${RELEASE_VERSION:1}.0"\
                         -DWITH_CLIENT="1"\
-                        -DINSTALLER_NAME="/artifacts/conductor-${RELEASE_VERSION}.exe"\
+                        -DINSTALLER_NAME="/artifacts/conductor-${RELEASE_VERSION}.unsigned.exe"\
                         ConductorClient.nsi
 else
     ./nsis/bin/makensis -DVERSION="${RELEASE_VERSION:1}.0"\
-                        -DINSTALLER_NAME="/artifacts/conductor-${RELEASE_VERSION}.exe"\
+                        -DINSTALLER_NAME="/artifacts/conductor-${RELEASE_VERSION}.unsigned.exe"\
                         ConductorClient.nsi
 fi
 popd
