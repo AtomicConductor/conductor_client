@@ -44,7 +44,7 @@
           command: /src/installers/rpm/build.sh 7 --with_client
   - name: Certify
     service: certify
-    command: /src/installers/certify.sh --with_clien
+    command: /src/installers/certify.sh --with_client
   - name: Publish with desktop client
     service: python
     command: /src/installers/build/publish_with_client.sh
