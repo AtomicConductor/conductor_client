@@ -69,7 +69,7 @@
       command: /src/installers/rpm/build.sh 7
   - name: Certify
     service: certify
-    command: /src/installers/certify.sh 
+    command: bash /src/installers/certify.sh 
   - name: Publish
     service: python
     command: python /src/installers/build/publish.py
