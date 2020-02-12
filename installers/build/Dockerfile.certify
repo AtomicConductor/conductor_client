@@ -1,0 +1,23 @@
+FROM debian:stretch
+
+RUN apt-get update && \
+    apt-get install -y build-essential \
+                       autoconf \
+                       libtool \
+                       libssl-dev \
+                       python3-pkgconfig \
+                       libcurl4-gnutls-dev \
+                       git
+                       
+RUN git clone https://github.com/mtrojnar/osslsigncode.git /tmp/osslsigncode
+
+WORKDIR /tmp/osslsigncode
+
+RUN cd /tmp/osslsigncode && \
+       ./autogen.sh && \
+       ./configure && \
+       make && \
+       make install
+
+    
+#ADD installers/certificates/authenticode-certificate.p12 /tmp/certificates                       
