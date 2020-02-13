@@ -27,7 +27,7 @@ responses = []
 for artifact in artifacts:
     
     # Don't publish the unsigned installers
-    if 'unsigned' in artificts:
+    if 'unsigned' in artifact:
         continue
     
     uri_template = uritemplate.URITemplate(release.json()['upload_url'])
