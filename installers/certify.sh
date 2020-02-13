@@ -16,3 +16,4 @@ if [ $# -eq 1 ] && [ $1 = "--with_client" ] ; then
 echo ${WINDOWS_INSTALLER_CERTIFICATE} | base64 -d - > /tmp/authenticode-certificate.p12
 
 osslsigncode sign -pkcs12 /tmp/authenticode-certificate.p12 -pass ${WINDOWS_INSTALLER_CERTIFICATE_PWORD} -n "Conductor Client" -i "https://www.conductortech.com/" -in /artifacts/conductor-${RELEASE_VERSION}.unsigned.exe -out /artifacts/conductor-${RELEASE_VERSION}.exe
+
