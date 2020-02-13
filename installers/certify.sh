@@ -12,8 +12,14 @@ if [ $# -eq 1 ] && [ $1 = "--with_client" ] ; then
     cp -r  ${DESKTOP_CLIENT_DIR}/* ${BUILD_DIR}/Conductor
     version=$( cat /artifacts/build/dc/current-version.txt | cut -d" " -f1 )
     RELEASE_VERSION="v${version}"
+fi
     
 echo ${WINDOWS_INSTALLER_CERTIFICATE} | base64 -d - > /tmp/authenticode-certificate.p12
 
 osslsigncode sign -pkcs12 /tmp/authenticode-certificate.p12 -pass ${WINDOWS_INSTALLER_CERTIFICATE_PWORD} -n "Conductor Client" -i "https://www.conductortech.com/" -in /artifacts/conductor-${RELEASE_VERSION}.unsigned.exe -out /artifacts/conductor-${RELEASE_VERSION}.exe
+
+
+
+
+
 
