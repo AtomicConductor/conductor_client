@@ -2,7 +2,6 @@
 
 RELEASE_VERSION=${CI_BRANCH}
 
-
 if [ $# -eq 1 ] && [ $1 = "--with_client" ] ; then
     if [  !  -f /artifacts/build/dc/current-version.txt ] ; then
         echo "Desktop client does not exist"

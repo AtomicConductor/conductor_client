@@ -11,13 +11,8 @@ RUN apt-get update && \
                        
 RUN git clone https://github.com/mtrojnar/osslsigncode.git /tmp/osslsigncode
 
-WORKDIR /tmp/osslsigncode
-
 RUN cd /tmp/osslsigncode && \
        ./autogen.sh && \
        ./configure && \
        make && \
-       make install
-
-    
-#ADD installers/certificates/authenticode-certificate.p12 /tmp/certificates                       
+       make install                   
