@@ -46,7 +46,9 @@ if [ $with_client = true ]; then
     DESKTOP_CLIENT_DIR=/artifacts/build/dc/linux64
     mkdir -p ${RPM_BUILDROOT}/opt/conductor/companion
     cp -r  ${DESKTOP_CLIENT_DIR}/* ${RPM_BUILDROOT}/opt/conductor/companion/
-    ln -s ${RPM_BUILDROOT}/opt/conductor/companion/conductor-companion ${RPM_BUILDROOT}/opt/conductor/bin/conductor-companion
+    pushd ${RPM_BUILDROOT}/opt/conductor/bin/
+    ln -s ../companion/conductor-companion .
+    popd
 fi
 
 cp conductor.spec ${BUILD_DIR}/rpm/SPECS
