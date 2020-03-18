@@ -96,7 +96,7 @@ def process_dependencies(paths):
             dependencies[path] = None
         except exceptions.InvalidPathException as e:
             logger.debug("%s", e)
-            dependencies[path] = str(e)
+            dependencies[path] = e.message.encode('utf-8')
 
     return dependencies
 
