@@ -4,8 +4,8 @@
 """
 
 import unittest
-
 import conductor.lib.file_utils as futil
+import logging
 
 
 class ProcessDependenciesTest(unittest.TestCase):
@@ -15,6 +15,10 @@ class ProcessDependenciesTest(unittest.TestCase):
         self.assertTrue("/path/to/filename.txt" in deps)
 
     def test_it_encodes_unicode_chars_in_error_message(self):
+        # make sure logging is triggered as it should also encode unicode.
+        logger = logging.getLogger("conductor")
+        logger.setLevel("DEBUG")
+
         paths = [u"/path/to/\u0123/name.txt"]
         deps = futil.process_dependencies(paths)
         self.assertTrue(u"/path/to/\u0123/name.txt" in deps)

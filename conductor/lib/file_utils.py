@@ -95,8 +95,9 @@ def process_dependencies(paths):
             process_upload_filepath(path)
             dependencies[path] = None
         except exceptions.InvalidPathException as e:
-            logger.debug("%s", e)
-            dependencies[path] = e.message.encode('utf-8')
+            msg = e.message.encode('utf-8')
+            logger.debug("%s", msg)
+            dependencies[path] = msg
 
     return dependencies
 
