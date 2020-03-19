@@ -157,6 +157,13 @@ def process_upload_filepath(path, strict=True):
     paths = []
 
     if path:
+        try:
+            str(path)
+        except UnicodeEncodeError:
+            message = "Unicode filenames are not supported: %s" % path
+            if strict:
+                raise exceptions.InvalidPathException(message)
+            logger.warning(message)
 
         # If the path is a file (and it exits)
         if os.path.isfile(path):
