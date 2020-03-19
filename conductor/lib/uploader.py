@@ -33,13 +33,13 @@ class MD5Worker(worker.ThreadWorker):
         logger.debug('job is %s', job)
         filename, submission_time_md5 = job
         assert isinstance(filename, (str, unicode)), "Filepath not of expected type. Got %s" % type(filename)
-        filename = str(filename)
+        encoded_filename = filename.encode("utf8")
         current_md5 = self.get_md5(filename)
         # if a submission time md5 was provided then check against it
         if submission_time_md5:
-            logger.info("Enforcing md5 match: %s for: %s", submission_time_md5, filename)
+            logger.info("Enforcing md5 match: %s for: %s", submission_time_md5, encoded_filename)
             if current_md5 != submission_time_md5:
-                message = 'MD5 of %s has changed since submission\n' % filename
+                message = 'MD5 of %s has changed since submission\n' % encoded_filename
                 message += 'submitted md5: %s\n' % submission_time_md5
                 message += 'current md5:   %s\n' % current_md5
                 message += 'This is likely due to the file being written to after the user submitted the job but before it got uploaded to conductor'
