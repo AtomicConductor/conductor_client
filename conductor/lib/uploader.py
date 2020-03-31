@@ -185,7 +185,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         self.project = kwargs.get('project')
 
     def make_request(self, job):
-        uri_path = '/api/files/v2/get_upload_urls'
+        uri_path = '/api/v2/files/get_upload_urls'
         headers = {'Content-Type': 'application/json'}
         data = {"upload_files": job,
                 "project": self.project}
@@ -358,7 +358,7 @@ class UploadWorker(worker.ThreadWorker):
             complete_payload["completed_parts"].append(resp.headers['ETag'].strip('"'))
 
         # Complete multipart upload in order to hydrate file in S3 for availability
-        uri_path = '/api/files/v2/multipart/complete'
+        uri_path = '/api/v2/files/multipart/complete'
         headers = {'Content-Type': 'application/json'}
         self.api_client.make_request(uri_path=uri_path,
                                      verb='POST',
