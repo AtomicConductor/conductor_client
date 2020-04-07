@@ -352,7 +352,7 @@ class UploadWorker(worker.ThreadWorker):
         }
 
         # iterate over parts and upload
-        for part_number, part_url in enumerate(job["parts"], 1):
+        for part_number, part_url in enumerate(job["parts"]):
             resp = self.do_part_upload(part_url, filename, part_number=part_number)
             uploads.append(resp)
             complete_payload["completed_parts"].append(resp.headers['ETag'].strip('"'))
@@ -372,7 +372,7 @@ class UploadWorker(worker.ThreadWorker):
     def do_part_upload(self, upload_url, filename, part_number):
         with open(filename, 'rb') as fh:
             # seek to the correct part position
-            start = max(0, part_number - 1) * MULTIPART_SIZE
+            start = part_number * MULTIPART_SIZE
             fh.seek(start)
 
             # read up to MULTIPART_SIZE
