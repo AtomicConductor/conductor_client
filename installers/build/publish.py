@@ -25,6 +25,11 @@ if 200 != release.status_code:
 
 responses = []
 for artifact in artifacts:
+    
+    # Don't publish the unsigned installers
+    if 'unsigned' in artifact:
+        continue
+    
     uri_template = uritemplate.URITemplate(release.json()['upload_url'])
     upload_url = uri_template.expand(name=os.path.basename(artifact))
     with open(artifact, 'rb') as fh:

@@ -30,3 +30,11 @@ python:
     - ./tmp:/artifacts
   encrypted_env_file: build.env.encrypted
   cached: true
+certify:
+  build:
+    dockerfile_path: ./installers/build/Dockerfile.certify
+  volumes:
+    - .:/src
+    - ./tmp:/artifacts
+  encrypted_env_file: build.env.encrypted
+  cached: true

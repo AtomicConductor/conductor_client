@@ -26,6 +26,9 @@
       - name: Fetch Windows desktop client
         service: python
         command: /src/installers/build/fetch_client.sh win64
+      - name: Certify Companion Binaries
+        service: certify
+        command: bash /src/installers/certify_companion_binaries.sh        
       - service: deb
         name: Build Windows installer with desktop client
         command: /src/installers/windows/build.sh --with_client
@@ -42,6 +45,9 @@
         - service: el7
           name: Build EL-7 installer with desktop client
           command: /src/installers/rpm/build.sh 7 --with_client
+  - name: Certify Windows Installer
+    service: certify
+    command: bash /src/installers/certify_windows_installer.sh --with_client
   - name: Publish with desktop client
     service: python
     command: /src/installers/build/publish_with_client.sh
@@ -64,6 +70,9 @@
     - service: el7
       name: Build EL-7 installer
       command: /src/installers/rpm/build.sh 7
+  - name: Certify
+    service: certify
+    command: bash /src/installers/certify_windows_installer.sh 
   - name: Publish
     service: python
     command: python /src/installers/build/publish.py
