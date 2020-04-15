@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
     
 echo ${WINDOWS_INSTALLER_CERTIFICATE} | base64 -d - > /tmp/authenticode-certificate.p12
 /artifacts/build/dc/win64/conductor-companion.exe 
