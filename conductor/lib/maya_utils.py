@@ -480,9 +480,16 @@ def collect_dependencies(node_attrs):
     '''
     assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
 
+    # TODO: Temporary hack to work around renderman 23.3 bug.
+    # Record the active renderer so that we can restore it after making this cmds.file call
+    active_renderer = get_active_renderer()
     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
     dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
+    # Strip errant dependences (another part of the renderman bug above).
+    dependencies = [path for path in dependencies if not path.endswith('_<user')]
     logger.debug("maya scene base dependencies: %s", dependencies)
+    # Reinstate active renderer
+    cmds.setAttr("defaultRenderGlobals.currentRenderer", active_renderer, type="string")
 
     # collect a list of ass filepaths that we can process at one time at the end of function, rather
     # than on a per node/attr basis (much slower)
