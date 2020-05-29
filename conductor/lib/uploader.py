@@ -16,6 +16,9 @@ LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(thread
 
 logger = logging.getLogger(__name__)
 
+PRESIGNED = "presigned"
+MULTIPART = "multipart"
+
 
 class MD5Worker(worker.ThreadWorker):
     '''
@@ -46,7 +49,8 @@ class MD5Worker(worker.ThreadWorker):
                 logger.error(message)
                 raise Exception(message)
         self.metric_store.set_dict('file_md5s', filename, current_md5)
-        return (filename, current_md5)
+        size_bytes = os.path.getsize(filename)
+        return (filename, current_md5, size_bytes)
 
     def get_md5(self, filepath):
         '''
@@ -93,7 +97,7 @@ class MD5OutputWorker(worker.ThreadWorker):
         super(MD5OutputWorker, self).__init__(*args, **kwargs)
         self.batch_size = 20  # the controlls the batch size for http get_signed_urls
         self.wait_time = 1
-        self.batch = {}
+        self.batch = []
 
     def check_for_poison_pill(self, job):
         ''' we need to make sure we ship the last batch before we terminate '''
@@ -108,7 +112,7 @@ class MD5OutputWorker(worker.ThreadWorker):
         if self.batch:
             logger.debug('sending batch: %s', self.batch)
             self.put_job(self.batch)
-            self.batch = {}
+            self.batch = []
 
     def target(self, thread_int):
 
@@ -119,8 +123,12 @@ class MD5OutputWorker(worker.ThreadWorker):
 
                 self.check_for_poison_pill(file_md5_tuple)
 
-                # add (filepath: md5) to the batch dict
-                self.batch[file_md5_tuple[0]] = file_md5_tuple[1]
+                # add file info to the batch list
+                self.batch.append({
+                    'path': file_md5_tuple[0],
+                    'hash': file_md5_tuple[1],
+                    'size': file_md5_tuple[2],
+                })
 
                 # if the batch is self.batch_size, ship it
                 if len(self.batch) == self.batch_size:
@@ -142,11 +150,44 @@ class MD5OutputWorker(worker.ThreadWorker):
 
 class HttpBatchWorker(worker.ThreadWorker):
     '''
-    This worker receives a batched dict of (filename: md5) pairs and makes a
-    batched http api call which returns a list of (filename: signed_upload_url)
-    of files that need to be uploaded.
+    This worker receives a batched list of files (path, hash, size) and makes an batched http api call
+    which returns a mixture of multipartURLs (if any) and preSignedURLs (if any).
 
-    Each item in the return list is added to the out_queue.
+    in_queue: [
+        {
+            "path": "/linux64/bin/animate",
+            "hash": "c986fb5f1c9ccf47eecc645081e4b108",
+            "size": 2147483648
+        },
+        {
+            "path": "/linux64/bin/tiff2ps",
+            "hash": " fd27a8f925a72e788ea94997ca9a21ca",
+            "size": 123
+        },
+    ]
+    out_queue: {
+        "multipartURLs": [
+            {
+                "uploadID: "FqzC8mkGxTsLzAR5CuBv771an9D5WLthLbl_xFKCaqKEdqf",
+                "filePath: "/linux64/bin/animate",
+                "md5": " c986fb5f1c9ccf47eecc645081e4b108",
+                "partSize": "1073741824",
+                "parts: [
+                    {
+                        "partNumber": 1,
+                        "url: "https://www.signedurlexample.com/signature1"
+                    },
+                    {
+                        "partNumber": 2,
+                        "url: "https://www.signedurlexample.com/signature1"
+                    }
+                ]
+            }
+        ]
+        "preSignedURLs": {
+            "/linux64/bin/tiff2ps": "https://www.signedurlexample.com/signature2"
+        }
+    }
     '''
 
     def __init__(self, *args, **kwargs):
@@ -155,7 +196,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         self.project = kwargs.get('project')
 
     def make_request(self, job):
-        uri_path = '/api/files/get_upload_urls'
+        uri_path = '/api/files/v2/get_upload_urls'
         headers = {'Content-Type': 'application/json'}
         data = {"upload_files": job,
                 "project": self.project}
@@ -180,12 +221,12 @@ class HttpBatchWorker(worker.ThreadWorker):
 
 
 '''
-This worker subscribes to a queue of (path,signed_upload_url) pairs.
+This worker subscribes to a queue of list of file uploads (multipart and presigned).
 
 For each item on the queue, it determines the size (in bytes) of the files to be
 uploaded, and aggregates the total size for all uploads.
 
-It then places the triplet (filepath, upload_url, byte_size) onto the out_queue
+It then places a tuple of (filepath, upload, type of upload(multipart or presigned)) onto the out_queue
 
 The bytes_to_upload arg is used to hold the aggregated size of all files that need
 to be uploaded. Note: This is stored as an [int] in order to pass it by
@@ -199,14 +240,14 @@ class FileStatWorker(worker.ThreadWorker):
 
     def do_work(self, job, thread_int):
         '''
-        Job is a dict of filepath: signed_upload_url pairs.
-        The FileStatWorker iterates through the dict.
-        For each item, it aggregates the filesize in bytes, and passes each
-        pair as a tuple to the UploadWorker queue.
+        Job is a list of file uploads (multipart and presigned) returned from File API.
+        The FileStatWorker iterates through the list.
+        For each item, it aggregates the filesize in bytes, and passes
+        the upload into the UploadWorker queue.
         '''
 
-        # iterate through a dict of (filepath: upload_url) pairs
-        for path, upload_url in job.iteritems():
+        # iterate through presigned urls
+        for path, upload_url in job.get("preSignedURLs", {}).iteritems():
             if not os.path.isfile(path):
                 return None
             # logger.debug('stat: %s', path)
@@ -215,7 +256,20 @@ class FileStatWorker(worker.ThreadWorker):
             self.metric_store.increment('bytes_to_upload', byte_count)
             self.metric_store.increment('num_files_to_upload')
 
-            self.put_job((path, upload_url))
+            self.put_job((path, upload_url, PRESIGNED))
+
+        # iterate through multipart
+        for multipart_upload in job.get("multipartURLs", {}).iteritems():
+            path = multipart_upload["filePath"]
+            if not os.path.isfile(path):
+                return None
+            # logger.debug('stat: %s', path)
+            byte_count = os.path.getsize(path)
+
+            self.metric_store.increment('bytes_to_upload', byte_count)
+            self.metric_store.increment('num_files_to_upload')
+
+            self.put_job((path, multipart_upload, MULTIPART))
 
         # make sure we return None, so no message is automatically added to the out_queue
         return None
@@ -223,8 +277,8 @@ class FileStatWorker(worker.ThreadWorker):
 
 class UploadWorker(worker.ThreadWorker):
     '''
-    This worker receives a (filepath: signed_upload_url) pair and performs an upload
-    of the specified file to the provided url.
+    This worker receives a either (filepath: signed_upload_url) pair or (filepath: multipart (dict)) and performs
+    an upload of the specified file to the provided url.
     '''
 
     def __init__(self, *args, **kwargs):
@@ -232,6 +286,7 @@ class UploadWorker(worker.ThreadWorker):
         self.chunk_size = 1048576  # 1M
         self.report_size = 10485760  # 10M
         self.api_client = api_client.ApiClient()
+        self.project = kwargs.get('project')
 
     def chunked_reader(self, filename):
         with open(filename, 'rb') as fp:
@@ -248,10 +303,18 @@ class UploadWorker(worker.ThreadWorker):
 
     def do_work(self, job, thread_int):
         filename = job[0]
-        upload_url = job[1]
+        upload = job[1]
+        upload_type = job[2]
+
         md5 = self.metric_store.get_dict('file_md5s', filename)
+
         try:
-            return self.do_upload(upload_url, filename, md5)
+            if upload_type == PRESIGNED:
+                return self.do_upload(upload, filename, md5)
+            elif upload_type == MULTIPART:
+                return self.do_multipart_upload(job, filename, md5)
+
+            raise Exception("upload_type neither %s or %s", PRESIGNED, MULTIPART)
         except:
             logger.exception("Failed to upload file: %s because of:\n", filename)
             real_md5 = common.get_base64_md5(filename)
@@ -295,6 +358,66 @@ class UploadWorker(worker.ThreadWorker):
                                                 tries=1,
                                                 use_api_key=True)
 
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
+    def do_multipart_upload(self, job, filename, md5):
+        """
+        Files will be split into partSize returned by the FileAPI and hydrated in S3
+        once all parts are uploaded. On successful part upload to S3, it will return an ETag. This value must be
+        tracked along with the part number in order to complete and hydrate the file in S3.
+        """
+
+        uploads = []
+        complete_payload = {
+            "uploadID": job["uploadID"],
+            "hash": md5,
+            "completedParts": [],
+            "project": self.project
+        }
+
+        # iterate over parts and upload
+        for part in job["parts"]:
+            resp = self._do_part_upload(
+                upload_url=part["url"],
+                filename=filename,
+                part_number=part["partNumber"],
+                part_size=job["partSize"]
+            )
+
+            uploads.append(resp)
+            completed_part = {
+                "partNumber": part["partNumber"],
+                "etag": resp.headers['ETag'].strip('"')
+            }
+            complete_payload["completedParts"].append(completed_part)
+
+        # Complete multipart upload in order to hydrate file in S3 for availability
+        uri_path = '/api/files/v2/complete_multipart'
+        headers = {'Content-Type': 'application/json'}
+        self.api_client.make_request(uri_path=uri_path,
+                                     verb='POST',
+                                     headers=headers,
+                                     data=json.dumps(complete_payload),
+                                     raise_on_error=True,
+                                     use_api_key=True)
+
+        return uploads
+
+    def _do_part_upload(self, upload_url, filename, part_number, part_size):
+        with open(filename, 'rb') as fh:
+            # seek to the correct part position
+            start = (part_number - 1) * part_size
+            fh.seek(start)
+
+            # read up to MULTIPART_SIZE
+            data = fh.read(part_size)
+
+            # upload part
+            return self.api_client._make_request(verb="PUT",
+                                                 conductor_url=upload_url,
+                                                 headers={},
+                                                 params=None,
+                                                 data=data)
+
 
 class Uploader(object):
 
@@ -333,7 +456,7 @@ class Uploader(object):
                 (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
                                        "project": project}),
                 (FileStatWorker, [], {'thread_count': 1}),
-                (UploadWorker, [], {'thread_count': self.args['thread_count']}),
+                (UploadWorker, [], {'thread_count': self.args['thread_count'], 'project': project}),
             ]
 
         manager = worker.JobManager(job_description)
