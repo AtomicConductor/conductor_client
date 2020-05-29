@@ -196,7 +196,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         self.project = kwargs.get('project')
 
     def make_request(self, job):
-        uri_path = '/api/files/v2/get_upload_urls'
+        uri_path = '/api/v2/files/get_upload_urls'
         headers = {'Content-Type': 'application/json'}
         data = {"upload_files": job,
                 "project": self.project}
@@ -226,7 +226,7 @@ This worker subscribes to a queue of list of file uploads (multipart and presign
 For each item on the queue, it determines the size (in bytes) of the files to be
 uploaded, and aggregates the total size for all uploads.
 
-It then places a tuple of (filepath, upload, type of upload(multipart or presigned)) onto the out_queue
+It then places a tuple of (filepath, file_size, upload, type of upload(multipart or presigned)) onto the out_queue
 
 The bytes_to_upload arg is used to hold the aggregated size of all files that need
 to be uploaded. Note: This is stored as an [int] in order to pass it by
@@ -256,10 +256,10 @@ class FileStatWorker(worker.ThreadWorker):
             self.metric_store.increment('bytes_to_upload', byte_count)
             self.metric_store.increment('num_files_to_upload')
 
-            self.put_job((path, upload_url, PRESIGNED))
+            self.put_job((path, byte_count, upload_url, PRESIGNED))
 
         # iterate through multipart
-        for multipart_upload in job.get("multipartURLs", {}).iteritems():
+        for multipart_upload in job.get("multipartURLs", []):
             path = multipart_upload["filePath"]
             if not os.path.isfile(path):
                 return None
@@ -269,7 +269,7 @@ class FileStatWorker(worker.ThreadWorker):
             self.metric_store.increment('bytes_to_upload', byte_count)
             self.metric_store.increment('num_files_to_upload')
 
-            self.put_job((path, multipart_upload, MULTIPART))
+            self.put_job((path, byte_count, multipart_upload, MULTIPART))
 
         # make sure we return None, so no message is automatically added to the out_queue
         return None
@@ -303,16 +303,17 @@ class UploadWorker(worker.ThreadWorker):
 
     def do_work(self, job, thread_int):
         filename = job[0]
-        upload = job[1]
-        upload_type = job[2]
+        file_size = job[1]
+        upload = job[2]
+        upload_type = job[3]
 
         md5 = self.metric_store.get_dict('file_md5s', filename)
 
         try:
             if upload_type == PRESIGNED:
-                return self.do_upload(upload, filename, md5)
+                return self.do_upload(upload, filename, file_size, md5)
             elif upload_type == MULTIPART:
-                return self.do_multipart_upload(job, filename, md5)
+                return self.do_multipart_upload(upload, filename, md5)
 
             raise Exception("upload_type neither %s or %s", PRESIGNED, MULTIPART)
         except:
@@ -324,7 +325,7 @@ class UploadWorker(worker.ThreadWorker):
             raise
 
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
-    def do_upload(self, upload_url, filename, md5):
+    def do_upload(self, upload_url, filename, file_size, md5):
         '''
         Note that for GCS we don't rely on the make_request's own retry mechanism because
         we need to recreate the chunked_reader generator before retrying the request.
@@ -336,16 +337,25 @@ class UploadWorker(worker.ThreadWorker):
         '''
 
         if "amazonaws" in upload_url:
-            headers = {'Content-Type': 'application/octet-stream'}
+            headers = {
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': str(file_size),
+            }
 
             with open(filename, 'rb') as fh:
                 # TODO: update make_request to be flexible with auth headers
                 # TODO: support chunked or streamed data
-                return self.api_client._make_request(verb="PUT",
-                                                     conductor_url=upload_url,
-                                                     headers=headers,
-                                                     params=None,
-                                                     data=fh)
+                self.api_client.make_prepared_request(
+                    verb="PUT",
+                    url=upload_url,
+                    headers=headers,
+                    params=None,
+                    data=fh,
+                    # s3 will return a 501 if the Transfer-Encoding header exists
+                    remove_headers_list=["Transfer-Encoding"]
+                )
+
+                return
 
         else:
             headers = {'Content-MD5': md5,
@@ -359,39 +369,39 @@ class UploadWorker(worker.ThreadWorker):
                                                 use_api_key=True)
 
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
-    def do_multipart_upload(self, job, filename, md5):
+    def do_multipart_upload(self, upload, filename, md5):
         """
         Files will be split into partSize returned by the FileAPI and hydrated in S3
         once all parts are uploaded. On successful part upload to S3, it will return an ETag. This value must be
         tracked along with the part number in order to complete and hydrate the file in S3.
         """
-
         uploads = []
         complete_payload = {
-            "uploadID": job["uploadID"],
+            "uploadID": upload["uploadID"],
             "hash": md5,
             "completedParts": [],
             "project": self.project
         }
 
         # iterate over parts and upload
-        for part in job["parts"]:
-            resp = self._do_part_upload(
+        for part in upload["parts"]:
+            resp_headers = self._do_part_upload(
                 upload_url=part["url"],
                 filename=filename,
                 part_number=part["partNumber"],
-                part_size=job["partSize"]
+                part_size=upload["partSize"]
             )
 
-            uploads.append(resp)
-            completed_part = {
-                "partNumber": part["partNumber"],
-                "etag": resp.headers['ETag'].strip('"')
-            }
-            complete_payload["completedParts"].append(completed_part)
+            if resp_headers:
+                uploads.append(upload["uploadID"])
+                completed_part = {
+                    "partNumber": part["partNumber"],
+                    "etag": resp_headers['ETag'].strip('"')
+                }
+                complete_payload["completedParts"].append(completed_part)
 
         # Complete multipart upload in order to hydrate file in S3 for availability
-        uri_path = '/api/files/v2/complete_multipart'
+        uri_path = '/api/v2/files/multipart/complete'
         headers = {'Content-Type': 'application/json'}
         self.api_client.make_request(uri_path=uri_path,
                                      verb='POST',
@@ -410,13 +420,22 @@ class UploadWorker(worker.ThreadWorker):
 
             # read up to MULTIPART_SIZE
             data = fh.read(part_size)
+            content_length = len(data)
 
             # upload part
-            return self.api_client._make_request(verb="PUT",
-                                                 conductor_url=upload_url,
-                                                 headers={},
-                                                 params=None,
-                                                 data=data)
+            response = self.api_client.make_prepared_request(
+                verb="PUT",
+                url=upload_url,
+                headers={
+                    'Content-Type': 'application/octet-stream',
+                    'Content-Length': str(content_length),
+                },
+                params=None,
+                data=data,
+                remove_headers_list=["Transfer-Encoding"]  # s3 will return a 501 if the Transfer-Encoding header exists
+            )
+
+            return response.headers
 
 
 class Uploader(object):

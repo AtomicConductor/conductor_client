@@ -7,6 +7,8 @@ import time
 import urlparse
 import jwt
 
+from requests import Request, Session
+
 from conductor import CONFIG
 from conductor.lib import common, auth
 
@@ -32,6 +34,7 @@ class ApiClient():
 
     def __init__(self):
         logger.debug('')
+        self._session = Session()
 
     def _make_request(self, verb, conductor_url, headers, params, data, raise_on_error=True):
         response = requests.request(verb, conductor_url,
@@ -57,6 +60,63 @@ class ApiClient():
 
 #         logger.debug('response.status_code: %s', response.status_code)
 #         logger.debug('response.text is: %s', response.text)
+        return response
+
+    def make_prepared_request(self, verb, url, headers=None, params=None, json=None, data=None, stream=True,
+                              remove_headers_list=None, raise_on_error=True, tries=5):
+
+        """
+        Primarily used to removed enforced headers by requests.request.
+
+        args:
+            verb: (str) of HTTP verbs
+            url: (str) url
+            headers: (dict)
+            params: (dict)
+            json: (dict)
+            data: (varies)
+            stream: (bool)
+            remove_headers_list: list of headers to remove i.e ["Transfer-Encoding"]
+            raise_on_error: (bool)
+            tries: (int) number of attempts to perform request
+
+        return: request.Response
+        """
+
+        req = Request(
+            method=verb,
+            url=url,
+            headers=headers,
+            params=params,
+            json=json,
+            data=data,
+        )
+        prepped = req.prepare()
+
+        if remove_headers_list:
+            for header in remove_headers_list:
+                if header in prepped.headers:
+                    del prepped.headers[header]
+
+        # Create a retry wrapper function
+        retry_wrapper = common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS,
+                                        tries=tries)
+
+        # wrap the request function with the retry wrapper
+        wrapped_func = retry_wrapper(self._session.send)
+
+        # call the wrapped request function
+        response = wrapped_func(prepped, stream=stream)
+
+        logger.debug("verb: %s", prepped.method)
+        logger.debug("url: %s", prepped.url)
+        logger.debug("headers: %s", prepped.headers)
+        logger.debug("params: %s", req.params)
+
+        # trigger an exception to be raised for 4XX or 5XX http responses
+        if raise_on_error:
+            response.raise_for_status()
+
         return response
 
     def make_request(self, uri_path="/", headers=None, params=None, data=None,
