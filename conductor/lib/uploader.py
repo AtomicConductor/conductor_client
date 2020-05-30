@@ -331,9 +331,8 @@ class UploadWorker(worker.ThreadWorker):
         we need to recreate the chunked_reader generator before retrying the request.
         Instead, we wrap this method in a retry decorator.
 
-        We cannot reuse make_request method for S3 because it adds auth headers that
-        S3 does not accept. S3 also requires additional signatures to support chunked data.
-        For now S3 uploads will read all data in memory resulting in a smaller supported size.
+        We cannot reuse make_request method for S3 because it adds auth and Transfer-Encoding headers that
+        S3 does not accept.
         '''
 
         if "amazonaws" in upload_url:
@@ -371,9 +370,9 @@ class UploadWorker(worker.ThreadWorker):
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def do_multipart_upload(self, upload, filename, md5):
         """
-        Files will be split into partSize returned by the FileAPI and hydrated in S3
-        once all parts are uploaded. On successful part upload to S3, it will return an ETag. This value must be
-        tracked along with the part number in order to complete and hydrate the file in S3.
+        Files will be split into partSize returned by the FileAPI and hydrated
+        once all parts are uploaded. On successful part upload, response headers will contain an ETag.
+        This value must be tracked along with the part number in order to complete and hydrate the file.
         """
         uploads = []
         complete_payload = {
@@ -400,7 +399,7 @@ class UploadWorker(worker.ThreadWorker):
                 }
                 complete_payload["completedParts"].append(completed_part)
 
-        # Complete multipart upload in order to hydrate file in S3 for availability
+        # Complete multipart upload in order to hydrate file for availability
         uri_path = '/api/v2/files/multipart/complete'
         headers = {'Content-Type': 'application/json'}
         self.api_client.make_request(uri_path=uri_path,
@@ -418,7 +417,7 @@ class UploadWorker(worker.ThreadWorker):
             start = (part_number - 1) * part_size
             fh.seek(start)
 
-            # read up to MULTIPART_SIZE
+            # read up to part size determined by file-api
             data = fh.read(part_size)
             content_length = len(data)
 

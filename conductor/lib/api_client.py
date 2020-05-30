@@ -7,8 +7,6 @@ import time
 import urlparse
 import jwt
 
-from requests import Request, Session
-
 from conductor import CONFIG
 from conductor.lib import common, auth
 
@@ -34,7 +32,7 @@ class ApiClient():
 
     def __init__(self):
         logger.debug('')
-        self._session = Session()
+        self._session = requests.Session()
 
     def _make_request(self, verb, conductor_url, headers, params, data, raise_on_error=True):
         response = requests.request(verb, conductor_url,
@@ -83,7 +81,7 @@ class ApiClient():
         return: request.Response
         """
 
-        req = Request(
+        req = requests.Request(
             method=verb,
             url=url,
             headers=headers,
