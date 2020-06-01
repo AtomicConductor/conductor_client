@@ -350,9 +350,13 @@ class UploadWorker(worker.ThreadWorker):
                     headers=headers,
                     params=None,
                     data=fh,
+                    tries=1,
                     # s3 will return a 501 if the Transfer-Encoding header exists
-                    remove_headers_list=["Transfer-Encoding"]
+                    remove_headers_list=["Transfer-Encoding"],
                 )
+
+                # report upload progress
+                self.metric_store.increment('bytes_uploaded', file_size, filename)
 
                 return
 
@@ -431,8 +435,12 @@ class UploadWorker(worker.ThreadWorker):
                 },
                 params=None,
                 data=data,
+                tries=1,
                 remove_headers_list=["Transfer-Encoding"]  # s3 will return a 501 if the Transfer-Encoding header exists
             )
+
+            # report upload progress
+            self.metric_store.increment('bytes_uploaded', content_length, filename)
 
             return response.headers
 
