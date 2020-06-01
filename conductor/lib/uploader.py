@@ -343,16 +343,21 @@ class UploadWorker(worker.ThreadWorker):
 
             with open(filename, 'rb') as fh:
                 # TODO: support chunked
-                self.api_client.make_prepared_request(
+                response = self.api_client.make_prepared_request(
                     verb="PUT",
                     url=upload_url,
                     headers=headers,
                     params=None,
                     data=fh,
+                    stream=True,
                     tries=1,
                     # s3 will return a 501 if the Transfer-Encoding header exists
                     remove_headers_list=["Transfer-Encoding"],
                 )
+
+                # close response object to add back to pool, since no body is being read
+                # https://requests.readthedocs.io/en/master/user/advanced/#body-content-workflow
+                response.close()
 
                 # report upload progress
                 self.metric_store.increment('bytes_uploaded', file_size, filename)
@@ -434,12 +439,17 @@ class UploadWorker(worker.ThreadWorker):
                 },
                 params=None,
                 data=data,
+                stream=True,
                 tries=1,
                 remove_headers_list=["Transfer-Encoding"]  # s3 will return a 501 if the Transfer-Encoding header exists
             )
 
             # report upload progress
             self.metric_store.increment('bytes_uploaded', content_length, filename)
+
+            # close response object to add back to pool
+            # https://requests.readthedocs.io/en/master/user/advanced/#body-content-workflow
+            response.close()
 
             return response.headers
 
