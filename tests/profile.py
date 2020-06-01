@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 '''
 
-sudo -HE env PATH=$PATH PYTHONPATH=$PYTHONPATH HOME=$HOME ./profile.py dirs /mnt/WD-Passport-WDBYFT0040BBL-1/test_data/random_data/07 --read=False --xxhash=True  --md5=False --warm_cache=True --benchmark_device=True
+sudo -HE env PATH=$PATH PYTHONPATH=$PYTHONPATH HOME=$HOME ./profile.py dirs /mnt/WD-Passport-WDBYFT0040BBL-1/test_data/random_data/07 --read=False --xxhash=True  --md5=False --clear_cache=True --benchmark_device=True
 '''
 import argparse
 import collections
+import ctypes
 import csv
 import functools
 import hashlib
@@ -14,6 +15,7 @@ import json
 import logging
 from multiprocessing.pool import ThreadPool
 import os
+import platform
 import re
 import socket
 import subprocess
@@ -27,8 +29,6 @@ try:
 except ImportError as e:
     print "warning: Could not import xxhash.  xxhash functionality disabled"
     XXHASH = False
-
-IS_ROOT = os.geteuid() is 0
 
 DEFAULT_READ_SIZE = 65536
 
@@ -48,6 +48,8 @@ ARGS_HEADERS = [NAME, VALUE]
 DEVICE_HEADERS = [DESCRIPTION, VALUE]
 DATA_HEADERS = (DESCRIPTION, FILEPATH, SIZE, TIME_STAT, TIME_READ, TIME_MD5, TIME_XXHASH)
 SUMMARY_HEADERS = (DESCRIPTION, FILE_COUNT, SIZE, TIME_STAT, TIME_READ, TIME_MD5, TIME_XXHASH)
+
+HERE = os.path.realpath(__file__)
 
 logger = logging.getLogger("conductor")
 
@@ -93,12 +95,23 @@ def parse_args():
         )
 
     common_parser.add_argument(
+        "--clear_cache",
+        choices=[False, True],
+        type=cast_to_bool,
+        default=True if IS_ADMIN else False,
+        help=("Flushes the OS' file-system cache to ensure that files are read from disk (rather "
+              "than benefitting from cached data). This is the default behavior when running as "
+              "root/admin, and is highly recommended. If False, rather than flushing the cache, "
+              "each file will be \"warmed up\" by reading it once before running any tests on it")
+    )
+
+    common_parser.add_argument(
         "--warm_cache",
         choices=[False, True],
         type=cast_to_bool,
-        default=False if IS_ROOT else True,
+        default=True if not IS_ADMIN else False,
         help=("If True, will \"warm up\"(i.e.read) each file before performing any further operation on it. "
-              "If False (which requires running as root)will clear OS cache before performing read operations (recommended)")
+              "It's preferable that --clear_cache be used instead. But not both options.")
     )
 
     common_parser.add_argument(
@@ -147,9 +160,9 @@ def parse_args():
         "--benchmark_device",
         choices=[False, True],
         type=cast_to_bool,
-        default=True if IS_ROOT else False,
+        default=True if IS_ADMIN and IS_LINUX else False,
         help=("If True, will test read-throughput of disk before performing file profiling."
-              "Requires root privileges")
+              "Requires root privileges. Only available on Linux.")
     )
 
     common_parser.add_argument(
@@ -306,7 +319,7 @@ def run_profiler(filepaths, args):
 
 def _run_profiler(filepaths, args):
     if args.output_dir:
-        filename = "%s_threads=%s_stat=%s_read=%s_md5=%s_xxhash=%s_warm_cache=%s.csv"
+        filename = "%s_threads=%s_stat=%s_read=%s_md5=%s_xxhash=%s_clear_cache=%s_warm_cache=%s.csv"
         args.csv_path = os.path.join(args.output_dir, filename % (
             socket.gethostname(),
             args.threads,
@@ -314,6 +327,7 @@ def _run_profiler(filepaths, args):
             bool(args.read),
             bool(args.md5),
             bool(args.xxhash),
+            bool(args.clear_cache),
             bool(args.warm_cache),
 
         ))
@@ -327,6 +341,7 @@ def _run_profiler(filepaths, args):
         read=args.read,
         hash_md5=args.md5,
         hash_xx=args.xxhash if XXHASH else None,
+        clear_cache=args.clear_cache,
         warm_cache=args.warm_cache,
         read_size=args.read_size,
         thread_count=args.threads,
@@ -336,8 +351,19 @@ def _run_profiler(filepaths, args):
     )
 
 
-def profile(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warm_cache=False, benchmark_device=True,
-            read_size=DEFAULT_READ_SIZE, thread_count=1, skip_failures=False, csv_filepath=None):
+def profile(filepaths,
+            stat=True,
+            read=True,
+            hash_md5=True,
+            hash_xx=True,
+            clear_cache=True,
+            warm_cache=False,
+            benchmark_device=True,
+            read_size=DEFAULT_READ_SIZE,
+            thread_count=1,
+            skip_failures=False,
+            csv_filepath=None,
+            ):
     '''
     Profile the given list of files. see "profile_file" function for
     additional argument details.  If a output_dir is provided, verbose profiling data
@@ -383,8 +409,18 @@ def profile(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warm_c
     logger.info("Profiling %s files using %s threads...", len(filepaths), thread_count)
 
     # Run the profile
-    results = profile_files(filepaths, stat=stat, read=read, hash_md5=hash_md5, hash_xx=hash_xx, warm_cache=warm_cache,
-                            read_size=read_size, thread_count=thread_count, skip_failures=skip_failures)
+    results = profile_files(
+        filepaths,
+        stat=stat,
+        read=read,
+        hash_md5=hash_md5,
+        hash_xx=hash_xx,
+        clear_cache=clear_cache,
+        warm_cache=warm_cache,
+        read_size=read_size,
+        thread_count=thread_count,
+        skip_failures=skip_failures,
+    )
 
     # Record the duration of the entire test.
     test_time_duration = time.time() - test_time_start
@@ -428,29 +464,63 @@ def profile(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warm_c
         logger.info("Summary written to: %s", csv_filepath)
 
 
-def profile_files(filepaths, stat=True, read=True, hash_md5=True, hash_xx=True, warm_cache=False,
-                  read_size=DEFAULT_READ_SIZE, thread_count=1, skip_failures=False):
+def profile_files(filepaths,
+                  stat=True,
+                  read=True,
+                  hash_md5=True,
+                  hash_xx=True,
+                  clear_cache=True,
+                  warm_cache=False,
+                  read_size=DEFAULT_READ_SIZE,
+                  thread_count=1,
+                  skip_failures=False,
+                  ):
     '''
     Profile the given list of files within a threading pool.  see "profile_file" function for
     additional argument details.
     '''
+    if clear_cache:
+        logger.debug("flushing OS caches")
+        flush_cache()
 
     # Run Profile using the number of threads specified
     pool = ThreadPool(processes=thread_count)
-    return pool.map(functools.partial(profile_file,
-                                      stat=stat,
-                                      read=read,
-                                      hash_md5=hash_md5,
-                                      hash_xx=hash_xx,
-                                      warm_cache=warm_cache,
-                                      read_size=read_size,
-                                      skip_failures=skip_failures,
-                                      ),
-                    filepaths)
+    func = functools.partial(
+        threaded_profile,
+        stat=stat,
+        read=read,
+        hash_md5=hash_md5,
+        hash_xx=hash_xx,
+        clear_cache=False,  # don't flush cache per file (already flushed OS earlier)
+        warm_cache=warm_cache,
+        read_size=read_size,
+        skip_failures=skip_failures,
+    )
+    return pool.map(func, filepaths)
 
 
-def profile_file(filepath, stat=True, read=True, hash_md5=True, hash_xx=True, warm_cache=False,
-                 read_size=DEFAULT_READ_SIZE, skip_failures=False):
+# define function
+def threaded_profile(*args, **kwargs):
+    '''
+    Slim wrapper to log out exception tracebacks that occur in thread.
+    '''
+    try:
+        return profile_file(*args, **kwargs)
+    except:
+        logger.exception("Encountered error:")
+        raise
+
+
+def profile_file(filepath,
+                 stat=True,
+                 read=True,
+                 hash_md5=True,
+                 hash_xx=True,
+                 clear_cache=True,
+                 warm_cache=False,
+                 read_size=DEFAULT_READ_SIZE,
+                 skip_failures=False,
+                 ):
     '''
     Perform the indicated actions on the given file.  Record and return the time that it takes for
     each action.
@@ -460,13 +530,16 @@ def profile_file(filepath, stat=True, read=True, hash_md5=True, hash_xx=True, wa
         read: bool.  If True, read the entire file.
         hash_md5: bool.  If True, generate an md5 hash from the file.
         hash_xx: bool.  If True, generate an xx hash from the file.
-        warmup: bool.  If True, read the entire file first (i.e. "warm it up") before performing any
+        clear_cache: bool. If True, flushes the OS' file-system cache to ensure that files are read 
+            from disk (rather than cache).
+        warm_cache: bool.  If True, read the entire file first (i.e. "warm it up") before performing any
              operations on it.  This essentially loads the file into any OS/disk cache so that
              subsequent reads to that file will yield consistent performance between tests.
         read_size: int. The number of bytes to read when
         skip_failures: bool. If True, skip/suppress any failures (rather than raising an exception).
         return: dict of metrics data
     '''
+
     # Create the boilerplate data structure for profile data
     profile_data = {
         DESCRIPTION: "file",
@@ -477,7 +550,7 @@ def profile_file(filepath, stat=True, read=True, hash_md5=True, hash_xx=True, wa
         TIME_MD5: None,
         TIME_XXHASH: None,
     }
-    profiler = Profile(use_cache=warm_cache, read_size=read_size)
+    profiler = Profile(clear_cache=clear_cache, warm_cache=warm_cache, read_size=read_size)
     try:
 
         if stat:
@@ -573,9 +646,21 @@ def generate_args_summary(args):
     return args_summary
 
 
+def flush_cache():
+    '''
+    Platform ignostic cache flushing
+    '''
+    if IS_LINUX:
+        return drop_caches(value=3, sync=True)
+    if IS_WINDOWS:
+        return clear_filesystem_cache()
+    logger.warning('cache flush not implemented for OS "%s"', platform.system())
+
+
 def drop_caches(value=3, sync=True):
     '''
-    Flush Operating System caches (Linux only!)
+    Linux only!  Requires root.
+    Flush Operating System caches.
 
     Uses /proc/sys/vm/drop_caches
 
@@ -590,6 +675,17 @@ def drop_caches(value=3, sync=True):
     cmd = "echo %s > /proc/sys/vm/drop_caches" % value
     if sync:
         cmd = "sync;" + cmd
+    subprocess.check_call(cmd, shell=True)
+
+
+def clear_filesystem_cache():
+    '''
+    Windows only! Requires admin privs.
+    Flush Windows' file-system cache
+    '''
+    script_filepath = os.path.join(os.path.dirname(HERE), "windows", "Clear-StandByMemory.ps1")
+    cmd = 'powershell.exe -NoLogo -NoProfile -ExecutionPolicy RemoteSigned -File "%s"' % script_filepath
+    logger.debug(cmd)
     subprocess.check_call(cmd, shell=True)
 
 
@@ -791,17 +887,49 @@ class SummaryTableStr(loggeria.TableStr):
     }
 
 
+def get_oses():
+    '''
+    Return a three item tuple where each item is bool, indicating whether the corresponding OS is
+    active/present.  The order of the tuple is:
+        1. Linux
+        2. Windows
+        3. MacOs (Darwin)
+
+    e.g  (True, False, False)  would indicate that Linux is the active operating system.
+
+    '''
+    os = platform.system()
+    return (os == "Linux", os == "Windows", os == "Darwin")
+
+
+def get_admin():
+    '''
+    Return True if the user has admin/root permissions
+    TODO: implement for macOS
+    '''
+    # linux admin test
+    if hasattr(os, 'geteuid'):
+        return os.geteuid() == 0
+
+    # Windows admin test
+    if hasattr(ctypes, 'windll'):
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+
+    logger.warning("Unable to determine admin privileges")
+
+
 class Profile(object):
     '''
-    Wrapped function's signuature must use a filepath as the first argument
+    Wrapped function's signature must use a filepath as the first argument
     '''
 
-    def __init__(self, use_cache=False, read_size=DEFAULT_READ_SIZE):
+    def __init__(self, clear_cache=True, warm_cache=False, read_size=DEFAULT_READ_SIZE):
         '''
         args
-            use_cache: bool.  If True, will read file first before calling wrapped function
+            clear_cache: bool. If True, flush OS file-system cache before running tests.
         '''
-        self.use_cache = use_cache
+        self.clear_cache = clear_cache
+        self.warm_cache = warm_cache
         self.read_size = read_size
 
     def __call__(self, function):
@@ -809,12 +937,12 @@ class Profile(object):
         @functools.wraps(function)
         def _decorator(*args, **kwargs):
             filepath = args[0]
-            if self.use_cache:
+            if self.clear_cache:
+                logger.debug("flushing os caches")
+                flush_cache()
+            if self.warm_cache:
                 logger.debug("warming file..")
                 read_file(filepath, read_size=self.read_size)
-            else:
-                logger.debug("flushing os caches")
-                drop_caches(value=3, sync=True)
             start_time = time.time()
             result = function(*args, **kwargs)
             duration = time.time() - start_time
@@ -823,6 +951,10 @@ class Profile(object):
 
 
 if __name__ == '__main__':
+    IS_ADMIN = get_admin()
+    IS_LINUX, IS_WINDOWS, IS_DARWIN = get_oses()
     args = parse_args()
     loggeria.setup_conductor_logging(logger_level=loggeria.LEVEL_MAP.get(args.log_level))
+    logger.info("admin: %s", IS_ADMIN)
+    logger.info("os: %s", platform.system())
     args.func(args)
