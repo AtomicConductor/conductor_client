@@ -27,7 +27,6 @@ CONNECTION_EXCEPTIONS = (requests.exceptions.HTTPError,
 
 
 class ApiClient():
-
     http_verbs = ["PUT", "POST", "GET", "DELETE", "HEAD", "PATCH"]
 
     def __init__(self):
@@ -35,10 +34,13 @@ class ApiClient():
         self._session = requests.Session()
 
     def _make_request(self, verb, conductor_url, headers, params, data, raise_on_error=True):
-        response = requests.request(verb, conductor_url,
-                                    headers=headers,
-                                    params=params,
-                                    data=data)
+        response = self._session.request(
+            method=verb,
+            url=conductor_url,
+            headers=headers,
+            params=params,
+            data=data
+        )
 
         logger.debug("verb: %s", verb)
         logger.debug("conductor_url: %s", conductor_url)

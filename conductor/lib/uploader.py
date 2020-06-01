@@ -342,8 +342,7 @@ class UploadWorker(worker.ThreadWorker):
             }
 
             with open(filename, 'rb') as fh:
-                # TODO: update make_request to be flexible with auth headers
-                # TODO: support chunked or streamed data
+                # TODO: support chunked
                 self.api_client.make_prepared_request(
                     verb="PUT",
                     url=upload_url,
