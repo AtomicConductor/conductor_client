@@ -64,7 +64,7 @@ class ApiClient():
                               remove_headers_list=None, raise_on_error=True, tries=5):
 
         """
-        Primarily used to removed enforced headers by requests.request.
+        Primarily used to removed enforced headers by requests.Request.
 
         args:
             verb: (str) of HTTP verbs
@@ -93,12 +93,13 @@ class ApiClient():
 
         if remove_headers_list:
             for header in remove_headers_list:
-                if header in prepped.headers:
-                    del prepped.headers[header]
+                prepped.headers.pop(header, None)
 
         # Create a retry wrapper function
-        retry_wrapper = common.DecRetry(retry_exceptions=CONNECTION_EXCEPTIONS,
-                                        tries=tries)
+        retry_wrapper = common.DecRetry(
+            retry_exceptions=CONNECTION_EXCEPTIONS,
+            tries=tries
+        )
 
         # wrap the request function with the retry wrapper
         wrapped_func = retry_wrapper(self._session.send)
