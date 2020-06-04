@@ -391,7 +391,7 @@ class UploadWorker(worker.ThreadWorker):
 
         # iterate over parts and upload
         for part in upload["parts"]:
-            resp_headers = self._do_part_upload(
+            resp_headers = self._do_multipart_upload(
                 upload_url=part["url"],
                 filename=filename,
                 part_number=part["partNumber"],
@@ -418,7 +418,7 @@ class UploadWorker(worker.ThreadWorker):
 
         return uploads
 
-    def _do_part_upload(self, upload_url, filename, part_number, part_size):
+    def _do_multipart_upload(self, upload_url, filename, part_number, part_size):
         with open(filename, 'rb') as fh:
             # seek to the correct part position
             start = (part_number - 1) * part_size
