@@ -151,7 +151,7 @@ class MD5OutputWorker(worker.ThreadWorker):
 class HttpBatchWorker(worker.ThreadWorker):
     '''
     This worker receives a batched list of files (path, hash, size) and makes an batched http api call
-    which returns a mixture of multipartURLs (if any) and singlePartURLs (if any).
+    which returns a mixture of multiPartURLs (if any) and singlePartURLs (if any).
 
     in_queue: [
         {
@@ -166,7 +166,7 @@ class HttpBatchWorker(worker.ThreadWorker):
         },
     ]
     out_queue: {
-        "multipartURLs": [
+        "multiPartURLs": [
             {
                 "uploadID: "FqzC8mkGxTsLzAR5CuBv771an9D5WLthLbl_xFKCaqKEdqf",
                 "filePath: "/linux64/bin/animate",
@@ -259,7 +259,7 @@ class FileStatWorker(worker.ThreadWorker):
             self.put_job((path, byte_count, upload_url, SINGLEPART))
 
         # iterate through multipart
-        for multipart_upload in job.get("multipartURLs", []):
+        for multipart_upload in job.get("multiPartURLs", []):
             path = multipart_upload["filePath"]
             if not os.path.isfile(path):
                 return None
