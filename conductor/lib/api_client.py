@@ -62,7 +62,7 @@ class ApiClient():
 #         logger.debug('response.text is: %s', response.text)
         return response
 
-    def make_prepared_request(self, verb, url, headers=None, params=None, json=None, data=None, stream=True,
+    def make_prepared_request(self, verb, url, headers=None, params=None, json=None, data=None, stream=False,
                               remove_headers_list=None, raise_on_error=True, tries=5):
 
         """

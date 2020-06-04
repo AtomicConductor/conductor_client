@@ -349,7 +349,6 @@ class UploadWorker(worker.ThreadWorker):
                     headers=headers,
                     params=None,
                     data=fh,
-                    stream=True,
                     tries=1,
                     # s3 will return a 501 if the Transfer-Encoding header exists
                     remove_headers_list=["Transfer-Encoding"],
@@ -439,7 +438,6 @@ class UploadWorker(worker.ThreadWorker):
                 },
                 params=None,
                 data=data,
-                stream=True,
                 tries=1,
                 remove_headers_list=["Transfer-Encoding"]  # s3 will return a 501 if the Transfer-Encoding header exists
             )
