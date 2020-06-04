@@ -16,7 +16,7 @@ LOG_FORMATTER = logging.Formatter('%(asctime)s  %(name)s%(levelname)9s  %(thread
 
 logger = logging.getLogger(__name__)
 
-PRESIGNED = "presigned"
+SINGLEPART = "singlepart"
 MULTIPART = "multipart"
 
 
@@ -151,7 +151,7 @@ class MD5OutputWorker(worker.ThreadWorker):
 class HttpBatchWorker(worker.ThreadWorker):
     '''
     This worker receives a batched list of files (path, hash, size) and makes an batched http api call
-    which returns a mixture of multipartURLs (if any) and preSignedURLs (if any).
+    which returns a mixture of multipartURLs (if any) and singlePartURLs (if any).
 
     in_queue: [
         {
@@ -170,8 +170,8 @@ class HttpBatchWorker(worker.ThreadWorker):
             {
                 "uploadID: "FqzC8mkGxTsLzAR5CuBv771an9D5WLthLbl_xFKCaqKEdqf",
                 "filePath: "/linux64/bin/animate",
-                "md5": " c986fb5f1c9ccf47eecc645081e4b108",
-                "partSize": "1073741824",
+                "md5": "c986fb5f1c9ccf47eecc645081e4b108",
+                "partSize": 1073741824,
                 "parts: [
                     {
                         "partNumber": 1,
@@ -184,7 +184,7 @@ class HttpBatchWorker(worker.ThreadWorker):
                 ]
             }
         ]
-        "preSignedURLs": {
+        "singlePartURLs": {
             "/linux64/bin/tiff2ps": "https://www.signedurlexample.com/signature2"
         }
     }
@@ -221,12 +221,12 @@ class HttpBatchWorker(worker.ThreadWorker):
 
 
 '''
-This worker subscribes to a queue of list of file uploads (multipart and presigned).
+This worker subscribes to a queue of list of file uploads (multipart and singlepart).
 
 For each item on the queue, it determines the size (in bytes) of the files to be
 uploaded, and aggregates the total size for all uploads.
 
-It then places a tuple of (filepath, file_size, upload, type of upload(multipart or presigned)) onto the out_queue
+It then places a tuple of (filepath, file_size, upload, type of upload(multipart or singlepart)) onto the out_queue
 
 The bytes_to_upload arg is used to hold the aggregated size of all files that need
 to be uploaded. Note: This is stored as an [int] in order to pass it by
@@ -240,14 +240,14 @@ class FileStatWorker(worker.ThreadWorker):
 
     def do_work(self, job, thread_int):
         '''
-        Job is a list of file uploads (multipart and presigned) returned from File API.
+        Job is a list of file uploads (multipart and singlepart) returned from File API.
         The FileStatWorker iterates through the list.
         For each item, it aggregates the filesize in bytes, and passes
         the upload into the UploadWorker queue.
         '''
 
-        # iterate through presigned urls
-        for path, upload_url in job.get("preSignedURLs", {}).iteritems():
+        # iterate through singlepart urls
+        for path, upload_url in job.get("singlePartURLs", {}).iteritems():
             if not os.path.isfile(path):
                 return None
             # logger.debug('stat: %s', path)
@@ -256,7 +256,7 @@ class FileStatWorker(worker.ThreadWorker):
             self.metric_store.increment('bytes_to_upload', byte_count)
             self.metric_store.increment('num_files_to_upload')
 
-            self.put_job((path, byte_count, upload_url, PRESIGNED))
+            self.put_job((path, byte_count, upload_url, SINGLEPART))
 
         # iterate through multipart
         for multipart_upload in job.get("multipartURLs", []):
@@ -310,12 +310,12 @@ class UploadWorker(worker.ThreadWorker):
         md5 = self.metric_store.get_dict('file_md5s', filename)
 
         try:
-            if upload_type == PRESIGNED:
-                return self.do_upload(upload, filename, file_size, md5)
+            if upload_type == SINGLEPART:
+                return self.do_singlepart_upload(upload, filename, file_size, md5)
             elif upload_type == MULTIPART:
                 return self.do_multipart_upload(upload, filename, md5)
 
-            raise Exception("upload_type neither %s or %s", PRESIGNED, MULTIPART)
+            raise Exception("upload_type neither %s or %s" % (SINGLEPART, MULTIPART))
         except:
             logger.exception("Failed to upload file: %s because of:\n", filename)
             real_md5 = common.get_base64_md5(filename)
@@ -325,7 +325,7 @@ class UploadWorker(worker.ThreadWorker):
             raise
 
     @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
-    def do_upload(self, upload_url, filename, file_size, md5):
+    def do_singlepart_upload(self, upload_url, filename, file_size, md5):
         '''
         Note that for GCS we don't rely on the make_request's own retry mechanism because
         we need to recreate the chunked_reader generator before retrying the request.
