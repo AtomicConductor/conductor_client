@@ -66,7 +66,13 @@ class ApiClient():
                               remove_headers_list=None, raise_on_error=True, tries=5):
 
         """
-        Primarily used to removed enforced headers by requests.Request.
+        Primarily used to removed enforced headers by requests.Request. Requests 2.x will add
+        Transfer-Encoding: chunked with file like object that is 0 bytes, causing s3 failures (501)
+        - https://github.com/psf/requests/issues/4215#issuecomment-319521235
+
+        To get around this bug make_prepared_request has functionality to remove the enforced header that would
+        occur when using requests.request(...). Requests 3.x resolves this issue, when client is built to use
+        Requests 3.x this function can be deprecated.
 
         args:
             verb: (str) of HTTP verbs
