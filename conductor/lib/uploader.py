@@ -360,9 +360,6 @@ class UploadWorker(worker.ThreadWorker):
 
                 # report upload progress
                 self.metric_store.increment('bytes_uploaded', file_size, filename)
-
-                return
-
         else:
             headers = {'Content-MD5': md5,
                        'Content-Type': 'application/octet-stream'}
@@ -374,7 +371,6 @@ class UploadWorker(worker.ThreadWorker):
                                                 tries=1,
                                                 use_api_key=True)
 
-    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def do_multipart_upload(self, upload, filename, md5):
         """
         Files will be split into partSize returned by the FileAPI and hydrated
@@ -418,6 +414,7 @@ class UploadWorker(worker.ThreadWorker):
 
         return uploads
 
+    @common.DecRetry(retry_exceptions=api_client.CONNECTION_EXCEPTIONS, tries=5)
     def _do_multipart_upload(self, upload_url, filename, part_number, part_size):
         with open(filename, 'rb') as fh:
             # seek to the correct part position
@@ -489,7 +486,7 @@ class Uploader(object):
                 (HttpBatchWorker, [], {'thread_count': self.args['thread_count'],
                                        "project": project}),
                 (FileStatWorker, [], {'thread_count': 1}),
-                (UploadWorker, [], {'thread_count': self.args['thread_count'], 'project': project}),
+                (UploadWorker, [], {'thread_count': self.args['thread_count']}),
             ]
 
         manager = worker.JobManager(job_description)
