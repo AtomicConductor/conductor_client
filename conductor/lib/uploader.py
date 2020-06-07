@@ -223,7 +223,7 @@ class HttpBatchWorker(worker.ThreadWorker):
 '''
 This worker subscribes to a queue of list of file uploads (multipart and singlepart).
 
-For each item on the queue, it determines the size (in bytes) of the files to be
+For each item on the queue, it uses the HttpBatchWorker response payload fileSize (bytes) to be
 uploaded, and aggregates the total size for all uploads.
 
 It then places a tuple of (filepath, file_size, upload, type of upload(multipart or singlepart)) onto the out_queue
@@ -247,29 +247,25 @@ class FileStatWorker(worker.ThreadWorker):
         '''
 
         # iterate through singlepart urls
-        for path, upload_url in job.get("singlePartURLs", {}).iteritems():
-            if not os.path.isfile(path):
-                return None
-            # logger.debug('stat: %s', path)
-            byte_count = os.path.getsize(path)
+        for singlepart_upload in job.get("singlePartURLs", []):
+            path = singlepart_upload["filePath"]
+            file_size = singlepart_upload["fileSize"]
+            upload_url = singlepart_upload["preSignedURL"]
 
-            self.metric_store.increment('bytes_to_upload', byte_count)
+            self.metric_store.increment('bytes_to_upload', file_size)
             self.metric_store.increment('num_files_to_upload')
 
-            self.put_job((path, byte_count, upload_url, SINGLEPART))
+            self.put_job((path, file_size, upload_url, SINGLEPART))
 
         # iterate through multipart
         for multipart_upload in job.get("multiPartURLs", []):
             path = multipart_upload["filePath"]
-            if not os.path.isfile(path):
-                return None
-            # logger.debug('stat: %s', path)
-            byte_count = os.path.getsize(path)
+            file_size = multipart_upload["fileSize"]
 
-            self.metric_store.increment('bytes_to_upload', byte_count)
+            self.metric_store.increment('bytes_to_upload', file_size)
             self.metric_store.increment('num_files_to_upload')
 
-            self.put_job((path, byte_count, multipart_upload, MULTIPART))
+            self.put_job((path, file_size, multipart_upload, MULTIPART))
 
         # make sure we return None, so no message is automatically added to the out_queue
         return None
@@ -336,6 +332,8 @@ class UploadWorker(worker.ThreadWorker):
         '''
 
         if "amazonaws" in upload_url:
+            # must declare content-length ourselves due to zero byte bug in requests library.
+            # api_client.make_prepared_request docstring.
             headers = {
                 'Content-Type': 'application/octet-stream',
                 'Content-Length': str(file_size),
@@ -430,8 +428,7 @@ class UploadWorker(worker.ThreadWorker):
                 verb="PUT",
                 url=upload_url,
                 headers={
-                    'Content-Type': 'application/octet-stream',
-                    'Content-Length': str(content_length),
+                    'Content-Type': 'application/octet-stream'
                 },
                 params=None,
                 data=data,
