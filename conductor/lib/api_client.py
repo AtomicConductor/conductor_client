@@ -27,17 +27,20 @@ CONNECTION_EXCEPTIONS = (requests.exceptions.HTTPError,
 
 
 class ApiClient():
-
     http_verbs = ["PUT", "POST", "GET", "DELETE", "HEAD", "PATCH"]
 
     def __init__(self):
         logger.debug('')
+        self._session = requests.Session()
 
     def _make_request(self, verb, conductor_url, headers, params, data, raise_on_error=True):
-        response = requests.request(verb, conductor_url,
-                                    headers=headers,
-                                    params=params,
-                                    data=data)
+        response = self._session.request(
+            method=verb,
+            url=conductor_url,
+            headers=headers,
+            params=params,
+            data=data
+        )
 
         logger.debug("verb: %s", verb)
         logger.debug("conductor_url: %s", conductor_url)
@@ -57,6 +60,70 @@ class ApiClient():
 
 #         logger.debug('response.status_code: %s', response.status_code)
 #         logger.debug('response.text is: %s', response.text)
+        return response
+
+    def make_prepared_request(self, verb, url, headers=None, params=None, json=None, data=None, stream=False,
+                              remove_headers_list=None, raise_on_error=True, tries=5):
+
+        """
+        Primarily used to removed enforced headers by requests.Request. Requests 2.x will add
+        Transfer-Encoding: chunked with file like object that is 0 bytes, causing s3 failures (501)
+        - https://github.com/psf/requests/issues/4215#issuecomment-319521235
+
+        To get around this bug make_prepared_request has functionality to remove the enforced header that would
+        occur when using requests.request(...). Requests 3.x resolves this issue, when client is built to use
+        Requests 3.x this function can be deprecated.
+
+        args:
+            verb: (str) of HTTP verbs
+            url: (str) url
+            headers: (dict)
+            params: (dict)
+            json: (dict)
+            data: (varies)
+            stream: (bool)
+            remove_headers_list: list of headers to remove i.e ["Transfer-Encoding"]
+            raise_on_error: (bool)
+            tries: (int) number of attempts to perform request
+
+        return: request.Response
+        """
+
+        req = requests.Request(
+            method=verb,
+            url=url,
+            headers=headers,
+            params=params,
+            json=json,
+            data=data,
+        )
+        prepped = req.prepare()
+
+        if remove_headers_list:
+            for header in remove_headers_list:
+                prepped.headers.pop(header, None)
+
+        # Create a retry wrapper function
+        retry_wrapper = common.DecRetry(
+            retry_exceptions=CONNECTION_EXCEPTIONS,
+            tries=tries
+        )
+
+        # wrap the request function with the retry wrapper
+        wrapped_func = retry_wrapper(self._session.send)
+
+        # call the wrapped request function
+        response = wrapped_func(prepped, stream=stream)
+
+        logger.debug("verb: %s", prepped.method)
+        logger.debug("url: %s", prepped.url)
+        logger.debug("headers: %s", prepped.headers)
+        logger.debug("params: %s", req.params)
+
+        # trigger an exception to be raised for 4XX or 5XX http responses
+        if raise_on_error:
+            response.raise_for_status()
+
         return response
 
     def make_request(self, uri_path="/", headers=None, params=None, data=None,
