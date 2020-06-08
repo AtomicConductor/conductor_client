@@ -168,25 +168,29 @@ class HttpBatchWorker(worker.ThreadWorker):
     out_queue: {
         "multiPartURLs": [
             {
-                "uploadID: "FqzC8mkGxTsLzAR5CuBv771an9D5WLthLbl_xFKCaqKEdqf",
-                "filePath: "/linux64/bin/animate",
+                "uploadID": "FqzC8mkGxTsLzAR5CuBv771an9D5WLthLbl_xFKCaqKEdqf",
+                "filePath": "/linux64/bin/animate",
                 "md5": "c986fb5f1c9ccf47eecc645081e4b108",
                 "partSize": 1073741824,
-                "parts: [
+                "parts": [
                     {
                         "partNumber": 1,
-                        "url: "https://www.signedurlexample.com/signature1"
+                        "url": "https://www.signedurlexample.com/signature1"
                     },
                     {
                         "partNumber": 2,
-                        "url: "https://www.signedurlexample.com/signature1"
+                        "url": "https://www.signedurlexample.com/signature1"
                     }
                 ]
             }
+        ],
+        "singlePartURLs": [
+            {
+                "filePath": "/linux64/bin/tiff2ps",
+                "fileSize": 123,
+                "preSignedURL": "https://www.signedurlexample.com/signature2"
+            }
         ]
-        "singlePartURLs": {
-            "/linux64/bin/tiff2ps": "https://www.signedurlexample.com/signature2"
-        }
     }
     '''
 
