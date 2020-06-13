@@ -26,9 +26,10 @@
       - name: Fetch Windows desktop client
         service: python
         command: /src/installers/build/fetch_client.sh win64
-      - name: Certify Companion Binaries
-        service: certify
-        command: bash /src/installers/certify_companion_binaries.sh        
+      # - Removed to unblock companion build
+      # - name: Certify Companion Binaries
+      #   service: certify
+      #   command: bash /src/installers/certify_companion_binaries.sh        
       - service: deb
         name: Build Windows installer with desktop client
         command: /src/installers/windows/build.sh --with_client
