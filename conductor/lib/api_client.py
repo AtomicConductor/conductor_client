@@ -31,10 +31,9 @@ class ApiClient():
 
     def __init__(self):
         logger.debug('')
-        self._session = requests.Session()
 
     def _make_request(self, verb, conductor_url, headers, params, data, raise_on_error=True):
-        response = self._session.request(
+        response = requests.request(
             method=verb,
             url=conductor_url,
             headers=headers,
@@ -109,8 +108,14 @@ class ApiClient():
             tries=tries
         )
 
+        # requests sessions potentially not thread-safe, but need to potentially removed enforced headers by using a
+        # prepared request.create which can only be done through an request.Session object. Create Session object per call
+        # of make_prepared_request, it will not benefit from connection pooling reuse.
+        # https://github.com/psf/requests/issues/1871
+        session = requests.Session()
+
         # wrap the request function with the retry wrapper
-        wrapped_func = retry_wrapper(self._session.send)
+        wrapped_func = retry_wrapper(session.send)
 
         # call the wrapped request function
         response = wrapped_func(prepped, stream=stream)
