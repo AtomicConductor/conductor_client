@@ -12,6 +12,7 @@ RUN apt-get update && \
 RUN git clone https://github.com/mtrojnar/osslsigncode.git /tmp/osslsigncode
 
 RUN cd /tmp/osslsigncode && \
+       git checkout 1670a07089febfb5546880e0df916f3f196156ce && \
        ./autogen.sh && \
        ./configure && \
        make && \
