@@ -11,6 +11,7 @@ RUN apt-get update && \
                        
 RUN git clone https://github.com/mtrojnar/osslsigncode.git /tmp/osslsigncode
 
+# use specific git sha since v2.1 or master can be potentially broken at compile-time
 RUN cd /tmp/osslsigncode && \
        git checkout 1670a07089febfb5546880e0df916f3f196156ce && \
        ./autogen.sh && \
