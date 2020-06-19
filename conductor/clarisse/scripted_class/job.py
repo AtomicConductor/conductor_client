@@ -157,7 +157,7 @@ class Job(object):
                 "value": "/opt/silhouettefx/silhouette/7/silhouette-7.5.2",
                 "merge_policy": "exclusive",
             },
-            {"name": "CONDUCTOR_PATHHELPER", "value": 0, "merge_policy": "exclusive"},
+            {"name": "CONDUCTOR_PATHHELPER", "value": "0", "merge_policy": "exclusive"},
             {
                 "name": "LD_LIBRARY_PATH",
                 "value": "/usr/lib/python2.7/config-x86_64-linux-gnu",
