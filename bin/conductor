@@ -7,6 +7,8 @@ import os
 import re
 import sys
 
+import sentry_sdk
+
 try:
     imp.find_module('conductor')
 
@@ -241,6 +243,14 @@ def parse_args():
                                      "everyday, while storing the last 7 days "
                                      "of logs"))
 
+    submit_parser.add_argument("--disable_error_reports",
+                               choices=[True],
+                               default=False,
+                               type=cast_to_bool,
+                               help="Disable automatic error reporting to Conductor. Automatic "
+                                    "error reporting helps our engineers troubleshoot and fix bugs "
+                                    "faster")
+
     submit_parser.add_argument("--max_instances",
                                help="Maximum number of instances for this job")
 
@@ -299,6 +309,14 @@ def parse_args():
                                        "rotating log, creating a new log file "
                                        "everyday, while storing the last 7 days "
                                        "of logs"))
+
+    uploader_parser.add_argument("--disable_error_reports",
+                                 choices=[True],
+                                 default=False,
+                                 type=cast_to_bool,
+                                 help="Disable automatic error reporting to Conductor. Automatic "
+                                      "error reporting helps our engineers troubleshoot and fix "
+                                      "bugs faster")
 
     uploader_parser.add_argument("--thread_count",
                                  type=int,
@@ -361,6 +379,14 @@ def parse_args():
                                          "rotating log, creating a new log file "
                                          "everyday, while storing the last 7 days "
                                          "of logs"))
+
+    downloader_parser.add_argument("--disable_error_reports",
+                                   choices=[True],
+                                   default=False,
+                                   type=cast_to_bool,
+                                   help="Disable automatic error reporting to Conductor. Automatic "
+                                        "error reporting helps our engineers troubleshoot and fix "
+                                        "bugs faster")
 
     downloader_parser.add_argument("--thread_count",
                                    type=int,
@@ -469,4 +495,11 @@ def run_downloader(args):
 
 if __name__ == '__main__':
     args = parse_args()
+
+    if not vars(args).get("disable_error_reports", False):
+        import logging
+        logging.getLogger(__name__).info("Automatic error reporting to Conductor is enabled. Disable by passing the --disable_error_reports flag.")
+        sentry_sdk.init("https://76bc995e897d4244860276e2f99bc967@o306892.ingest.sentry.io/5302663")
+        asdas
+
     args.func(args)

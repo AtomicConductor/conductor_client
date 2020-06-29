@@ -1,5 +1,6 @@
+PyJWT
+Qt.py
 pyaml
 requests
+sentry-sdk==0.15.1
 urllib3
-Qt.py
-PyJWT
