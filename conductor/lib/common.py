@@ -412,7 +412,7 @@ class Config():
 
         # set the url based on account (unless one was already provided)
         if 'url' not in combined_config:
-            combined_config['url'] = 'https://atomic-light-001.appspot.com'
+            combined_config['url'] = 'https://' + Config.default_config['base_url']
 
         if 'auth_url' not in combined_config:
             combined_config['auth_url'] = 'https://dashboard.conductortech.com'
