@@ -384,13 +384,9 @@ def parse_args():
                                    choices=[True, False],
                                    default=conductor.CONFIG.get("error_reporting"),
                                    type=cast_to_bool,
-                                   help="Disable automatic error reporting to Conductor. Automatic "
-                                        "error reporting helps our engineers troubleshoot and fix "
-                                        "bugs faster")
-                               help="Provide control over automatic error reporting to Conductor. "
-                                    "Automatic error reporting helps our engineers troubleshoot "
-                                    "fix bugs faster")
-
+                                   help="Provide control over automatic error reporting to Conductor. "
+                                        "Automatic error reporting helps our engineers troubleshoot "
+                                        "fix bugs faster")
 
     downloader_parser.add_argument("--thread_count",
                                    type=int,
@@ -500,8 +496,7 @@ def run_downloader(args):
 if __name__ == '__main__':
     args = parse_args()
 
-    args_dict = vars(args)
-    if args_dict.get("error_reporting", True):
+    if conductor.CONFIG["error_reporting"]:
         import logging
         logging.getLogger(__name__).info("Automatic error reporting to Conductor is enabled. Disable by setting the --error_reporting argument to 'false'.")
 
