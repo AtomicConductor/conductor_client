@@ -389,12 +389,15 @@ def base_dir():
 
 class Config():
     required_keys = []
-    default_config = {'base_url': 'atomic-light-001.appspot.com',
-                      'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
-                      'priority': 5,
-                      'local_upload': True,
-                      'md5_caching': True,
-                      'log_level': "INFO"}
+    default_config = {
+                          'base_url': 'atomic-light-001.appspot.com',
+                          'error_reporting': True,
+                          'local_upload': True,
+                          'log_level': 'INFO',
+                          'md5_caching': True,
+                          'priority': 5,
+                          'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
+                     }
     default_config_locations = {'linux2': os.path.join(os.getenv('HOME', ''), '.conductor', 'config.yml'),
                                 'win32': os.path.join(os.getenv('APPDATA', ''), 'Conductor Technologies', 'Conductor', 'config.yml'),
                                 'darwin': os.path.join(os.getenv('HOME', ''), 'Application Support/Conductor', 'config.yml')}

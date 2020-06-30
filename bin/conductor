@@ -243,13 +243,13 @@ def parse_args():
                                      "everyday, while storing the last 7 days "
                                      "of logs"))
 
-    submit_parser.add_argument("--disable_error_reports",
-                               choices=[True],
-                               default=False,
+    submit_parser.add_argument("--error_reporting",
+                               choices=[True, False],
+                               default=conductor.CONFIG.get("error_reporting"),
                                type=cast_to_bool,
-                               help="Disable automatic error reporting to Conductor. Automatic "
-                                    "error reporting helps our engineers troubleshoot and fix bugs "
-                                    "faster")
+                               help="Provide control over automatic error reporting to Conductor. "
+                                    "Automatic error reporting helps our engineers troubleshoot "
+                                    "fix bugs faster")
 
     submit_parser.add_argument("--max_instances",
                                help="Maximum number of instances for this job")
@@ -310,13 +310,13 @@ def parse_args():
                                        "everyday, while storing the last 7 days "
                                        "of logs"))
 
-    uploader_parser.add_argument("--disable_error_reports",
-                                 choices=[True],
-                                 default=False,
+    uploader_parser.add_argument("--error_reporting",
+                                 choices=[True, False],
+                                 default=conductor.CONFIG.get("error_reporting"),
                                  type=cast_to_bool,
-                                 help="Disable automatic error reporting to Conductor. Automatic "
-                                      "error reporting helps our engineers troubleshoot and fix "
-                                      "bugs faster")
+                                 help="Provide control over automatic error reporting to Conductor. "
+                                      "Automatic error reporting helps our engineers troubleshoot "
+                                      "fix bugs faster")
 
     uploader_parser.add_argument("--thread_count",
                                  type=int,
@@ -380,13 +380,17 @@ def parse_args():
                                          "everyday, while storing the last 7 days "
                                          "of logs"))
 
-    downloader_parser.add_argument("--disable_error_reports",
-                                   choices=[True],
-                                   default=False,
+    downloader_parser.add_argument("--error_reporting",
+                                   choices=[True, False],
+                                   default=conductor.CONFIG.get("error_reporting"),
                                    type=cast_to_bool,
                                    help="Disable automatic error reporting to Conductor. Automatic "
                                         "error reporting helps our engineers troubleshoot and fix "
                                         "bugs faster")
+                               help="Provide control over automatic error reporting to Conductor. "
+                                    "Automatic error reporting helps our engineers troubleshoot "
+                                    "fix bugs faster")
+
 
     downloader_parser.add_argument("--thread_count",
                                    type=int,
@@ -497,9 +501,9 @@ if __name__ == '__main__':
     args = parse_args()
 
     args_dict = vars(args)
-    if not args_dict.get("disable_error_reports", False):
+    if args_dict.get("error_reporting", True):
         import logging
-        logging.getLogger(__name__).info("Automatic error reporting to Conductor is enabled. Disable by passing the --disable_error_reports flag.")
+        logging.getLogger(__name__).info("Automatic error reporting to Conductor is enabled. Disable by setting the --error_reporting argument to 'false'.")
 
         sentry_sdk.init(dsn="https://76bc995e897d4244860276e2f99bc967@o306892.ingest.sentry.io/5302663",
                         environment=conductor.CONFIG["auth_url"].replace('https://', '').replace('/', ''))
