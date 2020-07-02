@@ -429,6 +429,10 @@ class Config():
             api_url = "http://localhost:8081"
         settings_dict["api_url"] = api_url
         return settings_dict
+    
+    @staticmethod
+    def get_default_api_key_path():
+        return os.path.join(base_dir(), 'auth', 'conductor_api_key')
 
     @staticmethod
     def validate_api_key(config):
@@ -440,14 +444,20 @@ class Config():
         Returns: None
 
         """
-        if 'api_key_path' not in config:
-            config['api_key_path'] = os.path.join(base_dir(), 'auth', 'conductor_api_key')
-        api_key_path = config['api_key_path']
+        # If the key isn't defined, than check for a path with the key
+        if 'api_key' in config:
+            logger.debug("'api_key' is already defined. Ignoring 'api_key_path'")
+            return
+
+        if 'api_key_path' not in config:          
+            api_key_path = Config.get_default_api_key_path()
+            logger.debug("'api_key_path' not found in config, checking base dir ({}) for api key path".format(api_key_path))
 
         #  If the API key doesn't exist, then no biggie, just bail
         if not os.path.exists(api_key_path):
-            # config['api_key'] = None
-            return
+            logger.debug("No API key file found in '{}'. Not using.".format(api_key_path))
+            return            
+
         try:
             with open(api_key_path, 'r') as fp:
                 config['api_key'] = json.loads(fp.read())
@@ -462,7 +472,7 @@ class Config():
         Cast any variables to bools if necessary
         '''
         prefix = 'CONDUCTOR_'
-        skipped_variables = ['CONDUCTOR_CONFIG']
+        skipped_variables = ['CONDUCTOR_CONFIG', 'CONDUCTOR_API_KEY']
         environment_config = {}
         for var_name, var_value in os.environ.iteritems():
             # skip these options
@@ -471,6 +481,9 @@ class Config():
 
             config_key_name = var_name[len(prefix):].lower()
             environment_config[config_key_name] = self._process_var_value(var_value)
+            
+        if 'CONDUCTOR_API_KEY' in os.environ:
+            environment_config['api_key'] = os.environ['CONDUCTOR_API_KEY'].decode('ascii')
 
         return environment_config
 
