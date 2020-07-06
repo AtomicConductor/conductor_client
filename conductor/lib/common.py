@@ -455,7 +455,7 @@ class Config():
 
         #  If the API key doesn't exist, then no biggie, just bail
         if not os.path.exists(api_key_path):
-            logger.debug("No API key file found in '{}'. Not using.".format(api_key_path))
+            logger.debug("No API key file found '{}'. Not using.".format(api_key_path))
             return            
 
         try:
