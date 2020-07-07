@@ -416,6 +416,14 @@ class Config():
 
         if 'auth_url' not in combined_config:
             combined_config['auth_url'] = 'https://dashboard.conductortech.com'
+        
+        try:
+            json_key = json.loads(combined_config['api_key'].replace("\n", ""))
+        except ValueError:
+            decoded = base64.b64decode(combined_config['api_key'])
+            json_key = json.loads(decoded)
+
+        combined_config['api_key'] = json_key
 
         self.validate_api_key(combined_config)
         recombined_config = self.add_api_settings(combined_config)
@@ -472,7 +480,7 @@ class Config():
         Cast any variables to bools if necessary
         '''
         prefix = 'CONDUCTOR_'
-        skipped_variables = ['CONDUCTOR_CONFIG', 'CONDUCTOR_API_KEY']
+        skipped_variables = ['CONDUCTOR_CONFIG']
         environment_config = {}
         for var_name, var_value in os.environ.iteritems():
             # skip these options
@@ -481,9 +489,6 @@ class Config():
 
             config_key_name = var_name[len(prefix):].lower()
             environment_config[config_key_name] = self._process_var_value(var_value)
-            
-        if 'CONDUCTOR_API_KEY' in os.environ:
-            environment_config['api_key'] = os.environ['CONDUCTOR_API_KEY'].decode('ascii')
 
         return environment_config
 
