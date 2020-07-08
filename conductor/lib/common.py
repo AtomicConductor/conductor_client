@@ -417,13 +417,14 @@ class Config():
         if 'auth_url' not in combined_config:
             combined_config['auth_url'] = 'https://dashboard.conductortech.com'
         
-        try:
-            json_key = json.loads(combined_config['api_key'].replace("\n", ""))
-        except ValueError:
-            decoded = base64.b64decode(combined_config['api_key'])
-            json_key = json.loads(decoded)
-
-        combined_config['api_key'] = json_key
+        if 'api_key' in combined_config:
+            try:
+                json_key = json.loads(combined_config['api_key'].replace("\n", ""))
+            except ValueError:
+                decoded = base64.b64decode(combined_config['api_key'])
+                json_key = json.loads(decoded)
+    
+            combined_config['api_key'] = json_key
 
         self.validate_api_key(combined_config)
         recombined_config = self.add_api_settings(combined_config)
