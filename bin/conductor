@@ -249,7 +249,7 @@ def parse_args():
                                type=cast_to_bool,
                                help="Provide control over automatic error reporting to Conductor. "
                                     "Automatic error reporting helps our engineers troubleshoot "
-                                    "fix bugs faster")
+                                    "and fix bugs faster")
 
     submit_parser.add_argument("--max_instances",
                                help="Maximum number of instances for this job")
