@@ -419,7 +419,7 @@ class Config():
         
         if 'api_key' in combined_config:
             try:
-                json_key = json.loads(combined_config['api_key'].replace("\n", ""))
+                json_key = json.loads(combined_config['api_key'].replace("\n", "").replace("\r", ""))
             except ValueError:
                 decoded = base64.b64decode(combined_config['api_key'])
                 json_key = json.loads(decoded)
