@@ -121,16 +121,16 @@ class Maya(object):
     PRODUCT_NAME = "maya-io"
     
     product_version_map = {"2018": "Autodesk Maya 2018.6"}
-    render_version_map = {'Arnold': {'plugin': 'arnold-maya', 'version': 'latest'},
-                          'Vray': {'plugin': 'v-ray-maya', 'version': 'latest'},
-                          'Renderman': {'plugin': 'renderman-maya', 'version': 'latest'}}
+    render_version_map = {'arnold': {'plugin': 'arnold-maya', 'version': 'latest'},
+                          'vray': {'plugin': 'v-ray-maya', 'version': 'latest'},
+                          'renderman': {'plugin': 'renderman-maya', 'version': 'latest'}}
     
     @classmethod
     def map(cls, deadline_job):
         
         package_ids = []
         
-        render_name = deadline_job.GetJobPluginInfoKeyValue("Renderer")
+        render_name = deadline_job.GetJobPluginInfoKeyValue("Renderer").lower()
         major_version = deadline_job.GetJobPluginInfoKeyValue("Version")
         product_version = cls.product_version_map[major_version]
         
@@ -138,7 +138,7 @@ class Maya(object):
             raise Exception("Integration doesn't support 'File', please explicitly choose a renderer in the MayCmd plugin properties")
         
         if render_name not in cls.render_version_map:
-            raise Exception("The render '{}' is not currently support by the Conductor Deadline integration.".format(render_name))
+            raise Exception("The render '{}' is not currently support by the Conductor Deadline integration.\n{}".format(render_name, cls.render_version_map))
         
         host_package = conductor.lib.package_utils.get_host_package(cls.PRODUCT_NAME, product_version, strict=False)
         LOG.debug("Found package: {}".format(host_package))
