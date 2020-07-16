@@ -460,7 +460,7 @@ class Config():
 
         if 'api_key_path' not in config:          
             api_key_path = Config.get_default_api_key_path()
-            logger.debug("'api_key_path' not found in config, checking base dir ({}) for api key path".format(api_key_path))
+            logger.info("'api_key_path' not found in config, checking base dir ({}) for api key path".format(api_key_path))
 
         #  If the API key doesn't exist, then no biggie, just bail
         if not os.path.exists(api_key_path):
