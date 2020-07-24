@@ -481,7 +481,8 @@ def collect_dependencies(node_attrs):
     assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
 
     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
-    dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
+ 
+    dependencies = [f for f in cmds.file(query=True, list=True, withoutCopyNumber=True) or [] if "<user" not in f]
     logger.debug("maya scene base dependencies: %s", dependencies)
 
     # collect a list of ass filepaths that we can process at one time at the end of function, rather
