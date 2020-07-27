@@ -56,7 +56,7 @@ def system_dependencies():
 
     result = []
     conductor_scripts_directory = os.path.join(
-        os.environ["CONDUCTOR_LOCATION"], "conductor", "clarisse", "scripts"
+        os.environ["CONDUCTOR_DIR"], "conductor", "clarisse", "scripts"
     )
     conductor_tmp_dir = os.path.join(
         ix.application.get_factory().get_vars().get("CTEMP").get_string(), "conductor"
