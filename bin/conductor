@@ -496,9 +496,6 @@ if __name__ == '__main__':
     args = parse_args()
 
     if conductor.CONFIG["error_reporting"]:
-        import logging
-        logging.getLogger('conductor').info("Automatic error reporting to Conductor is enabled. Disable by setting the --error_reporting argument to 'false'.")
-
         import sentry_sdk
         sentry_sdk.init(dsn="https://76bc995e897d4244860276e2f99bc967@o306892.ingest.sentry.io/5302663",
                         environment=conductor.CONFIG["auth_url"].replace('https://', '').replace('/', ''))
@@ -506,5 +503,8 @@ if __name__ == '__main__':
             bearer = api_client.get_bearer_token()
             account = api_client.account_id_from_jwt(bearer.value)
             scope.user = {"id": account}
+        import logging
+        logging.getLogger('conductor').info("Automatic error reporting to Conductor is enabled. Disable by setting the --error_reporting argument to 'false'.")
+
 
     args.func(args)
