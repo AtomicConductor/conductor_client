@@ -15,7 +15,7 @@ except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import conductor
-from conductor.lib import api_client, common, conductor_submit, downloader, downloader2, uploader, loggeria
+from conductor.lib import api_client, common, conductor_submit, downloader, downloader2, uploader, loggeria, sentry_utils
 
 
 def parse_args():
@@ -496,13 +496,8 @@ if __name__ == '__main__':
     args = parse_args()
 
     if conductor.CONFIG["error_reporting"]:
-        import sentry_sdk
-        sentry_sdk.init(dsn="https://76bc995e897d4244860276e2f99bc967@o306892.ingest.sentry.io/5302663",
-                        environment=conductor.CONFIG["auth_url"].replace('https://', '').replace('/', ''))
-        with sentry_sdk.configure_scope() as scope:
-            bearer = api_client.get_bearer_token()
-            account = api_client.account_id_from_jwt(bearer.value)
-            scope.user = {"id": account}
+        sentry_utils.inject_sentry()
+
         import logging
         logging.getLogger('conductor').info("Automatic error reporting to Conductor is enabled. Disable by setting the --error_reporting argument to 'false'.")
 
