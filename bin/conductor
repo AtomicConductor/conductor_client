@@ -7,7 +7,6 @@ import os
 import re
 import sys
 
-import sentry_sdk
 
 try:
     imp.find_module('conductor')
@@ -500,6 +499,7 @@ if __name__ == '__main__':
         import logging
         logging.getLogger('conductor').info("Automatic error reporting to Conductor is enabled. Disable by setting the --error_reporting argument to 'false'.")
 
+        import sentry_sdk
         sentry_sdk.init(dsn="https://76bc995e897d4244860276e2f99bc967@o306892.ingest.sentry.io/5302663",
                         environment=conductor.CONFIG["auth_url"].replace('https://', '').replace('/', ''))
         with sentry_sdk.configure_scope() as scope:
