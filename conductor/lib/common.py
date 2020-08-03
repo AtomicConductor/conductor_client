@@ -509,10 +509,14 @@ class Config():
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         with open(path, 'w') as config:
-            config.write('local_upload: True\n')
+            config.write('# Uncomment and update to use an API key file instead of browser authentication.\n')
             config.write('# api_key_path: <path to conductor_api_key.json>\n')
             config.write('# Set error_reporting to False to prevent the downloader and uploader from sending automatic error reports to Conductor.\n')
             config.write('error_reporting: True\n')
+            config.write('# Set local_upload to False to disable uploading from the DCC at the time of\n'
+                        '# submission, and rely on the Conductor uploader daemon instead.\n'
+                        '# https://docs.conductortech.com/#client_tools/cli/#uploader\n')
+            config.write('local_upload: True\n')
         return {}
 
     def get_user_config(self):
