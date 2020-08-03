@@ -511,6 +511,8 @@ class Config():
         with open(path, 'w') as config:
             config.write('local_upload: True\n')
             config.write('# api_key_path: <path to conductor_api_key.json>\n')
+            config.write('# Set error_reporting to False to prevent the downloader and uploader from sending automatic error reports to Conductor.\n')
+            config.write('error_reporting: True\n')
         return {}
 
     def get_user_config(self):
