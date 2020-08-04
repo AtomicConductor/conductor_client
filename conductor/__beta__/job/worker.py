@@ -1,4 +1,3 @@
-import os
 import logging
 
 import conductor
@@ -79,6 +78,7 @@ class DeadlineWorkerJob(WorkerJob):
         if self.deadline_ssl_certificate is None:
             raise DeadlineWorkerJobError("deadline_ssl_certificate has not been set. This must be the local path to your Deadline client certificate")
         
+<<<<<<< HEAD
         return True
 
     @staticmethod
@@ -167,3 +167,6 @@ class Maya(object):
     
 DeadlineToConductorPackageMapper.register(Maya)            
         
+=======
+        return True           
+>>>>>>> df9fd78f57c1c4403ad9e3f12a3cea50eba7a01b
