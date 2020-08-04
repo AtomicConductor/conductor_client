@@ -458,14 +458,17 @@ class Config():
             logger.debug("'api_key' is already defined. Ignoring 'api_key_path'")
             return
 
-        if 'api_key_path' not in config:          
+        if 'api_key_path' in config:          
+            api_key_path = config['api_key_path']
+
+        else:
             api_key_path = Config.get_default_api_key_path()
             logger.info("'api_key_path' not found in config, checking base dir ({}) for api key path".format(api_key_path))
 
-        #  If the API key doesn't exist, then no biggie, just bail
-        if not os.path.exists(api_key_path):
-            logger.debug("No API key file found '{}'. Not using.".format(api_key_path))
-            return            
+            #  If the API key doesn't exist, then no biggie, just bail
+            if not os.path.exists(api_key_path):
+                logger.debug("No API key file found '{}'. Not using.".format(api_key_path))
+                return            
 
         try:
             with open(api_key_path, 'r') as fp:
