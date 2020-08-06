@@ -162,6 +162,41 @@ maya_dependency_attrs:
         - filename
     PxrVisualizer: # Renderman
         - matCap
+    RedshiftBokeh:
+        - dofBokehImage
+    RedshiftCameraMap:
+        - tex0
+    RedshiftDomeLight:
+        - tex0
+        - tex1
+    RedshiftEnvironment:
+        - tex0
+        - tex1
+        - tex2
+        - tex3
+        - tex4
+    RedshiftIESLight:
+        - profile
+    RedshiftLensDistortion:
+        - LDimage
+    RedshiftLightGobo:
+        - tex0
+    RedshiftNormalMap:
+        - tex0
+    RedshiftOptions:
+        - irradianceCacheFilename
+        - irradiancePointCloudFilename
+        - photonFilename
+        - subsurfaceScatteringFilename
+    RedshiftPostEffects:
+        - clrMgmtOcioFilename
+        - lutFilename
+    RedshiftProxyMesh:
+        - computedFileNamePattern
+    RedshiftSprite:
+        - tex0
+    RedshiftVolumeShape:
+        - computedFileNamePattern
     RenderManArchive: # Renderman
         - filename
         - iconName

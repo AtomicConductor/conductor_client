@@ -591,6 +591,25 @@ def collect_dependencies(node_attrs):
                         logger.debug('%s dependencies: %s', plug_name, archive_dependencies)
                         dependencies.extend(archive_dependencies)
 
+                    # ---- REDSHIFT SCRAPING -----
+                    # The redshiftOptions node populates some cache filepaths by default. However,
+                    # these cache files may or may not exist on disk. We must only include them if
+                    # they do. The default cache paths use a '<Frame>' token in them, so we check
+                    # if there are any files that match the expression.  If the cache path *doesn't*
+                    # include the "<Frame>" token, then we do any special handling; we'll assume
+                    # that the user has explicitly set that path (and therefore expects that file
+                    # to exist on disk). This is not a perfect assumption, but we can adjust as
+                    # needed...perhaps by querying the caching mode.
+                    if node_type == "RedshiftOptions" and file_utils.RX_FRAME_REDSHIFT in path:
+                        logger.debug("Resolving path expression: %s", path)
+                        redshift_filepaths = file_utils.process_upload_filepath(path, strict=False)
+                        if redshift_filepaths:
+                            logger.debug("Resolved filepaths: %s", redshift_filepaths)
+                            dependencies.extend(redshift_filepaths)
+                        # continue here so that we don't append the original (unresolved) path as
+                        # file dependency (later on).
+                        continue
+
                     # Append path to list of dependencies
                     dependencies.append(path)
 
@@ -1661,6 +1680,39 @@ class RendermanInfo(MayaPluginInfo):
         return rx
 
 
+class RedshiftInfo(MayaPluginInfo):
+    '''
+    A class for retrieving version information about the redshift plugin in maya
+
+    Will ultimately produce something like this
+
+     {'product': 'redshift',
+      'major_version': u'3',
+      'minor_version': u'0',
+      'release_version': u'22',
+      'build_version': u'',
+      'plugin_host_product': 'maya',
+      'plugin_host_version': u'2020'}
+
+    '''
+    plugin_name = "redshift4maya"
+
+    @classmethod
+    def get_product(cls):
+        return "redshift-maya"
+
+    @classmethod
+    def get_regex(cls):
+        '''
+        '3.0.22'
+        '''
+        rx_major = r'(?P<major_version>\d+)'
+        rx_minor = r'(?P<minor_version>\d+)'
+        rx_release = r'(?P<release_version>\d+)'
+        rx = r'{}\.{}\.{}'.format(rx_major, rx_minor, rx_release)
+        return rx
+
+
 class MiarmyBaseInfo(MayaPluginInfo):
     '''
     Base class for all Miarmy plugins.  This base class DOES NOT
@@ -1760,6 +1812,7 @@ PLUGIN_CLASSES = [
     MiarmyProForMaya2016Info,
     MiarmyProForMaya20165Info,
     MiarmyProForMaya2017Info,
+    RedshiftInfo,
     RendermanInfo,
     VrayInfo,
     YetiInfo,

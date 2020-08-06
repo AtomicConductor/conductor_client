@@ -18,6 +18,7 @@ RX_ASTERISK = r"\*+"  # image.*.exr
 RX_UDIM_ZBRUSH = r"u<U>_v<V>"  # image.u<U>_v<V>.exr
 RX_UDIM_ZBRUSH_F = r"u<U>_v<V>_<f>"  # image.u<U>_v<V>_<f>.exr
 RX_FRAME_SEQ = "<f>"  # image.<f>.exr
+RX_FRAME_REDSHIFT = '<Frame>'  # image.<Frame>.exr
 
 
 # List of  regular expressions that a filename may be represented as (in maya, nuke, mari, or listed
@@ -31,6 +32,7 @@ PATH_EXPRESSIONS = (
     RX_UDIM_ZBRUSH,
     RX_UDIM_ZBRUSH_F,
     RX_UDIM_MARI,
+    RX_FRAME_REDSHIFT,
     RX_UDIM_MUDBOX,
     RX_UDIM_VRAY,
     RX_HOUDINI,
