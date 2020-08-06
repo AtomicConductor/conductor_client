@@ -63,10 +63,8 @@ class DeadlineWorkerJob(WorkerJob):
         
         if self.deadline_use_ssl:
             self.environment['DCONFIG_ProxySSLCertificate'] = self.deadline_ssl_certificate
-            self.environment['DCONFIG_ProxyRoot'] = "{};{}".format(self.deadline_proxy_root, self.deadline_ssl_certificate)
-            
-        else:
-            self.environment['DCONFIG_ProxyRoot'] = self.deadline_proxy_root
+
+        self.environment['DCONFIG_ProxyRoot'] = self.deadline_proxy_root
 
         return super(WorkerJob, self)._get_environment()
     
