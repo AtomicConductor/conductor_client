@@ -1816,6 +1816,7 @@ package_ids:
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.0.2": a985ac64efee8bede6b2f23f448ff968
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
                 "3.1.0": 1fc4d328dddcdc0497fadac882b43325
@@ -1830,18 +1831,35 @@ package_ids:
                 "3.2.1.1": 936dac0a489071942be623da35dd71fb
                 "3.2.2": 9fa1e7de57dfe6c17cb0d479b4ebf280
                 "3.3.0": f6f36673273201b8eef21b5c3dd48f12
+                "3.3.0.1": 2ee9a0810d4ed7f510d447474d6eaad1
+                "3.3.0.2": e4c647f8426998d3596434ba6dee3d94
+                "4.0.1": d0af9ef8c37397534ca0a2fd36ce6da9
+                "4.0.1.1": adb937d788f446cd19082ea9734770ca
+                "4.0.2.1": 476cdf244a60bbe2e3e71ef04c7c17b6
+                "4.0.3": d3326214ccd50a6c1acc49b7364e8f4d
+                "4.0.3.1": d315e7bfd41a02cc10e7fc76fcb6c973
+                "4.0.4": 425e656ca626c0bccd77f3a3e71c34e2
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 "7.0.1": a429b694702c8e55f4431b23d2bd4e46
+            redshift-maya:
+                "2.6.54": c20cf0144aa139a5742787ecfc655bb6
+                "3.0.21": 5616c3756348092b013963ca2fb26006
+                "3.0.22": ab1f56d360df5bc32c73aa4036fab72e
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
                 "21.8": 121a32084130fa034d81507ef5c942a2
-                "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
-                "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
-                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.0 @ 1873521": 4f12cd8b807ceb35bccee7a833f6ab38
+                "22.1 @ 1891132": 7a534729acc0303b299adc6fc245c726
+                "22.2 @ 1903500": fa3aa71de9231bfe7bf78fb5e6a1de85
+                "22.3 @ 1923604": 3714867f9dc803d50c19a060bbc843d6
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
                 "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
                 "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
+                "23.1 @ 2036511": 77f73e4a104ce13cd8672b7883b4bda9
+                "23.2 @ 2046858": 65f7c102e8135e129c5762622c86f816
+                "23.3 @ 2069290": 163157cfaf5421afdac4c4a698ee33b1
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
@@ -1850,6 +1868,7 @@ package_ids:
                 "4.04.03": e8b1258d14bd1c800576ebbc332f91db
                 "4.12.01": d6c5dffd448b88cc42c939a4ce996709
                 "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
+                "4.30.00": 0f67feb051b8665d9815ba8a13fd7b75
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1875,7 +1894,10 @@ package_ids:
                 "3.1.17": 4dde33570714ba989d3aff16cecea0c0
                 "3.5.1": e58369bb0add6c7560cff5fc88123bf0
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
-
+                "3.5.3": ef3ca06d05bee56b03066e757d7654c8
+                "3.6.2": bfb2990c92cc54bf32491ae51628efe6
+                "3.6.3": 0e8a3ed16d8a15dc65d797f7aa1116c7
+        
         "Autodesk Maya 2018.1":
             package: 38015a170f892bf61e5275deac8dd421
             arnold-maya:
@@ -1889,6 +1911,7 @@ package_ids:
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.0.2": a985ac64efee8bede6b2f23f448ff968
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
                 "3.1.0": 1fc4d328dddcdc0497fadac882b43325
@@ -1903,18 +1926,33 @@ package_ids:
                 "3.2.1.1": 936dac0a489071942be623da35dd71fb
                 "3.2.2": 9fa1e7de57dfe6c17cb0d479b4ebf280
                 "3.3.0": f6f36673273201b8eef21b5c3dd48f12
+                "3.3.0.1": 2ee9a0810d4ed7f510d447474d6eaad1
+                "3.3.0.2": e4c647f8426998d3596434ba6dee3d94
+                "4.0.1": d0af9ef8c37397534ca0a2fd36ce6da9
+                "4.0.1.1": adb937d788f446cd19082ea9734770ca
+                "4.0.2.1": 476cdf244a60bbe2e3e71ef04c7c17b6
+                "4.0.3": d3326214ccd50a6c1acc49b7364e8f4d
+                "4.0.3.1": d315e7bfd41a02cc10e7fc76fcb6c973
+                "4.0.4": 425e656ca626c0bccd77f3a3e71c34e2
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 "7.0.1": a429b694702c8e55f4431b23d2bd4e46
+            redshift-maya:
+                "2.6.54": c20cf0144aa139a5742787ecfc655bb6
+                "3.0.21": 5616c3756348092b013963ca2fb26006
+                "3.0.22": ab1f56d360df5bc32c73aa4036fab72e
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
                 "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
                 "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
-                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
                 "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
                 "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
+                "23.1 @ 2036511": 77f73e4a104ce13cd8672b7883b4bda9
+                "23.2 @ 2046858": 65f7c102e8135e129c5762622c86f816
+                "23.3 @ 2069290": 163157cfaf5421afdac4c4a698ee33b1
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
@@ -1923,6 +1961,7 @@ package_ids:
                 "4.04.03": e8b1258d14bd1c800576ebbc332f91db
                 "4.12.01": d6c5dffd448b88cc42c939a4ce996709
                 "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
+                "4.30.00": 0f67feb051b8665d9815ba8a13fd7b75
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -1948,7 +1987,11 @@ package_ids:
                 "3.1.17": 4dde33570714ba989d3aff16cecea0c0
                 "3.5.1": e58369bb0add6c7560cff5fc88123bf0
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
-
+                "3.5.3": ef3ca06d05bee56b03066e757d7654c8
+                "3.6.2": bfb2990c92cc54bf32491ae51628efe6
+                "3.6.3": 0e8a3ed16d8a15dc65d797f7aa1116c7
+        
+        WARNING:root:skipping unmapped product: ornatrix
         "Autodesk Maya 2018.2":
             package: f7e93d6431686b48648a7bee94145d06
             arnold-maya:
@@ -1962,6 +2005,7 @@ package_ids:
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.0.2": a985ac64efee8bede6b2f23f448ff968
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
                 "3.1.0": 1fc4d328dddcdc0497fadac882b43325
@@ -1976,18 +2020,33 @@ package_ids:
                 "3.2.1.1": 936dac0a489071942be623da35dd71fb
                 "3.2.2": 9fa1e7de57dfe6c17cb0d479b4ebf280
                 "3.3.0": f6f36673273201b8eef21b5c3dd48f12
+                "3.3.0.1": 2ee9a0810d4ed7f510d447474d6eaad1
+                "3.3.0.2": e4c647f8426998d3596434ba6dee3d94
+                "4.0.1": d0af9ef8c37397534ca0a2fd36ce6da9
+                "4.0.1.1": adb937d788f446cd19082ea9734770ca
+                "4.0.2.1": 476cdf244a60bbe2e3e71ef04c7c17b6
+                "4.0.3": d3326214ccd50a6c1acc49b7364e8f4d
+                "4.0.3.1": d315e7bfd41a02cc10e7fc76fcb6c973
+                "4.0.4": 425e656ca626c0bccd77f3a3e71c34e2
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 "7.0.1": a429b694702c8e55f4431b23d2bd4e46
+            redshift-maya:
+                "2.6.54": c20cf0144aa139a5742787ecfc655bb6
+                "3.0.21": 5616c3756348092b013963ca2fb26006
+                "3.0.22": ab1f56d360df5bc32c73aa4036fab72e
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
                 "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
                 "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
-                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
                 "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
                 "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
+                "23.1 @ 2036511": 77f73e4a104ce13cd8672b7883b4bda9
+                "23.2 @ 2046858": 65f7c102e8135e129c5762622c86f816
+                "23.3 @ 2069290": 163157cfaf5421afdac4c4a698ee33b1
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
@@ -1996,6 +2055,7 @@ package_ids:
                 "4.04.03": e8b1258d14bd1c800576ebbc332f91db
                 "4.12.01": d6c5dffd448b88cc42c939a4ce996709
                 "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
+                "4.30.00": 0f67feb051b8665d9815ba8a13fd7b75
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -2021,7 +2081,10 @@ package_ids:
                 "3.1.17": 4dde33570714ba989d3aff16cecea0c0
                 "3.5.1": e58369bb0add6c7560cff5fc88123bf0
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
-                
+                "3.5.3": ef3ca06d05bee56b03066e757d7654c8
+                "3.6.2": bfb2990c92cc54bf32491ae51628efe6
+                "3.6.3": 0e8a3ed16d8a15dc65d797f7aa1116c7
+        
         "Autodesk Maya 2018.3":
             package: c5b15175fe9575885244ae2f452f6c56
             arnold-maya:
@@ -2035,21 +2098,48 @@ package_ids:
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.0.2": a985ac64efee8bede6b2f23f448ff968
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
-                "3.1.0.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.1": acacb46b8470d1fecc478741bbcaab5f
+                "3.1.2": 5469fbc1bb476d9bb3ee8dcb1c3dbf41
+                "3.1.2.1": 6331c580f0eb8d64fae9b4330449c8b0
+                "3.1.2.2": 65bd7a3fb5467d950b2abdc3670e9bd9
+                "3.2.0": 0f5c85f847bfcca874ca7e57c7840dfa
+                "3.2.0.1": a13babea6910eb7e33ac5f804c0e75b8
+                "3.2.0.2": 452d3830b64dc08a81aabaf0b745e239
+                "3.2.1": bc01c36af946e8600e05c5a630bc6a1c
+                "3.2.1.1": 936dac0a489071942be623da35dd71fb
+                "3.2.2": 9fa1e7de57dfe6c17cb0d479b4ebf280
+                "3.3.0": f6f36673273201b8eef21b5c3dd48f12
+                "3.3.0.1": 2ee9a0810d4ed7f510d447474d6eaad1
+                "3.3.0.2": e4c647f8426998d3596434ba6dee3d94
+                "4.0.1": d0af9ef8c37397534ca0a2fd36ce6da9
+                "4.0.1.1": adb937d788f446cd19082ea9734770ca
+                "4.0.2.1": 476cdf244a60bbe2e3e71ef04c7c17b6
+                "4.0.3": d3326214ccd50a6c1acc49b7364e8f4d
+                "4.0.3.1": d315e7bfd41a02cc10e7fc76fcb6c973
+                "4.0.4": 425e656ca626c0bccd77f3a3e71c34e2
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 "7.0.1": a429b694702c8e55f4431b23d2bd4e46
+            redshift-maya:
+                "2.6.54": c20cf0144aa139a5742787ecfc655bb6
+                "3.0.21": 5616c3756348092b013963ca2fb26006
+                "3.0.22": ab1f56d360df5bc32c73aa4036fab72e
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
                 "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
                 "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
-                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
                 "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
                 "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
+                "23.1 @ 2036511": 77f73e4a104ce13cd8672b7883b4bda9
+                "23.2 @ 2046858": 65f7c102e8135e129c5762622c86f816
+                "23.3 @ 2069290": 163157cfaf5421afdac4c4a698ee33b1
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
@@ -2058,6 +2148,7 @@ package_ids:
                 "4.04.03": e8b1258d14bd1c800576ebbc332f91db
                 "4.12.01": d6c5dffd448b88cc42c939a4ce996709
                 "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
+                "4.30.00": 0f67feb051b8665d9815ba8a13fd7b75
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -2069,7 +2160,24 @@ package_ids:
                 "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
                 "2.2.8": 341553d46e46aa87ab03e63de60232ff
                 "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
-
+                "2.2.10": 8108a51d187f50fad082bfc53cd1f150
+                "3.0.0": 336091bfb39f0056b28c8bb0e872b6ec
+                "3.0.1": 3679830f2272fbea0d76ad826e23b5c3
+                "3.0.2": cc69eb97c2e8e4703922ca8cdd75ce21
+                "3.0.3": d9c015771218dba8b43f4c6b8456401d
+                "3.0.4": d3e71f895ea19ad44150ad74318c4484
+                "3.0.5": b8888692a7c23e9be77038308dfca210
+                "3.0.6": 0e99fe1776212f57054efb91f957bffa
+                "3.0.7": 5945522322a9768acd12199666ad4dcf
+                "3.0.8": faa67470d482114013218e55b173e9cc
+                "3.1.15": faf558c6f642b58762055f13c08b9a14
+                "3.1.17": 4dde33570714ba989d3aff16cecea0c0
+                "3.5.1": e58369bb0add6c7560cff5fc88123bf0
+                "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
+                "3.5.3": ef3ca06d05bee56b03066e757d7654c8
+                "3.6.2": bfb2990c92cc54bf32491ae51628efe6
+                "3.6.3": 0e8a3ed16d8a15dc65d797f7aa1116c7
+        
         "Autodesk Maya 2018.4":
             package: f8a07ea6790a40abe2c06e404ff5849e
             arnold-maya:
@@ -2083,6 +2191,7 @@ package_ids:
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.0.2": a985ac64efee8bede6b2f23f448ff968
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
                 "3.1.0": 1fc4d328dddcdc0497fadac882b43325
@@ -2097,18 +2206,33 @@ package_ids:
                 "3.2.1.1": 936dac0a489071942be623da35dd71fb
                 "3.2.2": 9fa1e7de57dfe6c17cb0d479b4ebf280
                 "3.3.0": f6f36673273201b8eef21b5c3dd48f12
+                "3.3.0.1": 2ee9a0810d4ed7f510d447474d6eaad1
+                "3.3.0.2": e4c647f8426998d3596434ba6dee3d94
+                "4.0.1": d0af9ef8c37397534ca0a2fd36ce6da9
+                "4.0.1.1": adb937d788f446cd19082ea9734770ca
+                "4.0.2.1": 476cdf244a60bbe2e3e71ef04c7c17b6
+                "4.0.3": d3326214ccd50a6c1acc49b7364e8f4d
+                "4.0.3.1": d315e7bfd41a02cc10e7fc76fcb6c973
+                "4.0.4": 425e656ca626c0bccd77f3a3e71c34e2
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 "7.0.1": a429b694702c8e55f4431b23d2bd4e46
+            redshift-maya:
+                "2.6.54": c20cf0144aa139a5742787ecfc655bb6
+                "3.0.21": 5616c3756348092b013963ca2fb26006
+                "3.0.22": ab1f56d360df5bc32c73aa4036fab72e
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
                 "21.8": 121a32084130fa034d81507ef5c942a2
                 "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya)
                 "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version) 
-                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1   
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
                 "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
                 "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
+                "23.1 @ 2036511": 77f73e4a104ce13cd8672b7883b4bda9
+                "23.2 @ 2046858": 65f7c102e8135e129c5762622c86f816
+                "23.3 @ 2069290": 163157cfaf5421afdac4c4a698ee33b1
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
@@ -2117,6 +2241,7 @@ package_ids:
                 "4.04.03": e8b1258d14bd1c800576ebbc332f91db
                 "4.12.01": d6c5dffd448b88cc42c939a4ce996709
                 "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
+                "4.30.00": 0f67feb051b8665d9815ba8a13fd7b75
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -2142,7 +2267,10 @@ package_ids:
                 "3.1.17": 4dde33570714ba989d3aff16cecea0c0
                 "3.5.1": e58369bb0add6c7560cff5fc88123bf0
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
-
+                "3.5.3": ef3ca06d05bee56b03066e757d7654c8
+                "3.6.2": bfb2990c92cc54bf32491ae51628efe6
+                "3.6.3": 0e8a3ed16d8a15dc65d797f7aa1116c7
+        
         "Autodesk Maya 2018.5":
             package: ef8023e09bc3e3a87d111e162aa1ad77
             arnold-maya:
@@ -2156,6 +2284,7 @@ package_ids:
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.0.2": a985ac64efee8bede6b2f23f448ff968
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
                 "3.1.0": 1fc4d328dddcdc0497fadac882b43325
@@ -2170,9 +2299,21 @@ package_ids:
                 "3.2.1.1": 936dac0a489071942be623da35dd71fb
                 "3.2.2": 9fa1e7de57dfe6c17cb0d479b4ebf280
                 "3.3.0": f6f36673273201b8eef21b5c3dd48f12
+                "3.3.0.1": 2ee9a0810d4ed7f510d447474d6eaad1
+                "3.3.0.2": e4c647f8426998d3596434ba6dee3d94
+                "4.0.1": d0af9ef8c37397534ca0a2fd36ce6da9
+                "4.0.1.1": adb937d788f446cd19082ea9734770ca
+                "4.0.2.1": 476cdf244a60bbe2e3e71ef04c7c17b6
+                "4.0.3": d3326214ccd50a6c1acc49b7364e8f4d
+                "4.0.3.1": d315e7bfd41a02cc10e7fc76fcb6c973
+                "4.0.4": 425e656ca626c0bccd77f3a3e71c34e2
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 "7.0.1": a429b694702c8e55f4431b23d2bd4e46
+            redshift-maya:
+                "2.6.54": c20cf0144aa139a5742787ecfc655bb6
+                "3.0.21": 5616c3756348092b013963ca2fb26006
+                "3.0.22": ab1f56d360df5bc32c73aa4036fab72e
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
@@ -2182,6 +2323,9 @@ package_ids:
                 "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
                 "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
                 "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
+                "23.1 @ 2036511": 77f73e4a104ce13cd8672b7883b4bda9
+                "23.2 @ 2046858": 65f7c102e8135e129c5762622c86f816
+                "23.3 @ 2069290": 163157cfaf5421afdac4c4a698ee33b1
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
@@ -2190,6 +2334,7 @@ package_ids:
                 "4.04.03": e8b1258d14bd1c800576ebbc332f91db
                 "4.12.01": d6c5dffd448b88cc42c939a4ce996709
                 "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
+                "4.30.00": 0f67feb051b8665d9815ba8a13fd7b75
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -2215,7 +2360,10 @@ package_ids:
                 "3.1.17": 4dde33570714ba989d3aff16cecea0c0
                 "3.5.1": e58369bb0add6c7560cff5fc88123bf0
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
-
+                "3.5.3": ef3ca06d05bee56b03066e757d7654c8
+                "3.6.2": bfb2990c92cc54bf32491ae51628efe6
+                "3.6.3": 0e8a3ed16d8a15dc65d797f7aa1116c7
+        
         "Autodesk Maya 2018.6":
             package: bcfe5df6e2361d77ca7d7b9da76e351b
             arnold-maya:
@@ -2229,6 +2377,7 @@ package_ids:
                 "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
                 "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
                 "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.0.2": a985ac64efee8bede6b2f23f448ff968
                 "3.0.1": c07b1199c9995b3eac749898e95168f6
                 "3.0.1.1": 26e9640b903142f64f9177ae028d0006
                 "3.1.0": 1fc4d328dddcdc0497fadac882b43325
@@ -2243,9 +2392,21 @@ package_ids:
                 "3.2.1.1": 936dac0a489071942be623da35dd71fb
                 "3.2.2": 9fa1e7de57dfe6c17cb0d479b4ebf280
                 "3.3.0": f6f36673273201b8eef21b5c3dd48f12
+                "3.3.0.1": 2ee9a0810d4ed7f510d447474d6eaad1
+                "3.3.0.2": e4c647f8426998d3596434ba6dee3d94
+                "4.0.1": d0af9ef8c37397534ca0a2fd36ce6da9
+                "4.0.1.1": adb937d788f446cd19082ea9734770ca
+                "4.0.2.1": 476cdf244a60bbe2e3e71ef04c7c17b6
+                "4.0.3": d3326214ccd50a6c1acc49b7364e8f4d
+                "4.0.3.1": d315e7bfd41a02cc10e7fc76fcb6c973
+                "4.0.4": 425e656ca626c0bccd77f3a3e71c34e2
             golaem:
                 "6.2.4": 7840de1ec3aef59e56754a0661827b5e
                 "7.0.1": a429b694702c8e55f4431b23d2bd4e46
+            redshift-maya:
+                "2.6.54": c20cf0144aa139a5742787ecfc655bb6
+                "3.0.21": 5616c3756348092b013963ca2fb26006
+                "3.0.22": ab1f56d360df5bc32c73aa4036fab72e
             renderman-maya:
                 "21.6": 914263d130a20364759697ba1aef15f1
                 "21.7": de37d61acba42b6e5961d63982b8381c
@@ -2255,6 +2416,9 @@ package_ids:
                 "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
                 "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
                 "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
+                "23.1 @ 2036511": 77f73e4a104ce13cd8672b7883b4bda9
+                "23.2 @ 2046858": 65f7c102e8135e129c5762622c86f816
+                "23.3 @ 2069290": 163157cfaf5421afdac4c4a698ee33b1
             v-ray-maya:
                 "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
                 "3.60.03": 4948a81728a1612262ce781ed3c35511
@@ -2263,6 +2427,7 @@ package_ids:
                 "4.04.03": e8b1258d14bd1c800576ebbc332f91db
                 "4.12.01": d6c5dffd448b88cc42c939a4ce996709
                 "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
+                "4.30.00": 0f67feb051b8665d9815ba8a13fd7b75
             yeti:
                 "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
                 "2.2.1": 94e2209873200b6f9513aa5430c94699
@@ -2288,7 +2453,103 @@ package_ids:
                 "3.1.17": 4dde33570714ba989d3aff16cecea0c0
                 "3.5.1": e58369bb0add6c7560cff5fc88123bf0
                 "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
-
+                "3.5.3": ef3ca06d05bee56b03066e757d7654c8
+                "3.6.2": bfb2990c92cc54bf32491ae51628efe6
+                "3.6.3": 0e8a3ed16d8a15dc65d797f7aa1116c7
+        
+        "Autodesk Maya 2018.7":
+            package: e5c6c6ed0dbbf1bb11e9b1666aa49dac
+            arnold-maya:
+                "2.0.1": 75267da8444add2de1a9ce615834e81a
+                "2.0.2.2": 77f6759fc59c8e902d7ebcf5db1087c0
+                "2.0.2.3": 0172d14d1aa2abbd56ba4b579c4c0577
+                "2.0.2.4": ed3839551e44709a7820cec9307a23fe
+                "2.1.0": cbe8d96aea67a3f39d17918f69312432
+                "2.1.0.1": 95a2241e0efdba008eec42deef13c24d
+                "2.1.0.2": 0c4af05117037150629d43e7a85c8389
+                "2.1.0.3": 88fd28f3b4f019a217e46e7466f7bbd7
+                "3.0.0": 8d60ca7e0d3ff0b0fd91e3dd2bcb21ba
+                "3.0.0.1": 7597f8285f0e3c97dbc72f462d073be2
+                "3.0.0.2": a985ac64efee8bede6b2f23f448ff968
+                "3.0.1": c07b1199c9995b3eac749898e95168f6
+                "3.0.1.1": 26e9640b903142f64f9177ae028d0006
+                "3.1.0": 1fc4d328dddcdc0497fadac882b43325
+                "3.1.1": acacb46b8470d1fecc478741bbcaab5f
+                "3.1.2": 5469fbc1bb476d9bb3ee8dcb1c3dbf41
+                "3.1.2.1": 6331c580f0eb8d64fae9b4330449c8b0
+                "3.1.2.2": 65bd7a3fb5467d950b2abdc3670e9bd9
+                "3.2.0": 0f5c85f847bfcca874ca7e57c7840dfa
+                "3.2.0.1": a13babea6910eb7e33ac5f804c0e75b8
+                "3.2.0.2": 452d3830b64dc08a81aabaf0b745e239
+                "3.2.1": bc01c36af946e8600e05c5a630bc6a1c
+                "3.2.1.1": 936dac0a489071942be623da35dd71fb
+                "3.2.2": 9fa1e7de57dfe6c17cb0d479b4ebf280
+                "3.3.0": f6f36673273201b8eef21b5c3dd48f12
+                "3.3.0.1": 2ee9a0810d4ed7f510d447474d6eaad1
+                "3.3.0.2": e4c647f8426998d3596434ba6dee3d94
+                "4.0.1": d0af9ef8c37397534ca0a2fd36ce6da9
+                "4.0.1.1": adb937d788f446cd19082ea9734770ca
+                "4.0.2.1": 476cdf244a60bbe2e3e71ef04c7c17b6
+                "4.0.3": d3326214ccd50a6c1acc49b7364e8f4d
+                "4.0.3.1": d315e7bfd41a02cc10e7fc76fcb6c973
+                "4.0.4": 425e656ca626c0bccd77f3a3e71c34e2
+            golaem:
+                "6.2.4": 7840de1ec3aef59e56754a0661827b5e
+                "7.0.1": a429b694702c8e55f4431b23d2bd4e46
+            redshift-maya:
+                "2.6.54": c20cf0144aa139a5742787ecfc655bb6
+                "3.0.21": 5616c3756348092b013963ca2fb26006
+                "3.0.22": ab1f56d360df5bc32c73aa4036fab72e
+            renderman-maya:
+                "21.6": 914263d130a20364759697ba1aef15f1
+                "21.7": de37d61acba42b6e5961d63982b8381c
+                "21.8": 121a32084130fa034d81507ef5c942a2
+                "1.0": 4f12cd8b807ceb35bccee7a833f6ab38  #renderman 22.2 (22.0 and 22.1 will also use this version bc pixar goofed and all 3 are identified as version "1.0" in maya) 
+                "22.3 @ 1923583": 3714867f9dc803d50c19a060bbc843d6 # this actually the renderman 22.3_1923604 package. (I think pixar botched the build id in this version)
+                "22.4 @ 1946009": 6f89a555a35b99ec0df808951ffc8cb1
+                "22.5 @ 1970143": c2247fbfd82aff96b402d321f19241b2
+                "22.6 @ 1987952": 1c21a5a9627f912eefba666562f81e94
+                "23.1 @ 2036511": 77f73e4a104ce13cd8672b7883b4bda9
+                "23.2 @ 2046858": 65f7c102e8135e129c5762622c86f816
+                "23.3 @ 2069290": 163157cfaf5421afdac4c4a698ee33b1
+            v-ray-maya:
+                "3.60.01": 01fcbf1131d4eb5266c67efdcbf10fae
+                "3.60.03": 4948a81728a1612262ce781ed3c35511
+                "3.60.04": cd173fcd1a4e29ed4de6f1f189187a52
+                "4.03.02": 46724233e6e0df9f69979d58ddadb3ca
+                "4.04.03": e8b1258d14bd1c800576ebbc332f91db
+                "4.12.01": d6c5dffd448b88cc42c939a4ce996709
+                "4.12.02": a34575062b92a2cebc6a1b9026bdeb69
+                "4.30.00": 0f67feb051b8665d9815ba8a13fd7b75
+            yeti:
+                "2.2.0": 1fce6c44b39acdf61fc798acdcb0dd90
+                "2.2.1": 94e2209873200b6f9513aa5430c94699
+                "2.2.2": 014e4fff6adbcf264da7a1cbdb95ea18
+                "2.2.3": 68aca85ad1e694c1cee36d06cb81689b
+                "2.2.4": 64950eaef0d9ae5a6b72da9a8deab4bd
+                "2.2.5": 25eee62bbcca44249ec55153a79c96ae
+                "2.2.6": c7ae678b1b7c406ef3bea0627a03e5f1
+                "2.2.7": 0f1ea7326948f6bdfdffcf153875abdb
+                "2.2.8": 341553d46e46aa87ab03e63de60232ff
+                "2.2.9": b4d9b3b5d9ea5e6296ed3af3bc43ad18
+                "2.2.10": 8108a51d187f50fad082bfc53cd1f150
+                "3.0.0": 336091bfb39f0056b28c8bb0e872b6ec
+                "3.0.1": 3679830f2272fbea0d76ad826e23b5c3
+                "3.0.2": cc69eb97c2e8e4703922ca8cdd75ce21
+                "3.0.3": d9c015771218dba8b43f4c6b8456401d
+                "3.0.4": d3e71f895ea19ad44150ad74318c4484
+                "3.0.5": b8888692a7c23e9be77038308dfca210
+                "3.0.6": 0e99fe1776212f57054efb91f957bffa
+                "3.0.7": 5945522322a9768acd12199666ad4dcf
+                "3.0.8": faa67470d482114013218e55b173e9cc
+                "3.1.15": faf558c6f642b58762055f13c08b9a14
+                "3.1.17": 4dde33570714ba989d3aff16cecea0c0
+                "3.5.1": e58369bb0add6c7560cff5fc88123bf0
+                "3.5.2": bfd963331a4478ddd624c0ec8743e7d0
+                "3.5.3": ef3ca06d05bee56b03066e757d7654c8
+                "3.6.2": bfb2990c92cc54bf32491ae51628efe6
+                "3.6.3": 0e8a3ed16d8a15dc65d797f7aa1116c7
+        
         "Autodesk Maya 2019":
             package: 732e688c522899625db1627adaa7cf3e
             arnold-maya:
@@ -2301,21 +2562,40 @@ package_ids:
                 "3.2.1.1": 1a41b8c8bdecad489219800b46413d6c
                 "3.2.2": cbe7c9bfa18c6e6c659f949177df3464
                 "3.3.0": 349a5215172a144af69a51f7d18cb307
+                "3.3.0.1": 3a98780feb9fcf94cdf5dcd27bdae2e6
+                "3.3.0.2": 6430973b235e63b92a6753a0737ed458
+                "4.0.1": 5b745d63b85b93a1066dbebffa505f63
+                "4.0.1.1": 2a9d27dd5a88f10d4107b10f434a7c94
+                "4.0.2.1": e20a9fbfd2792b953ecf1e5a86fac35d
+                "4.0.3": d8ef6e77336770fd076c247fbdea55fc
+                "4.0.3.1": 976277a8f500cd02cfe12cccf608950b
+                "4.0.4": 07d96266db7a6b58337741a02263ef29
             golaem:
                 "7.0.1": 5f0d9900a24d4ebb8783cbaee2e2ba82
+            redshift-maya:
+                "2.6.54": 7c37e9b4e1037edd7a2ef1fc0efa909b
+                "3.0.21": eaa159b19911b306ffb25c7a9410951b
+                "3.0.22": a08687be71fadae76b011c8d4766644b
             renderman-maya:
                 "22.4 @ 1946009": 7b3408bb02095191a5d66f0aac07feac
                 "22.5 @ 1970143": 265cbb9ceb0d162eedfca690504f45b5
                 "22.6 @ 1987952": 4e74cb32aeb1a318d258744b990f5335
+                "23.1 @ 2036511": 66167e2b18ff0230b705b092dceb465a
+                "23.2 @ 2046858": 40f0aafe5b6d7a122971287fbc98dbff
+                "23.3 @ 2069290": 0f7fd8af230ccefc4c9f535cbb52b263
             v-ray-maya:
                 "4.12.01": 92d17c7696eb5224df635c452cd3e1d9
                 "4.12.02": e58d3840447aa580e7129384db390365
+                "4.30.00": d46be609c217d706b146835bc242840d
             yeti:
                 "3.1.15": d3f4a93bb8d4e08fbd7a00be77fd3a27
                 "3.1.17": 91a9b9a3cacf51a8f28ae38138c95a16
                 "3.5.1": 079d6da4826f77b20d13828ed914910b
                 "3.5.2": 8020c42dbb67966a00e0ddf02cc2009e
-
+                "3.5.3": faca2ef800de59496afb8449a0b74ce6
+                "3.6.2": bb818bd80b88398b3f7e0e1682262e13
+                "3.6.3": 90ec5f3c594d00fe596fe764354dfaf2
+        
         "Autodesk Maya 2019.1":
             package: e9912c6c9a3d9a7dfa0d255fb5a21f82
             arnold-maya:
@@ -2328,21 +2608,40 @@ package_ids:
                 "3.2.1.1": 1a41b8c8bdecad489219800b46413d6c
                 "3.2.2": cbe7c9bfa18c6e6c659f949177df3464
                 "3.3.0": 349a5215172a144af69a51f7d18cb307
+                "3.3.0.1": 3a98780feb9fcf94cdf5dcd27bdae2e6
+                "3.3.0.2": 6430973b235e63b92a6753a0737ed458
+                "4.0.1": 5b745d63b85b93a1066dbebffa505f63
+                "4.0.1.1": 2a9d27dd5a88f10d4107b10f434a7c94
+                "4.0.2.1": e20a9fbfd2792b953ecf1e5a86fac35d
+                "4.0.3": d8ef6e77336770fd076c247fbdea55fc
+                "4.0.3.1": 976277a8f500cd02cfe12cccf608950b
+                "4.0.4": 07d96266db7a6b58337741a02263ef29
             golaem:
                 "7.0.1": 5f0d9900a24d4ebb8783cbaee2e2ba82
+            redshift-maya:
+                "2.6.54": 7c37e9b4e1037edd7a2ef1fc0efa909b
+                "3.0.21": eaa159b19911b306ffb25c7a9410951b
+                "3.0.22": a08687be71fadae76b011c8d4766644b
             renderman-maya:
                 "22.4 @ 1946009": 7b3408bb02095191a5d66f0aac07feac
                 "22.5 @ 1970143": 265cbb9ceb0d162eedfca690504f45b5
                 "22.6 @ 1987952": 4e74cb32aeb1a318d258744b990f5335
+                "23.1 @ 2036511": 66167e2b18ff0230b705b092dceb465a
+                "23.2 @ 2046858": 40f0aafe5b6d7a122971287fbc98dbff
+                "23.3 @ 2069290": 0f7fd8af230ccefc4c9f535cbb52b263
             v-ray-maya:
                 "4.12.01": 92d17c7696eb5224df635c452cd3e1d9
                 "4.12.02": e58d3840447aa580e7129384db390365
+                "4.30.00": d46be609c217d706b146835bc242840d
             yeti:
                 "3.1.15": d3f4a93bb8d4e08fbd7a00be77fd3a27
                 "3.1.17": 91a9b9a3cacf51a8f28ae38138c95a16
                 "3.5.1": 079d6da4826f77b20d13828ed914910b
                 "3.5.2": 8020c42dbb67966a00e0ddf02cc2009e
-
+                "3.5.3": faca2ef800de59496afb8449a0b74ce6
+                "3.6.2": bb818bd80b88398b3f7e0e1682262e13
+                "3.6.3": 90ec5f3c594d00fe596fe764354dfaf2
+        
         "Autodesk Maya 2019.2":
             package: a655bc8351720034555d09d82d0af07c
             arnold-maya:
@@ -2355,20 +2654,154 @@ package_ids:
                 "3.2.1.1": 1a41b8c8bdecad489219800b46413d6c
                 "3.2.2": cbe7c9bfa18c6e6c659f949177df3464
                 "3.3.0": 349a5215172a144af69a51f7d18cb307
+                "3.3.0.1": 3a98780feb9fcf94cdf5dcd27bdae2e6
+                "3.3.0.2": 6430973b235e63b92a6753a0737ed458
+                "4.0.1": 5b745d63b85b93a1066dbebffa505f63
+                "4.0.1.1": 2a9d27dd5a88f10d4107b10f434a7c94
+                "4.0.2.1": e20a9fbfd2792b953ecf1e5a86fac35d
+                "4.0.3": d8ef6e77336770fd076c247fbdea55fc
+                "4.0.3.1": 976277a8f500cd02cfe12cccf608950b
+                "4.0.4": 07d96266db7a6b58337741a02263ef29
             golaem:
                 "7.0.1": 5f0d9900a24d4ebb8783cbaee2e2ba82
+            redshift-maya:
+                "2.6.54": 7c37e9b4e1037edd7a2ef1fc0efa909b
+                "3.0.21": eaa159b19911b306ffb25c7a9410951b
+                "3.0.22": a08687be71fadae76b011c8d4766644b
             renderman-maya:
                 "22.4 @ 1946009": 7b3408bb02095191a5d66f0aac07feac
                 "22.5 @ 1970143": 265cbb9ceb0d162eedfca690504f45b5
                 "22.6 @ 1987952": 4e74cb32aeb1a318d258744b990f5335
+                "23.1 @ 2036511": 66167e2b18ff0230b705b092dceb465a
+                "23.2 @ 2046858": 40f0aafe5b6d7a122971287fbc98dbff
+                "23.3 @ 2069290": 0f7fd8af230ccefc4c9f535cbb52b263
             v-ray-maya:
                 "4.12.01": 92d17c7696eb5224df635c452cd3e1d9
                 "4.12.02": e58d3840447aa580e7129384db390365
+                "4.30.00": d46be609c217d706b146835bc242840d
             yeti:
                 "3.1.15": d3f4a93bb8d4e08fbd7a00be77fd3a27
                 "3.1.17": 91a9b9a3cacf51a8f28ae38138c95a16
                 "3.5.1": 079d6da4826f77b20d13828ed914910b
                 "3.5.2": 8020c42dbb67966a00e0ddf02cc2009e
+                "3.5.3": faca2ef800de59496afb8449a0b74ce6
+                "3.6.2": bb818bd80b88398b3f7e0e1682262e13
+                "3.6.3": 90ec5f3c594d00fe596fe764354dfaf2
+        
+        "Autodesk Maya 2019.3":
+            package: b96c0d951086c811af6194eb4e6611e2
+            arnold-maya:
+                "3.1.2.1": 90c9532d1c19e14624ec376ddb00a55b
+                "3.1.2.2": 8e87ae3ee8c721aad91f8a9e9c25db7e
+                "3.2.0": a56572e83b22a7f65ae0b90c341ae380
+                "3.2.0.1": b835940a73c0a23c3477357d0e85d173
+                "3.2.0.2": b4215d5d3f17044c36ec9603d7e4ca0f
+                "3.2.1": 547bc1807249afcb6746a20d539c8873
+                "3.2.1.1": 1a41b8c8bdecad489219800b46413d6c
+                "3.2.2": cbe7c9bfa18c6e6c659f949177df3464
+                "3.3.0": 349a5215172a144af69a51f7d18cb307
+                "3.3.0.1": 3a98780feb9fcf94cdf5dcd27bdae2e6
+                "3.3.0.2": 6430973b235e63b92a6753a0737ed458
+                "4.0.1": 5b745d63b85b93a1066dbebffa505f63
+                "4.0.1.1": 2a9d27dd5a88f10d4107b10f434a7c94
+                "4.0.2.1": e20a9fbfd2792b953ecf1e5a86fac35d
+                "4.0.3": d8ef6e77336770fd076c247fbdea55fc
+                "4.0.3.1": 976277a8f500cd02cfe12cccf608950b
+                "4.0.4": 07d96266db7a6b58337741a02263ef29
+            golaem:
+                "7.0.1": 5f0d9900a24d4ebb8783cbaee2e2ba82
+            redshift-maya:
+                "2.6.54": 7c37e9b4e1037edd7a2ef1fc0efa909b
+                "3.0.21": eaa159b19911b306ffb25c7a9410951b
+                "3.0.22": a08687be71fadae76b011c8d4766644b
+            renderman-maya:
+                "22.4 @ 1946009": 7b3408bb02095191a5d66f0aac07feac
+                "22.5 @ 1970143": 265cbb9ceb0d162eedfca690504f45b5
+                "22.6 @ 1987952": 4e74cb32aeb1a318d258744b990f5335
+                "23.1 @ 2036511": 66167e2b18ff0230b705b092dceb465a
+                "23.2 @ 2046858": 40f0aafe5b6d7a122971287fbc98dbff
+                "23.3 @ 2069290": 0f7fd8af230ccefc4c9f535cbb52b263
+            v-ray-maya:
+                "4.12.01": 92d17c7696eb5224df635c452cd3e1d9
+                "4.12.02": e58d3840447aa580e7129384db390365
+                "4.30.00": d46be609c217d706b146835bc242840d
+            yeti:
+                "3.1.15": d3f4a93bb8d4e08fbd7a00be77fd3a27
+                "3.1.17": 91a9b9a3cacf51a8f28ae38138c95a16
+                "3.5.1": 079d6da4826f77b20d13828ed914910b
+                "3.5.2": 8020c42dbb67966a00e0ddf02cc2009e
+                "3.5.3": faca2ef800de59496afb8449a0b74ce6
+                "3.6.2": bb818bd80b88398b3f7e0e1682262e13
+                "3.6.3": 90ec5f3c594d00fe596fe764354dfaf2
+        
+        "Autodesk Maya 2020":
+            package: f6e46b932206f050fe22ecd809a67836
+            arnold-maya:
+                "4.0.1": 22a14592e0d53a3c972ace296d919566
+                "4.0.1.1": a4f568fb4fd981e8cebfa9e3e926e7c7
+                "4.0.2.1": 2e59566de7061362849f74ecf1cb639d
+                "4.0.3": c35a5b889b8875303b1e018584afb86b
+                "4.0.3.1": dc6af673a271899361ceb2d0f315ecdb
+                "4.0.4": 4d669a62259b72fda9a586c0f0369f0f
+            redshift-maya:
+                "2.6.54": 66017e6122907190d06f869aeca4640b
+                "3.0.21": f95b7ef3f1fe2615fa4b0ca7aea0b9d3
+                "3.0.22": b705c1be5bf70925d05049a2b6999030
+            renderman-maya:
+                "23.1 @ 2036511": 747ec1c28d1853b2ed1e0f105d24e264
+                "23.2 @ 2046858": e4e63ec5af7e3ef859a2df109c00cb09
+                "23.3 @ 2069290": 241658c86b861de2e476010de03095b2
+            v-ray-maya:
+                "4.30.02": b63c1ff15ac81f42888e4991091a4cc4
+            yeti:
+                "3.6.2": 7d7aedfd9eb9825222cc2ce8b45aec56
+                "3.6.3": de23eb14b7718b59d01eaa0a81aa65ce
+        
+        "Autodesk Maya 2020.1":
+            package: f02567d617319f0784f139caa3925cca
+            arnold-maya:
+                "4.0.1": 22a14592e0d53a3c972ace296d919566
+                "4.0.1.1": a4f568fb4fd981e8cebfa9e3e926e7c7
+                "4.0.2.1": 2e59566de7061362849f74ecf1cb639d
+                "4.0.3": c35a5b889b8875303b1e018584afb86b
+                "4.0.3.1": dc6af673a271899361ceb2d0f315ecdb
+                "4.0.4": 4d669a62259b72fda9a586c0f0369f0f
+            redshift-maya:
+                "2.6.54": 66017e6122907190d06f869aeca4640b
+                "3.0.21": f95b7ef3f1fe2615fa4b0ca7aea0b9d3
+                "3.0.22": b705c1be5bf70925d05049a2b6999030
+            renderman-maya:
+                "23.1 @ 2036511": 747ec1c28d1853b2ed1e0f105d24e264
+                "23.2 @ 2046858": e4e63ec5af7e3ef859a2df109c00cb09
+                "23.3 @ 2069290": 241658c86b861de2e476010de03095b2
+            v-ray-maya:
+                "4.30.02": b63c1ff15ac81f42888e4991091a4cc4
+            yeti:
+                "3.6.2": 7d7aedfd9eb9825222cc2ce8b45aec56
+                "3.6.3": de23eb14b7718b59d01eaa0a81aa65ce
+        
+        "Autodesk Maya 2020.2":
+            package: b293f1345bde6e710ca4ce3e5b381a44
+            arnold-maya:
+                "4.0.1": 22a14592e0d53a3c972ace296d919566
+                "4.0.1.1": a4f568fb4fd981e8cebfa9e3e926e7c7
+                "4.0.2.1": 2e59566de7061362849f74ecf1cb639d
+                "4.0.3": c35a5b889b8875303b1e018584afb86b
+                "4.0.3.1": dc6af673a271899361ceb2d0f315ecdb
+                "4.0.4": 4d669a62259b72fda9a586c0f0369f0f
+            redshift-maya:
+                "2.6.54": 66017e6122907190d06f869aeca4640b
+                "3.0.21": f95b7ef3f1fe2615fa4b0ca7aea0b9d3
+                "3.0.22": b705c1be5bf70925d05049a2b6999030
+            renderman-maya:
+                "23.1 @ 2036511": 747ec1c28d1853b2ed1e0f105d24e264
+                "23.2 @ 2046858": e4e63ec5af7e3ef859a2df109c00cb09
+                "23.3 @ 2069290": 241658c86b861de2e476010de03095b2
+            v-ray-maya:
+                "4.30.02": b63c1ff15ac81f42888e4991091a4cc4
+            yeti:
+                "3.6.2": 7d7aedfd9eb9825222cc2ce8b45aec56
+                "3.6.3": de23eb14b7718b59d01eaa0a81aa65ce
 
     "nuke":
         "8.0v1":
