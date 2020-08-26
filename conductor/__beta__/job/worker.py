@@ -1,3 +1,4 @@
+import os
 import logging
 
 import conductor
@@ -16,8 +17,8 @@ class DeadlineWorkerJobError(WorkerJobError):
     pass
 
 class DeadlineWorkerJob(WorkerJob):
-
-    POST_TASK_SCRIPT_PATH = '/opt/thinkbox/deadline/10/deadline10.1/bin/shutdown_conductor_instance.py'
+    
+    POST_TASK_SCRIPT_PATH = '/opt/thinkbox/deadline/conductor/shutdown_conductor_instance.py'
     
     def __init__(self, *args , **kwargs):
     
@@ -28,11 +29,8 @@ class DeadlineWorkerJob(WorkerJob):
         self.job_title = "Deadline Worker"
         self.instance_count = 1
         
-        # Hard-coded to work with Maya for the time being
-        self.software_packages_ids = None
-        
-        self.cmd = "/opt/thinkbox/deadline/10/deadline10.1/bin/launch_deadline.sh"
-        self.docker_image = "gcr.io/images-production/conductor_docker_base:deadline_debian"
+#        self.cmd = "/opt/thinkbox/deadline/10/deadline10.1.1.3/bin/launch_deadline.sh" #CONDUCTOR_DEADLINE_LAUNCHER_PATH
+        self.cmd = "/opt/thinkbox/deadline/conductor/launch_deadline.sh" #CONDUCTOR_DEADLINE_LAUNCHER_PATH
         self.deadline_proxy_root = None
         self.deadline_ssl_certificate = None
         self.deadline_use_ssl = False
@@ -53,20 +51,26 @@ class DeadlineWorkerJob(WorkerJob):
         self.upload_paths.append(path)
     
     def _get_environment(self):
-        
-        self.environment['CONDUCTOR_PATHHELPER'] = '0'
-        self.environment['CONDUCTOR'] = '1'
-        self.environment['CONDUCTOR_DEADLINE_GROUP_NAME'] = self.deadline_group_name 
-        
+
+        self.environment['CONDUCTOR_DEADLINE_GROUP_NAME'] = self.deadline_group_name         
         self.environment['DCONFIG_ProxyUseSSL'] = str(self.deadline_use_ssl).lower()
-        self.environment['CONDUCTOR_DEADLINE_CLIENT_VERSION'] = self.deadline_client_version        
+        self.environment['CONDUCTOR_DEADLINE_CLIENT_VERSION'] = self.deadline_client_version
         
         if self.deadline_use_ssl:
             self.environment['DCONFIG_ProxySSLCertificate'] = self.deadline_ssl_certificate
+            self.environment['DCONFIG_ProxyRoot'] = "{};{}".format(self.deadline_proxy_root, self.deadline_ssl_certificate)
+            
+        else:
+            self.environment['DCONFIG_ProxyRoot'] = self.deadline_proxy_root
 
         self.environment['DCONFIG_ProxyRoot'] = self.deadline_proxy_root
+        
+        env = super(WorkerJob, self)._get_environment()
+        
+        env['CONDUCTOR_DEADLINE_SKIP_ENV_VAR_DUMP'] = "0"
+        env['CONDUCTOR_DEADLINE_SHOW_WATCHER_DEBUG'] = "1"
 
-        return super(WorkerJob, self)._get_environment()
+        return env 
     
     def validate_job(self):
         
@@ -77,10 +81,15 @@ class DeadlineWorkerJob(WorkerJob):
             raise DeadlineWorkerJobError("deadline_ssl_certificate has not been set. This must be the local path to your Deadline client certificate")
         
         return True
-
-    @staticmethod
-    def get_package_ids_for_deadline_job(deadline_job):
-        return DeadlineToConductorPackageMapper.map(deadline_job)
+    
+    def submit_job(self):                
+        
+        deadline_package = conductor.lib.package_utils.get_host_package("deadline", self.deadline_client_version, strict=False)['package']
+#        deadline_package= = "5082dfa8-39f8-abac-6b9d-12b4b01fcc15"
+#        print "DEADLINE:--------------------", deadline_package
+        self.software_packages_ids.append(deadline_package)
+        
+        return super(DeadlineWorkerJob, self).submit_job()
             
 
 class DeadlineToConductorPackageMapper(object):
@@ -162,5 +171,5 @@ class Maya(object):
         return package_ids
     
     
-DeadlineToConductorPackageMapper.register(Maya)
-
+DeadlineToConductorPackageMapper.register(Maya)            
+        
