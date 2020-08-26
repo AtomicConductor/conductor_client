@@ -453,15 +453,21 @@ class Config():
         Returns: None
 
         """
+        
+        # The order of precedence is:
+        # 1) Use api_key from the config
+        # 2) Use the api_key_path from the config
+        # 3) Use the base path for the crendentials (if they exist)
+        # 4) Prompt the user
+                
         # If the key isn't defined, than check for a path with the key
         if 'api_key' in config:
             logger.debug("'api_key' is already defined. Ignoring 'api_key_path'")
             return
-
-        if 'api_key_path' in config:          
-            api_key_path = config['api_key_path']
-
-        else:
+        
+        api_key_path = config.get('api_key_path', None)
+        
+        if api_key_path is None:
             api_key_path = Config.get_default_api_key_path()
             logger.info("'api_key_path' not found in config, checking base dir ({}) for api key path".format(api_key_path))
 
