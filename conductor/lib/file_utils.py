@@ -17,7 +17,7 @@ RX_HOUDINI = r"\$F\d*"  # image.$F.exr
 RX_ASTERISK = r"\*+"  # image.*.exr
 RX_UDIM_ZBRUSH = r"u<U>_v<V>"  # image.u<U>_v<V>.exr
 RX_UDIM_ZBRUSH_F = r"u<U>_v<V>_<f>"  # image.u<U>_v<V>_<f>.exr
-RX_FRAME_SEQ = "<f>"  # image.<f>.exr
+RX_FRAME_SEQ = r"<[fF]\d*>"  # image.<f>.exr,  image.<f4>.exr,  image.<F4>.exr
 RX_FRAME_REDSHIFT = '<Frame>'  # image.<Frame>.exr
 
 
