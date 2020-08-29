@@ -467,6 +467,27 @@ def get_tx_path(filepath, existing_only=False):
     return tx_filepath
 
 
+def get_rstexbin_paths(filepaths, existing_only=False):
+    '''
+    Return the rstexbin filepaths for the given filepaths
+    '''
+    return [get_rstexbin_path(path, existing_only=existing_only) for path in filepaths]
+
+
+def get_rstexbin_path(filepath, existing_only=False):
+    '''
+    For the given filepath, construct a parallel *.rstexbin filepath residing in the same
+    directory (same name, different extension).
+    If existing_only is True, only return the rstexbin filepath if it exists on disk,
+    otherwise return an empty string.
+    '''
+    filepath_base, _ = os.path.splitext(filepath)
+    rstexbin_filepath = filepath_base + ".rstexbin"
+    if existing_only and not os.path.isfile(rstexbin_filepath):
+        return ""
+    return rstexbin_filepath
+
+
 def strip_drive_letter(filepath):
     '''
     If the given filepath has a drive letter, remove it and return the rest of

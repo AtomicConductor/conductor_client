@@ -41,10 +41,22 @@ class MayaWidget(QtWidgets.QWidget):
                    "Info": 2,
                    "Debug": 3,
                    },
+        'redshift': {"Errors": 0,
+                     "Info": 1,
+                     # TODO(LWS): disable/prevent Debug level bc it can cause redshift to hang when
+                     # logging out a cryptomatte manifest json dict (which is very large).
+                     # "Debug": 2,
+                     },
     }
 
-    RENDER_VERBOSITY_DEFAULT_LEVEL = {"arnold": "Debug"}
-    RENDER_VERBOSITY_FLAG = {'arnold': '-ai:lve'}
+    RENDER_VERBOSITY_DEFAULT_LEVEL = {
+        "arnold": "Debug",
+        "redshift": "Info",
+    }
+    RENDER_VERBOSITY_FLAG = {
+        'arnold': '-ai:lve',
+        "redshift": "-logLevel",
+    }
 
     # The .ui designer filepath
     _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'maya.ui')
@@ -502,6 +514,14 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             tx_filepaths = file_utils.get_tx_paths(dependencies.keys(), existing_only=True)
             processed_tx_filepaths = file_utils.process_dependencies(tx_filepaths)
             dependencies.update(processed_tx_filepaths)
+        # If the renderer is redshift then add corresponding rstexbin files.
+        # TODO:(lws) This process shouldn't happen here. We can't keep tacking on things for random
+        # software-specific behavior. We're going to need start separating behavior via classes (perhaps
+        # one for each renderer type?)
+        if maya_utils.is_redshift_renderer():
+            rstexbin_filepaths = file_utils.get_rstexbin_paths(dependencies.keys(), existing_only=True)
+            processed_rstexbin_filepaths = file_utils.process_dependencies(rstexbin_filepaths)
+            dependencies.update(processed_rstexbin_filepaths)
 
         raw_data = {"dependencies": dependencies}
 
@@ -624,8 +644,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             "arnold": "arnold",
             "renderManRIS": "rman,",
             "renderman": "renderman",
+            "redshift": "redshift",
         }
-        return "-r %s" % flags.get(renderer, "file")
+        return "-r %s" % flags.get(renderer, "file")  # default to the scene file's render settings
 
     def runConductorSubmission(self, data):
 
