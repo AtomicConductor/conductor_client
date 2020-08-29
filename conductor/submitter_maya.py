@@ -624,8 +624,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             "arnold": "arnold",
             "renderManRIS": "rman,",
             "renderman": "renderman",
+            "redshift": "redshift",
         }
-        return "-r %s" % flags.get(renderer, "file")
+        return "-r %s" % flags.get(renderer, "file")  # default to the scene file's render settings
 
     def runConductorSubmission(self, data):
 
