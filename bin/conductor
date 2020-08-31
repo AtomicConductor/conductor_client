@@ -7,6 +7,7 @@ import os
 import re
 import sys
 
+
 try:
     imp.find_module('conductor')
 
@@ -14,7 +15,7 @@ except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import conductor
-from conductor.lib import api_client, common, conductor_submit, downloader, downloader2, uploader, loggeria
+from conductor.lib import api_client, common, conductor_submit, downloader, downloader2, uploader, loggeria, sentry_utils
 
 
 def parse_args():
@@ -241,6 +242,14 @@ def parse_args():
                                      "everyday, while storing the last 7 days "
                                      "of logs"))
 
+    submit_parser.add_argument("--error_reporting",
+                               choices=[True, False],
+                               default=conductor.CONFIG.get("error_reporting"),
+                               type=cast_to_bool,
+                               help="Provide control over automatic error reporting to Conductor. "
+                                    "Automatic error reporting helps our engineers troubleshoot "
+                                    "and fix bugs faster")
+
     submit_parser.add_argument("--max_instances",
                                help="Maximum number of instances for this job")
 
@@ -299,6 +308,14 @@ def parse_args():
                                        "rotating log, creating a new log file "
                                        "everyday, while storing the last 7 days "
                                        "of logs"))
+
+    uploader_parser.add_argument("--error_reporting",
+                                 choices=[True, False],
+                                 default=conductor.CONFIG.get("error_reporting"),
+                                 type=cast_to_bool,
+                                 help="Provide control over automatic error reporting to Conductor. "
+                                      "Automatic error reporting helps our engineers troubleshoot "
+                                      "fix bugs faster")
 
     uploader_parser.add_argument("--thread_count",
                                  type=int,
@@ -361,6 +378,14 @@ def parse_args():
                                          "rotating log, creating a new log file "
                                          "everyday, while storing the last 7 days "
                                          "of logs"))
+
+    downloader_parser.add_argument("--error_reporting",
+                                   choices=[True, False],
+                                   default=conductor.CONFIG.get("error_reporting"),
+                                   type=cast_to_bool,
+                                   help="Provide control over automatic error reporting to Conductor. "
+                                        "Automatic error reporting helps our engineers troubleshoot "
+                                        "fix bugs faster")
 
     downloader_parser.add_argument("--thread_count",
                                    type=int,
@@ -469,4 +494,12 @@ def run_downloader(args):
 
 if __name__ == '__main__':
     args = parse_args()
+
+    if conductor.CONFIG["error_reporting"]:
+        sentry_utils.inject_sentry()
+
+        import logging
+        logging.getLogger('conductor').info("Automatic error reporting to Conductor is enabled. Disable by setting the --error_reporting argument to 'false'.")
+
+
     args.func(args)

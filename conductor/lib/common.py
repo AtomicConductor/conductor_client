@@ -389,12 +389,15 @@ def base_dir():
 
 class Config():
     required_keys = []
-    default_config = {'base_url': 'atomic-light-001.appspot.com',
-                      'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
-                      'priority': 5,
-                      'local_upload': True,
-                      'md5_caching': True,
-                      'log_level': "INFO"}
+    default_config = {
+                          'base_url': 'atomic-light-001.appspot.com',
+                          'error_reporting': True,
+                          'local_upload': True,
+                          'log_level': 'INFO',
+                          'md5_caching': True,
+                          'priority': 5,
+                          'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
+                     }
     default_config_locations = {'linux2': os.path.join(os.getenv('HOME', ''), '.conductor', 'config.yml'),
                                 'win32': os.path.join(os.getenv('APPDATA', ''), 'Conductor Technologies', 'Conductor', 'config.yml'),
                                 'darwin': os.path.join(os.getenv('HOME', ''), 'Application Support/Conductor', 'config.yml')}
@@ -412,7 +415,7 @@ class Config():
 
         # set the url based on account (unless one was already provided)
         if 'url' not in combined_config:
-            combined_config['url'] = 'https://atomic-light-001.appspot.com'
+            combined_config['url'] = 'https://' + Config.default_config['base_url']
 
         if 'auth_url' not in combined_config:
             combined_config['auth_url'] = 'https://dashboard.conductortech.com'
@@ -534,8 +537,14 @@ class Config():
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         with open(path, 'w') as config:
-            config.write('local_upload: True\n')
+            config.write('# Uncomment and update to use an API key file instead of browser authentication.\n')
             config.write('# api_key_path: <path to conductor_api_key.json>\n')
+            config.write('# Set error_reporting to False to prevent the downloader and uploader from sending automatic error reports to Conductor.\n')
+            config.write('error_reporting: True\n')
+            config.write('# Set local_upload to False to disable uploading from the DCC at the time of\n'
+                        '# submission, and rely on the Conductor uploader daemon instead.\n'
+                        '# https://docs.conductortech.com/#client_tools/cli/#uploader\n')
+            config.write('local_upload: True\n')
         return {}
 
     def get_user_config(self):
