@@ -609,6 +609,15 @@ def collect_dependencies(node_attrs):
                         # continue here so that we don't append the original (unresolved) path as
                         # file dependency (later on).
                         continue
+                    # A RedshiftProxyMesh node points to a Redshift Proxy file on disk. This is
+                    # similar to .ass/.vrscene/.rib file in that it may contain references to other
+                    # file dependencies.
+                    if node_type == "RedshiftProxyMesh":
+                        logger.debug("Querying redshift proxy file: %s", path)
+                        redshift_filepaths = scrape_redshift_proxy_file(path)
+                        if redshift_filepaths:
+                            logger.debug("Found %s filepaths: %s", len(redshift_filepaths), redshift_filepaths)
+                            dependencies.extend(redshift_filepaths)
 
                     # Append path to list of dependencies
                     dependencies.append(path)
@@ -1369,6 +1378,13 @@ def parse_xgen_file(filepath):
         parsed_modules[module_type].append(parsed_module)
 
     return dict(parsed_modules)
+
+
+def scrape_redshift_proxy_file(proxy_filepath):
+    '''
+    Query the given Redshfit Proxy file for all external file dependencies.
+    '''
+    return mel.eval('rsProxy -q -dependencies "%s"' % proxy_filepath)
 
 
 def get_node_by_type(node_type, must_exist=True, many=False):
