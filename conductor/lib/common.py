@@ -391,7 +391,7 @@ class Config():
     required_keys = []
     default_config = {
                           'base_url': 'atomic-light-001.appspot.com',
-                          'error_reporting': True,
+                          'error_reporting': False,
                           'local_upload': True,
                           'log_level': 'INFO',
                           'md5_caching': True,
@@ -540,7 +540,7 @@ class Config():
             config.write('# Uncomment and update to use an API key file instead of browser authentication.\n')
             config.write('# api_key_path: <path to conductor_api_key.json>\n')
             config.write('# Set error_reporting to False to prevent the downloader and uploader from sending automatic error reports to Conductor.\n')
-            config.write('error_reporting: True\n')
+            config.write('error_reporting: False\n')
             config.write('# Set local_upload to False to disable uploading from the DCC at the time of\n'
                         '# submission, and rely on the Conductor uploader daemon instead.\n'
                         '# https://docs.conductortech.com/#client_tools/cli/#uploader\n')
