@@ -896,8 +896,9 @@ def parse_ocio_config_paths(config_filepath):
     for path in search_paths:
         # If the path is relative, resolve it
         if not os.path.isabs(path):
-            path = os.path.join(config_dirpath, path)
-            logging.debug("Resolved relative path '%s' to '%s'", )
+            relative_path = os.path.join(config_dirpath, path)
+            logging.debug("Resolved relative path '%s' to '%s'", path, relative_path)
+            path = relative_path
 
         if not os.path.isdir(path):
             logger.warning("OCIO search path does not exist: %s", path)
