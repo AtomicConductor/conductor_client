@@ -472,7 +472,7 @@ def get_render_layers_info():
     return render_layers
 
 
-def collect_dependencies(node_attrs, leaf_path_list=None):
+def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None):
     '''
     Return a list of filepaths that the current maya scene has dependencies on.
     This is achieved by inspecting maya's nodes.  Use the node_attrs argument
@@ -481,10 +481,14 @@ def collect_dependencies(node_attrs, leaf_path_list=None):
     leaf_path_list: A list of strings. A list of paths to skip for nested dependencies. 
                     Ex: A maya file that itself will be included but not textures, or
                     other nested references will be.
+    exclude_path_list: A list of strings. A list of paths to exclude from the
+                       dependency scanner.
     '''
+    
     assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
     
-    leaf_path_list = leaf_path_list or [] 
+    leaf_path_list = leaf_path_list or []
+    exclude_path_list = exclude_path_list or []
 
     # TODO: Temporary hack to work around renderman 23.3 bug.
     # Record the active renderer so that we can restore it after making this cmds.file call
@@ -524,7 +528,14 @@ def collect_dependencies(node_attrs, leaf_path_list=None):
                     # it for some reason. Strip this out at the end of the function
                     path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
                     logger.debug("%s: %s", plug_name, path)
-
+                    
+                    if path in exclude_path_list:
+                        logger.info("Skipping depedency '{}' - in exclusion list".format(path))
+                        continue
+                    
+                    if path in leaf_path_list:
+                        logger.info("Skipping nested scanning of '{}' - in leaf list".format(path))
+                                             
                     # ---- XGEN SCRAPING -----
                     #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
                     if node_type == "xgmPalette":
