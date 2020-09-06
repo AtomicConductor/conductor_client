@@ -472,13 +472,19 @@ def get_render_layers_info():
     return render_layers
 
 
-def collect_dependencies(node_attrs):
+def collect_dependencies(node_attrs, leaf_path_list=None):
     '''
     Return a list of filepaths that the current maya scene has dependencies on.
     This is achieved by inspecting maya's nodes.  Use the node_attrs argument
     to pass in a dictionary
+    
+    leaf_path_list: A list of strings. A list of paths to skip for nested dependencies. 
+                    Ex: A maya file that itself will be included but not textures, or
+                    other nested references will be.
     '''
     assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
+    
+    leaf_path_list = leaf_path_list or [] 
 
     # TODO: Temporary hack to work around renderman 23.3 bug.
     # Record the active renderer so that we can restore it after making this cmds.file call
@@ -522,36 +528,42 @@ def collect_dependencies(node_attrs):
                     # ---- XGEN SCRAPING -----
                     #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
                     if node_type == "xgmPalette":
-                        maya_filepath = cmds.file(query=True, sceneName=True)
-                        palette_filepath = os.path.join(os.path.dirname(maya_filepath), plug_value)
-                        xgen_dependencies = scrape_palette_node(node, palette_filepath) + [palette_filepath]
-                        logger.debug("xgen_dependencies: %s", xgen_dependencies)
-                        dependencies += xgen_dependencies
+                        
+                        if path not in leaf_path_list:                            
+                            maya_filepath = cmds.file(query=True, sceneName=True)
+                            palette_filepath = os.path.join(os.path.dirname(maya_filepath), plug_value)
+                            xgen_dependencies = scrape_palette_node(node, palette_filepath) + [palette_filepath]
+                            logger.debug("xgen_dependencies: %s", xgen_dependencies)
+                            dependencies += xgen_dependencies
+                        
                         # continue here so that we don't append the path to dependencies later on.
                         # (the path that would have been appended is actually not the correct path).
                         continue
 
                     # ---- VRAY SCRAPING -----
                     if node_type == "VRayScene":
-                        vrscene_dependencies = parse_vrscene_file(path)
-                        logger.debug("vrscene dependencies: %s" % vrscene_dependencies)
-                        dependencies += vrscene_dependencies
+                        if path not in leaf_path_list:
+                            vrscene_dependencies = parse_vrscene_file(path)
+                            logger.debug("vrscene dependencies: %s" % vrscene_dependencies)
+                            dependencies += vrscene_dependencies
 
                     # ---- YETI SCRAPING -----
                     if node_type == "pgYetiMaya":
-                        yeti_dependencies = scrape_yeti_graph(node)
-                        logger.debug("yeti dependencies: %s" % yeti_dependencies)
-                        dependencies += yeti_dependencies
-
-                        # Check whether the node is reading from disk or not.
-                        # If it's not, then we shouldn't include the path as
-                        # a dependency
-                        if not cmds.getAttr('%s.fileMode' % node):
-                            logger.debug("Skipping path because fileMode is disabled")
-                            continue
+                        if path not in leaf_path_list:
+                            yeti_dependencies = scrape_yeti_graph(node)
+                            logger.debug("yeti dependencies: %s" % yeti_dependencies)
+                            dependencies += yeti_dependencies
+    
+                            # Check whether the node is reading from disk or not.
+                            # If it's not, then we shouldn't include the path as
+                            # a dependency
+                            if not cmds.getAttr('%s.fileMode' % node):
+                                logger.debug("Skipping path because fileMode is disabled")
+                                continue
 
                     # ---- ARNOLD STANDIN SCRAPING -----
                     if node_type == "aiStandIn":
+                        
                         # We expect an aiStandin node to point towards and .ass file (or sequence thereof)
                         # Instead of loading/reading the .ass file now, simply append to a list
                         # that we'll process all at one time (*much faster*)
@@ -561,8 +573,9 @@ def collect_dependencies(node_attrs):
                         # file in an .ass sequence will have the same file dependencies, so don't bother reading every
                         # ass file. Perhaps dangerous, but we'll cross that bridge later (it's better than reading/loading
                         # potentially thousands of .ass files)
-                        ass_filepath = file_utils.process_upload_filepath(path, strict=True)[0]
-                        ass_filepaths.append(ass_filepath)
+                        if path not in leaf_path_list:
+                            ass_filepath = file_utils.process_upload_filepath(path, strict=True)[0]
+                            ass_filepaths.append(ass_filepath)
 
                     # ---- RENDERMAN RLF files -----
                     # If the node type is a RenderManArchive, then it may have an associated .rlf
@@ -573,23 +586,24 @@ def collect_dependencies(node_attrs):
                     # will have it's corresponding .rlf file here:
                     #     renderman/ribarchives/SpidermanRibArchiveShape/SpidermanRibArchiveShape.job.rlf
                     if node_type == "RenderManArchive" and node_attr == "filename":
-                        archive_dependencies = []
-                        rlf_dirpath = os.path.splitext(path)[0]
-                        rlf_filename = "%s.job.rlf" % os.path.basename(rlf_dirpath)
-                        rlf_filepath = os.path.join(rlf_dirpath, rlf_filename)
-                        logger.debug("Searching for corresponding rlf file: %s", rlf_filepath)
-                        rlf_filepaths = file_utils.process_upload_filepath(rlf_filepath, strict=False)
-                        if rlf_filepaths:
-                            rlf_filepath = rlf_filepaths[0]  # there should only be one
-                            # Parse the rlf file for file dependencies.
-                            # Note that though this is an rlf file, there is embedded rib data within
-                            # that we can parse using this rib parser.
-                            logger.debug("Parsing rlf file: %s", rlf_filepath)
-                            rlf_depedencies = parse_rib_file(rlf_filepath)
-                            archive_dependencies.extend([rlf_filepath] + rlf_depedencies)
-
-                        logger.debug('%s dependencies: %s', plug_name, archive_dependencies)
-                        dependencies.extend(archive_dependencies)
+                        if path not in leaf_path_list:
+                            archive_dependencies = []
+                            rlf_dirpath = os.path.splitext(path)[0]
+                            rlf_filename = "%s.job.rlf" % os.path.basename(rlf_dirpath)
+                            rlf_filepath = os.path.join(rlf_dirpath, rlf_filename)
+                            logger.debug("Searching for corresponding rlf file: %s", rlf_filepath)
+                            rlf_filepaths = file_utils.process_upload_filepath(rlf_filepath, strict=False)
+                            if rlf_filepaths:
+                                rlf_filepath = rlf_filepaths[0]  # there should only be one
+                                # Parse the rlf file for file dependencies.
+                                # Note that though this is an rlf file, there is embedded rib data within
+                                # that we can parse using this rib parser.
+                                logger.debug("Parsing rlf file: %s", rlf_filepath)
+                                rlf_depedencies = parse_rib_file(rlf_filepath)
+                                archive_dependencies.extend([rlf_filepath] + rlf_depedencies)
+    
+                            logger.debug('%s dependencies: %s', plug_name, archive_dependencies)
+                            dependencies.extend(archive_dependencies)
 
                     # ---- REDSHIFT SCRAPING -----
                     # The redshiftOptions node populates some cache filepaths by default. However,
@@ -601,14 +615,15 @@ def collect_dependencies(node_attrs):
                     # to exist on disk). This is not a perfect assumption, but we can adjust as
                     # needed...perhaps by querying the caching mode.
                     if node_type == "RedshiftOptions" and file_utils.RX_FRAME_REDSHIFT in path:
-                        logger.debug("Resolving path expression: %s", path)
-                        redshift_filepaths = file_utils.process_upload_filepath(path, strict=False)
-                        if redshift_filepaths:
-                            logger.debug("Resolved filepaths: %s", redshift_filepaths)
-                            dependencies.extend(redshift_filepaths)
-                        # continue here so that we don't append the original (unresolved) path as
-                        # file dependency (later on).
-                        continue
+                        if path not in leaf_path_list:
+                            logger.debug("Resolving path expression: %s", path)
+                            redshift_filepaths = file_utils.process_upload_filepath(path, strict=False)
+                            if redshift_filepaths:
+                                logger.debug("Resolved filepaths: %s", redshift_filepaths)
+                                dependencies.extend(redshift_filepaths)
+                            # continue here so that we don't append the original (unresolved) path as
+                            # file dependency (later on).
+                            continue
 
                     # Append path to list of dependencies
                     dependencies.append(path)
