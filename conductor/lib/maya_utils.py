@@ -496,7 +496,7 @@ def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None
     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
     dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
     # Strip errant dependences (another part of the renderman bug above).
-    dependencies = [path for path in dependencies if not path.endswith('_<user')]
+    dependencies = [os.path.normpath(path) for path in dependencies if not path.endswith('_<user')]
     logger.debug("maya scene base dependencies: %s", dependencies)
     # Reinstate active renderer
     cmds.setAttr("defaultRenderGlobals.currentRenderer", active_renderer, type="string")
@@ -526,7 +526,7 @@ def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None
                     # directory (i.e. it doesn't have any real smarts about path resolution, etc).
                     # NOTE: that this command will oftentimes return filepaths with an ending "/" on
                     # it for some reason. Strip this out at the end of the function
-                    path = cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True)
+                    path = os.path.normpath(cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True))
                     logger.debug("%s: %s", plug_name, path)
                     
                     if path in exclude_path_list:
@@ -658,7 +658,7 @@ def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None
         dependencies.extend(ass_dependencies)
 
     # Strip out any paths that end in "\"  or "/"    Hopefully this doesn't break anything.
-    return sorted(set([path.rstrip("/\\") for path in dependencies]))
+    return sorted(set([os.path.normpath(path.rstrip("/\\")) for path in dependencies]))
 
 
 def scrape_yeti_graph(yeti_node):
