@@ -487,3 +487,17 @@ def strip_drive_letter(filepath):
     '''
     rx_drive = r'^[a-z]:'
     return re.sub(rx_drive, "", filepath, flags=re.I)
+
+def expand_paths(paths):
+    '''
+    Expand a list of paths using glob
+    '''
+
+    expanded_paths = []
+    
+    for path in paths:
+        expanded = [ os.path.normpath(p) for p in glob.glob(path) ]
+        logger.debug("'{}' expanded to {}".format(path, expanded))
+        expanded_paths.extend(expanded)
+        
+    return expanded_paths

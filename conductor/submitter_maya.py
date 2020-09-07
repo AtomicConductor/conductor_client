@@ -380,8 +380,15 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Get all of the node types and attributes to query for external filepaths on
         resources = common.load_resources_file()
         dependency_attrs = resources.get("maya_dependency_attrs") or {}
+        
+        leaf_path_list = file_utils.expand_paths(os.environ.get('CONDUCTOR_DEPSCAN_LEAF_PATHS', []).split(os.pathsep))
+        exclude_path_list = file_utils.expand_paths(os.environ.get('CONDUCTOR_DEPSCAN_EXCLUDE_PATHS', []))
+        
+        logger.debug("Using expanded leaf file list: {}".format(leaf_path_list))
 
-        return maya_utils.collect_dependencies(dependency_attrs)
+        return maya_utils.collect_dependencies(dependency_attrs, 
+                                               leaf_path_list=leaf_path_list, 
+                                               exclude_path_list=exclude_path_list)
 
     def getEnvironment(self):
         '''
