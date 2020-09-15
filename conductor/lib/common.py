@@ -389,12 +389,15 @@ def base_dir():
 
 class Config():
     required_keys = []
-    default_config = {'base_url': 'atomic-light-001.appspot.com',
-                      'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
-                      'priority': 5,
-                      'local_upload': True,
-                      'md5_caching': True,
-                      'log_level': "INFO"}
+    default_config = {
+                          'base_url': 'atomic-light-001.appspot.com',
+                          'error_reporting': False,
+                          'local_upload': True,
+                          'log_level': 'INFO',
+                          'md5_caching': True,
+                          'priority': 5,
+                          'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
+                     }
     default_config_locations = {'linux2': os.path.join(os.getenv('HOME', ''), '.conductor', 'config.yml'),
                                 'win32': os.path.join(os.getenv('APPDATA', ''), 'Conductor Technologies', 'Conductor', 'config.yml'),
                                 'darwin': os.path.join(os.getenv('HOME', ''), 'Application Support/Conductor', 'config.yml')}
@@ -412,10 +415,19 @@ class Config():
 
         # set the url based on account (unless one was already provided)
         if 'url' not in combined_config:
-            combined_config['url'] = 'https://atomic-light-001.appspot.com'
+            combined_config['url'] = 'https://' + Config.default_config['base_url']
 
         if 'auth_url' not in combined_config:
             combined_config['auth_url'] = 'https://dashboard.conductortech.com'
+        
+        if 'api_key' in combined_config:
+            try:
+                json_key = json.loads(combined_config['api_key'].replace("\n", "").replace("\r", ""))
+            except ValueError:
+                decoded = base64.b64decode(combined_config['api_key'])
+                json_key = json.loads(decoded)
+    
+            combined_config['api_key'] = json_key
 
         self.validate_api_key(combined_config)
         recombined_config = self.add_api_settings(combined_config)
@@ -429,6 +441,10 @@ class Config():
             api_url = "http://localhost:8081"
         settings_dict["api_url"] = api_url
         return settings_dict
+    
+    @staticmethod
+    def get_default_api_key_path():
+        return os.path.join(base_dir(), 'auth', 'conductor_api_key')
 
     @staticmethod
     def validate_api_key(config):
@@ -440,14 +456,29 @@ class Config():
         Returns: None
 
         """
-        if 'api_key_path' not in config:
-            config['api_key_path'] = os.path.join(base_dir(), 'auth', 'conductor_api_key')
-        api_key_path = config['api_key_path']
-
-        #  If the API key doesn't exist, then no biggie, just bail
-        if not os.path.exists(api_key_path):
-            # config['api_key'] = None
+        
+        # The order of precedence is:
+        # 1) Use api_key from the config
+        # 2) Use the api_key_path from the config
+        # 3) Use the base path for the crendentials (if they exist)
+        # 4) Prompt the user
+                
+        # If the key isn't defined, than check for a path with the key
+        if 'api_key' in config:
+            logger.debug("'api_key' is already defined. Ignoring 'api_key_path'")
             return
+        
+        api_key_path = config.get('api_key_path', None)
+        
+        if api_key_path is None:
+            api_key_path = Config.get_default_api_key_path()
+            logger.info("'api_key_path' not found in config, checking base dir ({}) for api key path".format(api_key_path))
+
+            #  If the API key doesn't exist, then no biggie, just bail
+            if not os.path.exists(api_key_path):
+                logger.debug("No API key file found '{}'. Not using.".format(api_key_path))
+                return            
+
         try:
             with open(api_key_path, 'r') as fp:
                 config['api_key'] = json.loads(fp.read())
@@ -506,8 +537,14 @@ class Config():
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         with open(path, 'w') as config:
-            config.write('local_upload: True\n')
+            config.write('# Uncomment and update to use an API key file instead of browser authentication.\n')
             config.write('# api_key_path: <path to conductor_api_key.json>\n')
+            config.write('# Set error_reporting to False to prevent the downloader and uploader from sending automatic error reports to Conductor.\n')
+            config.write('error_reporting: False\n')
+            config.write('# Set local_upload to False to disable uploading from the DCC at the time of\n'
+                        '# submission, and rely on the Conductor uploader daemon instead.\n'
+                        '# https://docs.conductortech.com/#client_tools/cli/#uploader\n')
+            config.write('local_upload: True\n')
         return {}
 
     def get_user_config(self):

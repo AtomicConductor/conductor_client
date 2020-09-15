@@ -81,7 +81,7 @@ ${EnvVarUpdate} $0 "PYTHONPATH" "A" "HKLM" "$INSTDIR\Conductor\python\Lib\site-p
 ${EnvVarUpdate} $0 "MAYA_SHELF_PATH" "A" "HKLM" "$INSTDIR\Conductor\maya_shelf"
 ${EnvVarUpdate} $0 "XBMLANGPATH" "A" "HKLM" "$INSTDIR\Conductor\conductor\resources"
 ${EnvVarUpdate} $0 "NUKE_PATH" "A" "HKLM" "$INSTDIR\Conductor\nuke_menu"
-${EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "A" "HKLM" "$INSTDIR\Conductor"
+${EnvVarUpdate} $0 "CONDUCTOR_DIR" "A" "HKLM" "$INSTDIR\Conductor"
 
 SectionEnd
 
@@ -139,7 +139,7 @@ ${un.EnvVarUpdate} $0 "PYTHONPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technolog
 ${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\maya_shelf"
 ${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\conductor\resources"
 ${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor\nuke_menu"
-${un.EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
+${un.EnvVarUpdate} $0 "CONDUCTOR_DIR" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
 
 RMDir /r /REBOOTOK "$PROGRAMFILES\Conductor Technologies"
 
@@ -152,6 +152,7 @@ ${un.EnvVarUpdate} $0 "MAYA_SHELF_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Co
 ${un.EnvVarUpdate} $0 "XBMLANGPATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\conductor\resources"
 ${un.EnvVarUpdate} $0 "NUKE_PATH" "R" "HKLM" "$PROGRAMFILES\ConductorIO\Conductor\nuke_menu"
 ${un.EnvVarUpdate} $0 "CONDUCTOR_CONFIG" "R" "HKCU" "$APPDATA\ConductorIO\Conductor\config.yml"
+${un.EnvVarUpdate} $0 "CONDUCTOR_LOCATION" "R" "HKLM" "$PROGRAMFILES\Conductor Technologies\Conductor"
 RMDir /r /REBOOTOK "$PROGRAMFILES\ConductorIO"
 ####
 
