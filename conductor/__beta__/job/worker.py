@@ -29,7 +29,6 @@ class DeadlineWorkerJob(WorkerJob):
         self.job_title = "Deadline Worker"
         self.instance_count = 1
         
-#        self.cmd = "/opt/thinkbox/deadline/10/deadline10.1.1.3/bin/launch_deadline.sh" #CONDUCTOR_DEADLINE_LAUNCHER_PATH
         self.cmd = "/opt/thinkbox/deadline/conductor/launch_deadline.sh" #CONDUCTOR_DEADLINE_LAUNCHER_PATH
         self.deadline_proxy_root = None
         self.deadline_ssl_certificate = None
@@ -85,8 +84,6 @@ class DeadlineWorkerJob(WorkerJob):
     def submit_job(self):                
         
         deadline_package = conductor.lib.package_utils.get_host_package("deadline", self.deadline_client_version, strict=False)['package']
-#        deadline_package= = "5082dfa8-39f8-abac-6b9d-12b4b01fcc15"
-#        print "DEADLINE:--------------------", deadline_package
         self.software_packages_ids.append(deadline_package)
         
         return super(DeadlineWorkerJob, self).submit_job()
