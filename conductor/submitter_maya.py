@@ -226,8 +226,8 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
     def __init__(self, parent=None):
         
-        self.dependency_leaf_glob_file_path = None
-        self.dependency_exclude_glob_file_path = None
+        self.dependency_leaf_glob_file_path = os.environ.get('CONDUCTOR_DEPSCAN_LEAF_FILE')
+        self.dependency_exclude_glob_file_path = os.environ.get('CONDUCTOR_DEPSCAN_EXCLUDE_FILE')
         
         super(MayaConductorSubmitter, self).__init__(parent=parent)
         self.setMayaWindow()
@@ -384,18 +384,15 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # Get all of the node types and attributes to query for external filepaths on
         resources = common.load_resources_file()
         dependency_attrs = resources.get("maya_dependency_attrs") or {}
-        
-        leaf_glob_file_path = os.environ.get('CONDUCTOR_DEPSCAN_LEAF_FILE', self.dependency_leaf_glob_file_path)
-        exclude_glob_file_path = os.environ.get('CONDUCTOR_DEPSCAN_EXCLUDE_FILE', self.dependency_exclude_glob_file_path)
-        
+
         leaf_path_list = []
         exclude_path_list = []
         
-        if leaf_glob_file_path is not None:
-            leaf_path_list = file_utils.expand_paths_from_file(leaf_glob_file_path)
+        if self.dependency_leaf_glob_file_path is not None:
+            leaf_path_list = file_utils.expand_paths_from_file(self.dependency_leaf_glob_file_path)
         
-        if exclude_glob_file_path is not None:
-            exclude_path_list = file_utils.expand_paths_from_file(exclude_glob_file_path)
+        if self.dependency_exclude_glob_file_path is not None:
+            exclude_path_list = file_utils.expand_paths_from_file(self.dependency_exclude_glob_file_path)
         
         logger.debug("Using expanded leaf file list: {}".format(leaf_path_list))
 

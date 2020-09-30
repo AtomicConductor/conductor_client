@@ -472,30 +472,32 @@ def get_render_layers_info():
     return render_layers
 
 
-def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None):
+def collect_dependencies(node_attrs, leaf_path=None, exclude_path=None):
     '''
     Return a list of filepaths that the current maya scene has dependencies on.
     This is achieved by inspecting maya's nodes.  Use the node_attrs argument
     to pass in a dictionary
     
-    leaf_path_list: A list of strings. A list of paths to skip for nested dependencies. 
+    leaf_path: A list of strings. A list of paths to skip for nested dependencies. 
                     Ex: A maya file that itself will be included but not textures, or
                     other nested references will be.
-    exclude_path_list: A list of strings. A list of paths to exclude from the
+    exclude_path: A list of strings. A list of paths to exclude from the
                        dependency scanner.
     '''
     
     assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
     
-    leaf_path_list = leaf_path_list or []
-    exclude_path_list = exclude_path_list or []
+    leaf_path = leaf_path or []
+    exclude_path = exclude_path or []
 
     # TODO: Temporary hack to work around renderman 23.3 bug.
     # Record the active renderer so that we can restore it after making this cmds.file call
     active_renderer = get_active_renderer()
     # Note that this command will often times return filepaths with an ending "/" on it for some reason. Strip this out at the end of the function
     dependencies = cmds.file(query=True, list=True, withoutCopyNumber=True) or []
+    
     # Strip errant dependences (another part of the renderman bug above).
+    # normpath is used as it's possible (in Windows) to have a path with mixed back/forward slashes
     dependencies = [os.path.normpath(path) for path in dependencies if not path.endswith('_<user')]
     logger.debug("maya scene base dependencies: %s", dependencies)
     # Reinstate active renderer
@@ -526,21 +528,23 @@ def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None
                     # directory (i.e. it doesn't have any real smarts about path resolution, etc).
                     # NOTE: that this command will oftentimes return filepaths with an ending "/" on
                     # it for some reason. Strip this out at the end of the function
+                    #
+                    # normpath() is used as it's possible (in Windows) to have a path with mixed back/forward slashes
                     path = os.path.normpath(cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True))
                     logger.debug("%s: %s", plug_name, path)
                     
-                    if path in exclude_path_list:
+                    if path in exclude_path:
                         logger.info("Skipping depedency '{}' - in exclusion list".format(path))
                         continue
                     
-                    if path in leaf_path_list:
+                    if path in leaf_path:
                         logger.info("Skipping nested scanning of '{}' - in leaf list".format(path))
                                              
                     # ---- XGEN SCRAPING -----
                     #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
                     if node_type == "xgmPalette":
                         
-                        if path not in leaf_path_list:                            
+                        if path not in leaf_path:                            
                             maya_filepath = cmds.file(query=True, sceneName=True)
                             palette_filepath = os.path.join(os.path.dirname(maya_filepath), plug_value)
                             xgen_dependencies = scrape_palette_node(node, palette_filepath) + [palette_filepath]
@@ -553,14 +557,14 @@ def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None
 
                     # ---- VRAY SCRAPING -----
                     if node_type == "VRayScene":
-                        if path not in leaf_path_list:
+                        if path not in leaf_path:
                             vrscene_dependencies = parse_vrscene_file(path)
                             logger.debug("vrscene dependencies: %s" % vrscene_dependencies)
                             dependencies += vrscene_dependencies
 
                     # ---- YETI SCRAPING -----
                     if node_type == "pgYetiMaya":
-                        if path not in leaf_path_list:
+                        if path not in leaf_path:
                             yeti_dependencies = scrape_yeti_graph(node)
                             logger.debug("yeti dependencies: %s" % yeti_dependencies)
                             dependencies += yeti_dependencies
@@ -584,7 +588,7 @@ def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None
                         # file in an .ass sequence will have the same file dependencies, so don't bother reading every
                         # ass file. Perhaps dangerous, but we'll cross that bridge later (it's better than reading/loading
                         # potentially thousands of .ass files)
-                        if path not in leaf_path_list:
+                        if path not in leaf_path:
                             ass_filepath = file_utils.process_upload_filepath(path, strict=True)[0]
                             ass_filepaths.append(ass_filepath)
 
@@ -597,7 +601,7 @@ def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None
                     # will have it's corresponding .rlf file here:
                     #     renderman/ribarchives/SpidermanRibArchiveShape/SpidermanRibArchiveShape.job.rlf
                     if node_type == "RenderManArchive" and node_attr == "filename":
-                        if path not in leaf_path_list:
+                        if path not in leaf_path:
                             archive_dependencies = []
                             rlf_dirpath = os.path.splitext(path)[0]
                             rlf_filename = "%s.job.rlf" % os.path.basename(rlf_dirpath)
@@ -626,7 +630,7 @@ def collect_dependencies(node_attrs, leaf_path_list=None, exclude_path_list=None
                     # to exist on disk). This is not a perfect assumption, but we can adjust as
                     # needed...perhaps by querying the caching mode.
                     if node_type == "RedshiftOptions" and file_utils.RX_FRAME_REDSHIFT in path:
-                        if path not in leaf_path_list:
+                        if path not in leaf_path:
                             logger.debug("Resolving path expression: %s", path)
                             redshift_filepaths = file_utils.process_upload_filepath(path, strict=False)
                             if redshift_filepaths:
