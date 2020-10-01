@@ -472,23 +472,23 @@ def get_render_layers_info():
     return render_layers
 
 
-def collect_dependencies(node_attrs, leaf_path=None, exclude_path=None):
+def collect_dependencies(node_attrs, leaf_paths=None, exclude_paths=None):
     '''
     Return a list of filepaths that the current maya scene has dependencies on.
     This is achieved by inspecting maya's nodes.  Use the node_attrs argument
     to pass in a dictionary
     
-    leaf_path: A list of strings. A list of paths to skip for nested dependencies. 
+    leaf_paths: A list of strings. A list of paths to skip for nested dependencies. 
                     Ex: A maya file that itself will be included but not textures, or
                     other nested references will be.
-    exclude_path: A list of strings. A list of paths to exclude from the
+    exclude_paths: A list of strings. A list of paths to exclude from the
                        dependency scanner.
     '''
     
     assert isinstance(node_attrs, dict), "node_attrs arg must be a dict. Got %s" % type(node_attrs)
     
-    leaf_path = leaf_path or []
-    exclude_path = exclude_path or []
+    leaf_paths = leaf_paths or []
+    exclude_paths = exclude_paths or []
 
     # TODO: Temporary hack to work around renderman 23.3 bug.
     # Record the active renderer so that we can restore it after making this cmds.file call
@@ -533,18 +533,18 @@ def collect_dependencies(node_attrs, leaf_path=None, exclude_path=None):
                     path = os.path.normpath(cmds.file(plug_value, expandName=True, query=True, withoutCopyNumber=True))
                     logger.debug("%s: %s", plug_name, path)
                     
-                    if path in exclude_path:
+                    if path in exclude_paths:
                         logger.info("Skipping depedency '{}' - in exclusion list".format(path))
                         continue
                     
-                    if path in leaf_path:
+                    if path in leaf_paths:
                         logger.info("Skipping nested scanning of '{}' - in leaf list".format(path))
                                              
                     # ---- XGEN SCRAPING -----
                     #  For xgen files, read the .xgen file and parse out the directory where other dependencies may exist
                     if node_type == "xgmPalette":
                         
-                        if path not in leaf_path:                            
+                        if path not in leaf_paths:                            
                             maya_filepath = cmds.file(query=True, sceneName=True)
                             palette_filepath = os.path.join(os.path.dirname(maya_filepath), plug_value)
                             xgen_dependencies = scrape_palette_node(node, palette_filepath) + [palette_filepath]
@@ -557,14 +557,14 @@ def collect_dependencies(node_attrs, leaf_path=None, exclude_path=None):
 
                     # ---- VRAY SCRAPING -----
                     if node_type == "VRayScene":
-                        if path not in leaf_path:
+                        if path not in leaf_paths:
                             vrscene_dependencies = parse_vrscene_file(path)
                             logger.debug("vrscene dependencies: %s" % vrscene_dependencies)
                             dependencies += vrscene_dependencies
 
                     # ---- YETI SCRAPING -----
                     if node_type == "pgYetiMaya":
-                        if path not in leaf_path:
+                        if path not in leaf_paths:
                             yeti_dependencies = scrape_yeti_graph(node)
                             logger.debug("yeti dependencies: %s" % yeti_dependencies)
                             dependencies += yeti_dependencies
@@ -588,7 +588,7 @@ def collect_dependencies(node_attrs, leaf_path=None, exclude_path=None):
                         # file in an .ass sequence will have the same file dependencies, so don't bother reading every
                         # ass file. Perhaps dangerous, but we'll cross that bridge later (it's better than reading/loading
                         # potentially thousands of .ass files)
-                        if path not in leaf_path:
+                        if path not in leaf_paths:
                             ass_filepath = file_utils.process_upload_filepath(path, strict=True)[0]
                             ass_filepaths.append(ass_filepath)
 
@@ -601,7 +601,7 @@ def collect_dependencies(node_attrs, leaf_path=None, exclude_path=None):
                     # will have it's corresponding .rlf file here:
                     #     renderman/ribarchives/SpidermanRibArchiveShape/SpidermanRibArchiveShape.job.rlf
                     if node_type == "RenderManArchive" and node_attr == "filename":
-                        if path not in leaf_path:
+                        if path not in leaf_paths:
                             archive_dependencies = []
                             rlf_dirpath = os.path.splitext(path)[0]
                             rlf_filename = "%s.job.rlf" % os.path.basename(rlf_dirpath)
@@ -630,7 +630,7 @@ def collect_dependencies(node_attrs, leaf_path=None, exclude_path=None):
                     # to exist on disk). This is not a perfect assumption, but we can adjust as
                     # needed...perhaps by querying the caching mode.
                     if node_type == "RedshiftOptions" and file_utils.RX_FRAME_REDSHIFT in path:
-                        if path not in leaf_path:
+                        if path not in leaf_paths:
                             logger.debug("Resolving path expression: %s", path)
                             redshift_filepaths = file_utils.process_upload_filepath(path, strict=False)
                             if redshift_filepaths:
