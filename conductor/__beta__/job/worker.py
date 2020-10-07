@@ -16,9 +16,14 @@ class WorkerJob(job.Job):
 class DeadlineWorkerJobError(WorkerJobError):
     pass
 
+class DeadlineToConductorPackageMapperError(Exception):
+    pass
+
 class DeadlineWorkerJob(WorkerJob):
     
     POST_TASK_SCRIPT_PATH = '/opt/thinkbox/deadline/conductor/shutdown_conductor_instance.py'
+    DEFAULT_CMD = "/opt/thinkbox/deadline/conductor/launch_deadline.sh"
+    DEFAULT_WORKER_VERSION = "10.1.1.3"
     
     def __init__(self, *args , **kwargs):
     
@@ -29,11 +34,11 @@ class DeadlineWorkerJob(WorkerJob):
         self.job_title = "Deadline Worker"
         self.instance_count = 1
         
-        self.cmd = "/opt/thinkbox/deadline/conductor/launch_deadline.sh" #CONDUCTOR_DEADLINE_LAUNCHER_PATH
+        self.cmd = self.DEFAULT_CMD
         self.deadline_proxy_root = None
         self.deadline_ssl_certificate = None
         self.deadline_use_ssl = False
-        self.deadline_client_version = "10.1.1.3"
+        self.deadline_client_version = self.DEFAULT_WORKER_VERSION
         self.deadline_group_name = None
         
     def _get_task_data(self):
@@ -54,15 +59,10 @@ class DeadlineWorkerJob(WorkerJob):
         self.environment['CONDUCTOR_DEADLINE_GROUP_NAME'] = self.deadline_group_name         
         self.environment['DCONFIG_ProxyUseSSL'] = str(self.deadline_use_ssl).lower()
         self.environment['CONDUCTOR_DEADLINE_CLIENT_VERSION'] = self.deadline_client_version
+        self.environment['DCONFIG_ProxyRoot'] = self.deadline_proxy_root
         
         if self.deadline_use_ssl:
             self.environment['DCONFIG_ProxySSLCertificate'] = self.deadline_ssl_certificate
-            self.environment['DCONFIG_ProxyRoot'] = "{};{}".format(self.deadline_proxy_root, self.deadline_ssl_certificate)
-            
-        else:
-            self.environment['DCONFIG_ProxyRoot'] = self.deadline_proxy_root
-
-        self.environment['DCONFIG_ProxyRoot'] = self.deadline_proxy_root
         
         env = super(WorkerJob, self)._get_environment()
         
@@ -97,10 +97,10 @@ class DeadlineToConductorPackageMapper(object):
     def map(cls, deadline_job):
         
         plugin_name = deadline_job.GetJobInfoKeyValue("Plugin")
-        map_class = cls.PLUGIN_TO_PACKAGE_MAPPING.get(plugin_name, None)
+        map_class = cls.PLUGIN_TO_PACKAGE_MAPPING.get(plugin_name)
 
         if map_class is None:
-            raise Exception("No class has been registered for the Deadline plugin '{}'".format(plugin_name))
+            raise DeadlineToConductorPackageMapperError("No class has been registered for the Deadline plugin '{}'".format(plugin_name))
         
         LOG.debug("Using mapping class '{}' for plugin '{}'".format(map_class, plugin_name))
         
@@ -112,7 +112,7 @@ class DeadlineToConductorPackageMapper(object):
         for plugin in mapping_class.DEADLINE_PLUGINS:
             
             if plugin in cls.PLUGIN_TO_PACKAGE_MAPPING:
-                raise Exception("The plugin '{}' has already been registered with the class {}".format(cls.PLUGIN_TO_PACKAGE_MAPPING[plugin]))
+                raise DeadlineToConductorPackageMapperError("The plugin '{}' has already been registered with the class {}".format(cls.PLUGIN_TO_PACKAGE_MAPPING[plugin]))
             
             LOG.debug("Registering mapping plugin '{}' to class '{}'".format(plugin, mapping_class))
             cls.PLUGIN_TO_PACKAGE_MAPPING[plugin] = mapping_class
@@ -138,10 +138,10 @@ class Maya(object):
         product_version = cls.product_version_map[major_version]
         
         if render_name == "File":
-            raise Exception("Integration doesn't support 'File', please explicitly choose a renderer in the MayCmd plugin properties")
+            raise DeadlineToConductorPackageMapperError("Integration doesn't support 'File', please explicitly choose a renderer in the MayaCmd plugin properties")
         
         if render_name not in cls.render_version_map:
-            raise Exception("The render '{}' is not currently support by the Conductor Deadline integration.\n{}".format(render_name, cls.render_version_map))
+            raise DeadlineToConductorPackageMapperError("The render '{}' is not currently support by the Conductor Deadline integration.\n{}".format(render_name, cls.render_version_map))
         
         host_package = conductor.lib.package_utils.get_host_package(cls.PRODUCT_NAME, product_version, strict=False)
         LOG.debug("Found package: {}".format(host_package))
@@ -156,7 +156,7 @@ class Maya(object):
             
         else:
             if conductor_render_plugin['version'] not in conductor_render_plugin['plugin'].keys():
-                raise Exception("Unable to find {plugin} version '{verision}' in Conductor packages".format(conductor_render_plugin))
+                raise DeadlineToConductorPackageMapperError("Unable to find {plugin} version '{version}' in Conductor packages".format(conductor_render_plugin))
             
             render_plugin_version = conductor_render_plugin['plugin']
             
