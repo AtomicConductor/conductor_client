@@ -7,17 +7,22 @@ from . import job
 
 LOG = logging.getLogger(__name__)
 
+
+class DeadlineToConductorPackageMapperError(Exception):
+    pass
+
+
 class WorkerJobError(job.JobError):
     pass
 
-class WorkerJob(job.Job):
-    pass
 
 class DeadlineWorkerJobError(WorkerJobError):
     pass
 
-class DeadlineToConductorPackageMapperError(Exception):
+
+class WorkerJob(job.Job):
     pass
+
 
 class DeadlineWorkerJob(WorkerJob):
     
@@ -37,7 +42,7 @@ class DeadlineWorkerJob(WorkerJob):
         self.cmd = self.DEFAULT_CMD
         self.deadline_proxy_root = None
         self.deadline_ssl_certificate = None
-        self.deadline_use_ssl = False
+        self.deadline_use_ssl = True
         self.deadline_client_version = self.DEFAULT_WORKER_VERSION
         self.deadline_group_name = None
         
