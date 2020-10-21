@@ -290,7 +290,12 @@ arnold_dependency_attrs:
     MayaFile: 
         - filename
     xgen_procedural:
-        - data
+        - data        
+    procedural:
+        - filename
+    image:
+        - filename        
+        
 # xgen palette file depdency node attrs
 xgen_dependency_attrs:
     Palette:       

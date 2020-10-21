@@ -225,6 +225,10 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
     product = "maya-io"
 
     def __init__(self, parent=None):
+        
+        self.dependency_leaf_glob_file_path = os.environ.get('CONDUCTOR_DEPSCAN_LEAF_FILE')
+        self.dependency_exclude_glob_file_path = os.environ.get('CONDUCTOR_DEPSCAN_EXCLUDE_FILE')
+        
         super(MayaConductorSubmitter, self).__init__(parent=parent)
         self.setMayaWindow()
 
@@ -381,7 +385,20 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         resources = common.load_resources_file()
         dependency_attrs = resources.get("maya_dependency_attrs") or {}
 
-        return maya_utils.collect_dependencies(dependency_attrs)
+        leaf_path_list = []
+        exclude_path_list = []
+        
+        if self.dependency_leaf_glob_file_path is not None:
+            leaf_path_list = file_utils.expand_paths_from_file(self.dependency_leaf_glob_file_path)
+        
+        if self.dependency_exclude_glob_file_path is not None:
+            exclude_path_list = file_utils.expand_paths_from_file(self.dependency_exclude_glob_file_path)
+        
+        logger.debug("Using expanded leaf file list: {}".format(leaf_path_list))
+
+        return maya_utils.collect_dependencies(dependency_attrs, 
+                                               leaf_path_list=leaf_path_list, 
+                                               exclude_path_list=exclude_path_list)
 
     def getEnvironment(self):
         '''

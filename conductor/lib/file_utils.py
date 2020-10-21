@@ -487,3 +487,32 @@ def strip_drive_letter(filepath):
     '''
     rx_drive = r'^[a-z]:'
     return re.sub(rx_drive, "", filepath, flags=re.I)
+
+def expand_paths(paths):
+    '''
+    Expand a list of paths using glob
+    '''
+
+    expanded_paths = []
+    
+    for path in paths:
+        
+        expanded = [ os.path.normpath(p) for p in glob.glob(path.strip()) ]
+        logger.debug("'{}' expanded to {}".format(path, expanded))
+        expanded_paths.extend(expanded)
+        
+    return expanded_paths
+
+def expand_paths_from_file(path):
+    '''
+    Opens a file that contains glob-style patterns and returns a list of all
+    matching files. The file must contain one glob-style pattern per-line.
+    
+    path: A string. The path to the file that contains glob patterns
+    '''
+    
+    with open(path) as fh:
+        glob_patterns = fh.readlines()
+        
+    return expand_paths(glob_patterns)
+
