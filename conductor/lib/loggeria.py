@@ -47,9 +47,8 @@ class LogLevelFilter(logging.Filter):
     """Filter log messages based on level.
 
     By default, the logger sends everything to stderr. This can be a problem
-    because stderr prints RED in the log panel and pops up a floating window to
-    display what it thinks is an error. Customers get worried. To alleviate this
-    we make 2 handlers, one for stdout and one for stderr, and we route the
+    because stderr can cause some DCCs to open an error window. To alleviate
+    this we make 2 handlers, one for stdout and one for stderr, and we route the
     appropriate log records to each. This filter only allows warning, info, and
     debug records and will be used by the handler that logs to stdout. The
     stderr handler doesn't need a filter as it simply has it's level set for
