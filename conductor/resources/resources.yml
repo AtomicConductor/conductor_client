@@ -2897,7 +2897,11 @@ package_ids:
         "11.3v5":
             package: 1f146093b811f19ff071d06e93358e42
 
-
+    "deadline":
+        "10.1.1.3":
+            package: e2ea1dc49ffff573acb17029ed33ff40
+        "10.1.8.5":
+            package: 8f0b9d32281aae4f5210c03297df5f54            
            
     # This houdini section has fake data for testing / QA purposes
 
