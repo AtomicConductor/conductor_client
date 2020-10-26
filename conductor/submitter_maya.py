@@ -389,9 +389,12 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         environment
         '''
         environment = super(MayaConductorSubmitter, self).getEnvironment()
+
+        # If an ocio config file was found, set the OCIO environment variable to point at it.
+        # Strip the drive letter from the path if necessary.
         ocio_config = maya_utils.get_ocio_config_filepath()
         if ocio_config:
-            environment.update({"OCIO": ocio_config})
+            environment.update({"OCIO": file_utils.strip_drive_letter(ocio_config)})
 
         # If the user has selected rendeman for maya, make sure to disable pathhelper
         if "renderman-maya" in [p["product"] for p in self.getJobPackages()]:
