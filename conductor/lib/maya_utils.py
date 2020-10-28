@@ -871,7 +871,7 @@ def parse_ocio_config_paths(config_filepath):
         # If the path is relative, resolve it
         if not os.path.isabs(path):
             path = os.path.join(config_dirpath, path)
-            logging.debug("Resolved relative path '%s' to '%s'", )
+            logger.debug("Resolved relative path '%s' to '%s'", )
 
         if not os.path.isdir(path):
             logger.warning("OCIO search path does not exist: %s", path)
@@ -1087,6 +1087,8 @@ def scrape_ass_file(ass_filepath, node_attrs, plugin_paths=()):
         e.g. ("/usr/anderslanglands/alshaders/alShaders-linux-2.0.0b2-ai5.0.1.0/bin",
               "/usr/peregrinelabs/yeti/Maya2017/Yeti-v2.2.6_Maya2017-linux64/bin")
     '''
+    assert os.path.isfile(ass_filepath), "File does not exist: %s" % ass_filepath
+
     cmds.loadPlugin("mtoa")
     try:
         import arnold
@@ -1112,31 +1114,127 @@ def _scrape_ass_file(ass_filepath, node_attrs):
     node_attrs: dictionary. key is the node type, value is a list of node attributes to query.
 
     NOTE: this should not be called directly (requires some initialization/cleanup)
+
+    TODO(lws): move this entire function into an arnold_utils module (yet to be created), 
+    and separate theses nested functions. yuck.
+
     '''
 
     import arnold
 
+    def _get_options_node():
+        '''
+        Return there "options" node from the currently loaded ass file.
+        There should always be one, and only one of these per ass file.
+        '''
+        iterator = arnold.AiUniverseGetNodeIterator(arnold.AI_NODE_OPTIONS)
+        while not arnold.AiNodeIteratorFinished(iterator):
+            node = arnold.AiNodeIteratorGetNext(iterator)
+        arnold.AiNodeIteratorDestroy(iterator)
+        return node
+
+    def _get_texture_search_paths(options_node):
+        '''
+        Read the "texure_searchpath" attribute from the given "options" node, and return the noted
+        directories (as a list of strings).  Note that the value recorded on the node is a single
+        string that may list multiple directories (separated by colons and/or semi-colons, regardles
+        of platform).
+        Considering that some paths may have letter drives in them on Windows (i.e. colons), and that
+        linux paths may certainly contain semicolons, it's not crystal clear as to how arnold supports
+        this nilly willy behavior of supporting both path separators across both platofrms. So for
+        the sake of simplicity/sanity, we'll just assume that paths are separated using the platform's
+        traditional path separator (i.e. colons on Linux/macOS; semi-colons on Windows).  If this
+        turns out to be a bad assumption, we'll adjust/complicate later.
+
+        Lastly, arnold supports environment variables in these search paths by wrapping the variable
+        name in brackets, e.g. [MY_ENVIRONMENT_VARIBLE]. So we must resolve that as well.
+
+        For example, a texure_searchpath string of:
+            ":/tmp/: [HOME] :[TMPDIR]: /tmp/[NONEXISTENT_VARIABLE]/data"
+        may result in list of directories such as:
+            [
+              "/tmp",
+              "/users/conductor",
+              "/usr/tmp",
+              "/tmp/[NONEXISTENT_VARIABLE]/data",
+            ]
+
+        references:
+         - https://trac.solidangle.com/arnoldpedia/chrome/site/Arnold-5.0.1.0/doc/api/group__ai__texture.html#ga51a803e4ec2fc23a68f096360baadb86
+         - https://docs.arnoldrenderer.com/display/A5AFMUG/Search+Path
+         - https://arnoldsupport.com/2016/01/29/portable-ass-files-with-relative-paths-and-the-texture-search-path/
+        '''
+        # regex for the allowed chars for an environment variable (not 100% accurate, but good enough
+        # for this use case), i.e. any set of characters that are enclosed in a pair of brackets.
+        rx_env_variable = r'\[([^]]+)\]'
+
+        # define a subsitution function for regex purposes
+        def env_sub(matchobj):
+            # If the environment variable exists, then swap in its value, otherwise, leave the original/bracketed value.
+            # Note that group(1) excludes the brackets, while group(0) includes them.
+            return os.environ.get(matchobj.group(1), matchobj.group(0))
+
+        # get the raw searchpath string from the node
+        search_path = arnold.AiNodeGetStr(options_node, "texture_searchpath")
+        logger.debug("raw texture_searchpath: '%s'", search_path)
+        search_paths = []
+        # split the raw searchpath string by the path separataor (in case there's more than one path list in the string.
+        for path in search_path.split(os.pathsep):
+            # remove any trailing/leading whitespace
+            path = path.strip()
+            # skip any empty strings
+            if not path:
+                continue
+            # substitute any environment variables
+            # TODO(lws): we may need to recursively resolve environment variables
+            path = re.sub(rx_env_variable, env_sub, path)
+            search_paths.append(path)
+
+        return search_paths
+
+    # the list of paths to return at the end
     paths = []
+    # any relative paths that we'll need to resolve before exiting
+    relative_texture_paths = []
     arnold.AiASSLoad(ass_filepath, arnold.AI_NODE_ALL)
 
     # Iterate over all shape nodes, which includes procedural nodes
     iterator = arnold.AiUniverseGetNodeIterator(arnold.AI_NODE_ALL)
     while not arnold.AiNodeIteratorFinished(iterator):
         node = arnold.AiNodeIteratorGetNext(iterator)
-        entryNode = arnold.AiNodeGetNodeEntry(node)
-        node_type = arnold.AiNodeEntryGetName(entryNode)
+        node_entry = arnold.AiNodeGetNodeEntry(node)
+        node_type = arnold.AiNodeEntryGetName(node_entry)
         for attr_name in node_attrs.get(node_type) or []:
             value = arnold.AiNodeGetStr(node, attr_name)
+            if not value:
+                logger.debug("Skipping %s.%s value: %r", node_type, value, value)
+                continue
 
-            if node_type == "xgen_procedural":
+            # Handle relative texture file paths (record all for now; we'll resolve later)
+            if node_type == "image" and attr_name == "filename" and not os.path.isabs(value):
+                logger.debug("Found relative texture path: %s", value)
+                relative_texture_paths.append(value)
+
+            elif node_type == "xgen_procedural":
                 logger.debug("Parsing xgen_procedural..")
                 xgen_paths = scrape_arnold_xgen_data_str(value)
                 paths.extend(xgen_paths)
 
-            elif value:
+            else:
                 paths.append(value)
 
     arnold.AiNodeIteratorDestroy(iterator)
+
+    # Resolve any relative texture paths
+    if relative_texture_paths:
+        # Get the texture search paths from the "options" node. This will be used for resolving the relative paths
+        options_node = _get_options_node()
+        texture_search_paths = _get_texture_search_paths(options_node)
+        logger.debug("texture_searchpaths: %s", texture_search_paths)
+        resolved_paths = file_utils.find_in_search_paths(relative_texture_paths, texture_search_paths, raise_missing=True)
+        logger.debug("resolved relative texture paths: %s", resolved_paths)
+        paths.extend(resolved_paths.values())
+
     return paths
 
 
