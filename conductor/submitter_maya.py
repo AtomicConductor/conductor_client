@@ -249,17 +249,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         super(MayaConductorSubmitter, self).applyDefaultSettings()
         start, end = maya_utils.get_frame_range()[0]
         self.setFrameRange(start, end)
-        self.setGpuWidgetVisibility()
         self.extended_widget.refreshUi()
         self.extended_advanced_widget.setWorkspaceDir(maya_utils.get_workspace_dirpath())
         self.setOutputDir(maya_utils.get_image_dirpath())
-
-    def setGpuWidgetVisibility(self):
-        '''
-        Show the Gpu combobox if V-Ray is the current renderer and its set to a GPU mode.
-        '''
-        show = maya_utils.is_vray_renderer() and maya_utils.is_vray_gpu_enabled()
-        self.ui_gpu_widget.setVisible(show)
 
     def getExtendedWidget(self):
         return MayaWidget()

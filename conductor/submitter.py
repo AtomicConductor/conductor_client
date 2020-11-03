@@ -232,10 +232,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # to this.
         self.ui_advanced_wgt.hide()
 
-        # Hide the gpu widget by default. One day we may reevalaute this
-        # behavior
-        self.ui_gpu_widget.hide()
-
         # Add the extended widget (must be implemented by the child class
         self._addExtendedWidget()
 
@@ -249,13 +245,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         specific to the open file
         """
 
-        # Populate the Instance Type combobox with the available instance
-        # configs
-        self.populateInstanceTypeCmbx()
-
         # Populate the GPU Acceleration combobox with the available instance
         # configs
+        self.populateCoresCmbx()
         self.populateGpuCmbx()
+        self.populateMemoryCmbx()
 
         # Populate the software versions tree widget
         self.populateSoftwareVersionsTrWgt()
@@ -284,7 +278,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Set the default instance type to one specified in user config
         instance_type = CONFIG.get("instance_type")
         if instance_type:
-            self.setInstanceType(instance_type)
+            pass
+            # TODO:
+            # self.setInstanceType(instance_type)
 
         # Set the default project by querying the config
         default_project = CONFIG.get('project')
@@ -485,23 +481,89 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                                             "Preferences Deleted",
                                             parent=self)
 
-    def populateInstanceTypeCmbx(self):
-        '''
-        Populate the Instance combobox with all of the available instance types
-        '''
+    def filter_instance_types(self, gpu_count=None, gpu_type=None, core_count=None, memory=None):
+        excluded_instances = []
+        instances = self._instance_types.values()
+        for ins in instances:
+            if gpu_count is not None:
+                if (ins['gpu'] or {}).get('gpu_count', 0) != gpu_count:
+                    excluded_instances.append(ins)
+            if gpu_type is not None:
+                if (ins['gpu'] or {}).get('gpu_type') != gpu_type:
+                    excluded_instances.append(ins)
+            if core_count is not None:
+                if ins['cores'] != core_count:
+                    excluded_instances.append(ins)
+            if memory is not None:
+                if ins['memory'] != memory:
+                    excluded_instances.append(ins)
+        return [ins for ins in instances if ins not in excluded_instances]
 
-        self.ui_instance_type_cmbx.clear()
-        for instance_type in sorted(self._instance_types.values(), key=operator.itemgetter("cores", "memory")):
-            self.ui_instance_type_cmbx.addItem(instance_type['description'], userData=instance_type)
+    def instance_types_for_selection(self):
+        gpu_count = self.ui_gpu_count_cmbx.itemData(self.ui_gpu_count_cmbx.currentIndex())
+        gpu_type = self.ui_gpu_type_cmbx.itemData(self.ui_gpu_type_cmbx.currentIndex())
+        cores = self.ui_cores_cmbx.itemData(self.ui_cores_cmbx.currentIndex())
+        memory = self.ui_memory_cmbx.itemData(self.ui_memory_cmbx.currentIndex())
+        return self.filter_instance_types(gpu_count, gpu_type, cores, memory)
 
     def populateGpuCmbx(self):
         """Populate the GPU combobox with all of the available GPU types."""
-        gpu_types = common.get_conductor_gpu_configs()
-        self.ui_gpu_cmbx.clear()
-        for gpu_info in gpu_types:
-            self.ui_gpu_cmbx.addItem(
-                gpu_info.pop('description'),
-                userData=gpu_info)
+        self.ui_gpu_count_cmbx.blockSignals(True)
+        self.ui_gpu_count_cmbx.clear()
+        self.ui_gpu_count_cmbx.addItem('None')
+
+        instance_types = self.filter_instance_types()
+        gpu_counts = set()
+        for it in instance_types:
+            gpu_count = (it['gpu'] or {}).get('gpu_count', 0)
+            if gpu_count > 0:
+                gpu_counts.add(gpu_count)
+        for gc in gpu_counts:
+            self.ui_gpu_count_cmbx.addItem(str(gc), userData=gc)
+        self.ui_gpu_type_cmbx.setEnabled(len(gpu_counts) > 0)
+        self.ui_gpu_type_cmbx.setEditable(len(gpu_counts) > 0)
+
+        self.ui_gpu_count_cmbx.currentIndexChanged.connect(self.ui_gpu_count_cmbx_index_changed)
+        self.ui_gpu_count_cmbx.blockSignals(False)
+
+    def ui_gpu_count_cmbx_index_changed(self):
+        gpu_count = self.ui_gpu_count_cmbx.itemText(self.ui_gpu_count_cmbx.currentIndex())
+        self.ui_gpu_type_cmbx.setEnabled(gpu_count > 0)
+        self.populateCoresCmbx()
+        self.populateMemoryCmbx()
+
+    def populateCoresCmbx(self):
+        '''
+        Populate the cores count combobox with the available core count for the selected GPU type.
+        '''
+        instance_types = self.instance_types_for_selection()
+        self.ui_cores_cmbx.blockSignals(True)
+        self.ui_cores_cmbx.clear()
+        cores = set()
+        for instance_type in sorted(instance_types, key=operator.itemgetter("cores")):
+            cores.add(instance_type['cores'])
+        for c in sorted(cores):
+            self.ui_cores_cmbx.addItem(str(c), userData=c)
+        self.ui_cores_cmbx.currentIndexChanged.connect(self.ui_cores_cmbx_index_changed)
+        self.ui_cores_cmbx.blockSignals(False)
+
+    def ui_cores_cmbx_index_changed(self):
+        self.populateGpuCmbx()
+        self.populateMemoryCmbx()
+
+    def populateMemoryCmbx(self):
+        '''
+        Populate the memory combobox with the available memory options for the current selection.
+        '''
+        instance_types = self.instance_types_for_selection()
+        self.ui_memory_cmbx.blockSignals(True)
+        self.ui_memory_cmbx.clear()
+        mem = set()
+        for instance_type in sorted(instance_types, key=operator.itemgetter("memory")):
+            mem.add(instance_type['memory'])
+        for m in sorted(mem):
+            self.ui_memory_cmbx.addItem(m, userData=m)
+        self.ui_memory_cmbx.blockSignals(False)
 
     def populateProjectCmbx(self):
         """Populate the project combobox with project names.
@@ -560,29 +622,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
     def getChunkSize(self):
         """Return UI's Frame Chunk Size spinbox value."""
         return self.ui_chunk_size_spnbx.value()
-
-    def setInstanceType(self, instance_type):
-        '''
-        Set the UI's "Instance Type" combobox, if it is currently available.
-        '''
-        item_idx = self.ui_instance_type_cmbx.findData(instance_type)
-        return self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
-
-    def getInstanceType(self):
-        """Return the number of cores that the user has selected from the
-        "Instance Type" combobox."""
-        return self.ui_instance_type_cmbx.itemData(
-            self.ui_instance_type_cmbx.currentIndex())
-
-    def getGpuConfig(self):
-        """Return the number of GPUs and GPU type that the user has selected
-        from the "GPU Acceleration" combobox."""
-        # Only return GPU combobox value if the widget is visible to the user.
-        # Note that there is a subtle difference between using the "isVisible()" method versus
-        # "not isHidden()".  The latter is most appropriate in this case.
-        if not self.ui_gpu_widget.isHidden():
-            return self.ui_gpu_cmbx.itemData(self.ui_gpu_cmbx.currentIndex())
-        return {}
 
     def getPreemptibleCheckbox(self):
         """Return whether or not the "Preemptible" checkbox is checked."""
@@ -658,11 +697,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["environment"] = self.getEnvironment()
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["chunk_size"] = self.getChunkSize()
-        conductor_args["instance_type"] = self.getInstanceType()["name"]
+        # TODO:
+        # conductor_args["instance_type"] = self.getInstanceType()["name"]
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["preemptible"] = self.getPreemptibleCheckbox()
-        conductor_args["gpu_config"] = self.getGpuConfig()
         conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
