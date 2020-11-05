@@ -679,7 +679,7 @@ def scrape_yeti_graph(yeti_node):
 
     for node_type, attr_names in yeti_input_attrs.iteritems():
         logger.debug("Traversing yeti %s nodes", node_type)
-        node_filepaths = scrape_yeti_node_type(yeti_node, node_type, attr_names, search_paths=node_search_paths)
+        node_filepaths = scrape_yeti_node_type(yeti_node, node_type, attr_names, search_paths=search_paths)
         filepaths.extend(node_filepaths)
     return filepaths
 
