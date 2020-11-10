@@ -556,8 +556,14 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self.ui_cores_cmbx.blockSignals(False)
 
     def ui_cores_cmbx_index_changed(self):
+        kwargs = {}
         cores = self.ui_cores_cmbx.itemText(self.ui_cores_cmbx.currentIndex())
-        kwargs = {'core_count': cores}
+        if cores == '':
+            cores = None
+            # Reset combobox selection.
+            self.populateCoresCmbx()
+        else:
+            kwargs['core_count'] = cores
         self.populateGpuCmbx(**kwargs)
         self.populateMemoryCmbx(**kwargs)
 
@@ -584,7 +590,13 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def ui_memory_cmbx_index_changed(self):
         memory = self.ui_memory_cmbx.itemText(self.ui_memory_cmbx.currentIndex())
-        kwargs = {'memory': memory[:-len(self.memory_suffix)]}
+        if memory == '':
+            memory = None
+            # Reset combobox selection.
+            self.populateMemoryCmbx()
+        else:
+            memory = memory[:-len(self.memory_suffix)]
+        kwargs = {'memory': memory}
         self.populateGpuCmbx(**kwargs)
         self.populateCoresCmbx(**kwargs)
 
