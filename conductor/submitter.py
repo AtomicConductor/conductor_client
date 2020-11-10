@@ -596,9 +596,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             self.populateMemoryCmbx()
         else:
             memory = memory[:-len(self.memory_suffix)]
-        kwargs = {'memory': memory}
-        self.populateGpuCmbx(**kwargs)
-        self.populateCoresCmbx(**kwargs)
+            kwargs = {'memory': memory}
+            self.populateGpuCmbx(**kwargs)
+            self.populateCoresCmbx(**kwargs)
 
     def populateProjectCmbx(self):
         """Populate the project combobox with project names.
