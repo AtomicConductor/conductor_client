@@ -17,9 +17,6 @@
    <iconset resource="../submitter_resources.qrc">
     <normaloff>:/images/resources/conductor_logo_01_x32.png</normaloff>:/images/resources/conductor_logo_01_x32.png</iconset>
   </property>
-  <property name="styleSheet">
-   <string notr="true"/>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
@@ -713,9 +710,6 @@
               </item>
               <item>
                <widget class="QWidget" name="ui_gpu_type_wgt" native="true">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                   <horstretch>0</horstretch>
@@ -744,7 +738,7 @@
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string> X</string>
+                    <string> </string>
                    </property>
                   </widget>
                  </item>
@@ -759,11 +753,6 @@
                    <property name="styleSheet">
                     <string notr="true"/>
                    </property>
-                   <item>
-                    <property name="text">
-                     <string>Nvidia T4 16GB</string>
-                    </property>
-                   </item>
                   </widget>
                  </item>
                 </layout>
