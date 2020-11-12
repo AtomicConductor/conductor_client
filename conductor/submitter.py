@@ -510,6 +510,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
     def populateGpuCmbx(self, **kwargs):
         """Populate the GPU combobox with all of the available GPU types."""
         self.ui_gpu_count_cmbx.blockSignals(True)
+        previous_gpu_count = self.ui_gpu_count_cmbx.itemText(self.ui_gpu_count_cmbx.currentIndex())
         self.ui_gpu_count_cmbx.clear()
         self.ui_gpu_count_cmbx.addItem('None')
 
@@ -524,23 +525,33 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             if gpu_count > 0:
                 gpu_counts.add(gpu_count)
                 gpu_types.add(gpu['gpu_model'])
-        for gc in gpu_counts:
+        new_gpu_count_idx = 0
+        for idx, gc in enumerate(sorted(gpu_counts)):
             self.ui_gpu_count_cmbx.addItem(str(gc), userData=gc)
+            if gc == previous_gpu_count:
+                new_gpu_count_idx = idx
+        self.ui_gpu_count_cmbx.setCurrentIndex(new_gpu_count_idx)
 
         self.ui_gpu_count_cmbx.currentIndexChanged.connect(self.ui_gpu_count_cmbx_index_changed)
         self.ui_gpu_count_cmbx.blockSignals(False)
 
         self.ui_gpu_type_cmbx.blockSignals(True)
+        previous_gpu_type = self.ui_gpu_type_cmbx.itemText(self.ui_gpu_type_cmbx.currentIndex())
         self.ui_gpu_type_cmbx.clear()
-        for gt in gpu_types:
-            self.ui_gpu_type_cmbx.addItem(str(gt), userData=gt)
+        new_gpu_type_idx = 0
+        for idx, gc in enumerate(sorted(gpu_types)):
+            self.ui_gpu_type_cmbx.addItem(str(gc), userData=gc)
+            if gc == previous_gpu_type:
+                new_gpu_type_idx = idx
+        self.ui_gpu_type_cmbx.setCurrentIndex(new_gpu_type_idx)
 
         gpu_type_count = len(gpu_types)
         if gpu_type_count == 0:
-            self.ui_gpu_count_cmbx.setEnabled(False)
             self.ui_gpu_type_cmbx.addItem('(GPU unavailable for current selection)')
-        self.ui_gpu_type_cmbx.setCurrentIndex(0)
-        self.ui_gpu_type_cmbx.setEnabled(self.getSelectedGpuCount() is not None)
+            self.ui_gpu_count_cmbx.setCurrentIndex(0)
+            self.ui_gpu_type_cmbx.setCurrentIndex(0)
+        self.ui_gpu_count_cmbx.setEnabled(gpu_type_count > 0)
+        self.ui_gpu_type_cmbx.setEnabled(gpu_type_count > 0)
         self.ui_gpu_type_cmbx.blockSignals(False)
 
     def getSelectedGpuCount(self):
@@ -569,13 +580,25 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         instance_types = self.filterInstanceTypes(**kwargs)
         self.ui_cores_cmbx.blockSignals(True)
+        previous_cores = self.ui_gpu_type_cmbx.itemText(self.ui_gpu_type_cmbx.currentIndex())
         self.ui_cores_cmbx.clear()
         self.ui_cores_cmbx.addItem(None)
         cores = set()
+        cores_with_gpus = set()
         for instance_type in sorted(instance_types, key=operator.itemgetter('cores')):
-            cores.add(instance_type['cores'])
-        for c in sorted(cores):
-            self.ui_cores_cmbx.addItem(str(c), userData=c)
+            c = instance_type['cores']
+            if (instance_type.get('gpu') or {}).get('gpu_count', 0) > 0:
+                cores_with_gpus.add(c)
+            cores.add(c)
+        new_cores_idx = 0
+        for idx, c in enumerate(sorted(cores)):
+            cores_str = str(c)
+            if c in cores_with_gpus:
+                cores_str += ' (GPU(s) available)'
+            self.ui_cores_cmbx.addItem(cores_str, userData=c)
+            if c == previous_cores:
+                new_cores_idx = idx
+        self.ui_cores_cmbx.setCurrentIndex(new_cores_idx)
 
         cores_options_count = len(cores)
         if cores_options_count == 1:
@@ -588,7 +611,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         cores = self.ui_cores_cmbx.itemText(self.ui_cores_cmbx.currentIndex())
         if cores == '':
             return None
-        return int(cores)
+        # Remove potential suffix.
+        return int(cores.split(' ')[0])
 
     def ui_cores_cmbx_index_changed(self):
         kwargs = {}
@@ -606,14 +630,27 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         Populate the memory combobox with the available memory options for the current selection.
         '''
         instance_types = self.filterInstanceTypes(**kwargs)
+        previous_memory = self.ui_gpu_type_cmbx.itemText(self.ui_gpu_type_cmbx.currentIndex())
         self.ui_memory_cmbx.blockSignals(True)
         self.ui_memory_cmbx.clear()
         self.ui_memory_cmbx.addItem(None)
         mem = set()
+        mem_with_gpus = set()
         for instance_type in sorted(instance_types, key=operator.itemgetter('memory')):
-            mem.add(instance_type['memory'])
-        for m in sorted(mem):
-            self.ui_memory_cmbx.addItem(m + self.memory_suffix, userData=m)
+            m = instance_type['memory']
+            if (instance_type.get('gpu') or {}).get('gpu_count', 0) > 0:
+                mem_with_gpus.add(m)
+            mem.add(m)
+
+        new_memory_idx = 0
+        for idx, m in enumerate(sorted(mem)):
+            mem_str = m + self.memory_suffix
+            if m in mem_with_gpus:
+                mem_str += ' (GPU(s) available)'
+            self.ui_memory_cmbx.addItem(mem_str, userData=m)
+            if mem_str == previous_memory:
+                new_memory_idx = idx
+        self.ui_memory_cmbx.setCurrentIndex(new_memory_idx)
 
         memory_options_count = len(mem)
         if memory_options_count == 1:
@@ -626,7 +663,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         memory = self.ui_memory_cmbx.itemText(self.ui_memory_cmbx.currentIndex())
         if memory == '':
             return None
-        return float(memory[:-len(self.memory_suffix)])
+        return float(memory.split(' ')[0][:-len(self.memory_suffix)])
 
     def ui_memory_cmbx_index_changed(self):
         memory = self.getSelectedMemory()
