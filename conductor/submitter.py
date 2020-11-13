@@ -527,9 +527,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                 gpu_types.add(gpu['gpu_model'])
         new_gpu_count_idx = 0
         for idx, gc in enumerate(sorted(gpu_counts)):
-            self.ui_gpu_count_cmbx.addItem(str(gc), userData=gc)
-            if gc == previous_gpu_count:
-                new_gpu_count_idx = idx
+            count_str = str(gc)
+            self.ui_gpu_count_cmbx.addItem(count_str, userData=gc)
+            if count_str == previous_gpu_count:
+                # Add 1 to account for the hard coded first item `None`.
+                new_gpu_count_idx = idx + 1
         self.ui_gpu_count_cmbx.setCurrentIndex(new_gpu_count_idx)
 
         self.ui_gpu_count_cmbx.currentIndexChanged.connect(self.ui_gpu_count_cmbx_index_changed)
@@ -539,9 +541,10 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         previous_gpu_type = self.ui_gpu_type_cmbx.itemText(self.ui_gpu_type_cmbx.currentIndex())
         self.ui_gpu_type_cmbx.clear()
         new_gpu_type_idx = 0
-        for idx, gc in enumerate(sorted(gpu_types)):
-            self.ui_gpu_type_cmbx.addItem(str(gc), userData=gc)
-            if gc == previous_gpu_type:
+        for idx, gt in enumerate(sorted(gpu_types)):
+            type_str = str(gt)
+            self.ui_gpu_type_cmbx.addItem(type_str, userData=gt)
+            if type_str == previous_gpu_type:
                 new_gpu_type_idx = idx
         self.ui_gpu_type_cmbx.setCurrentIndex(new_gpu_type_idx)
 
