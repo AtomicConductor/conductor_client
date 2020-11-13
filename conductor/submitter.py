@@ -195,6 +195,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self.ui_custom_lnedt.textChanged.connect(
             self._validateCustomFramesText)
 
+        # connect the instance type selection signal handlers
+        self.ui_cores_cmbx.currentIndexChanged.connect(self.ui_cores_cmbx_index_changed)
+        self.ui_gpu_count_cmbx.currentIndexChanged.connect(self.ui_gpu_count_cmbx_index_changed)
+        self.ui_memory_cmbx.currentIndexChanged.connect(self.ui_memory_cmbx_index_changed)
+
         # connect the scout job checkbox signal
         self.ui_scout_job_chkbx.stateChanged.connect(self.saveScoutJobPref)
 
@@ -510,6 +515,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
     def populateGpuCmbx(self, **kwargs):
         """Populate the GPU combobox with all of the available GPU types."""
         self.ui_gpu_count_cmbx.blockSignals(True)
+        self.ui_gpu_type_cmbx.blockSignals(True)
         previous_gpu_count = self.ui_gpu_count_cmbx.itemText(self.ui_gpu_count_cmbx.currentIndex())
         self.ui_gpu_count_cmbx.clear()
         self.ui_gpu_count_cmbx.addItem('None')
@@ -532,12 +538,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             if count_str == previous_gpu_count:
                 # Add 1 to account for the hard coded first item `None`.
                 new_gpu_count_idx = idx + 1
+
         self.ui_gpu_count_cmbx.setCurrentIndex(new_gpu_count_idx)
 
-        self.ui_gpu_count_cmbx.currentIndexChanged.connect(self.ui_gpu_count_cmbx_index_changed)
-        self.ui_gpu_count_cmbx.blockSignals(False)
-
-        self.ui_gpu_type_cmbx.blockSignals(True)
         previous_gpu_type = self.ui_gpu_type_cmbx.itemText(self.ui_gpu_type_cmbx.currentIndex())
         self.ui_gpu_type_cmbx.clear()
         new_gpu_type_idx = 0
@@ -555,6 +558,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             self.ui_gpu_type_cmbx.setCurrentIndex(0)
         self.ui_gpu_count_cmbx.setEnabled(gpu_type_count > 0)
         self.ui_gpu_type_cmbx.setEnabled(gpu_type_count > 0)
+
+        self.ui_gpu_count_cmbx.blockSignals(False)
         self.ui_gpu_type_cmbx.blockSignals(False)
 
     def getSelectedGpuCount(self):
@@ -597,7 +602,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         for idx, c in enumerate(sorted(cores)):
             cores_str = str(c)
             if c in cores_with_gpus:
-                cores_str += ' (GPU(s) available)'
+                cores_str += ' (GPU(s) available for this option)'
             self.ui_cores_cmbx.addItem(cores_str, userData=c)
             if c == previous_cores:
                 new_cores_idx = idx
@@ -607,7 +612,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         if cores_options_count == 1:
             self.ui_cores_cmbx.setCurrentIndex(1)
 
-        self.ui_cores_cmbx.currentIndexChanged.connect(self.ui_cores_cmbx_index_changed)
         self.ui_cores_cmbx.blockSignals(False)
 
     def getSelectedCores(self):
@@ -649,7 +653,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         for idx, m in enumerate(sorted(mem)):
             mem_str = m + self.memory_suffix
             if m in mem_with_gpus:
-                mem_str += ' (GPU(s) available)'
+                mem_str += ' (GPU(s) available for this option)'
             self.ui_memory_cmbx.addItem(mem_str, userData=m)
             if mem_str == previous_memory:
                 new_memory_idx = idx
@@ -659,7 +663,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         if memory_options_count == 1:
             self.ui_memory_cmbx.setCurrentIndex(1)
 
-        self.ui_memory_cmbx.currentIndexChanged.connect(self.ui_memory_cmbx_index_changed)
         self.ui_memory_cmbx.blockSignals(False)
 
     def getSelectedMemory(self):
@@ -810,7 +813,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["environment"] = self.getEnvironment()
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["chunk_size"] = self.getChunkSize()
-        conductor_args["instance_type"] = self.getInstanceTypeForSelection()[0]["name"]
+        conductor_args["instance_type"] = self.getInstanceTypeForSelection()["name"]
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["local_upload"] = self.getLocalUpload()
         conductor_args["preemptible"] = self.getPreemptibleCheckbox()
@@ -822,6 +825,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["autoretry_policy"] = self.getAutoretryPolicy()
 
         return conductor_args
+
+    def getInstanceTypeForSelection(self):
+        instances = self.getInstanceTypesForSelection()
+        assert len(instances) == 1, "Selection should have returned at most one instance type, but returned %s: %s" % (len(instances), instances)
+        return instances[0]
 
     def getDockerImage(self):
         """Return the Docker image name to use on Conductor.
