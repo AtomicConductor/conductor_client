@@ -491,11 +491,17 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         excluded_instances = []
         instances = self._instance_types.values()
         for ins in instances:
-            if gpu_count is not None:
-                if str((ins['gpu'] or {}).get('gpu_count', 0)) != str(gpu_count) and gpu_count:
-                    excluded_instances.append(ins)
-            if gpu_type is not None:
-                if (ins['gpu'] or {}).get('gpu_type') != gpu_type and gpu_type:
+            if gpu_count is not None or gpu_type is not None:
+                ins_gpu_count = (ins['gpu'] or {}).get('gpu_count', 0)
+                if gpu_count is not None:
+                    if str(ins_gpu_count) != str(gpu_count):
+                        excluded_instances.append(ins)
+                    else:
+                        if gpu_type is not None:
+                            if (ins['gpu'] or {}).get('gpu_type') != gpu_type:
+                                excluded_instances.append(ins)
+                elif gpu_type is not None and int(ins_gpu_count) > 0:
+                    # Exclude the GPU-enabled instance if no GPU was selected.
                     excluded_instances.append(ins)
             if core_count is not None and core_count:
                 if str(ins['cores']) != str(core_count):
@@ -567,7 +573,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         try:
             return int(gpu_count)
         except ValueError:
-            pass
+            return
 
     def getSelectedGpuType(self):
         gpu_type = self.ui_gpu_type_cmbx.itemText(self.ui_gpu_type_cmbx.currentIndex())
