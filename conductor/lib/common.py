@@ -390,14 +390,14 @@ def base_dir():
 class Config():
     required_keys = []
     default_config = {
-                          'base_url': 'atomic-light-001.appspot.com',
-                          'error_reporting': False,
-                          'local_upload': True,
-                          'log_level': 'INFO',
-                          'md5_caching': True,
-                          'priority': 5,
-                          'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
-                     }
+        'base_url': 'atomic-light-001.appspot.com',
+        'error_reporting': False,
+        'local_upload': True,
+        'log_level': 'INFO',
+        'md5_caching': True,
+        'priority': 5,
+        'thread_count': min(multiprocessing.cpu_count() * 2, 16),  # cap the default thread count at 16
+    }
     default_config_locations = {'linux2': os.path.join(os.getenv('HOME', ''), '.conductor', 'config.yml'),
                                 'win32': os.path.join(os.getenv('APPDATA', ''), 'Conductor Technologies', 'Conductor', 'config.yml'),
                                 'darwin': os.path.join(os.getenv('HOME', ''), 'Application Support/Conductor', 'config.yml')}
@@ -419,14 +419,14 @@ class Config():
 
         if 'auth_url' not in combined_config:
             combined_config['auth_url'] = 'https://dashboard.conductortech.com'
-        
+
         if 'api_key' in combined_config:
             try:
                 json_key = json.loads(combined_config['api_key'].replace("\n", "").replace("\r", ""))
             except ValueError:
                 decoded = base64.b64decode(combined_config['api_key'])
                 json_key = json.loads(decoded)
-    
+
             combined_config['api_key'] = json_key
 
         self.validate_api_key(combined_config)
@@ -441,7 +441,7 @@ class Config():
             api_url = "http://localhost:8081"
         settings_dict["api_url"] = api_url
         return settings_dict
-    
+
     @staticmethod
     def get_default_api_key_path():
         return os.path.join(base_dir(), 'auth', 'conductor_api_key')
@@ -456,20 +456,20 @@ class Config():
         Returns: None
 
         """
-        
+
         # The order of precedence is:
         # 1) Use api_key from the config
         # 2) Use the api_key_path from the config
         # 3) Use the base path for the crendentials (if they exist)
         # 4) Prompt the user
-                
+
         # If the key isn't defined, than check for a path with the key
         if 'api_key' in config:
             logger.debug("'api_key' is already defined. Ignoring 'api_key_path'")
             return
-        
+
         api_key_path = config.get('api_key_path', None)
-        
+
         if api_key_path is None:
             api_key_path = Config.get_default_api_key_path()
             logger.info("'api_key_path' not found in config, checking base dir ({}) for api key path".format(api_key_path))
@@ -477,7 +477,7 @@ class Config():
             #  If the API key doesn't exist, then no biggie, just bail
             if not os.path.exists(api_key_path):
                 logger.debug("No API key file found '{}'. Not using.".format(api_key_path))
-                return            
+                return
 
         try:
             with open(api_key_path, 'r') as fp:
@@ -542,8 +542,8 @@ class Config():
             config.write('# Set error_reporting to False to prevent the downloader and uploader from sending automatic error reports to Conductor.\n')
             config.write('error_reporting: False\n')
             config.write('# Set local_upload to False to disable uploading from the DCC at the time of\n'
-                        '# submission, and rely on the Conductor uploader daemon instead.\n'
-                        '# https://docs.conductortech.com/#client_tools/cli/#uploader\n')
+                         '# submission, and rely on the Conductor uploader daemon instead.\n'
+                         '# https://docs.conductortech.com/#client_tools/cli/#uploader\n')
             config.write('local_upload: True\n')
         return {}
 
@@ -608,12 +608,12 @@ def load_resources_file():
         return yaml.safe_load(file_)
 
 
-def get_conductor_gpu_configs():
+def get_conductor_instance_types():
     '''
-    Get the list of available GPU configs from the resources.yml file
+    Get the list of available instances types from the resources.yml file
     '''
     resources = load_resources_file()
-    return resources.get("gpu_configs") or []
+    return resources.get("instance_types") or []
 
 
 def get_package_ids():

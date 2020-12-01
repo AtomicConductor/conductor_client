@@ -1006,21 +1006,6 @@ def get_render_settings_node(renderer_name, strict=True):
     return renderer_settings_gettr[renderer_name](strict=strict)
 
 
-def is_vray_gpu_enabled():
-    '''
-    Return True if a GPU mode is selected in V-Ray's render settings
-    Current potential values set on V-Ray's productionEngine attr are:
-    0 = CPU mode (False)
-    1 = OpenCL mode (False - not supported on Intel/NVIDIA hardware)
-    2 = CUDA mode (True)
-    '''
-    vray_node = get_vray_settings_node(strict=False)
-    if vray_node:
-        production_engine = cmds.getAttr("%s.productionEngine" % vray_node)
-        return production_engine == 2
-    return False
-
-
 def is_arnold_tx_enabled():
     '''
     Return True if the "Use Existing .tx Textures" option is enabled in Arnolds
