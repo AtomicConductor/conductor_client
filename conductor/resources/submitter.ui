@@ -709,7 +709,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QWidget" name="ui_gpu_type_wgt" native="true">
+               <widget class="QWidget" name="ui_gpu_model_wgt" native="true">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                   <horstretch>0</horstretch>
@@ -743,7 +743,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="ui_gpu_type_cmbx">
+                  <widget class="QComboBox" name="ui_gpu_model_cmbx">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                      <horstretch>0</horstretch>

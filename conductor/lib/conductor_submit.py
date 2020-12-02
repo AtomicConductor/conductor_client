@@ -325,12 +325,6 @@ class Submit(object):
             if self.machine_flavor == "ultramem" and self.cores < 40:
                 raise BadArgumentError("ultramem machines have a minimum of 40 cores")
 
-        # Validate gpu config
-        if self.gpu_config:
-            supported_gpu_types = ['nvidia-tesla-k80', 'nvidia-tesla-k100']
-            if self.gpu_config.get("type") not in supported_gpu_types:
-                raise BadArgumentError("GPU type %s is not one of %s" % (self.gpu_config.get("type"), supported_gpu_types))
-
     def send_job(self, upload_files, upload_size):
         '''
         Construct args for two different cases:

@@ -487,20 +487,20 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                                             "Preferences Deleted",
                                             parent=self)
 
-    def filterInstanceTypes(self, gpu_count=None, gpu_type=None, core_count=None, memory=None):
+    def filterInstanceTypes(self, gpu_count=None, gpu_model=None, core_count=None, memory=None):
         excluded_instances = []
         instances = self._instance_types.values()
         for ins in instances:
-            if gpu_count is not None or gpu_type is not None:
+            if gpu_count is not None or gpu_model is not None:
                 ins_gpu_count = (ins['gpu'] or {}).get('gpu_count', 0)
                 if gpu_count is not None:
                     if str(ins_gpu_count) != str(gpu_count):
                         excluded_instances.append(ins)
                     else:
-                        if gpu_type is not None:
-                            if (ins['gpu'] or {}).get('gpu_type') != gpu_type:
+                        if gpu_model is not None:
+                            if (ins['gpu'] or {}).get('gpu_model') != gpu_model:
                                 excluded_instances.append(ins)
-                elif gpu_type is not None and int(ins_gpu_count) > 0:
+                elif gpu_model is not None and int(ins_gpu_count) > 0:
                     # Exclude the GPU-enabled instance if no GPU was selected.
                     excluded_instances.append(ins)
             if core_count is not None and core_count:
@@ -513,22 +513,22 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def getInstanceTypesForSelection(self):
         gpu_count = self.getSelectedGpuCount()
-        gpu_type = self.getSelectedGpuType()
+        gpu_model = self.getSelectedGpuModel()
         cores = self.getSelectedCores()
         memory = self.getSelectedMemory()
-        return self.filterInstanceTypes(gpu_count, gpu_type, cores, memory)
+        return self.filterInstanceTypes(gpu_count, gpu_model, cores, memory)
 
     def populateGpuCmbx(self, **kwargs):
         """Populate the GPU combobox with all of the available GPU types."""
         self.ui_gpu_count_cmbx.blockSignals(True)
-        self.ui_gpu_type_cmbx.blockSignals(True)
+        self.ui_gpu_model_cmbx.blockSignals(True)
         previous_gpu_count = self.ui_gpu_count_cmbx.itemText(self.ui_gpu_count_cmbx.currentIndex())
         self.ui_gpu_count_cmbx.clear()
         self.ui_gpu_count_cmbx.addItem('None')
 
         instance_types = self.filterInstanceTypes(**kwargs)
         gpu_counts = set()
-        gpu_types = set()
+        gpu_models = set()
         for it in instance_types:
             gpu = it['gpu']
             if not gpu:
@@ -536,7 +536,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             gpu_count = int(gpu['gpu_count'])
             if gpu_count > 0:
                 gpu_counts.add(gpu_count)
-                gpu_types.add(gpu['gpu_model'])
+                gpu_models.add(gpu['gpu_model'])
         new_gpu_count_idx = 0
         for idx, gc in enumerate(sorted(gpu_counts)):
             count_str = str(gc)
@@ -547,26 +547,26 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         self.ui_gpu_count_cmbx.setCurrentIndex(new_gpu_count_idx)
 
-        previous_gpu_type = self.ui_gpu_type_cmbx.itemText(self.ui_gpu_type_cmbx.currentIndex())
-        self.ui_gpu_type_cmbx.clear()
-        new_gpu_type_idx = 0
-        for idx, gt in enumerate(sorted(gpu_types)):
+        previous_gpu_model = self.ui_gpu_model_cmbx.itemText(self.ui_gpu_model_cmbx.currentIndex())
+        self.ui_gpu_model_cmbx.clear()
+        new_gpu_model_idx = 0
+        for idx, gt in enumerate(sorted(gpu_models)):
             type_str = str(gt)
-            self.ui_gpu_type_cmbx.addItem(type_str, userData=gt)
-            if type_str == previous_gpu_type:
-                new_gpu_type_idx = idx
-        self.ui_gpu_type_cmbx.setCurrentIndex(new_gpu_type_idx)
+            self.ui_gpu_model_cmbx.addItem(type_str, userData=gt)
+            if type_str == previous_gpu_model:
+                new_gpu_model_idx = idx
+        self.ui_gpu_model_cmbx.setCurrentIndex(new_gpu_model_idx)
 
-        gpu_type_count = len(gpu_types)
-        if gpu_type_count == 0:
-            self.ui_gpu_type_cmbx.addItem('(GPU unavailable for current selection)')
+        gpu_model_count = len(gpu_models)
+        if gpu_model_count == 0:
+            self.ui_gpu_model_cmbx.addItem('(GPU unavailable for current selection)')
             self.ui_gpu_count_cmbx.setCurrentIndex(0)
-            self.ui_gpu_type_cmbx.setCurrentIndex(0)
-        self.ui_gpu_count_cmbx.setEnabled(gpu_type_count > 0)
-        self.ui_gpu_type_cmbx.setEnabled(gpu_type_count > 0)
+            self.ui_gpu_model_cmbx.setCurrentIndex(0)
+        self.ui_gpu_count_cmbx.setEnabled(gpu_model_count > 0)
+        self.ui_gpu_model_cmbx.setEnabled(gpu_model_count > 0)
 
         self.ui_gpu_count_cmbx.blockSignals(False)
-        self.ui_gpu_type_cmbx.blockSignals(False)
+        self.ui_gpu_model_cmbx.blockSignals(False)
 
     def getSelectedGpuCount(self):
         gpu_count = self.ui_gpu_count_cmbx.itemText(self.ui_gpu_count_cmbx.currentIndex())
@@ -575,15 +575,15 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         except ValueError:
             return
 
-    def getSelectedGpuType(self):
-        gpu_type = self.ui_gpu_type_cmbx.itemText(self.ui_gpu_type_cmbx.currentIndex())
-        if gpu_type == '':
+    def getSelectedGpuModel(self):
+        gpu_model = self.ui_gpu_model_cmbx.itemText(self.ui_gpu_model_cmbx.currentIndex())
+        if gpu_model == '':
             return None
-        return gpu_type
+        return gpu_model
 
     def ui_gpu_count_cmbx_index_changed(self):
         gpu_count = self.getSelectedGpuCount()
-        self.ui_gpu_type_cmbx.setEnabled((gpu_count and gpu_count > 0) or False)
+        self.ui_gpu_model_cmbx.setEnabled((gpu_count and gpu_count > 0) or False)
         kwargs = {'gpu_count': gpu_count}
         self.populateCoresCmbx(**kwargs)
         self.populateMemoryCmbx(**kwargs)
