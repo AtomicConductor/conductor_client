@@ -107,31 +107,11 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     @classmethod
     @pyside_utils.wait_cursor
-    def runUiStandalone(cls):
-        '''
-        Note that this UI class is to be run directly from a python shell, e.g.
-        not within another software's context (such as maya/nuke).
-        '''
-        global _parent_window  # This global statement is particularly important (though it may not appear so when using simple usecases that don't use complex inheritence structures).
-
-        _parent_window = cls.getParentWindow()
-
-        app = QtWidgets.QApplication.instance()
-        if app is None:
-            app = QtWidgets.QApplication(sys.argv)
-        ui = cls()
-        ui.show()
-        app.exec_()
-
-    @classmethod
-    @pyside_utils.wait_cursor
     def runUi(cls, force_new=False):
         '''
-        Launch the submitter UI.  This is intended to be run within a software
-        context such as Maya or Nuke (as opposed to a shell).  By default,
-        this will show any existing submitter UI that had been closed prior by
-        the user (as opposed to creating a new instance of the UI). Use the
-        force_new flag to force a new instance of it.
+        Launch the submitter UI.
+        By default, this will reuse/show any previously instantiated submitter object (as opposed to
+        creating a new instance). Use the `force_new` flag to force a new instance of it.
         '''
         global _parent_window  # This global statement is particularly important (though it may not appear so when using simple usecases that don't use complex inheritence structures).
         global _ui_instance
@@ -285,8 +265,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         Add the extended widget to the UI
         '''
         self.extended_widget = self.getExtendedWidget()
-        extended_widget_layout = self.ui_extended_container_wgt.layout()
-        extended_widget_layout.addWidget(self.extended_widget)
+        if self.extended_widget:
+            extended_widget_layout = self.ui_extended_container_wgt.layout()
+            extended_widget_layout.addWidget(self.extended_widget)
 
     def _addExtendedAdvancedWidget(self):
         '''
@@ -320,10 +301,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                 |____________________|
 
         '''
-
-        class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
-        message = "%s not implemented. Please override method as desribed in its docstring" % class_method
-        raise NotImplementedError(message)
 
     def getExtendedAdvancedWidget(self):
         '''
@@ -885,13 +862,9 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
     def getSourceFilepath(self):
         '''
-        Return the filepath for the currently open file. This is  the currently
-        opened maya/katana/nuke file, etc
+        Return the filepath for the currently open file. This is the currently opened 
+        maya/katana/nuke file, etc
         '''
-
-        class_method = "%s.%s" % (self.__class__.__name__, inspect.currentframe().f_code.co_name)
-        message = "%s not implemented. Please override method as desribed in its docstring" % class_method
-        raise NotImplementedError(message)
 
     def loadUserSettings(self):
         '''
@@ -900,7 +873,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         try:
             self.prefs.sync()
             source_filepath = self.getSourceFilepath()
-            self.prefs.loadSubmitterUserPrefs(source_filepath)
+            self.prefs.loadSubmitterUserPrefs(source_filepath=source_filepath)
         except BaseException:
             settings_filepath = self.prefs.getSettingsFilepath()
 
@@ -1175,16 +1148,28 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
     ###########################################################################
 
     def getHostProductInfo(self):
-        raise NotImplementedError
+        '''
+        If this ui is running within a host application (e.g. as a plugin for Maya), this method
+        should be overridden to provide a dictionary of the host application's product information,
+        e.g.
+            {"product": "maya",
+             "version": ,
+             "package_id": package_id}
+        '''
 
     def getPluginsProductInfo(self):
         return []
 
     def introspectSoftwareInfo(self):
+        '''
+        Introspect the current runtime environment (whether that be within Maya, Nuke, or a
+        standalone python shell), and return a any product information that can be used to match
+        against available packages on conductor.  In order for the matching to occur, the collected
+        product information must be constructed as a similar format as conductor's own packages.
+        '''
         host_product_info = self.getHostProductInfo()
-        assert host_product_info, "No host product info retrieved"
         plugin_products_info = self.getPluginsProductInfo()
-        return [host_product_info] + plugin_products_info
+        return filter(None, [host_product_info] + plugin_products_info)
 
     def populateJobPackages(self, auto=False):
         '''
@@ -1391,15 +1376,35 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 #                     self.ui_software_versions_trwgt.setItemHidden(host_package_item, False)
 
     def filterPackages(self, show_all_versions=False):
+        '''
+        Filter the packages in the software treewidget to show only those correspond to the 
+        host software product and version.
+        '''
+        # Get information about the host application
         host_package_info = self.getHostProductInfo()
+
+        # If there's no host information, then there's no filtering to be done. Show all packages.
+        if not host_package_info:
+            return
+
+        # otherwise filter by the host package info
         host_package_id = host_package_info["package_id"]
         host_package = self.get_package_by_id(host_package_id) if host_package_id else None
+
         for host_package_item in self.getHostPackageTreeItems():
-            self.ui_software_versions_trwgt.setItemHidden(host_package_item, True)
             package = self.get_package_by_id(host_package_item.package_id)
-            if package["product"] == self.product:
-                if show_all_versions or not host_package or package == host_package:
-                    self.ui_software_versions_trwgt.setItemHidden(host_package_item, False)
+
+            # we only show the package if it matches the ui's designated product, and..
+            show = package["product"] == self.product and (
+                # if no host package was identified (therefore nothing to filter against)
+                not host_package or
+                # or the package exactly matches the host package version
+                package == host_package or
+                # or we've been told explicitly to show all package versions for the product
+                show_all_versions,
+            )
+            # hide/show the package (btw, there is no setItemVisible method, so we must use double negative logic)
+            self.ui_software_versions_trwgt.setItemHidden(host_package_item, not show)
 
     def getTreeItemPackages(self):
         tree_item_packages = {}
@@ -1713,7 +1718,7 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
     PREF_JOB_PACKAGES_IDS = "job_packages_ids"
 
     @common.ExceptionLogger("Failed to load Conductor user preferences. You may want to reset your preferences from the options menu")
-    def loadSubmitterUserPrefs(self, source_filepath):
+    def loadSubmitterUserPrefs(self, source_filepath=None):
         '''
         Load both the global and file-specific (e.g.nuke/maya file) user
         preferences for the UI widgets. This will reinstate any values on the
@@ -1725,8 +1730,9 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
         # Load the global prefs
         self.loadGlobalWidgetPrefs()
 
-        # Load the file-specific prefs
-        self.loadFileWidgetPrefs(source_filepath)
+        # If a source filepath has been provided, load it's file-specific prefs.
+        if source_filepath:
+            self.loadFileWidgetPrefs(source_filepath)
 
     @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
     def saveSubmitterUserPrefs(self, source_filepath):
@@ -2010,7 +2016,11 @@ class TaskFramesGenerator(object):
 
 
 if __name__ == "__main__":
+    '''
+    Run the ui as a standalone application
+    '''
     app = QtWidgets.QApplication.instance()
     if app is None:
         app = QtWidgets.QApplication(sys.argv)
-    ConductorSubmitter.runUi()
+    ui = ConductorSubmitter.runUi()
+    sys.exit(app.exec_())
