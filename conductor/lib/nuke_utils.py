@@ -167,8 +167,12 @@ def resolve_knob_path(knob):
         # Join the relative path with the nuke script directory
         path = os.path.join(nuke.script_directory(), path)
 
-    # Resolve any ellipses in the path (e.g. ../../  ). Unfortunately this also normpaths it, which may lead to some fallout/bugs
-    path = os.path.abspath(path)
+    # Resolve any ellipses in the path (e.g. ../../  ).
+    # Unfortunately this also normpaths it (which will change any forward slashes to backslashes
+    # if on Windows). So we perform a secondary hack to force-replace backslashes.  This may have
+    # unintended consequences (e.g. is there a case where we need/want to preserve backslashes on
+    # linux?)
+    path = os.path.abspath(path).replace('\\', "/")
 
     logger.debug("Resolved to: %s", path)
     return path
