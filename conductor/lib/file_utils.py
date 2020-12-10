@@ -500,6 +500,11 @@ def strip_drive_letter(filepath):
 def _common_tail_parts(*parts):
     """
     find consecutive common items in iterables, working from the back. 
+
+    [1,7,4,9,3]
+    [1,8,4,9,3]
+    yields:
+    [4,9,3]
     """
     tail_parts = []
     parts = [part[::-1] for part in parts]
@@ -524,7 +529,7 @@ def replace_root(path1, path2):
     if not (len(all_parts1)>1 and len(all_parts2)>1):
         return path1
 
-    # Assume that if the first part of each paths is the same, then we don't
+    # Assume that if the first part of each path is the same, then we don't
     # want to do any replacement, even if there are differences after. WHY?
     # Because a difference in some middle part could be because of a frame
     # expression that we don't want to replace. However, it IS likely that if
@@ -534,6 +539,8 @@ def replace_root(path1, path2):
     if all_parts1[0] == all_parts2[0]:
         return path1
 
+    # dont consider the filename tail itself. We are interested in directories.
+    # Just reattach from path1 afterwards.
     root_parts1 = all_parts1[:-1]
     root_parts2 = all_parts2[:-1]
     
