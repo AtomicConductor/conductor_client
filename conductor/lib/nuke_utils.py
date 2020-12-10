@@ -4,6 +4,7 @@ import re
 
 import nuke
 from conductor.lib import package_utils
+from conductor.lib import file_utils
 
 logger = logging.getLogger(__name__)
 
@@ -173,6 +174,19 @@ def resolve_knob_path(knob):
     # unintended consequences (e.g. is there a case where we need/want to preserve backslashes on
     # linux?)
     path = os.path.abspath(path).replace('\\', "/")
+
+    # Some customers use a dynamic path replacement tool to change drives for
+    # portability. Our code needs to make the same switch in order to find
+    # assets. However, getValue() only gets the raw value - before replacement.
+    # The path replacer value is only visible when you evaluate the knob. The
+    # reason we don't do that (I guess) is so we don't inadvertently replace
+    # frame expressions with a single current frame.
+    try:
+        path = file_utils.replace_root(path, knob.evaluate().replace('\\', "/"))
+    except BaseException:
+        # If anything goes wrong, we'll just use the orig path value
+        pass
+
 
     logger.debug("Resolved to: %s", path)
     return path
