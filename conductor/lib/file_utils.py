@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import glob
+from itertools import izip_longest
 
 from conductor.lib import exceptions
 
@@ -39,6 +40,13 @@ PATH_EXPRESSIONS = (
     RX_FRAME_SEQ,
     RX_ASTERISK,
 )
+
+# https://regex101.com/r/GTumsD/1/
+# Detects path components - e.g.:
+# //192.168.0.1/renders/light/render_0001_large.exr
+# becomes:
+# Result: ['//192.168.0.1', '/renders', '/light', '/render_0001_large.exr']
+PATH_SPLIT_REGEX = re.compile(r"((?:\/\/|[a-zA-Z]:\/|\/)[^\/]+)")
 
 logger = logging.getLogger(__name__)
 
@@ -487,3 +495,50 @@ def strip_drive_letter(filepath):
     '''
     rx_drive = r'^[a-z]:'
     return re.sub(rx_drive, "", filepath, flags=re.I)
+
+
+def _common_tail_parts(*parts):
+    """
+    find consecutive common items in iterables, working from the back. 
+    """
+    tail_parts = []
+    parts = [part[::-1] for part in parts]
+    for level_tuple in izip_longest(*parts):
+        if all(item == level_tuple[0] for item in level_tuple):
+            tail_parts.insert(0,level_tuple[0])
+        else:
+            return tail_parts
+
+def replace_root(path1, path2):
+    """
+    Replace the root of the first path with the root of the second.
+
+    Useful when some plugin is used to dynamically replace drives. Paths should
+    be absolute (on one or other platform) and use only forward slashes.
+
+    See tests for examples. conductor/native/tests/test_file_utils.py
+    """ 
+
+    all_parts1 = PATH_SPLIT_REGEX.findall(path1)
+    all_parts2 = PATH_SPLIT_REGEX.findall(path2)
+    if not (len(all_parts1)>1 and len(all_parts2)>1):
+        return path1
+
+    # Assume that if the first part of each paths is the same, then we don't
+    # want to do any replacement, even if there are differences after. WHY?
+    # Because a difference in some middle part could be because of a frame
+    # expression that we don't want to replace. However, it IS likely that if
+    # the first parts are different, then we DO want to replace all the not-same
+    # root parts with those from path 2, because it could very well be a multi
+    # part replacement, e.g. C:/projects/foo/bar -> /Volumes/my/share/c/foo/bar
+    if all_parts1[0] == all_parts2[0]:
+        return path1
+
+    root_parts1 = all_parts1[:-1]
+    root_parts2 = all_parts2[:-1]
+    
+    tail_parts = _common_tail_parts(root_parts1,root_parts2)
+    if len(tail_parts):
+        root_parts2 = root_parts2[:-len(tail_parts)]
+ 
+    return "".join(root_parts2 + tail_parts + [all_parts1[-1]])
