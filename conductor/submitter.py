@@ -1,13 +1,12 @@
-import collections
+from collections import defaultdict as DefaultDict
 import functools
 import imp
-import inspect
 from itertools import groupby
 import logging
 import os
 import operator
 from pprint import pformat
-from Qt import QtGui, QtCore, QtWidgets
+from Qt import QtGui, QtCore, QtWidgets, QtCompat
 import sys
 import traceback
 from conductor.lib.lsseq import seqLister
@@ -84,9 +83,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         super(ConductorSubmitter, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
-
-        # Fetch and cache all available instance types
-        self._instance_types = api_client.request_instance_types(as_dict=True)
 
         # Create widgets
         self.createUi()
@@ -170,9 +166,8 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # connect the scout job checkbox signal
         self.ui_scout_job_chkbx.stateChanged.connect(self.saveScoutJobPref)
 
-        # connect the preemptible checkbox signal
-        self.ui_preemptible_chkbx.stateChanged.connect(self.savePreemptiblePref)
-        self.ui_preemptible_chkbx.toggled.connect(self.ui_autoretry_wgt.setEnabled)
+        # Add the Instance Options widget
+        self._addInstanceOptionsWidget()
 
         # Set the window title name
         self.setWindowTitle(self._window_title)
@@ -208,10 +203,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         Populate the UI with data.  This data should be global information that
         is not specific to the open file
         '''
-
-        # Populate the Instance Type combobox with the available instance configs
-        self.populateInstanceTypeCmbx()
-
         # Populate the software versions tree widget
         self.populateSoftwareVersionsTrWgt()
 
@@ -225,21 +216,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
 
         # Set the radio button on for the start/end frames by default
         self.on_ui_start_end_rdbtn_toggled(True)
-
-        # Set the default preemptible pref
-        default_preemptible = CONFIG.get('preemptible')
-        if default_preemptible is not None:
-            self.setPreemptibleCheckbox(default_preemptible)
-
-        # Set the default preemptible pref
-        default_preempted_autoretry_count = CONFIG.get('autoretry_policy', {}).get("preempted", {}).get("max_retries")
-        if default_preempted_autoretry_count is not None:
-            self.setAutoretryCount(default_preempted_autoretry_count)
-
-        # Set the default instance type to one specified in user config
-        instance_type = CONFIG.get("instance_type")
-        if instance_type:
-            self.setInstanceType(instance_type)
 
         # Set the default project by querying the config
         default_project = CONFIG.get('project')
@@ -260,6 +236,18 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         # Set the keyboard focus on the frame range radio button
         self.ui_start_end_rdbtn.setFocus()
 
+    def _addInstanceOptionsWidget(self):
+        '''
+        Add the Instance Options widget to the UI
+        '''
+        self.instance_options_wgt = self.getInstanceOptionsWidget()
+        if self.instance_options_wgt:
+            instance_widget_layout = self.ui_instance_container_wgt.layout()
+            instance_widget_layout.addWidget(self.instance_options_wgt)
+
+            # connect the preemptible checkbox signal to save state to prefs
+            self.instance_options_wgt.ui_preemptible_chkbx.stateChanged.connect(self.savePreemptiblePref)
+
     def _addExtendedWidget(self):
         '''
         Add the extended widget to the UI
@@ -278,6 +266,28 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             layout = self.ui_extended_advanced_container_wgt.layout()
             layout.addWidget(self.extended_advanced_widget)
 
+    def getInstanceOptionsWidget(self):
+        '''
+        Instantiate and return the InstanceOptions widget.  This widget is responsible
+        for presenting instance type options to the user.
+                 ________________________
+                |      General <tab>     |
+                |------------------------|
+                |      Frame Range       |
+                |------------------------|
+                | <INSTANCE OPTS WIDGET> |   <-- here
+                |------------------------|
+                |    extended widget     |
+                |------------------------|
+                |     submit button      |
+                |________________________|
+
+        '''
+        # Request all of the instance types from conductor service
+        instance_types = api_client.request_instance_types()
+        # Instantiated and return the widget
+        return InstanceOptionsWidget(instance_types)
+
     def getExtendedWidget(self):
         '''
         This method extends the Conductor UI by providing a single PySide widget
@@ -288,17 +298,17 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         return the desired widget object.  This widget will be inserted between
         the Frame Range area and the  Submit button. See illustration below:
 
-                 ____________________
-                |     Conductor      |
-                |--------------------|
-                |  Frame Range Area  |
-                |--------------------|
-                |                    |
-                |  <EXTENDED WIDGET> |   <-- your extended widget goes here.
-                |                    |
-                |--------------------|
-                |   submit button    |
-                |____________________|
+                 ________________________
+                |      General <tab>     |
+                |------------------------|
+                |      Frame Range       |
+                |------------------------|
+                |    Instance Options    |
+                |------------------------|
+                |    <EXTENDED WIDGET>   |   <-- here
+                |------------------------|
+                |     submit button      |
+                |________________________|
 
         '''
 
@@ -320,7 +330,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                 |                    |
                 |--------------------|
                 |                    |
-                |  <EXTENDED WIDGET> |   <-- your extended advanced widget goes here.
+                |  <EXTENDED WIDGET> |   <-- here
                 |____________________|
 
         '''
@@ -432,15 +442,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
                                             "Preferences Deleted",
                                             parent=self)
 
-    def populateInstanceTypeCmbx(self):
-        '''
-        Populate the Instance combobox with all of the available instance types
-        '''
-
-        self.ui_instance_type_cmbx.clear()
-        for instance_type in sorted(self._instance_types.values(), key=operator.itemgetter("cores", "memory")):
-            self.ui_instance_type_cmbx.addItem(instance_type['description'], userData=instance_type)
-
     def populateProjectCmbx(self):
         '''
         Populate the project combobox with project names.  If any projects are
@@ -520,44 +521,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         return self.ui_chunk_size_spnbx.value()
 
-    def setInstanceType(self, instance_type):
-        '''
-        Set the UI's "Instance Type" combobox, if it is currently available.
-        '''
-        item_idx = self.ui_instance_type_cmbx.findData(instance_type)
-        return self.ui_instance_type_cmbx.setCurrentIndex(item_idx)
-
-    def getInstanceType(self):
-        '''
-        Return the number of cores that the user has selected from the
-        "Instance Type" combobox
-        '''
-        return self.ui_instance_type_cmbx.itemData(self.ui_instance_type_cmbx.currentIndex())
-
-    def getPreemptibleCheckbox(self):
-        '''
-        Return whether or not the "Preemptible" checkbox is checked.
-        '''
-        return self.ui_preemptible_chkbx.isChecked()
-
-    def setPreemptibleCheckbox(self, bool_):
-        '''
-        Set the checkbox value for the "Preemptible" checkbox
-        '''
-        return self.ui_preemptible_chkbx.setChecked(bool_)
-
-    def setAutoretryCount(self, count):
-        '''
-        Set the UI's Auto Retry spinbox value
-        '''
-        self.ui_autoretry_spnbx.setValue(int(count))
-
-    def getAutoretryCount(self):
-        '''
-        Get the UI's Auto Retry spinbox value
-        '''
-        return self.ui_autoretry_spnbx.value()
-
     def setProject(self, project_str, strict=True):
         '''
         Set the UI's Project field
@@ -629,16 +592,16 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         conductor_args["environment"] = self.getEnvironment()
         conductor_args["force"] = self.getForceUploadBool()
         conductor_args["chunk_size"] = self.getChunkSize()
-        conductor_args["instance_type"] = self.getInstanceType()["name"]
+        conductor_args["instance_type"] = self.instance_options_wgt.getInstanceType()
         conductor_args["job_title"] = self.getJobTitle()
         conductor_args["local_upload"] = self.getLocalUpload()
-        conductor_args["preemptible"] = self.getPreemptibleCheckbox()
+        conductor_args["preemptible"] = self.instance_options_wgt.getPreemptibleCheckbox()
         conductor_args["notify"] = self.getNotifications()
         conductor_args["output_path"] = self.getOutputDir()
         conductor_args["project"] = self.getProject()
         conductor_args["scout_frames"] = self.getScoutFrames()
         conductor_args["software_package_ids"] = self.getSoftwarePackageIds()
-        conductor_args["autoretry_policy"] = self.getAutoretryPolicy()
+        conductor_args["autoretry_policy"] = self.instance_options_wgt.getAutoretryPolicy()
 
         return conductor_args
 
@@ -1002,15 +965,6 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             # Record the scout frames specified to the user prefs
             self.prefs.setFileScoutFrames(source_filepath, scout_frames)
             return scout_frames
-
-    def getAutoretryPolicy(self):
-        '''
-        Construct/return an autoretry policy if the user as selected to use preemptible instances.
-        '''
-        # Only return an autoretry policy if the user has specified preemptible instances
-        if self.getPreemptibleCheckbox():
-            max_retries = self.getAutoretryCount()
-            return {"preempted": {"max_retries": max_retries}}
 
     def checkJobSize(self):
         """
@@ -1653,7 +1607,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
             return False
 
         # LOOK FOR MULTIPLE PRODUCT PACKAGES ###
-        packages_by_product = collections.defaultdict(list)
+        packages_by_product = DefaultDict(list)
         for package in job_packages:
             packages_by_product[package["product"]].append(package)
         duplicate_product_strs = []
@@ -1777,6 +1731,613 @@ class SubmitterPrefs(pyside_utils.UiFilePrefs):
             the frame/range to use for scout frames
         '''
         return self.setPref(self.PREF_JOB_PACKAGES_IDS, value, filepath=filepath)
+
+
+class InstanceOptionsWidget(QtWidgets.QWidget):
+    '''
+    A widget that presents the user with instance options/knobs for their job/task.
+
+    --- Design concepts ---
+    Because there is an overwhelming amount of instance types for a user to choose from, this ui
+    presents a "chain" of comboboxes that "walks" the user through each of the desired instance
+    attributes. When the user makes a selection in one of the comboboxes, the comboboxes further
+    down the chain are dynamically populated with correlating data.
+    In the end there is a single hidden combobox that is constantly updating to reflect the actual
+    name of the instance type that is being selected.
+                                                                           `instance type`
+        +------------+        +------------+        +------------+          +----------+
+        | Combobox 1 |  --->  | Combobox 2 |  --->  | Combobox n |   --->   | Combobox |  (hidden)
+        +------------+        +------------+        +------------+          +----------+
+
+
+    Each item in a combobox is populated with 3 pieces of data:
+      - text: the text that is displayed to the user
+      - dict: the mapping that should be used to popluate the next (in-the-chain) combobox with.
+      - key:  the dictionary key (str) that this item represents in the mapping
+     e.g.
+
+        {
+            # The text to display
+            QtCore.Qt.DisplayRole: 'Nvidia T4 Tensor',
+
+            # The mapping to populate the next combobox with (the gpu count combobox)
+            self.ROLE_CHILD_DATA: {
+                1: {
+                    '16/60':  'n1-standard-16-t4-1',
+                    '8/30':   'n1-standard-8-t4-1'},
+                4: {
+                    '64/240': 'n1-standard-64-t4-4',
+                   },
+            },
+
+            # The key in the
+            self.ROLE_KEY: 'T4 Tensor',
+
+        }
+    '''
+    # A custom data role for storing a dictionary key on a combobox item.
+    ROLE_KEY = QtCore.Qt.UserRole + 1
+    # A custom data role for storing the contents of the next "child" combobox in the combobox chain
+    ROLE_CHILD_DATA = QtCore.Qt.UserRole + 2
+
+    # The .ui designer filepath
+    _ui_filepath = os.path.join(RESOURCES_DIRPATH, 'instance_options.ui')
+
+    # Serves as state storage for the "previous" selection of the cores/memory combobox.  Used when
+    # toggling between gpu vs non-gpu instance types.
+    # Two entries are stored in the variable (dict):
+    #    - the *index* of the cores/memory combobox for the last time the gpu checkbox was *OFF*
+    #    - the *index* of the cores/memory combobox for the last time the gpu checkbox was *ON*
+    #  e.g.
+    #    {
+    #        False: 4, # when the gpu checkbox was off (False), the last combobox index was 4
+    #        True:  2, # when the gpu checkbox was on (True), the last combobox index (2)
+    #    }
+    _last_cores_memory_idx = {}
+
+    def __init__(self, instance_configs, parent=None):
+        '''
+        Args
+            instance_configs: a list of of instance type configs (dicts), as provided by the
+                `/api/v1/instance-types` endpoint. see `setInstanceConfigs` method.
+        '''
+        super(InstanceOptionsWidget, self).__init__(parent=parent)
+        QtCompat.loadUi(self._ui_filepath, self)
+
+        # Initialize the ui with the provided instance configs list
+        self.setInstanceConfigs(instance_configs)
+
+        # create/setup widgets
+        self.createUi()
+
+        # populate data in widgets
+        self.populateUi()
+
+        # Set default options
+        self.applyDefaultSettings()
+
+    def setInstanceConfigs(self, instance_configs):
+        '''
+        Initialize the ui with the given instance configs.  Generate lookup mappings that the ui
+        comboboxes will rely upon in order to dynanically update content when another combobox
+        changes.
+
+        Args:
+            instance_configs: list of instance configs (dicts) to populate the ui with, e.g.
+
+                [
+                    {
+                        "cores": 160,
+                        "memory": "3844",
+                        "description": "160 core, 3844GB Mem",
+                        "name": "n1-ultramem-160",
+                        "gpu": null
+                    },
+
+                    {
+                        "cores": 4,
+                        "memory": "15",
+                        "description": "4 core, 15GB Mem (1 T4 Tensor GPU with 16GB Mem)",
+                        "name": "n1-standard-4-t4-1",
+                        "gpu": {
+                            "gpu_architecture": "NVIDIA Turing",
+                            "total_gpu_cuda_cores": 2560,
+                            "total_gpu_memory": "16",
+                            "gpu_model": "T4 Tensor",
+                            "gpu_cuda_cores": 2560,
+                            "gpu_memory": "16",
+                            "gpu_count": 1
+                        }
+                ]
+
+        '''
+
+        # store the instance_configs as-is for later usage
+        self._instance_configs = instance_configs
+
+        # create lookup map to find an instance config  by its instance type/name
+        self._instance_configs_by_type = dict([(i["name"], i) for i in self._instance_configs])
+
+        # generate data mappings for dynamic combobox content.
+        self._combobox_map = self._generateComboboxMap()
+
+        # generate a gpu lookup dictionary so that a gpu config can be found by providing the gpu model and gpu count.
+        self._gpu_map = self._generateGpuMap()
+
+    def createUi(self):
+        '''
+        Create/adjust widgets, make connections, etc
+        '''
+
+        # Connect slots/signals for dynamical combobox population/updates
+        self.ui_gpu_chkbx.toggled.connect(self._gpuCheckboxToggled)
+        self.ui_instance_type_cmbx.currentIndexChanged.connect(self._instanceTypeChanged)
+        self.ui_gpu_model_cmbx.currentIndexChanged.connect(self._gpuModelChanged)
+        self.ui_gpu_count_cmbx.currentIndexChanged.connect(self._gpuCountChanged)
+        self.ui_cores_memory_cmbx.currentIndexChanged.connect(self._coresMemoryChanged)
+
+        # connect the preemptible checkbox to enable/disable auto-retry widget
+        self.ui_preemptible_chkbx.toggled.connect(self.ui_autoretry_wgt.setEnabled)
+
+        # Hide the the instance-type widget.  We can potentially expose it in the future for
+        # advanced users.
+        self.ui_instance_type_wgt.hide()
+
+    def populateUi(self):
+        '''
+        Populate the instance options comboboxes with available instance types.
+        '''
+        self.populateInstanceTypeCmbx(self._instance_configs, block_signals=True)
+
+        # collect all gpu models that are available
+        gpu_models = [model for model in self._combobox_map.keys() if model]
+
+        # Hide/show the gpu widget, depending on whether any gpu instance types are available
+        self.ui_gpu_wgt.setVisible(bool(gpu_models))
+
+        # If there are any gpu instances, populate the gpu model/count comboboxes
+        if gpu_models:
+            self.populateGpuModelCmbx(self._combobox_map)
+            current_model = self.ui_gpu_model_cmbx.currentData(role=self.ROLE_KEY)
+            self.populateGpuCountCmbx(self._combobox_map[current_model])
+
+        # trigger first item
+        self.ui_instance_type_cmbx.currentIndexChanged.emit(self.ui_instance_type_cmbx.currentIndex())
+
+    def applyDefaultSettings(self):
+        '''
+        Set the UI to default settings.
+        '''
+
+        # Set the default preemptible pref
+        default_preemptible = CONFIG.get('preemptible')
+        if default_preemptible is not None:
+            self.setPreemptibleCheckbox(default_preemptible)
+
+        # Set the default autoretry pref
+        default_preempted_autoretry_count = CONFIG.get('autoretry_policy', {}).get("preempted", {}).get("max_retries")
+        if default_preempted_autoretry_count is not None:
+            self.setAutoretryCount(default_preempted_autoretry_count)
+
+        # Set the default instance type to one specified in user config
+        instance_type = CONFIG.get("instance_type")
+        if instance_type:
+            self.setInstanceType(instance_type)
+
+    def _generateComboboxMap(self):
+        '''
+        Generate a tree of nested dicts that provide the content for dynamic combobox population.
+        When one combobox is changed, the new item contains the data for the next "child" combobox.
+
+        chain order:
+            gpu_model --> gpu_count --> cores/memory --> instance-type
+
+        Note that ideally the cores/memory value would have been stored as a two-item tuple e.g.
+        (1, "1.3"), but PySide does not support combobox searching (QCombobox.findData()) for tuple
+        types. This is a limitation of the python bindings to c++ objects.  See https://stackoverflow.com/a/63217982
+        As a workaround, we concatenate the two values into a single string (separated by a slash),
+        e.g "1/1.3". 
+
+        Example tree:
+
+            {
+                # instance_configs that don't have a GPU
+                None:
+                    {0: {'1/3.8':    'n1-standard-1',
+                         '160/3844': 'n1-ultramem-160',
+                         '2/13':     'n1-highmem-2',
+                         '2/7.5':    'n1-standard-2',
+                         '96/360':   'n1-standard-96',
+                         '96/86.4':  'n1-highcpu-96'},
+                    },
+
+                # instance_configs that have a T4 GPU
+                'T4 Tensor':
+                    {1: {'16/60':  'n1-standard-16-t4-1',
+                         '8/30':   'n1-standard-8-t4-1'},
+                     2: {'32/120': 'n1-standard-32-t4-2'},
+                     4: {'64/240': 'n1-standard-64-t4-4'},
+                    },
+
+                # instance_configs that have a V100 GPU
+                'V100':
+                    {1: {'16/60':  'n1-standard-16-v100-1',
+                         '4/15':   'n1-standard-4-v100-1',
+                     2: {'24/120': 'n1-standard-24-v100-2'},
+                     4: {'24/240': 'n1-standard-24-v100-4',
+                         '48/312': 'n1-standard-48-v100-4'},
+                     8: {'64/240': 'n1-standard-64-v100-8',
+                         '96/624': 'n1-standard-96-v100-8'},
+                    }
+             }
+
+        '''
+
+        # Create the instance map by using nested DefaultDicts
+        instance_map = DefaultDict(lambda: DefaultDict(lambda: DefaultDict(dict)))
+
+        # cycle through each instance config to populate the map
+        for instance_config in self._instance_configs:
+            gpu_model, gpu_count, cores_memory = self._derive_lookup_keys(instance_config)
+            instance_map[gpu_model][gpu_count][cores_memory] = instance_config["name"]
+
+        return convert_default_dict(instance_map)
+
+    def _derive_lookup_keys(self, instance_config):
+        '''
+        Derive the three combobox keys that are used for looking up the given instance config.
+        The three keys are the:
+            - gpu model
+            - gpu count
+            - cores/memory
+        e.g.
+            # the keys that map to the `n1-standard-1` instance type
+            (None, 0, '1/3.8')
+
+            # the keys that map to the `n1-standard-24-v100-4` instance type
+            (T4 Tensor, 4, '24/240')
+
+        Return: three-item tuple.
+        '''
+        gpu = instance_config.get("gpu") or {"gpu_model": None, "gpu_count": 0}
+        cores_memory = "%s/%s" % (instance_config["cores"], instance_config["memory"])
+        return gpu["gpu_model"], gpu["gpu_count"], cores_memory
+
+    def _generateGpuMap(self):
+        '''
+        Generate a mapping that allows for a gpu (dict) to be found via gpu model/count.
+
+        Key order:
+            gpu_model --> gpu_count --> gpu dict
+
+
+        {
+            'T4':
+                {1: {'gpu_architecture': 'NVIDIA Turing',
+                    'gpu_count': 1,
+                    'gpu_cuda_cores': 2560,
+                    'gpu_memory': '16',
+                    'gpu_model': 'T4 Tensor',
+                    'total_gpu_cuda_cores': 2560,
+                    'total_gpu_memory': '16'},
+                2: {'gpu_architecture': 'NVIDIA Turing',
+                    'gpu_count': 2,
+                    'gpu_cuda_cores': 2560,
+                    'gpu_memory': '16',
+                    'gpu_model': 'T4 Tensor',
+                    'total_gpu_cuda_cores': 5120,
+                    'total_gpu_memory': '32'},
+                },
+
+             'V100':
+                 {1: {'gpu_architecture': 'NVIDIA Volta',
+                      'gpu_count': 1,
+                      'gpu_cuda_cores': 5120,
+                      'gpu_memory': '16',
+                      'gpu_model': 'V100',
+                      'total_gpu_cuda_cores': 5120,
+                      'total_gpu_memory': '16'},
+                  8: {'gpu_architecture': 'NVIDIA Volta',
+                      'gpu_count': 8,
+                      'gpu_cuda_cores': 5120,
+                      'gpu_memory': '16',
+                      'gpu_model': 'V100',
+                      'total_gpu_cuda_cores': 4096,
+                      'total_gpu_memory': u'128'},
+                },
+        }
+        '''
+
+        # Create the instance map by using a nesting of DefaultDicts
+        gpu_map = {}
+
+        # cycle through each instance to populate the map
+        for instance_config in self._instance_configs:
+            gpu = instance_config.get("gpu")
+            if gpu:
+                gpu_map[gpu["gpu_model"]] = gpu
+        return gpu_map
+
+    # -----------------------------------
+    # Instance Type
+    # -----------------------------------
+    def getInstanceType(self):
+        '''
+        Return the active instance type from the ui (which may be hidden).
+        '''
+        return self.ui_instance_type_cmbx.currentData(role=self.ROLE_KEY)
+
+    def setInstanceType(self, instance_type, block_signals=True):
+        '''
+        Set the UI's active instance-type combobox to the given instance type
+        '''
+        self._setActiveComboboxItem(
+            self.ui_instance_type_cmbx,
+            instance_type,
+            self.ROLE_KEY,
+            block_signals=block_signals,
+        )
+
+    def populateInstanceTypeCmbx(self, instances, block_signals=True):
+        '''
+        Populate the instance-type combobox with the given list of instances (dicts)
+        '''
+        items = []
+        # sort instances by gpu, then by # of cores, then by amount of memory.
+        for instance in sorted(instances, key=operator.itemgetter("gpu", "cores", "memory")):
+            items.append({
+                QtCore.Qt.DisplayRole: instance["name"],
+                self.ROLE_KEY: instance["name"],
+                self.ROLE_CHILD_DATA: instance,
+            })
+        pyside_utils.populate_combobox(self.ui_instance_type_cmbx, items, block_signals=block_signals)
+
+    def _instanceTypeChanged(self, index):
+        '''
+        When the instance type changes, it must update *all* comboboxes to reflect the attributes
+        of the the newly selected instance type.
+
+        1. check/uncheck the GPU checkbox
+        2. populate GPU Model combox entries
+        3. set active GPU Model (block signals)
+        4. populate GPU Count combox
+        5. set active GPU Count (block signals)
+        6. populate cores/memory comoboox
+        7. set active cores/memory (block signals)
+        '''
+
+        # Fetch the instance info (dict) for the newly selected/active instance type
+        instance_config = self.ui_instance_type_cmbx.itemData(index, role=self.ROLE_CHILD_DATA)
+
+        gpu_model, gpu_count, cores_memory = self._derive_lookup_keys(instance_config)
+
+        # enable/disable the gpu checkbox (based upon whether the instance_config has a gpu
+        self.ui_gpu_chkbx.setChecked(bool(gpu_model))
+
+        # If the instance config has a gpu, then populate the ui comboboxes to reflect the gpu info
+        if gpu_model:
+            self.setGpuModel(gpu_model)
+            self.populateGpuCountCmbx(self._combobox_map[gpu_model])
+            self.setGpuCount(gpu_count)
+
+        # Populate the cores/memory combobox
+        self.populateCoresMemoryCmbx(self._combobox_map[gpu_model][gpu_count])
+
+        # Set the active cores/memory entry to reflect the same value as the instance_config.
+        self.setCoresMemory(cores_memory)
+
+    def _gpuCheckboxToggled(self, checked):
+        '''
+        When the gpu checkbox changes...
+          1. Enable/disable the gpu widget (reflect the gpu checkbox)
+          2. Populate the cores/memory combobox (reflect whether gpus should be included or not)
+          3. Restore the last cores/memory selection from the prior gpu checked/unchecked state. 
+        '''
+        self.ui_gpu_type_wgt.setEnabled(checked)
+        # If the gpu checkbox is checked on then populate the memory/cores combobox with gpu instances.
+        if checked:
+            mapping = self.ui_gpu_count_cmbx.currentData(role=self.ROLE_CHILD_DATA)
+            self.populateCoresMemoryCmbx(mapping)
+        # otherise populate the memory/cores combobox with non-gpu instances
+        else:
+            self.populateCoresMemoryCmbx(self._combobox_map[None][0])
+
+        # Attempt to find the the old combobox entry. If there isn't one, default to the first index.
+        index = self._last_cores_memory_idx.get(checked, 0)
+
+        # Set the current combobox item (restore the state). This will will trigger a cascading ui update.
+        self.ui_cores_memory_cmbx.setCurrentIndex(index)
+
+    # -----------------------------------
+    # GPU MODEL
+    # -----------------------------------
+
+    def setGpuModel(self, gpu_model, block_signals=True):
+        '''
+        Set the gpu model combobox's active item to that of the the given `gpu_model` (the KEY value).
+        '''
+        self._setActiveComboboxItem(
+            self.ui_gpu_model_cmbx,
+            gpu_model,
+            self.ROLE_KEY,
+            block_signals=block_signals,
+        )
+
+    def populateGpuModelCmbx(self, data, block_signals=True):
+        '''
+        Populate the Gpu Model combobox with the given data.
+        '''
+        # Populate Gpus dropdown
+        items = []
+        for gpu_model, gpu_count_mapping in data.iteritems():
+            if gpu_model:
+                gpu = self._gpu_map[gpu_model]
+                tooltip = "{gpu_architecture} {gpu_model} GPU with {gpu_cuda_cores} Cuda cores and {gpu_memory}GB memory"
+                items.append({
+                    # TODO(lws): Remove hard-coded "nvidia". The vendor name should be provided via backend
+                    QtCore.Qt.DisplayRole: "Nvidia %s" % gpu_model,
+                    QtCore.Qt.ToolTipRole: tooltip.format(**gpu),
+                    self.ROLE_KEY: gpu_model,
+                    self.ROLE_CHILD_DATA: gpu_count_mapping,
+                })
+
+        pyside_utils.populate_combobox(self.ui_gpu_model_cmbx, items, block_signals=block_signals)
+
+    def _gpuModelChanged(self, index):
+        instance_map = self.ui_gpu_model_cmbx.itemData(index, role=self.ROLE_CHILD_DATA)
+        self.populateGpuCountCmbx(instance_map)
+        self.ui_gpu_count_cmbx.currentIndexChanged.emit(self.ui_gpu_count_cmbx.currentIndex())
+
+    # -----------------------------------
+    # GPU COUNT
+    # -----------------------------------
+
+    def setGpuCount(self, gpu_count, block_signals=True):
+        '''
+        Set the active Gpu Count entry to that of the given gpu_count.
+        '''
+        self._setActiveComboboxItem(
+            self.ui_gpu_count_cmbx,
+            gpu_count,
+            self.ROLE_KEY,
+            block_signals=block_signals,
+        )
+
+    def populateGpuCountCmbx(self, data, block_signals=True):
+        '''
+        Populate Gpu Count combobox with the given data.
+        '''
+        items = []
+        for gpu_count, instance_map in sorted(data.iteritems()):
+            # skip any entries that don't have a gpu_count (i.e. don't include gpus)
+            if gpu_count:
+                items.append({
+                    QtCore.Qt.DisplayRole: str(gpu_count).rjust(1),  # use rjust to  vertically align numeric placeholders
+                    self.ROLE_CHILD_DATA: instance_map,
+                    self.ROLE_KEY: gpu_count,
+                })
+
+        pyside_utils.populate_combobox(self.ui_gpu_count_cmbx, items, block_signals=block_signals)
+
+    def _gpuCountChanged(self, index):
+        '''
+        When the gpu count changes, fetch the data for the downstream combobox (cores/memory),
+        and populate it.
+        '''
+        mapping = self.ui_gpu_count_cmbx.itemData(index, role=self.ROLE_CHILD_DATA)
+        self.populateCoresMemoryCmbx(mapping)
+        # Artificially trigger that the index changed (just  use the current index)
+        self.ui_cores_memory_cmbx.currentIndexChanged.emit(self.ui_cores_memory_cmbx.currentIndex())
+
+    # -----------------------------------
+    # CORES/MEMORY
+    # -----------------------------------
+    def setCoresMemory(self, cores_memory, block_signals=True):
+        '''
+        Set the active Cores/Memory entry to that of the given cores_memory value.
+        '''
+        self._setActiveComboboxItem(
+            self.ui_cores_memory_cmbx,
+            cores_memory,
+            role=self.ROLE_KEY,
+            block_signals=block_signals,
+        )
+
+    def populateCoresMemoryCmbx(self, data, block_signals=True):
+        '''
+        Populate the cores/memory combobox using the given data.  Sort the entries by number of 
+        cores, then by memory.
+        '''
+        def _sort_by_cores_and_memory(item):
+            instance_config = self._instance_configs_by_type[item[1]]
+            return (instance_config["cores"], float(instance_config["memory"]))
+
+        items = []
+        for cores_memory, instance_type in sorted(data.iteritems(), key=_sort_by_cores_and_memory):
+            instance_config = self._instance_configs_by_type[instance_type]
+            items.append({
+                self.ROLE_CHILD_DATA: instance_type,
+                QtCore.Qt.DisplayRole: '{cores} core, {memory}GB memory'.format(**instance_config),
+                self.ROLE_KEY: cores_memory,
+            })
+
+        pyside_utils.populate_combobox(self.ui_cores_memory_cmbx, items, block_signals=block_signals)
+
+    def _coresMemoryChanged(self, index):
+        '''
+        When the cores/memory combobox changes...
+          1. fetch the instance type from the newly selected item.
+          2. Set the instance-type combobox to that instance type (the combobox may be hidden).
+          3. Save this new state so that we can restore it later (i.e. when toggling the gpu checkbox)
+        '''
+        # get the instance type from the current item in the combobox
+        instance_type = self.ui_cores_memory_cmbx.itemData(index, role=self.ROLE_CHILD_DATA)
+        # Set the instance type combobox to this instance type
+        self.setInstanceType(instance_type, block_signals=True)
+        # Save the cores/memory index so that we can restore it later (when gpu checkbox is toggled)
+        self._last_cores_memory_idx[self.ui_gpu_chkbx.isChecked()] = index
+
+    def getPreemptibleCheckbox(self):
+        '''
+        Return whether or not the "Preemptible" checkbox is checked.
+        '''
+        return self.ui_preemptible_chkbx.isChecked()
+
+    def setPreemptibleCheckbox(self, is_checked):
+        '''
+        Set the checkbox value for the "Preemptible" checkbox
+        '''
+        return self.ui_preemptible_chkbx.setChecked(is_checked)
+
+    def setAutoretryCount(self, count):
+        '''
+        Set the UI's Auto Retry spinbox value
+        '''
+        self.ui_autoretry_spnbx.setValue(int(count))
+
+    def getAutoretryCount(self):
+        '''
+        Get the UI's Auto Retry spinbox value
+        '''
+        return self.ui_autoretry_spnbx.value()
+
+    def getAutoretryPolicy(self):
+        '''
+        Construct/return an autoretry policy if the user as selected to use preemptible instances.
+        '''
+        # Only return an autoretry policy if the user has specified preemptible instances
+        if self.getPreemptibleCheckbox():
+            max_retries = self.getAutoretryCount()
+            return {"preempted": {"max_retries": max_retries}}
+
+    @common.ExceptionLogger("Failed to save Conductor user preferences. You may want to reset your preferences from the options menu")
+    def savePreemptiblePref(self, is_checked):
+        '''
+        Save the "Preemptible" checkbox user preference for the open file
+        '''
+        filepath = self.getSourceFilepath()
+        widget_name = self.sender().objectName()
+        return self.prefs.setFileWidgetPref(filepath, widget_name, bool(is_checked))
+
+    @classmethod
+    def _setActiveComboboxItem(cls, combobox, data, role, block_signals=True):
+        '''
+        For the given combobox, set the active item to the one that matches the given data for the
+        given data role.  If no item in the combobox matches, raise an exception.
+
+        Args:
+            combobox: QCombobox object.
+            data: data that must be found on the combobox entry in order to identify it as the item
+                to set active.
+            role: the data role that the given data is used for.
+                see: https://doc.qt.io/qtforpython/PySide2/QtCore/Qt.html#PySide2.QtCore.PySide2.QtCore.Qt.ItemDataRole
+        '''
+        idx = combobox.findData(data, role)
+        if idx == -1:
+            raise Exception('cannot find data in combobox "%s": %s' % (combobox.objectName(), data))
+        combobox.blockSignals(block_signals)
+        combobox.setCurrentIndex(idx)
+        combobox.blockSignals(False)
 
 
 class TaskFramesGenerator(object):
@@ -2013,6 +2574,21 @@ class TaskFramesGenerator(object):
             else:
                 ranges.append(tuple(group_))
         return ranges
+
+
+def convert_default_dict(default_dict):
+    '''
+    Convert the given DefaultDict object into a standard dictionary, recursively doing the same
+    for any DefaultDicts found within.
+
+    '''
+    for key, item in default_dict.items():
+        if isinstance(item, DefaultDict):
+            default_dict[key] = convert_default_dict(item)
+        else:
+            default_dict[key] = item
+
+    return dict(default_dict)
 
 
 if __name__ == "__main__":
