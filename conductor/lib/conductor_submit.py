@@ -88,9 +88,6 @@ class Submit(object):
         self.frames = self.resolve_arg(args, 'frames', "")
         logger.debug("frames: %s", self.frames)
 
-        self.gpu_config = self.resolve_arg(args, 'gpu_config', {})
-        logger.debug("gpu_config: %s", self.gpu_config)
-
         self.instance_type = self.resolve_arg(args, 'instance_type', None)
         logger.debug("instance_type: %s", self.instance_type)
 
@@ -325,12 +322,6 @@ class Submit(object):
             if self.machine_flavor == "ultramem" and self.cores < 40:
                 raise BadArgumentError("ultramem machines have a minimum of 40 cores")
 
-        # Validate gpu config
-        if self.gpu_config:
-            supported_gpu_types = ['nvidia-tesla-k80', 'nvidia-tesla-k100']
-            if self.gpu_config.get("type") not in supported_gpu_types:
-                raise BadArgumentError("GPU type %s is not one of %s" % (self.gpu_config.get("type"), supported_gpu_types))
-
     def send_job(self, upload_files, upload_size):
         '''
         Construct args for two different cases:
@@ -378,8 +369,6 @@ class Submit(object):
                                 'tasks_data': self.tasks_data,
                                 })
 
-            if self.gpu_config:
-                submit_dict['gpu_config'] = self.gpu_config
             if self.priority:
                 submit_dict['priority'] = self.priority
             if self.output_path:

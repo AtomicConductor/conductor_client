@@ -56,6 +56,78 @@ class UiLoader(QtUiTools.QUiLoader):
         return widget
 
 
+def populate_combobox(combobox, data, block_signals=True):
+    '''
+    Populate the given QComboBox with the provided `data` (list of dicts). Each dict represents a
+    single entry to add to combobox. The keys specify the data role to use the value for.
+    See https://doc.qt.io/qtforpython/PySide2/QtCore/Qt.html#PySide2.QtCore.PySide2.QtCore.Qt.ItemDataRole
+
+    For example, a dict may provide multiple pieces of data to store in a single combobox entry:
+        {
+            QtCore.Qt.DisplayRole: "5 dollars",      # The text that is displayed for the item
+            QtCore.Qt.UserRole: 5.00,                # hidden data attached to the item
+            QtCore.Qt.DecorationRole: "dollar.png",  # icon image to apply to the item
+        }
+
+    By default, the combobox will not emit signals when being populated.
+
+    Args
+        combobox: QComboBox object. The combobox to populate.
+        data: a list of dicts, where each dict represents a single entry to add to the combobox.
+        block_signals: When True, suppresses signals from the combobox when populating the data.
+    '''
+
+    combobox.blockSignals(block_signals)
+    combobox.clear()
+    for entry in data:
+        combobox.addItem("")  # must provide an initial string (we'll likely overwrite it below).
+        idx = combobox.count() - 1
+        for role, value in entry.iteritems():
+            combobox.setItemData(idx, value, role=role)
+    combobox.blockSignals(False)
+
+
+class SparseComboBox(QtWidgets.QComboBox):
+    '''
+    A combobox that visually morphs when it contains only 1 item (or less), to indicate that there
+    is no interaction (decision making) to be had by the user. It does this by:
+      1. Hiding the combobox dropdown indicator (the down arrow).
+      2. Preventing mouse clicks on the combobox (thereby suppressing the popup item list).
+
+    Typically, if one were to design a user interface that provided a user with a single option,
+    a combobox would not be the best widget to present it.  However, for interfaces that are
+    dynamically generated/updated, it can be helpful to have a consistent layout of widgets (e.g.
+    several comboboxes), but have the ability to signal to the user that there's no reason to click
+    into the combobox.
+    '''
+    # A stylesheet that "hides" the combobox's dropdown indicator arrow
+    STYLESHEET = '''
+    ::drop-down {
+        border-left-width: 0px;
+        border-right-width: 0px;
+    }
+    '''
+
+    def __init__(self, parent=None):
+        super(SparseComboBox, self).__init__(parent=parent)
+
+        # every an item is inserted or removed, evaluate whether to style the combobox.
+        self.model().rowsInserted.connect(self.setStyle)
+        self.model().rowsRemoved.connect(self.setStyle)
+
+    def setStyle(self, *_, **__):
+        if self.model().rowCount() > 1:
+            # enable mouse events
+            self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, False)
+            # strip the dropdown style from the stylesheet
+            self.setStyleSheet(self.styleSheet().replace(self.STYLESHEET, ""))
+        else:
+            # disable mouse events
+            self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
+            # inject a style to hide the dropdown arrow
+            self.setStyleSheet(self.styleSheet() + self.STYLESHEET)
+
+
 def wait_cursor(func):
     """
     Wraps the decorated function so that while it is running, the mouse
@@ -158,7 +230,7 @@ def launch_error_box(title, message, parent=None):
     checkbox.hide()
 
     # set the minimum width/height of the QErrorMessage
-    dialog.setStyleSheet("QErrorMessage{min-width: 560px; min-height: 320px;}");
+    dialog.setStyleSheet("QErrorMessage{min-width: 560px; min-height: 320px;}")
 
     return dialog.exec_()
 
@@ -216,6 +288,7 @@ def launch_yes_no_dialog(title, message, show_not_again_checkbox=True, parent=No
     yes = dialog.exec_()
     dont_notify_again = dialog.checkBox.isChecked()
     return bool(yes), dont_notify_again
+
 
 def launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=True, parent=None):
     '''
@@ -285,6 +358,7 @@ def launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=True, pa
     dont_notify_again = dialog.checkBox.isChecked()
 
     return yes, dont_notify_again
+
 
 def get_widgets_by_property(widget, property_name, match_value=False, property_value=None):
     '''
