@@ -52,9 +52,9 @@ class MayaWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(MayaWidget, self).__init__(parent=parent)
         pyside_utils.UiLoader.loadUi(self._ui_filepath, self)
-        self.createUI()
+        self.createUi()
 
-    def createUI(self):
+    def createUi(self):
         self.ui_render_layers_trwgt = MayaCheckBoxTreeWidget()
         treewgt_layout = self.ui_render_layers_grpbx.layout()
         treewgt_layout.insertWidget(0, self.ui_render_layers_trwgt)
@@ -426,7 +426,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             plugins_info.append(plugin_info)
         return plugins_info
 
-
     def checkSaveBeforeSubmission(self):
         '''
         Check if scene has unsaved changes and prompt user if they'd like to
@@ -439,7 +438,6 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             answer, _ = pyside_utils.launch_yes_no_cancel_dialog(title, message, show_not_again_checkbox=False, parent=self)
             return answer
         return True
-
 
     def runPreSubmission(self):
         '''

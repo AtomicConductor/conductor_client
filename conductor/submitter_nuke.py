@@ -113,8 +113,8 @@ class NukeConductorSubmitter(submitter.ConductorSubmitter):
     def __init__(self, parent=None):
         super(NukeConductorSubmitter, self).__init__(parent=parent)
 
-    def createUI(self):
-        super(NukeConductorSubmitter, self).createUI()
+    def createUi(self):
+        super(NukeConductorSubmitter, self).createUi()
         # Hide the output path widget.  Not sure if this is safe to expose yet.  I don't think it will work for nuke.
         self.ui_output_path_widget.hide()
 

@@ -89,7 +89,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         self._instance_types = api_client.request_instance_types(as_dict=True)
 
         # Create widgets
-        self.createUI()
+        self.createUi()
 
         # Instantiate a user prefs  object
         self.prefs = SubmitterPrefs(company_name=self.company_name,
@@ -154,7 +154,7 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         '''
         return None
 
-    def createUI(self):
+    def createUi(self):
         '''
         Create UI widgets and make
         '''
