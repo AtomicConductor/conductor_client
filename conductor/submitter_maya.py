@@ -172,6 +172,22 @@ class MayaWidget(QtWidgets.QWidget):
             return "%s %s" % (varbosity_flag, verbosity_level)
 
         return ""
+    
+    def getForcedArguments(self, renderer):        
+        '''
+        Force certain flags for certainer renderers. These flags are likely
+	renderer specific and might not even have an equivalent amongst the
+	various renderers.        
+        '''
+        
+        if renderer == 'arnold':
+            # Force abort on license fail
+            forced_flags ='-ai:alf true'
+            
+        else:
+            forced_flags = ''
+            
+        return forced_flags 
 
 
 class MayaAdvancedWidget(QtWidgets.QWidget):
@@ -298,6 +314,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             "-e {end}",
             "-b {step}",
             "{verbosity}",
+            "{forced_arguments}",
             "{render_layers}",
             "-rd /tmp/render_output/",
             "{project}",
@@ -328,6 +345,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
 
         # Get logging_verbosity argument for current renderer, e.g. "-ai:lve Debug"  (for arnold).
         verbosity_arg = self.extended_widget.constructVerbosityArg(active_renderer)
+        
+        # For certain renderers, force some flags
+        forced_args = self.extended_widget.getForcedArguments(active_renderer)
 
         # Workspace/Project arg. Only add flag if a workspace has been indicated in the submitter ui
         workspace = self.extended_advanced_widget.getWorkspaceDir()
@@ -352,6 +372,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                 end=end_frame,
                 step=step,
                 verbosity=verbosity_arg,
+                forced_arguments=forced_args,
                 render_layers=render_layers_arg,
                 project=project_arg,
                 scene_file=file_utils.quote_path(maya_filepath_nodrive),
