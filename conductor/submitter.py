@@ -1445,7 +1445,18 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         return selected_packages
 
     def get_package_by_id(self, package_id):
-        return self.software_packages[package_id]
+        '''
+        Return the package for the corresponding package_id. If the package
+        doesn't exist, return None
+        '''
+                
+        # It's possible (but rare) that the package won't exist anymore
+        # (deprecation, etc..)
+        if package_id in self.software_packages:
+            return self.software_packages[package_id]
+        
+        else:
+            return None
 
     def openAvailableTreeMenu(self, position):
         selected_item = self.ui_software_versions_trwgt.itemAt(position)
