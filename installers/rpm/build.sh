@@ -31,7 +31,7 @@ curl -s -o python.tgz "https://www.python.org/ftp/python/2.7.11/Python-2.7.11.tg
 tar zxf python.tgz
 Python*/configure --prefix=${RPM_BUILDROOT}/opt/conductor/python && \
     make && make install
-curl -O "https://bootstrap.pypa.io/get-pip.py"
+curl -O "https://bootstrap.pypa.io/2.7/get-pip.py"
 ${RPM_BUILDROOT}/opt/conductor/python/bin/python get-pip.py
 ${RPM_BUILDROOT}/opt/conductor/python/bin/pip install -r ${SRC_DIR}/requirements.txt
 popd
