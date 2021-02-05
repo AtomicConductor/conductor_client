@@ -26,9 +26,9 @@ class WorkerJob(job.Job):
 
 class DeadlineWorkerJob(WorkerJob):
     
-    POST_TASK_SCRIPT_PATH = '/opt/thinkbox/deadline/conductor/shutdown_conductor_instance.py'
-    DEFAULT_CMD = "/opt/thinkbox/deadline/conductor/launch_deadline.sh"
-    DEFAULT_WORKER_VERSION = "10.1.1.3"
+    POST_TASK_SCRIPT_PATH = '/opt/thinkbox/deadline/{major_version}/deadline{version}/conductor/shutdown_conductor_instance.py'
+    DEFAULT_CMD = "launch_deadline.sh"
+    DEFAULT_WORKER_VERSION = "10.1.12.1"
     
     def __init__(self, *args , **kwargs):
     
@@ -92,6 +92,11 @@ class DeadlineWorkerJob(WorkerJob):
         self.software_packages_ids.append(deadline_package)
         
         return super(DeadlineWorkerJob, self).submit_job()
+    
+    def get_post_task_script_path(self):
+        
+        major_version = self.deadline_client_version.split(".")[0]         
+        return self.POST_TASK_SCRIPT_PATH.format(major_version=major_version, version=self.deadline_client_version)
             
 
 class DeadlineToConductorPackageMapper(object):
