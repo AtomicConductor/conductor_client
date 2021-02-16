@@ -36,15 +36,15 @@ logger = logging.getLogger(__name__)
 class MayaWidget(QtWidgets.QWidget):
 
     RENDER_VERBOSITY_LEVELS = {
-        'arnold': {"Errors": 0,
-                   "Warnings": 1,
-                   "Info": 2,
-                   "Debug": 3,
-                   },
+        maya_utils.MAYA_RENDERER_ARNOLD: {"Errors": 0,
+                                          "Warnings": 1,
+                                          "Info": 2,
+                                          "Debug": 3,
+                                          },
     }
 
-    RENDER_VERBOSITY_DEFAULT_LEVEL = {"arnold": "Debug"}
-    RENDER_VERBOSITY_FLAG = {'arnold': '-ai:lve'}
+    RENDER_VERBOSITY_DEFAULT_LEVEL = {maya_utils.MAYA_RENDERER_ARNOLD: "Debug"}
+    RENDER_VERBOSITY_FLAG = {maya_utils.MAYA_RENDERER_ARNOLD: '-ai:lve'}
 
     # The .ui designer filepath
     _ui_filepath = os.path.join(submitter.RESOURCES_DIRPATH, 'maya.ui')
@@ -64,7 +64,7 @@ class MayaWidget(QtWidgets.QWidget):
         self.populateRenderLayers(render_layers_info)
 
         # Populate and show/hide the render verbosity combobox depending on which renderer is being used.
-        renderer = maya_utils.get_current_renderer()
+        renderer = maya_utils.get_active_renderer()
         show_verbosity_wgt = renderer in self.RENDER_VERBOSITY_LEVELS
         if show_verbosity_wgt:
             self.populateRenderVerbosity(renderer)
@@ -298,6 +298,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
             "-e {end}",
             "-b {step}",
             "{verbosity}",
+            "{forced_arguments}",
             "{render_layers}",
             "-rd /tmp/render_output/",
             "{project}",
@@ -323,11 +324,14 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # render layers, *all* active render layers will be rendered.
         # TODO:(lws). This is really nasty/dangerous. Hopefully pixar/renderman will re-add support
         # for specifying render layers ASAP!
-        render_layers = self.extended_widget.getSelectedRenderLayers() if active_renderer not in ("renderman", ) else []
+        render_layers = self.extended_widget.getSelectedRenderLayers() if active_renderer not in (maya_utils.MAYA_RENDERER_RENDERMAN, ) else []
         render_layers_arg = ("-rl " + ",".join(render_layers)) if render_layers else ""
 
         # Get logging_verbosity argument for current renderer, e.g. "-ai:lve Debug"  (for arnold).
         verbosity_arg = self.extended_widget.constructVerbosityArg(active_renderer)
+        
+        # For certain renderers, force some flags
+        forced_args = maya_utils.constructForcedArguments(active_renderer)
 
         # Workspace/Project arg. Only add flag if a workspace has been indicated in the submitter ui
         workspace = self.extended_advanced_widget.getWorkspaceDir()
@@ -352,6 +356,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
                 end=end_frame,
                 step=step,
                 verbosity=verbosity_arg,
+                forced_arguments=forced_args,
                 render_layers=render_layers_arg,
                 project=project_arg,
                 scene_file=file_utils.quote_path(maya_filepath_nodrive),
@@ -616,9 +621,9 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         # a mapping between the renderer name and it's corresponding command line flag value
         # TODO:(lws) add additional renderers, e.g. vray
         flags = {
-            "arnold": "arnold",
-            "renderManRIS": "rman,",
-            "renderman": "renderman",
+            maya_utils.MAYA_RENDERER_ARNOLD: "arnold",
+            maya_utils.MAYA_RENDERER_RENDERMAN_RIS: "rman,",
+            maya_utils.MAYA_RENDERER_RENDERMAN: "renderman",
         }
         return "-r %s" % flags.get(renderer, "file")
 
@@ -649,7 +654,7 @@ class MayaConductorSubmitter(submitter.ConductorSubmitter):
         active_renderer = maya_utils.get_active_renderer()
 
         # If the renderer is other than mayaSoftware, ensure that there is a job package for it
-        if active_renderer != "mayaSoftware":
+        if active_renderer != maya_utils.MAYA_RENDERER_MAYA_SW:
             #  get info for the active renderer
             renderer_info = maya_utils.get_renderer_info(renderer_name=active_renderer)
             PluginInfoClass = maya_utils.get_plugin_info_class(renderer_info["plugin_name"])

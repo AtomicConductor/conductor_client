@@ -16,6 +16,18 @@ from conductor.lib import common, package_utils, file_utils
 logger = logging.getLogger(__name__)
 
 
+# These are possible values returned by get_active_renderer()
+MAYA_RENDERER_ARNOLD = 'arnold'
+MAYA_RENDERER_MAYA_SW = 'mayaSoftware'
+MAYA_RENDERER_RENDERMAN_RIS = 'renderManRIS'
+MAYA_RENDERER_RENDERMAN = 'renderman'
+MAYA_RENDERER_VRAY = 'vray'
+
+MAYA_RENDERERS = [MAYA_RENDERER_ARNOLD, 
+                  MAYA_RENDERER_RENDERMAN_RIS, 
+                  MAYA_RENDERER_RENDERMAN, 
+                  MAYA_RENDERER_MAYA_SW]
+
 def dec_undo(func):
     '''
     DECORATOR - Wrap the decorated function in a Maya undo block.
@@ -198,7 +210,7 @@ def get_image_dirpath():
 
 def get_active_renderer():
     '''
-    Return the name of the active renderer, e.g "vray" or "arnold
+    Return the name of the active renderer, e.g "vray" or "arnold. See MAYA_RENDERERS 
     '''
     return cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
 
@@ -243,8 +255,8 @@ def get_renderer_plugin(renderer_name):
     # to a hard mapping of needed
     '''
     # Mapping of render name to plugin name
-    renderer_plugin_map = {"vray": "vrayformaya",
-                           "arnold": "mtoa"}
+    renderer_plugin_map = {MAYA_RENDERER_VRAY: "vrayformaya",
+                           MAYA_RENDERER_ARNOLD: "mtoa"}
 
     # register the rendeder if not's not already registered
     if not cmds.renderer(renderer_name, exists=True):
@@ -904,21 +916,12 @@ def _get_ocio_search_path(config_filepath):
         config = PyOpenColorIO.Config.CreateFromFile(config_filepath)
         return config.getSearchPath()
 
-
-def get_current_renderer():
-    '''
-    Return the name of the current renderer for the maya scene.
-    e.g. 'vray' or 'arnold', etc
-    '''
-    return cmds.getAttr("defaultRenderGlobals.currentRenderer") or ""
-
-
 def is_arnold_renderer():
     '''
     Return boolean to indicat whether arnold is the current renderer for the maya
     scene
     '''
-    return get_current_renderer() in ["arnold"]
+    return get_active_renderer() in [MAYA_RENDERER_ARNOLD]
 
 
 def is_vray_renderer():
@@ -926,7 +929,7 @@ def is_vray_renderer():
     Return boolean to indicat whether vray is the current renderer for the maya
     scene
     '''
-    return get_current_renderer() in ["vray"]
+    return get_active_renderer() in [MAYA_RENDERER_VRAY]
 
 
 def is_renderman_renderer():
@@ -934,7 +937,7 @@ def is_renderman_renderer():
     Return boolean to indicat whether vray is the current renderer for the maya
     scene
     '''
-    return get_current_renderer() in ["renderManRIS"]
+    return get_active_renderer() in [MAYA_RENDERER_RENDERMAN_RIS]
 
 
 def get_mayasoftware_settings_node(strict=True):
@@ -996,9 +999,9 @@ def get_render_settings_node(renderer_name, strict=True):
     return the name of the renderer's settings node.
     e.g. "defaultRenderGlobals" or "vraySettings" or "defaultArnoldRenderOptions"
     '''
-    renderer_settings_gettr = {"vray": get_vray_settings_node,
-                               "arnold": get_arnold_settings_node,
-                               "mayaSoftware": get_mayasoftware_settings_node}
+    renderer_settings_gettr = {MAYA_RENDERER_VRAY: get_vray_settings_node,
+                               MAYA_RENDERER_ARNOLD : get_arnold_settings_node,
+                               MAYA_RENDERER_MAYA_SW: get_mayasoftware_settings_node}
 
     if renderer_name not in renderer_settings_gettr and strict:
         raise Exception("Renderer not supported: %s", renderer_name)
@@ -1413,6 +1416,21 @@ def get_plugin_info_class(plugin_name):
     for PluginClass in PLUGIN_CLASSES:
         if plugin_name == PluginClass.plugin_name:
             return PluginClass
+        
+def constructForcedArguments(renderer):        
+    '''
+    Force certain flags for certain renderers. These flags are likely renderer specific and 
+    might not even have an equivalent amongst the various renderers.        
+    '''
+    
+    if renderer == MAYA_RENDERER_ARNOLD:
+        # Force abort on license fail
+        forced_flags ='-ai:alf true'
+        
+    else:
+        forced_flags = ''
+        
+    return forced_flags         
 
 
 class MayaInfo(package_utils.ProductInfo):
