@@ -1445,7 +1445,15 @@ class ConductorSubmitter(QtWidgets.QMainWindow):
         return selected_packages
 
     def get_package_by_id(self, package_id):
-        return self.software_packages[package_id]
+        # This can happen when the local resources files is out of sync with active
+	# packages on the back-end
+        try:
+            software_package = self.software_packages[package_id]
+        except KeyError:
+            logger.warning("Unable to locate the package {} in the list of packages.".format(package_id))
+            return None
+        
+        return software_package
 
     def openAvailableTreeMenu(self, position):
         selected_item = self.ui_software_versions_trwgt.itemAt(position)
