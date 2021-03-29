@@ -3,7 +3,7 @@ import os
 import re
 
 import nuke
-from conductor.lib import package_utils
+from conductor.lib import ocio_utils, package_utils
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +84,33 @@ def get_plugins_info():
             plugins_info.append(PluginClass.get())
     return plugins_info
 
+def scrape_ocio_dependencies():
+    '''
+    Find the ocio config file (if it exists) and scrape it for external file dependencies
+    '''
+    config_filepath = get_ocio_config_filepath()
+
+    if config_filepath:
+        paths = ocio_utils.parse_ocio_config_paths(config_filepath)
+        return paths
+    
+    else:
+        return []
+
+def get_ocio_config_filepath():
+    '''
+    Return the OCIO config filepath from Nuke's root node.
+
+    Only return the filepath if color managment is set to use a custom OCIO
+    config.
+    '''
+    
+    ocio_config_path = None
+
+    if nuke.toNode("root").knobs()["OCIO_config"].value() == "custom":
+        ocio_config_path = resolve_knob_path(nuke.toNode("root").knobs()["customOCIOConfigPath"])    
+
+    return ocio_config_path
 
 def collect_dependencies(write_nodes, views, dependency_knobs=None):
     '''
@@ -107,6 +134,9 @@ def collect_dependencies(write_nodes, views, dependency_knobs=None):
     '''
     dependency_knobs = dependency_knobs or {}
     deps = set()
+    
+    # A custom OCIO config is defined on the root node
+    deps = deps.union(set(scrape_ocio_dependencies()))
 
     for node_name in write_nodes:
         if nuke.exists(node_name):
