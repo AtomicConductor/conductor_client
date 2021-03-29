@@ -101,7 +101,7 @@ def get_ocio_config_filepath():
     '''
     Return the OCIO config filepath from Nuke's root node.
 
-    Only return the filepath if color managment is set to use a custom OCIO
+    Only return the filepath if color management is set to use a custom OCIO
     config.
     '''
     
@@ -133,10 +133,9 @@ def collect_dependencies(write_nodes, views, dependency_knobs=None):
 
     '''
     dependency_knobs = dependency_knobs or {}
-    deps = set()
-    
+
     # A custom OCIO config is defined on the root node
-    deps = deps.union(set(scrape_ocio_dependencies()))
+    deps = set(scrape_ocio_dependencies())
 
     for node_name in write_nodes:
         if nuke.exists(node_name):
