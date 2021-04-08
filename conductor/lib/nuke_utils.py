@@ -104,11 +104,11 @@ def get_ocio_config_filepath():
     Only return the filepath if color management is set to use a custom OCIO
     config.
     '''
-    
-    ocio_config_path = None
 
-    if nuke.toNode("root").knobs()["OCIO_config"].value() == "custom":
-        ocio_config_path = resolve_knob_path(nuke.toNode("root").knobs()["customOCIOConfigPath"])    
+    if nuke.toNode("root").knobs()["OCIO_config"].value() != "custom":
+        return None
+    
+    ocio_config_path = resolve_knob_path(nuke.toNode("root").knobs()["customOCIOConfigPath"])    
 
     return ocio_config_path
 
