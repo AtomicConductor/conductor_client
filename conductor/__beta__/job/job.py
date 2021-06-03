@@ -16,8 +16,8 @@ class Job(object):
     def __init__(self):
     
         self.upload_paths = []
-        self.software_packages_ids = []
-        self.owner = None
+        self.software_package_ids = []
+        self.user = None
         self.priority = 5
         self.location = ""
         self.instance_type = "n1-standard-8"
@@ -32,9 +32,13 @@ class Job(object):
         self.docker_image = ""
         self._dependencies = None
         self.environment = {}
+        self.scout_frames = ""
         
         self._dependency_scan_enabled = True
         self.conductor_job_id = None
+        
+    def validate_job(self):
+        pass
                 
     def _get_task_data(self):
         pass
@@ -44,7 +48,7 @@ class Job(object):
     
     def _get_environment(self):
         
-        packages = [package for package in conductor.lib.api_client.request_software_packages() if package["package_id"] in self.software_packages_ids]
+        packages = [package for package in conductor.lib.api_client.request_software_packages() if package["package_id"] in self.software_package_ids]
         return conductor.lib.package_utils.merge_package_environments(packages, base_env=self.environment)
     
     def get_output_path(self):
@@ -65,9 +69,9 @@ class Job(object):
         self.validate_job()
         
         data = { "upload_paths": self.get_dependencies(),
-                 "software_package_ids": self.software_packages_ids, 
+                 "software_package_ids": self.software_package_ids, 
                  "tasks_data": self._get_task_data(), 
-                 "owner": self.owner, 
+                 "user": self.user, 
                  "frame_range": self._get_frame_range(),
                  "environment": self._get_environment(), 
                  "priority": self.priority,
@@ -80,7 +84,8 @@ class Job(object):
                  "chunk_size": self.chunk_size, 
                  "project": self.project,
                  "output_path": self.get_output_path(), 
-                 "job_title": self.job_title}
+                 "job_title": self.job_title,
+                 "scout_frames": self.scout_frames}
         
         if self.docker_image:
             data["docker_image"] = self.docker_image
@@ -105,7 +110,7 @@ class Job(object):
         LOG.debug("Job Parameters:")
         for k, v in data.iteritems():
             LOG.debug("  {}: '{}'".format(k, v))
-        
+
         submitter = conductor_submit.Submit(data)
         
         response, response_code = submitter.main()
@@ -122,6 +127,14 @@ class Job(object):
         self.conductor_job_id = response['jobid']
          
         return self.conductor_job_id
+    
+    @property
+    def owner(self):
+        return self.user
+    
+    @owner.setter
+    def owner(self, value):
+        self.user = value
     
     @classmethod
     def get_klass(cls, cmd):

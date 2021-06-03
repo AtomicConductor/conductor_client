@@ -4,29 +4,32 @@ from . import job
 
 LOG = logging.getLogger(__name__)
 
-class MayaRenderJob(job.Job):
+class NukeRenderJob(job.Job):
     
-        def __init__(self, scene_path=None, project_path=None, *args , **kwargs):
+        def __init__(self, scene_path=None, *args , **kwargs):
             
-            super(MayaRenderJob, self).__init__(*args, **kwargs)
+            super(NukeRenderJob, self).__init__(*args, **kwargs)
             
-            self.cmd = "Render"
-            self.render_layer = "defaultRenderLayer"
-            self.scene_path = scene_path
-            self.project_path = project_path            
+            self.cmd = "nuke-render"
+            self.scene_path = scene_path            
             self.upload_paths.append(scene_path)
             self.additional_cmd_args = ""
+            self.pre_task_cmd = ""
             self.post_task_cmd = ""
             self.post_job_cmd = None
- 
+            self.chunk_size = None
+            self.argv = ""
+
         def _get_task_data(self):
 
-            LOG.debug("Using a chunk size of {}".format(self.chunk_size))
-            
             task_data = []
             
             frames = range(self.start_frame, self.end_frame+1)
             
+            if self.chunk_size is None:
+                self.chunk_size =  len(frames)
+
+            LOG.debug("Using a chunk size of {}".format(self.chunk_size))
             LOG.debug("Frames: {}".format(frames))
 
             for start in range(0, len(frames), self.chunk_size):
@@ -38,15 +41,14 @@ class MayaRenderJob(job.Job):
                                 'start_frame': start_frame,
                                 'end_frame': end_frame,
                                 'frame_step': self.frame_step,
-                                'render_layer': self.render_layer,
-                                'output_path': self.output_path,
-                                'project_path': self.project_path,
                                 'scene_path': self.scene_path,
                                 'extra_args': self.additional_cmd_args,
+                                'argv': self.argv,
+                                'pre_task_cmd': self.pre_task_cmd,
                                 'post_cmd': self.post_task_cmd}
                 
                 task_data.append({"frames": "{}-{}".format(start_frame, end_frame),
-                                  "command": "{cmd} -s {start_frame} -e {end_frame} -b {frame_step} -rl {render_layer} -rd {output_path} -proj {project_path} {extra_args} {scene_path} && {post_cmd}".format(**command_args)})
+                                  "command": "{pre_task_cmd}; {cmd} -x -F {start_frame}-{end_frame}x{frame_step} {extra_args} {scene_path} {argv} && {post_cmd}".format(**command_args)})
                 
             if self.post_job_cmd is not None:
                 task_data.append({"frames": "999999", 
