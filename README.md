@@ -1,5 +1,5 @@
 # Conductor Client #
 
-[Documentation](http://support.conductortech.com)  
+[Documentation](https://docs.conductortech.com/reference/python/)  
 
  
