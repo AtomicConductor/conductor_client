@@ -14,6 +14,7 @@ RX_UDIM_MARI = r"<UDIM>"  # image.<UDIM>.exr
 RX_UDIM_MUDBOX = r"<UVTILE>"  # image.<UVTILE>.exr
 RX_UDIM_VRAY = r"\$\d*U.*\$\d*V"  # image.u$2U_v$2V.exr or image.u$Uv$V.exr, etc
 RX_TILE_REF_VRAY  = r"<TileRef>" #  image.<A30>.0001.exr
+RX_TILE_VRAY  = r"<Tile>" #  image.<A30>.0001.exr
 RX_HOUDINI = r"\$F\d*"  # image.$F.exr
 RX_ASTERISK = r"\*+"  # image.*.exr
 RX_UDIM_ZBRUSH = r"u<U>_v<V>"  # image.u<U>_v<V>.exr
@@ -37,6 +38,7 @@ PATH_EXPRESSIONS = (
     RX_UDIM_MUDBOX,
     RX_UDIM_VRAY,
     RX_TILE_REF_VRAY,
+    RX_TILE_VRAY,
     RX_HOUDINI,
     RX_FRAME_SEQ,
     RX_ASTERISK,
