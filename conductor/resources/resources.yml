@@ -2892,7 +2892,9 @@ package_ids:
         "10.1.1.3":
             package: e2ea1dc49ffff573acb17029ed33ff40
         "10.1.8.5":
-            package: 8f0b9d32281aae4f5210c03297df5f54            
+            package: 8f0b9d32281aae4f5210c03297df5f54
+        "10.1.12.1":
+            package: 9f9787ca870579799284ad7e09888aa4                          
            
     # This houdini section has fake data for testing / QA purposes
 
