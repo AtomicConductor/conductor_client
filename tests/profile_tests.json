@@ -1,0 +1,24 @@
+[
+    {
+     "threads": 1,
+     "stat": true,
+     "xxhash": true,
+     "md5": true,
+     "read": true,
+     "warm_cache": false,
+     "benchmark_device": true,
+     "limit": 100
+     },
+     
+     {
+     "threads": 4,
+     "stat": true,
+     "xxhash": true,
+     "md5": true,
+     "read": true,
+     "warm_cache": false,
+     "benchmark_device": true,
+     "limit": 100
+     }
+     
+]
