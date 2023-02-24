@@ -13,6 +13,9 @@ from maya import cmds, mel
 # Conductor libs
 from conductor.lib import common, package_utils, file_utils, ocio_utils
 
+MAYA_PARENT_WINDOW = 'MayaWindow'
+CONDUCTOR_MENU = 'ConductorMenu'
+
 logger = logging.getLogger(__name__)
 
 
@@ -1330,6 +1333,92 @@ def get_node_by_type(node_type, must_exist=True, many=False):
 
     # Otherwise return an empty string
     return ""
+
+
+def unload_conductor_menu():
+    '''
+    Remove/destroy the Conductor menu (if it exists)
+    '''
+    if cmds.about(batch=True):
+        logger.debug("Batch mode detected. Aborting Conductor menu destruction..")
+        return
+
+    # Delete any existing instance of the menu
+    if cmds.menu(CONDUCTOR_MENU, q=True, exists=True):
+        cmds.menu(CONDUCTOR_MENU, e=True, deleteAllItems=True)
+        cmds.deleteUI(CONDUCTOR_MENU, )
+        logger.debug("Conductor menu destroyed")
+
+
+def load_conductor_menu():
+    '''
+    This is a simple proof on concept of what a Conductor menu could look like.
+
+    Build/inject Conductor's menu into maya's main window bar. Replace any existing instances of
+    the menu.
+
+    +---------------------+
+    | Submit              |
+    | Clean Scene         |
+    | ------------------- |
+    | Preferences       > |
+    | Log Level         > |
+    | ------------------- |
+    | About               |
+    | Help                |
+    +---------------------+
+    https://ozh.github.io/ascii-tables/  header location=None Output style=ASCII (mysql style) Custome Separator=~
+    '''
+
+    if cmds.about(batch=True):
+        logger.debug("Batch mode detected. Aborting Conductor menu creation..")
+        return
+
+    unload_conductor_menu()
+
+    cmds.menu(CONDUCTOR_MENU, label='Conductor', tearOff=True, parent=MAYA_PARENT_WINDOW)
+    cmds.menuItem(
+        label='Submit',
+        image="conductor_logo_white.png",
+        command="from conductor import submitter_maya;submitter_maya.MayaConductorSubmitter.runUi()",
+        parent=CONDUCTOR_MENU,
+    )
+
+    cmds.menuItem(
+        label='Clean Scene',
+        parent=CONDUCTOR_MENU,
+    )
+
+    # ------ Divider ----------------------------------------------------------
+    cmds.menuItem(divider=True, parent=CONDUCTOR_MENU)
+    # -------------------------------------------------------------------------
+
+    cmds.menuItem(
+        label='Preferences',
+        subMenu=True,
+        parent=CONDUCTOR_MENU,
+    )
+    cmds.menuItem(
+        label='Log Level',
+        subMenu=True,
+        parent=CONDUCTOR_MENU,
+    )
+
+    # ------ Divider ----------------------------------------------------------
+    cmds.menuItem(divider=True, parent=CONDUCTOR_MENU)
+    # -------------------------------------------------------------------------
+
+    cmds.menuItem(
+        label='About',
+        parent=CONDUCTOR_MENU,
+    )
+
+    cmds.menuItem(
+        label='Help',
+        parent=CONDUCTOR_MENU,
+    )
+
+    logger.debug("Conductor menu created")
 
 # def get_plugins_info():
 #     plugins_info = []
