@@ -337,13 +337,18 @@ def parse_args():
                                               formatter_class=argparse.RawTextHelpFormatter)
 
     downloader_parser.add_argument("--job_id",
+                                   type=int,
+                                   nargs="+",
                                    help=("The job id(s) to download. When specified "
                                          "will only download those jobs and terminate "
-                                         "afterwards"),
-                                   action='append')
+                                         "afterwards"))
 
     downloader_parser.add_argument("--task_id",
-                                   help="Manually download output for this task")
+                                   nargs="*",
+                                   default=[],
+                                   type=int,
+                                   help=("Only valid with the --job_id flag. Instead of downloading *all* "
+                                         "of the jobs' tasks, will download only the tasks specified."))
 
     downloader_parser.add_argument("--output",
                                    help="Override for the output directory")
