@@ -14,6 +14,13 @@ try:
 except:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
+# On Windows, due to the quirks of the multiprocessing module
+# this file is installed as 'conductor.py' and to ensure the 
+# environment gets passed properly, add the module to the path 
+# list again
+if os.name == 'nt':
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 import conductor
 from conductor.lib import api_client, common, conductor_submit, downloader, downloader2, uploader, loggeria, sentry_utils
 
@@ -482,7 +489,8 @@ def run_downloader(args):
     # Code switcher between new downloader and old downloader
     # HARD set windows users to old downloader
     if sys.platform == "win32":
-        return downloader2.run_downloader(args_dict)
+        return downloader.run_downloader(args_dict)
+        # return downloader2.run_downloader(args_dict)
     if args_dict.get("task_id") and not args_dict.get("job_id"):
         raise argparse.ArgumentTypeError('Must supply a job_id with task_id.')
 

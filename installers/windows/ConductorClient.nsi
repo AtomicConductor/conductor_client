@@ -74,6 +74,8 @@ ${INSTALL_TYPE}
 SetOverwrite ifnewer
 SetOutPath "$INSTDIR"
 File /r /x ".git" "Conductor"
+File /oname=Conductor\bin\conductor.py "Conductor\bin\conductor"
+Delete "Conductor\bin\conductor"
 
 ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\Conductor"
 ${EnvVarUpdate} $0 "PYTHONPATH" "A" "HKLM" "$INSTDIR\Conductor"
