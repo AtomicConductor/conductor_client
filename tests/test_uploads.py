@@ -19,7 +19,7 @@ os.chdir(test_dir)
 base_dir = os.path.dirname(test_dir)
 sys.path.append(base_dir)
 
-upload_test_helpers = os.path.join(test_dir,'upload_helpers')
+upload_test_helpers = os.path.join(test_dir,'fixtures')
 
 os.environ['FLASK_CONF'] = 'TEST' # disable retries n' stuff
 # os.environ['CONDUCTOR_DEVELOPMENT'] = '1' # uncomment this line to get debug messages

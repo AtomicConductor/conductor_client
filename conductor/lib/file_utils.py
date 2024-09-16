@@ -120,16 +120,17 @@ def process_upload_filepaths(paths):
 
 def process_upload_filepath(path, strict=True):
     '''
-    Process the given path to ensure that the path is valid (exists on disk),
-    and return any/all files which the path may represent.
-    For example, if the path is a directory or an image sequence, then explicitly
-    list and return all files that that path represents/contains.
+    Process the given path to ensure that the path is valid: (Exists on disk AND
+    does not contain Unicode characters). Return any/all files the path may
+    represent. For example, if the path is a directory or image sequence, then
+    explicitly list and return all files that that path represents/contains.
 
 
-    strict: bool. When True and the give path does not exist on disk, raise an
+    strict: bool. When True and the path is not valid, raise an
                   exception.
                   Note that when this function is given a directory path, and
                   and it finds any broken symlinks within the directory, the
+                  recursion is not strict. See comment below.
 
 
     This function should be able to handle various types of paths:
@@ -140,19 +141,19 @@ def process_upload_filepath(path, strict=True):
 
     Process the path by doing the following:
 
-    1. If the path is  an image sequence notation, "explode" it and return
-        each frame's filepath.  This relies on the file
-        actually being on disk, as the underlying call is to glob.glob(regex).
-        Validate that there is at least one frame on disk for the image sequence.
-        There is no 100% reliable way to know how many frames should actually be
-        part of the image sequence, but we can at least validate that there is
-        a single frame.
+    1. If the path is an image sequence notation, "explode" it and return each
+        frame's filepath.  This relies on the file actually being on disk, as
+        the underlying call is to glob.glob(regex). Validate that there is at
+        least one frame on disk for the image sequence. There is no 100%
+        reliable way to know how many frames should actually be part of the
+        image sequence, but we can at least validate that there is a single
+        frame.
 
     2. If the path is a directory then recursively add all file/dir paths
         contained within it
 
-    3. If the path is a file then ensure that it exists on disk and that it conforms
-       to Conductor's expectations.
+    3. If the path is a file then ensure that it exists on disk and that it
+       conforms to Conductor's expectations.
 
 
 
@@ -161,6 +162,15 @@ def process_upload_filepath(path, strict=True):
     paths = []
 
     if path:
+        try:
+            str(path)
+        except UnicodeEncodeError:
+            message = "Unicode filenames are not supported: %s" % path
+            # TODO: Figure out if this exception should always raise (if so,
+            # remove if strict:)
+            if strict:
+                raise exceptions.InvalidPathException(message)
+            logger.warning(message)
 
         # If the path is a file (and it exits)
         if os.path.isfile(path):
