@@ -278,6 +278,8 @@ maya_dependency_attrs:
 
 # Arnold .ass file depdency node attrs
 arnold_dependency_attrs:
+    options:
+      - texture_searchpath
     MayaFile: 
         - filename
     xgen_procedural:
